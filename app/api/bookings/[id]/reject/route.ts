@@ -25,7 +25,8 @@ export async function POST(
 
     const whatsappUrl = whatsappService.getRejectionWhatsAppUrl(
       bookingWithDetails,
-      bookingWithDetails.salon
+      bookingWithDetails.salon,
+      request
     );
 
     return successResponse(

@@ -30,7 +30,8 @@ export async function POST(
 
     const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
       bookingWithDetails,
-      bookingWithDetails.salon
+      bookingWithDetails.salon,
+      request
     );
 
     return successResponse(

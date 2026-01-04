@@ -87,10 +87,11 @@ export async function POST(request: NextRequest) {
       slot: updatedSlot,
     };
 
-    const { message, whatsappUrl } = whatsappService.generateBookingRequestMessage(
-      bookingWithDetails,
-      salon
-    );
+        const { message, whatsappUrl } = whatsappService.generateBookingRequestMessage(
+          bookingWithDetails,
+          salon,
+          request
+        );
 
     return successResponse(
       {
