@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,16 +14,7 @@ export default function SalonListPage() {
   const [loading, setLoading] = useState(true);
   const [locationsLoading, setLocationsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLocations();
-    fetchSalons();
-  }, []);
-
-  useEffect(() => {
-    fetchSalons();
-  }, [selectedLocation]);
-
-  const fetchLocations = async () => {
+  const fetchLocations = useCallback(async () => {
     setLocationsLoading(true);
     try {
       const response = await fetch('/api/salons/locations');
@@ -40,9 +31,9 @@ export default function SalonListPage() {
     } finally {
       setLocationsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSalons = async () => {
+  const fetchSalons = useCallback(async () => {
     setLoading(true);
     try {
       const url = selectedLocation
@@ -64,7 +55,16 @@ export default function SalonListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedLocation, searchTerm]);
+
+  useEffect(() => {
+    fetchLocations();
+    fetchSalons();
+  }, [fetchLocations, fetchSalons]);
+
+  useEffect(() => {
+    fetchSalons();
+  }, [selectedLocation, fetchSalons]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -74,7 +74,7 @@ export default function SalonListPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, fetchSalons]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">

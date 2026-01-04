@@ -21,7 +21,7 @@ export default function CategoriesPage() {
       <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">Choose a Category</h2>
-          <p className="text-lg text-gray-600">Select the type of service you're looking for</p>
+          <p className="text-lg text-gray-600">Select the type of service you&apos;re looking for</p>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
