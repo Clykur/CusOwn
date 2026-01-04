@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { API_ROUTES, BOOKING_LINK_PREFIX } from '@/config/constants';
+import { API_ROUTES, BOOKING_LINK_PREFIX, ERROR_MESSAGES } from '@/config/constants';
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import { isSlotTimePassed, isTimeInRange } from '@/lib/utils/time';
+import { isTimeInRange } from '@/lib/utils/time';
+import { handleApiError, logError } from '@/lib/utils/error-handler';
 
 export default function BookingPage() {
   const params = useParams();
@@ -37,7 +38,9 @@ export default function BookingPage() {
           setSalon(result.data);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load salon');
+        logError(err, 'Salon Fetch');
+        const friendlyError = err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR;
+        setError(friendlyError);
       } finally {
         setLoading(false);
       }
@@ -140,9 +143,9 @@ export default function BookingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -151,7 +154,7 @@ export default function BookingPage() {
 
   if (error && !salon) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Salon Not Found</h2>
           <p className="text-gray-600 mb-8">{error}</p>
@@ -162,10 +165,10 @@ export default function BookingPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -178,7 +181,7 @@ export default function BookingPage() {
           </p>
           <button
             onClick={openWhatsApp}
-            className="w-full bg-green-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors mb-4"
+            className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors mb-4"
           >
             Open WhatsApp
           </button>
@@ -198,7 +201,7 @@ export default function BookingPage() {
   const bookedSlots = slots.filter((s) => s.status === 'booked');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{salon?.salon_name}</h1>
@@ -211,7 +214,7 @@ export default function BookingPage() {
                 onClick={() => setSelectedDate(today.toISOString().split('T')[0])}
                 className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                   selectedDate === today.toISOString().split('T')[0]
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                    ? 'border-black bg-gray-100 text-black'
                     : 'border-gray-300 text-gray-700 hover:border-gray-400'
                 }`}
               >
@@ -221,7 +224,7 @@ export default function BookingPage() {
                 onClick={() => setSelectedDate(tomorrow.toISOString().split('T')[0])}
                 className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                   selectedDate === tomorrow.toISOString().split('T')[0]
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                    ? 'border-black bg-gray-100 text-black'
                     : 'border-gray-300 text-gray-700 hover:border-gray-400'
                 }`}
               >
@@ -240,19 +243,11 @@ export default function BookingPage() {
                   </p>
                 ) : (
                   slots
-                    .filter((slot) => {
-                      if (slot.status === 'booked') return true;
-                      if (!salon) return false;
-                      if (!isTimeInRange(slot.start_time, salon.opening_time, salon.closing_time)) {
-                        return false;
-                      }
-                      return true;
-                    })
                     .map((slot) => {
                       const isSelected = selectedSlot?.id === slot.id;
                       const isBooked = slot.status === 'booked';
-                      const isPast = !isBooked && salon ? isSlotTimePassed(selectedDate, slot.start_time) : false;
-                      const isDisabled = isBooked || isPast;
+                      // Backend already filters past slots, so we just need to check booked status
+                      const isDisabled = isBooked;
 
                       return (
                         <button
@@ -263,13 +258,12 @@ export default function BookingPage() {
                             isDisabled
                               ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
                               : isSelected
-                              ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                              : 'border-gray-300 text-gray-700 hover:border-indigo-300'
+                              ? 'border-black bg-gray-100 text-black'
+                              : 'border-gray-300 text-gray-700 hover:border-gray-400'
                           }`}
                         >
                           {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                           {isBooked && ' (Full)'}
-                          {isPast && !isBooked && ' (Past)'}
                         </button>
                       );
                     })
@@ -281,7 +275,7 @@ export default function BookingPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-2">
-                Your Name <span className="text-red-500">*</span>
+                Your Name <span className="text-black">*</span>
               </label>
               <input
                 type="text"
@@ -289,14 +283,14 @@ export default function BookingPage() {
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 placeholder="John Doe"
               />
             </div>
 
             <div>
               <label htmlFor="customer_phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number <span className="text-red-500">*</span>
+                Phone Number <span className="text-black">*</span>
               </label>
               <input
                 type="tel"
@@ -304,13 +298,13 @@ export default function BookingPage() {
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="+919876543210"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                placeholder="9876543210"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-gray-100 border border-gray-300 text-black px-4 py-3 rounded-lg">
                 {error}
               </div>
             )}
@@ -318,7 +312,7 @@ export default function BookingPage() {
             <button
               type="submit"
               disabled={submitting || !selectedSlot}
-              className="w-full bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Creating Booking...' : 'Send Booking Request'}
             </button>

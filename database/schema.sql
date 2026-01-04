@@ -1,5 +1,5 @@
--- Salons table
-CREATE TABLE IF NOT EXISTS salons (
+-- Businesses table (renamed from salons for multi-sector support)
+CREATE TABLE IF NOT EXISTS businesses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   salon_name TEXT NOT NULL,
   owner_name TEXT NOT NULL,
@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS salons (
   booking_link TEXT NOT NULL UNIQUE,
   address TEXT,
   location TEXT,
+  category TEXT DEFAULT 'salon',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -17,19 +18,19 @@ CREATE TABLE IF NOT EXISTS salons (
 -- Slots table
 CREATE TABLE IF NOT EXISTS slots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
-  status TEXT NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'booked')),
+  status TEXT NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'booked')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(salon_id, date, start_time, end_time)
+  UNIQUE(business_id, date, start_time, end_time)
 );
 
 -- Bookings table
 CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  salon_id UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   slot_id UUID NOT NULL REFERENCES slots(id) ON DELETE CASCADE,
   customer_name TEXT NOT NULL,
   customer_phone TEXT NOT NULL,
@@ -40,10 +41,15 @@ CREATE TABLE IF NOT EXISTS bookings (
 );
 
 -- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_salons_booking_link ON salons(booking_link);
-CREATE INDEX IF NOT EXISTS idx_slots_salon_date ON slots(salon_id, date);
+CREATE INDEX IF NOT EXISTS idx_businesses_booking_link ON businesses(booking_link);
+CREATE INDEX IF NOT EXISTS idx_businesses_category ON businesses(category);
+CREATE INDEX IF NOT EXISTS idx_businesses_category_location ON businesses(category, location) WHERE location IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_slots_business_date ON slots(business_id, date);
 CREATE INDEX IF NOT EXISTS idx_slots_status ON slots(status);
-CREATE INDEX IF NOT EXISTS idx_bookings_salon ON bookings(salon_id);
+CREATE INDEX IF NOT EXISTS idx_slots_reserved_until ON slots(reserved_until) WHERE reserved_until IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_slots_date_status ON slots(date, status);
+CREATE INDEX IF NOT EXISTS idx_slots_business_date_status ON slots(business_id, date, status);
+CREATE INDEX IF NOT EXISTS idx_bookings_business ON bookings(business_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
 CREATE INDEX IF NOT EXISTS idx_bookings_booking_id ON bookings(booking_id);
 
@@ -57,7 +63,7 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for updated_at
-CREATE TRIGGER update_salons_updated_at BEFORE UPDATE ON salons
+CREATE TRIGGER update_businesses_updated_at BEFORE UPDATE ON businesses
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings

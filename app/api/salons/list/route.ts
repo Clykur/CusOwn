@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const location = searchParams.get('location');
 
-    let query = supabaseAdmin.from('salons').select('*').order('salon_name', { ascending: true });
+    let query = supabaseAdmin.from('businesses').select('*').order('salon_name', { ascending: true });
 
     if (location && location.trim() !== '') {
       query = query.ilike('location', `%${location.trim()}%`);

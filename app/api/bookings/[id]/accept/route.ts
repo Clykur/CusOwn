@@ -23,6 +23,11 @@ export async function POST(
       throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
     }
 
+    // Check if salon has address (required for confirmation message)
+    if (!bookingWithDetails.salon.address || bookingWithDetails.salon.address.trim() === '') {
+      throw new Error('Salon address is required to send confirmation. Please update the salon address first.');
+    }
+
     const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
       bookingWithDetails,
       bookingWithDetails.salon

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
     }
 
-    if (updatedSlot.salon_id !== validatedData.salon_id) {
+    if (updatedSlot.business_id !== validatedData.salon_id) {
       throw new Error('Slot does not belong to this salon');
     }
 

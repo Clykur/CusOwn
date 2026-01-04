@@ -5,11 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { API_ROUTES } from '@/config/constants';
+import { API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { isSlotTimePassed, isTimeInRange } from '@/lib/utils/time';
 import { whatsappService } from '@/services/whatsapp.service';
+import { handleApiError, logError } from '@/lib/utils/error-handler';
 
 export default function SalonDetailPage() {
   const params = useParams();
@@ -63,7 +64,8 @@ export default function SalonDetailPage() {
           setSlots(result.data);
         }
       } catch (err) {
-        console.error('Failed to load slots:', err);
+        logError(err, 'Slots Fetch');
+        setError(ERROR_MESSAGES.LOADING_ERROR);
       }
     };
 
@@ -127,9 +129,9 @@ export default function SalonDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -138,7 +140,7 @@ export default function SalonDetailPage() {
 
   if (error && !salon) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Salon Not Found</h2>
           <p className="text-gray-600 mb-8">{error}</p>
@@ -159,9 +161,9 @@ export default function SalonDetailPage() {
   const availableSlots = slots.filter((s) => s.status === 'available');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <Link href="/categories/salon" className="text-indigo-600 hover:text-indigo-700 mb-4 inline-block">
+        <Link href="/categories/salon" className="text-black hover:text-gray-700 mb-4 inline-block">
           ← Back to Salons
         </Link>
 
@@ -202,7 +204,7 @@ export default function SalonDetailPage() {
                 onClick={() => setSelectedDate(today.toISOString().split('T')[0])}
                 className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                   selectedDate === today.toISOString().split('T')[0]
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                    ? 'border-black bg-gray-100 text-black'
                     : 'border-gray-300 text-gray-700 hover:border-gray-400'
                 }`}
               >
@@ -212,7 +214,7 @@ export default function SalonDetailPage() {
                 onClick={() => setSelectedDate(tomorrow.toISOString().split('T')[0])}
                 className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                   selectedDate === tomorrow.toISOString().split('T')[0]
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                    ? 'border-black bg-gray-100 text-black'
                     : 'border-gray-300 text-gray-700 hover:border-gray-400'
                 }`}
               >
@@ -230,28 +232,35 @@ export default function SalonDetailPage() {
                     No slots available for this date
                   </p>
                 ) : (
-                  slots.map((slot) => {
-                    const isSelected = selectedSlot?.id === slot.id;
-                    const isBooked = slot.status === 'booked';
+                  slots
+                    .filter((slot) => {
+                      // Backend already filters past slots, so we just show what's returned
+                      // Only filter out slots that are outside salon hours (safety check)
+                      if (!salon) return true;
+                      return isTimeInRange(slot.start_time, salon.opening_time, salon.closing_time);
+                    })
+                    .map((slot) => {
+                      const isSelected = selectedSlot?.id === slot.id;
+                      const isBooked = slot.status === 'booked';
 
-                    return (
-                      <button
-                        key={slot.id}
-                        onClick={() => handleSlotSelect(slot)}
-                        disabled={isBooked}
-                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                          isBooked
-                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : isSelected
-                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                            : 'border-gray-300 text-gray-700 hover:border-indigo-300'
-                        }`}
-                      >
-                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                        {isBooked && ' (Full)'}
-                      </button>
-                    );
-                  })
+                      return (
+                        <button
+                          key={slot.id}
+                          onClick={() => handleSlotSelect(slot)}
+                          disabled={isBooked}
+                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                            isBooked
+                              ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : isSelected
+                              ? 'border-black bg-gray-100 text-black'
+                              : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                          }`}
+                        >
+                          {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          {isBooked && ' (Full)'}
+                        </button>
+                      );
+                    })
                 )}
               </div>
             </div>
@@ -260,7 +269,7 @@ export default function SalonDetailPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-2">
-                Your Name <span className="text-red-500">*</span>
+                Your Name <span className="text-black">*</span>
               </label>
               <Input
                 type="text"
@@ -273,19 +282,19 @@ export default function SalonDetailPage() {
 
             <div>
               <label htmlFor="customer_phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number <span className="text-red-500">*</span>
+                Phone Number <span className="text-black">*</span>
               </label>
               <Input
                 type="tel"
                 id="customer_phone"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="+919876543210"
+                placeholder="9876543210"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-gray-100 border border-gray-300 text-black px-4 py-3 rounded-lg">
                 {error}
               </div>
             )}

@@ -33,7 +33,7 @@ export class SlotService {
 
       for (const timeSlot of timeSlots) {
         slotsToCreate.push({
-          salon_id: salonId,
+          business_id: salonId,
           date: dateString,
           start_time: timeSlot.start,
           end_time: timeSlot.end,
@@ -57,7 +57,7 @@ export class SlotService {
     const { data: existing } = await supabaseAdmin
       .from('slots')
       .select('id')
-      .eq('salon_id', salonId)
+      .eq('business_id', salonId)
       .eq('date', date)
       .limit(1);
 
@@ -72,7 +72,7 @@ export class SlotService {
     );
 
     const slotsToCreate: Array<Omit<Slot, 'id' | 'created_at'>> = timeSlots.map((timeSlot) => ({
-      salon_id: salonId,
+      business_id: salonId,
       date,
       start_time: timeSlot.start,
       end_time: timeSlot.end,
@@ -93,13 +93,14 @@ export class SlotService {
   async getAvailableSlots(
     salonId: string,
     date: string,
-    salonConfig?: SalonTimeConfig
+    salonConfig?: SalonTimeConfig,
+    options?: { skipCleanup?: boolean }
   ): Promise<Slot[]> {
     // First, check if slots exist for this date
     const { data: existingSlots } = await supabaseAdmin
       .from('slots')
       .select('id')
-      .eq('salon_id', salonId)
+      .eq('business_id', salonId)
       .eq('date', date)
       .limit(1);
 
@@ -117,7 +118,7 @@ export class SlotService {
         const { data: futureSlots } = await supabaseAdmin
           .from('slots')
           .select('id')
-          .eq('salon_id', salonId)
+          .eq('business_id', salonId)
           .eq('date', futureDateString)
           .limit(1);
         
@@ -127,33 +128,67 @@ export class SlotService {
       }
     }
 
-    // Clean up expired reservations before fetching
-    await this.releaseExpiredReservations();
+    // Clean up expired reservations before fetching (skip if requested for performance)
+    if (!options?.skipCleanup) {
+      await this.releaseExpiredReservations();
+    }
 
-    // Fetch all slots for the date (available and reserved)
-    const now = new Date().toISOString();
+    // Fetch all slots for the date (including booked slots for display)
     const { data, error } = await supabaseAdmin
       .from('slots')
       .select('*')
-      .eq('salon_id', salonId)
+      .eq('business_id', salonId)
       .eq('date', date)
-      .neq('status', SLOT_STATUS.BOOKED)
       .order('start_time', { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    // Filter to only include available slots and non-expired reserved slots
-    const availableSlots = (data || []).filter((slot) => {
-      if (slot.status === SLOT_STATUS.AVAILABLE) return true;
-      if (slot.status === SLOT_STATUS.RESERVED && slot.reserved_until) {
-        return new Date(slot.reserved_until) > new Date();
-      }
-      return false;
-    });
+    const now = new Date();
+    const todayDateString = now.toISOString().split('T')[0];
+    const isToday = date === todayDateString;
 
-    return availableSlots;
+    // Process and filter slots
+    const processedSlots: Slot[] = [];
+    
+    for (const slot of data || []) {
+      // For today's slots, check if slot time has passed
+      let isPast = false;
+      if (isToday) {
+        const [hours, minutes] = slot.start_time.split(':').map(Number);
+        const slotDateTime = new Date(now);
+        slotDateTime.setHours(hours, minutes, 0, 0);
+        
+        // If current time is >= slot start time, the slot has passed
+        isPast = now >= slotDateTime;
+      }
+
+      // Handle expired reservations (convert to available)
+      if (slot.status === SLOT_STATUS.RESERVED) {
+        if (!slot.reserved_until) {
+          // Invalid reservation, treat as available
+          slot.status = SLOT_STATUS.AVAILABLE;
+          slot.reserved_until = null;
+        } else {
+          const reservedUntil = new Date(slot.reserved_until);
+          if (reservedUntil <= now) {
+            // Reservation expired, treat as available
+            slot.status = SLOT_STATUS.AVAILABLE;
+            slot.reserved_until = null;
+          }
+        }
+      }
+
+      // For today, exclude past slots (except booked ones which we show as disabled)
+      if (isToday && isPast && slot.status !== SLOT_STATUS.BOOKED) {
+        continue; // Skip past slots (but keep booked slots for display)
+      }
+
+      processedSlots.push(slot);
+    }
+
+    return processedSlots;
   }
 
   async getSlotById(slotId: string): Promise<Slot | null> {

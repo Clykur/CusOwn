@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 
 export default function CategoriesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-black">
                 Cusown
               </h1>
             </Link>
@@ -26,10 +26,10 @@ export default function CategoriesPage() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
           <Link href="/categories/salon">
-            <div className="group relative overflow-hidden rounded-xl bg-white p-8 shadow-sm transition-all hover:shadow-lg cursor-pointer border-2 border-transparent hover:border-indigo-500">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-indigo-100 group-hover:bg-indigo-200 transition-colors">
+            <div className="group relative overflow-hidden rounded-xl bg-white p-8 shadow-sm transition-all hover:shadow-lg cursor-pointer border-2 border-transparent hover:border-black">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100 group-hover:bg-gray-200 transition-colors">
                 <svg
-                  className="h-8 w-8 text-indigo-600"
+                  className="h-8 w-8 text-black"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

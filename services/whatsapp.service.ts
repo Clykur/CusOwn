@@ -32,7 +32,9 @@ export class WhatsAppService {
     const acceptUrl = `${env.app.baseUrl}${ROUTES.ACCEPT}/${booking.id}`;
     const rejectUrl = `${env.app.baseUrl}${ROUTES.REJECT}/${booking.id}`;
 
-    const messageWithLinks = `${message}\n\n━━━━━━━━━━━━━━━━\n\n🟢 *ACCEPT* - Tap to confirm booking:\n${acceptUrl}\n\n🔴 *NOT AVAILABLE* - Tap if slot unavailable:\n${rejectUrl}`;
+    const messageWithLinks = `${message}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n*ACTION REQUIRED*\n\n` +
+      `🟢 *ACCEPT* - Confirm this booking:\n${acceptUrl}\n\n` +
+      `🔴 *NOT AVAILABLE* - Reject this booking:\n${rejectUrl}`;
 
     return {
       message: messageWithLinks,
@@ -45,15 +47,24 @@ export class WhatsAppService {
       throw new Error('Slot information is missing');
     }
 
+    if (!salon.address) {
+      throw new Error('Salon address is required');
+    }
+
     const date = formatDate(booking.slot.date);
     const time = `${formatTime(booking.slot.start_time)} - ${formatTime(booking.slot.end_time)}`;
+
+    // Generate Google Maps link
+    const encodedAddress = encodeURIComponent(salon.address);
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
 
     return WHATSAPP_MESSAGE_TEMPLATES.CONFIRMATION(
       booking.customer_name,
       date,
       time,
       salon.salon_name,
-      salon.address
+      salon.address,
+      mapsLink
     );
   }
 

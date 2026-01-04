@@ -20,7 +20,7 @@ export const createSalonSchema = z.object({
   opening_time: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
   closing_time: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
   slot_duration: slotDurationSchema,
-  address: z.string().max(500, 'Address must be at most 500 characters').optional(),
+  address: z.string().min(5, 'Address must be at least 5 characters').max(500, 'Address must be at most 500 characters'),
   location: z.string().min(2, 'Location must be at least 2 characters').max(100, 'Location must be at most 100 characters'),
 });
 
@@ -37,13 +37,15 @@ export type Salon = {
   booking_link: string;
   address?: string;
   location?: string;
+  qr_code?: string | null;
+  category?: string;
   created_at: string;
   updated_at: string;
 };
 
 export type Slot = {
   id: string;
-  salon_id: string;
+  business_id: string;
   date: string;
   start_time: string;
   end_time: string;
@@ -67,7 +69,7 @@ export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 
 export type Booking = {
   id: string;
-  salon_id: string;
+  business_id: string;
   slot_id: string;
   customer_name: string;
   customer_phone: string;

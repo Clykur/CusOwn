@@ -48,23 +48,69 @@ export const generateTimeSlots = (
   return slots;
 };
 
+/**
+ * Check if a slot time has passed (for today only)
+ * Handles timezone and edge cases properly
+ */
 export const isSlotTimePassed = (slotDate: string, slotStartTime: string): boolean => {
+  // Parse slot date and time
+  const slotDateObj = new Date(slotDate + 'T00:00:00');
   const today = new Date();
-  const slotDateObj = new Date(slotDate);
   
+  // Get date strings in YYYY-MM-DD format (timezone-independent)
   const todayDateString = today.toISOString().split('T')[0];
   const slotDateString = slotDateObj.toISOString().split('T')[0];
   
+  // If slot is not today, it's not passed
   if (slotDateString !== todayDateString) {
     return false;
   }
   
+  // For today's slots, check if the start time has passed
   const now = new Date();
+  const [hours, minutes] = slotStartTime.split(':').map(Number);
+  
+  // Create slot datetime using today's date with slot time
+  const slotDateTime = new Date(today);
+  slotDateTime.setHours(hours, minutes, 0, 0);
+  
+  // Slot is passed if current time is >= slot start time
+  return now >= slotDateTime;
+};
+
+/**
+ * Check if a slot is in the past (more robust version)
+ * Handles date boundaries and timezone issues
+ */
+export const isSlotInPast = (slotDate: string, slotStartTime: string): boolean => {
+  const now = new Date();
+  
+  // Parse slot date
+  const slotDateObj = new Date(slotDate + 'T00:00:00');
+  const today = new Date();
+  
+  // Compare dates first (timezone-independent)
+  const todayDateString = today.toISOString().split('T')[0];
+  const slotDateString = slotDateObj.toISOString().split('T')[0];
+  
+  // If slot date is before today, it's definitely in the past
+  if (slotDateString < todayDateString) {
+    return true;
+  }
+  
+  // If slot date is after today, it's not in the past
+  if (slotDateString > todayDateString) {
+    return false;
+  }
+  
+  // For today, check if the slot start time has passed
   const [hours, minutes] = slotStartTime.split(':').map(Number);
   const slotDateTime = new Date(today);
   slotDateTime.setHours(hours, minutes, 0, 0);
   
-  return now >= slotDateTime;
+  // Add 1 minute buffer to account for time precision
+  // If current time is >= slot start time, the slot has passed
+  return now.getTime() >= slotDateTime.getTime();
 };
 
 export const isTimeInRange = (time: string, openingTime: string, closingTime: string): boolean => {

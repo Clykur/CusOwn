@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { generateUniqueId } from '@/lib/utils/string';
+import { generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateBookingInput, Booking, BookingWithDetails } from '@/types';
 import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS, BOOKING_EXPIRY_HOURS } from '@/config/constants';
 import { slotService } from './slot.service';
@@ -19,7 +19,7 @@ export class BookingService {
       throw new Error(ERROR_MESSAGES.SLOT_NOT_AVAILABLE);
     }
 
-    if (slot.salon_id !== data.salon_id) {
+    if (slot.business_id !== data.salon_id) {
       throw new Error(ERROR_MESSAGES.SLOT_NOT_AVAILABLE);
     }
 
@@ -47,13 +47,16 @@ export class BookingService {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
+    // Format phone number with +91 if not already present
+    const formattedPhone = formatPhoneNumber(data.customer_phone);
+
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .insert({
-        salon_id: data.salon_id,
+        business_id: data.salon_id,
         slot_id: data.slot_id,
         customer_name: data.customer_name,
-        customer_phone: data.customer_phone,
+        customer_phone: formattedPhone,
         booking_id: bookingId,
         status: BOOKING_STATUS.PENDING,
       })
@@ -126,7 +129,7 @@ export class BookingService {
       return null;
     }
 
-    const salon = await salonService.getSalonById(booking.salon_id);
+    const salon = await salonService.getSalonById(booking.business_id);
     const slot = await slotService.getSlotById(booking.slot_id);
 
     return {
@@ -200,14 +203,14 @@ export class BookingService {
     let query = supabaseAdmin
       .from('bookings')
       .select('*')
-      .eq('salon_id', salonId)
+      .eq('business_id', salonId)
       .order('created_at', { ascending: false });
 
     if (date) {
       const { data: slots } = await supabaseAdmin
         .from('slots')
         .select('id')
-        .eq('salon_id', salonId)
+        .eq('business_id', salonId)
         .eq('date', date);
 
       if (slots && slots.length > 0) {
@@ -230,7 +233,7 @@ export class BookingService {
 
     const bookingsWithDetails: BookingWithDetails[] = await Promise.all(
       data.map(async (booking) => {
-        const salon = await salonService.getSalonById(booking.salon_id);
+        const salon = await salonService.getSalonById(booking.business_id);
         const slot = await slotService.getSlotById(booking.slot_id);
 
         return {

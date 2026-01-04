@@ -6,7 +6,7 @@ import { ERROR_MESSAGES } from '@/config/constants';
 export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
-      .from('salons')
+      .from('businesses')
       .select('location');
 
     if (error) {

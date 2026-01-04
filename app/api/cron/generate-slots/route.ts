@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('Unauthorized', 401);
     }
 
-    const { data: salons, error } = await supabaseAdmin.from('salons').select('*');
+    const { data: salons, error } = await supabaseAdmin.from('businesses').select('*');
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);

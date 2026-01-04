@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Salon } from '@/types';
+import { logError } from '@/lib/utils/error-handler';
 
 export default function SalonListPage() {
   const [salons, setSalons] = useState<Salon[]>([]);
@@ -22,11 +23,11 @@ export default function SalonListPage() {
       if (result.success && result.data && Array.isArray(result.data)) {
         setLocations(result.data);
       } else {
-        console.error('Invalid locations data:', result);
+        logError('Invalid locations data', 'Locations Fetch');
         setLocations([]);
       }
     } catch (error) {
-      console.error('Failed to fetch locations:', error);
+      logError(error, 'Locations Fetch');
       setLocations([]);
     } finally {
       setLocationsLoading(false);
@@ -51,7 +52,7 @@ export default function SalonListPage() {
         setSalons(filteredSalons);
       }
     } catch (error) {
-      console.error('Failed to fetch salons:', error);
+      logError(error, 'Salons Fetch');
     } finally {
       setLoading(false);
     }
@@ -77,12 +78,12 @@ export default function SalonListPage() {
   }, [searchTerm, fetchSalons]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link href="/categories" className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-black">
                 Cusown
               </h1>
             </Link>
@@ -111,7 +112,7 @@ export default function SalonListPage() {
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
               disabled={locationsLoading}
-              className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">All Locations</option>
               {locations.length > 0 ? (
@@ -130,7 +131,7 @@ export default function SalonListPage() {
         {/* Salon List */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-black border-r-transparent"></div>
             <p className="mt-4 text-gray-600">Loading salons...</p>
           </div>
         ) : salons.length === 0 ? (
@@ -141,8 +142,8 @@ export default function SalonListPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {salons.map((salon) => (
               <Link key={salon.id} href={`/salon/${salon.id}`}>
-                <div className="group rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-lg cursor-pointer border-2 border-transparent hover:border-indigo-500">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                <div className="group rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-lg cursor-pointer border-2 border-transparent hover:border-black">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-black transition-colors">
                     {salon.salon_name}
                   </h3>
                   {salon.location && (
@@ -176,7 +177,7 @@ export default function SalonListPage() {
                     <span>
                       {salon.opening_time.substring(0, 5)} - {salon.closing_time.substring(0, 5)}
                     </span>
-                    <span className="text-indigo-600 font-medium">View Slots →</span>
+                    <span className="text-black font-medium">View Slots →</span>
                   </div>
                 </div>
               </Link>

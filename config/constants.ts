@@ -42,11 +42,36 @@ export const ROUTES = {
 
 export const WHATSAPP_MESSAGE_TEMPLATES = {
   BOOKING_REQUEST: (customerName: string, date: string, time: string, bookingId: string) =>
-    `Hi, my name is ${customerName}. I want an appointment on ${date} at ${time}. Booking ID: ${bookingId}`,
-  CONFIRMATION: (customerName: string, date: string, time: string, salonName: string, address?: string) =>
-    `${customerName}, your appointment is confirmed for ${date} at ${time} at ${salonName}.${address ? ` Address: ${address}.` : ''} See you soon! 💇‍♀️`,
+    `📅 *NEW BOOKING REQUEST*\n\n` +
+    `Hello! I would like to book an appointment.\n\n` +
+    `*Customer Details:*\n` +
+    `Name: *${customerName}*\n\n` +
+    `*Appointment Details:*\n` +
+    `📆 Date: *${date}*\n` +
+    `🕐 Time: *${time}*\n\n` +
+    `Booking ID: \`${bookingId}\``,
+  CONFIRMATION: (customerName: string, date: string, time: string, salonName: string, address: string, mapsLink: string) =>
+    `✅ *APPOINTMENT CONFIRMED*\n\n` +
+    `Dear *${customerName}*,\n\n` +
+    `Your appointment has been confirmed!\n\n` +
+    `*Appointment Details:*\n` +
+    `📆 Date: *${date}*\n` +
+    `🕐 Time: *${time}*\n` +
+    `🏢 Salon: *${salonName}*\n\n` +
+    `*Location:*\n` +
+    `📍 ${address}\n\n` +
+    `🗺️ *Get Directions:*\n` +
+    `${mapsLink}\n\n` +
+    `We look forward to seeing you!\n` +
+    `Thank you! 🙏`,
   REJECTION: (customerName: string, bookingLink: string) =>
-    `Sorry ${customerName}, that slot is unavailable. Please choose another time: ${bookingLink}`,
+    `❌ *SLOT UNAVAILABLE*\n\n` +
+    `Dear *${customerName}*,\n\n` +
+    `We apologize, but the requested time slot is not available.\n\n` +
+    `Please select another time slot from our available options:\n\n` +
+    `🔗 *Book New Slot:*\n` +
+    `${bookingLink}\n\n` +
+    `Thank you for your understanding.`,
 } as const;
 
 export const VALIDATION = {
@@ -56,6 +81,7 @@ export const VALIDATION = {
   SALON_NAME_MAX_LENGTH: 100,
   OWNER_NAME_MIN_LENGTH: 2,
   OWNER_NAME_MAX_LENGTH: 100,
+  ADDRESS_MIN_LENGTH: 5,
   ADDRESS_MAX_LENGTH: 500,
 } as const;
 
@@ -66,6 +92,8 @@ export const ERROR_MESSAGES = {
   OWNER_NAME_INVALID: `Owner name must be between ${VALIDATION.OWNER_NAME_MIN_LENGTH} and ${VALIDATION.OWNER_NAME_MAX_LENGTH} characters`,
   WHATSAPP_NUMBER_REQUIRED: 'WhatsApp number is required',
   WHATSAPP_NUMBER_INVALID: 'Invalid WhatsApp number format',
+  ADDRESS_REQUIRED: 'Address is required',
+  ADDRESS_INVALID: `Address must be between ${VALIDATION.ADDRESS_MIN_LENGTH} and ${VALIDATION.ADDRESS_MAX_LENGTH} characters`,
   OPENING_TIME_REQUIRED: 'Opening time is required',
   CLOSING_TIME_REQUIRED: 'Closing time is required',
   SLOT_DURATION_REQUIRED: 'Slot duration is required',
@@ -83,6 +111,11 @@ export const ERROR_MESSAGES = {
   CUSTOMER_PHONE_INVALID: 'Invalid phone number format',
   BOOKING_ID_REQUIRED: 'Booking ID is required',
   WHATSAPP_SEND_FAILED: 'Failed to send WhatsApp message',
+  WHATSAPP_NUMBER_EXISTS: 'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.',
+  QR_CODE_GENERATION_FAILED: 'Unable to generate QR code. You can access it later from your dashboard.',
+  NETWORK_ERROR: 'Unable to connect to the server. Please check your internet connection and try again.',
+  UNEXPECTED_ERROR: 'An unexpected error occurred. Please try again.',
+  LOADING_ERROR: 'Failed to load data. Please refresh the page and try again.',
 } as const;
 
 export const SUCCESS_MESSAGES = {

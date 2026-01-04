@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { API_ROUTES } from '@/config/constants';
+import { API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
 import { BookingWithDetails, Salon } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
+import { logError } from '@/lib/utils/error-handler';
 
 export default function DashboardPage() {
   const params = useParams();
@@ -26,7 +27,7 @@ export default function DashboardPage() {
           setSalon(result.data);
         }
       } catch (err) {
-        console.error('Failed to load salon:', err);
+        logError(err, 'Salon Fetch');
       }
     };
 
@@ -47,7 +48,7 @@ export default function DashboardPage() {
           setBookings(result.data);
         }
       } catch (err) {
-        console.error('Failed to load bookings:', err);
+        logError(err, 'Bookings Fetch');
       } finally {
         setLoading(false);
       }
@@ -63,23 +64,23 @@ export default function DashboardPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-black text-white';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gray-200 text-black';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gray-300 text-black';
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-black';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-black';
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -87,7 +88,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{salon?.salon_name}</h1>
@@ -99,7 +100,7 @@ export default function DashboardPage() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
             />
           </div>
 

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { generateSlug, generateUniqueId } from '@/lib/utils/string';
+import { generateSlug, generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateSalonInput, Salon } from '@/types';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { slotService } from './slot.service';
@@ -13,7 +13,7 @@ export class SalonService {
 
     while (!isUnique && attempts < maxAttempts) {
       const { data: existing } = await supabaseAdmin
-        .from('salons')
+        .from('businesses')
         .select('id')
         .eq('booking_link', bookingLink)
         .single();
@@ -30,17 +30,20 @@ export class SalonService {
       throw new Error(ERROR_MESSAGES.BOOKING_LINK_EXISTS);
     }
 
+    // Format phone number with +91 if not already present
+    const formattedPhone = formatPhoneNumber(data.whatsapp_number);
+
     const { data: salon, error } = await supabaseAdmin
-      .from('salons')
+      .from('businesses')
       .insert({
         salon_name: data.salon_name,
         owner_name: data.owner_name,
-        whatsapp_number: data.whatsapp_number,
+        whatsapp_number: formattedPhone,
         opening_time: data.opening_time,
         closing_time: data.closing_time,
         slot_duration: Number(data.slot_duration),
         booking_link: bookingLink,
-        address: data.address || null,
+        address: data.address,
         location: data.location || null,
       })
       .select()
@@ -54,18 +57,22 @@ export class SalonService {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
+    // QR code will be generated asynchronously via API route
+    // This prevents blocking the salon creation if QR generation is slow
+
     await slotService.generateInitialSlots(salon.id, {
       opening_time: salon.opening_time,
       closing_time: salon.closing_time,
       slot_duration: salon.slot_duration,
     });
 
+    // Return salon (QR code will be added by API route)
     return salon;
   }
 
   async getSalonByBookingLink(bookingLink: string): Promise<Salon | null> {
     const { data, error } = await supabaseAdmin
-      .from('salons')
+      .from('businesses')
       .select('*')
       .eq('booking_link', bookingLink)
       .single();
@@ -82,7 +89,7 @@ export class SalonService {
 
   async getSalonById(salonId: string): Promise<Salon | null> {
     const { data, error } = await supabaseAdmin
-      .from('salons')
+      .from('businesses')
       .select('*')
       .eq('id', salonId)
       .single();
