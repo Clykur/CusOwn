@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Cusown - Salon Booking Made Simple',
   description: 'The easiest way for small salons to manage bookings',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
