@@ -41,6 +41,9 @@ export async function GET(
       const qrCode = await generateQRCodeForBookingLink(salon.booking_link);
       
       // Update salon with QR code
+      if (!supabaseAdmin) {
+        throw new Error('Supabase admin client not configured');
+      }
       const { error: updateError } = await supabaseAdmin
         .from('businesses')
         .update({ qr_code: qrCode })

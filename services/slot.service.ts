@@ -46,6 +46,9 @@ export class SlotService {
       return;
     }
 
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { error } = await supabaseAdmin.from('slots').insert(slotsToCreate);
 
     if (error) {
@@ -54,6 +57,9 @@ export class SlotService {
   }
 
   async generateSlotsForDate(salonId: string, date: string, config: SalonTimeConfig): Promise<void> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { data: existing } = await supabaseAdmin
       .from('slots')
       .select('id')
@@ -83,6 +89,9 @@ export class SlotService {
       return;
     }
 
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { error } = await supabaseAdmin.from('slots').insert(slotsToCreate);
 
     if (error) {
@@ -96,6 +105,9 @@ export class SlotService {
     salonConfig?: SalonTimeConfig,
     options?: { skipCleanup?: boolean }
   ): Promise<Slot[]> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     // First, check if slots exist for this date
     const { data: existingSlots } = await supabaseAdmin
       .from('slots')
@@ -192,6 +204,9 @@ export class SlotService {
   }
 
   async getSlotById(slotId: string): Promise<Slot | null> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { data, error } = await supabaseAdmin
       .from('slots')
       .select('*')
@@ -209,6 +224,9 @@ export class SlotService {
   }
 
   async updateSlotStatus(slotId: string, status: typeof SLOT_STATUS[keyof typeof SLOT_STATUS]): Promise<void> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { error } = await supabaseAdmin
       .from('slots')
       .update({ status })
@@ -240,6 +258,9 @@ export class SlotService {
     }
 
     // Reserve the slot
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const reservedUntil = new Date();
     reservedUntil.setMinutes(reservedUntil.getMinutes() + SLOT_RESERVATION_TIMEOUT_MINUTES);
 
@@ -262,6 +283,9 @@ export class SlotService {
   }
 
   async releaseSlot(slotId: string): Promise<void> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { error } = await supabaseAdmin
       .from('slots')
       .update({
@@ -277,6 +301,9 @@ export class SlotService {
   }
 
   async releaseExpiredReservations(): Promise<number> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const now = new Date().toISOString();
     const { data, error } = await supabaseAdmin
       .from('slots')
@@ -296,6 +323,9 @@ export class SlotService {
   }
 
   async markSlotAsBooked(slotId: string): Promise<void> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { error } = await supabaseAdmin
       .from('slots')
       .update({

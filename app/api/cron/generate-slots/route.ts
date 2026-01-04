@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
       return errorResponse('Unauthorized', 401);
     }
 
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured');
+    }
     const { data: salons, error } = await supabaseAdmin.from('businesses').select('*');
 
     if (error) {

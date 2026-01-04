@@ -5,6 +5,9 @@ import { ERROR_MESSAGES } from '@/config/constants';
 
 export async function GET() {
   try {
+    if (!supabaseAdmin) {
+      return errorResponse('Database not configured', 500);
+    }
     const { data, error } = await supabaseAdmin
       .from('businesses')
       .select('location');

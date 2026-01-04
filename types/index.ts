@@ -39,6 +39,7 @@ export type Salon = {
   location?: string;
   qr_code?: string | null;
   category?: string;
+  owner_user_id?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -75,6 +76,7 @@ export type Booking = {
   customer_phone: string;
   booking_id: string;
   status: typeof BOOKING_STATUS[keyof typeof BOOKING_STATUS];
+  customer_user_id?: string | null;
   created_at: string;
   updated_at: string;
 };

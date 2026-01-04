@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
-import { Salon, BookingWithDetails } from '@/types';
+import { Salon, BookingWithDetails, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 
@@ -12,9 +12,11 @@ export default function OwnerDashboardPage() {
   const bookingLink = params.bookingLink as string;
   const [salon, setSalon] = useState<Salon | null>(null);
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'bookings' | 'slots'>('bookings');
 
   useEffect(() => {
     if (!bookingLink) return;
@@ -80,7 +82,22 @@ export default function OwnerDashboardPage() {
       }
     };
 
+    const fetchSlots = async () => {
+      try {
+        const response = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${date}`);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setSlots(result.data);
+        }
+      } catch (err) {
+        logError(err, 'Slots Fetch');
+        // Don't show error - just show empty state
+      }
+    };
+
     fetchBookings();
+    fetchSlots();
   }, [salon, selectedDate]);
 
   useEffect(() => {
@@ -177,9 +194,30 @@ export default function OwnerDashboardPage() {
             )}
           </div>
 
-          {/* Bookings Section */}
+          {/* Bookings & Slots Section */}
           <div className="bg-white rounded-lg shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Bookings</h2>
+            <div className="flex gap-2 mb-4 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('bookings')}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  activeTab === 'bookings'
+                    ? 'text-black border-b-2 border-black'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Bookings
+              </button>
+              <button
+                onClick={() => setActiveTab('slots')}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  activeTab === 'slots'
+                    ? 'text-black border-b-2 border-black'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Slots Status
+              </button>
+            </div>
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
@@ -191,55 +229,95 @@ export default function OwnerDashboardPage() {
               />
             </div>
 
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {bookings.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No bookings found for this date</p>
-              ) : (
-                bookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{booking.customer_name}</h3>
-                        <p className="text-sm text-gray-500">{booking.customer_phone}</p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          booking.status
-                        )}`}
-                      >
-                        {booking.status}
-                      </span>
-                    </div>
-
-                    {booking.slot && (
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+            {activeTab === 'bookings' ? (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {bookings.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No bookings found for this date</p>
+                ) : (
+                  bookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <p className="text-gray-500">Date</p>
+                          <h3 className="text-lg font-semibold text-gray-900">{booking.customer_name}</h3>
+                          <p className="text-sm text-gray-500">{booking.customer_phone}</p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            booking.status
+                          )}`}
+                        >
+                          {booking.status}
+                        </span>
+                      </div>
+
+                      {booking.slot && (
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500">Date</p>
+                            <p className="font-semibold text-gray-900">
+                              {formatDate(booking.slot.date)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Time</p>
+                            <p className="font-semibold text-gray-900">
+                              {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500">
+                          Booking ID: <span className="font-mono">{booking.booking_id}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {slots.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No slots found for this date</p>
+                ) : (
+                  slots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className={`border-2 rounded-lg p-3 ${
+                        slot.status === 'booked'
+                          ? 'border-black bg-gray-50'
+                          : slot.status === 'reserved'
+                          ? 'border-yellow-400 bg-yellow-50'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
                           <p className="font-semibold text-gray-900">
-                            {formatDate(booking.slot.date)}
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-gray-500">Time</p>
-                          <p className="font-semibold text-gray-900">
-                            {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
-                          </p>
-                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            slot.status === 'booked'
+                              ? 'bg-black text-white'
+                              : slot.status === 'reserved'
+                              ? 'bg-yellow-400 text-black'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {slot.status === 'booked' ? 'Booked' : slot.status === 'reserved' ? 'Reserved' : 'Available'}
+                        </span>
                       </div>
-                    )}
-
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-xs text-gray-500">
-                        Booking ID: <span className="font-mono">{booking.booking_id}</span>
-                      </p>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

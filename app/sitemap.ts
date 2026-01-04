@@ -28,8 +28,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Dynamic salon pages
   try {
+    if (!supabaseAdmin) {
+      return staticPages;
+    }
+    
     const { data: salons } = await supabaseAdmin
-      .from('salons')
+      .from('businesses')
       .select('id, booking_link, updated_at')
       .limit(1000); // Limit to prevent too large sitemap
 

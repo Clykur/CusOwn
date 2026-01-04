@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SLOT_DURATIONS, API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
 import { CreateSalonInput } from '@/types';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
+import { supabaseAuth } from '@/lib/supabase/auth';
 
 export default function SetupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState<CreateSalonInput>({
     salon_name: '',
     owner_name: '',
@@ -22,6 +25,19 @@ export default function SetupPage() {
     location: '',
   });
   const [success, setSuccess] = useState<{ bookingLink: string; bookingUrl: string; qrCode?: string } | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!supabaseAuth) {
+        setCheckingAuth(false);
+        return;
+      }
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      setUser(session?.user ?? null);
+      setCheckingAuth(false);
+    };
+    checkAuth();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -170,16 +186,26 @@ export default function SetupPage() {
               </ul>
             </div>
 
-            <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
-              <p className="text-sm text-black mb-2">
-                <strong>Owner Dashboard:</strong>
+            {/* Owner Dashboard CTA */}
+            <div className="bg-black rounded-lg p-6 text-center">
+              <h3 className="text-xl font-bold text-white mb-2">Manage Your Business</h3>
+              <p className="text-gray-200 text-sm mb-4">
+                View all bookings, check slot availability, and manage your business
               </p>
-              <Link
-                href={`/owner/${success.bookingLink}`}
-                className="text-sm text-black underline hover:no-underline block"
-              >
-                View your dashboard to see bookings and download QR code again →
-              </Link>
+              <div className="space-y-3">
+                <Link
+                  href="/owner/dashboard"
+                  className="inline-block w-full bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Go to My Dashboard →
+                </Link>
+                <Link
+                  href={`/owner/${success.bookingLink}`}
+                  className="inline-block w-full bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                >
+                  View This Business Details
+                </Link>
+              </div>
             </div>
 
             <button
@@ -194,11 +220,46 @@ export default function SetupPage() {
     );
   }
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-white py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Sign In Required</h1>
+            <p className="text-gray-600 mb-8">
+              Please sign in with Google to create and manage your business. This helps us keep your account secure and allows you to access your dashboard anytime.
+            </p>
+            <button
+              onClick={() => router.push('/auth/login?redirect_to=/setup')}
+              className="px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors mb-4"
+            >
+              Sign In with Google
+            </button>
+            <p className="text-sm text-gray-500">
+              Don&apos;t have an account? Signing in will create one automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Salon</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Business</h1>
           <p className="text-gray-600 mb-8">Set up your booking page in minutes</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -349,8 +410,18 @@ export default function SetupPage() {
             </div>
 
             {error && (
-              <div className="bg-gray-100 border border-gray-300 text-black px-4 py-3 rounded-lg">
-                {error}
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                <p className="mb-2">{error}</p>
+                {error.includes('/b/') && (
+                  <div className="mt-3">
+                    <Link
+                      href={error.match(/\/b\/[^\s]+/)?.[0] || '/owner/dashboard'}
+                      className="text-red-800 underline font-semibold hover:text-red-900"
+                    >
+                      Go to Your Existing Business →
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 

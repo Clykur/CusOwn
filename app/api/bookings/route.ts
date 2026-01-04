@@ -6,6 +6,7 @@ import { slotService } from '@/services/slot.service';
 import { validateCreateBooking } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID } from '@/lib/utils/security';
+import { getServerUser } from '@/lib/supabase/server-auth';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES, SLOT_STATUS } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 
@@ -52,9 +53,13 @@ export async function POST(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.SLOT_NOT_AVAILABLE, 409);
     }
 
+    // Get authenticated user (optional - for backward compatibility)
+    const user = await getServerUser(request);
+    const customerUserId = user?.id;
+
     let booking;
     try {
-      booking = await bookingService.createBooking(validatedData);
+      booking = await bookingService.createBooking(validatedData, customerUserId);
     } catch (bookingError) {
       // If booking creation fails, release the reservation
       try {

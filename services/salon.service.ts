@@ -1,11 +1,13 @@
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { generateSlug, generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateSalonInput, Salon } from '@/types';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { slotService } from './slot.service';
 
 export class SalonService {
-  async createSalon(data: CreateSalonInput): Promise<Salon> {
+  async createSalon(data: CreateSalonInput, ownerUserId?: string): Promise<Salon> {
+    const supabaseAdmin = requireSupabaseAdmin();
+    
     let bookingLink = generateSlug(data.salon_name);
     let isUnique = false;
     let attempts = 0;
@@ -45,6 +47,7 @@ export class SalonService {
         booking_link: bookingLink,
         address: data.address,
         location: data.location || null,
+        owner_user_id: ownerUserId || null, // Link to authenticated user if available
       })
       .select()
       .single();
@@ -71,6 +74,7 @@ export class SalonService {
   }
 
   async getSalonByBookingLink(bookingLink: string): Promise<Salon | null> {
+    const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('businesses')
       .select('*')
@@ -88,6 +92,7 @@ export class SalonService {
   }
 
   async getSalonById(salonId: string): Promise<Salon | null> {
+    const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('businesses')
       .select('*')

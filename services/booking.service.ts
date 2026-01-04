@@ -6,7 +6,7 @@ import { slotService } from './slot.service';
 import { salonService } from './salon.service';
 
 export class BookingService {
-  async createBooking(data: CreateBookingInput): Promise<Booking> {
+  async createBooking(data: CreateBookingInput, customerUserId?: string): Promise<Booking> {
     const slot = await slotService.getSlotById(data.slot_id);
 
     if (!slot) {
@@ -28,6 +28,10 @@ export class BookingService {
     let attempts = 0;
     const maxAttempts = 10;
 
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
+    
     while (!isUnique && attempts < maxAttempts) {
       const { data: existing } = await supabaseAdmin
         .from('bookings')
@@ -59,6 +63,7 @@ export class BookingService {
         customer_phone: formattedPhone,
         booking_id: bookingId,
         status: BOOKING_STATUS.PENDING,
+        customer_user_id: customerUserId || null, // Link to authenticated user if available
       })
       .select()
       .single();
@@ -78,6 +83,9 @@ export class BookingService {
   }
 
   async getBookingById(bookingId: string): Promise<BookingWithDetails | null> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select('*')
@@ -106,6 +114,9 @@ export class BookingService {
   }
 
   async getBookingByUuid(id: string): Promise<Booking | null> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select('*')
@@ -150,6 +161,9 @@ export class BookingService {
       throw new Error(`Booking is already ${booking.status}`);
     }
 
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .update({ status: BOOKING_STATUS.CONFIRMED })
@@ -179,6 +193,9 @@ export class BookingService {
       throw new Error(`Booking is already ${booking.status}`);
     }
 
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .update({ status: BOOKING_STATUS.REJECTED })
@@ -200,6 +217,9 @@ export class BookingService {
   }
 
   async getSalonBookings(salonId: string, date?: string): Promise<BookingWithDetails[]> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     let query = supabaseAdmin
       .from('bookings')
       .select('*')
@@ -248,6 +268,9 @@ export class BookingService {
   }
 
   async expireOldBookings(): Promise<void> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
     const expiryTime = new Date();
     expiryTime.setHours(expiryTime.getHours() - BOOKING_EXPIRY_HOURS);
 

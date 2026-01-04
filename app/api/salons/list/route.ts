@@ -8,6 +8,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const location = searchParams.get('location');
 
+    if (!supabaseAdmin) {
+      return errorResponse('Database not configured', 500);
+    }
+
     let query = supabaseAdmin.from('businesses').select('*').order('salon_name', { ascending: true });
 
     if (location && location.trim() !== '') {

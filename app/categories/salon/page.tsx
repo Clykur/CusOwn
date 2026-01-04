@@ -79,18 +79,6 @@ export default function SalonListPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/categories" className="flex items-center">
-              <h1 className="text-2xl font-bold text-black">
-                Cusown
-              </h1>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Salons</h2>
