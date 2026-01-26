@@ -49,32 +49,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
-      - name: Check for hardcoded secrets
-        run: |
-          echo "Scanning for potential secrets..."
-          PATTERNS=(
-            "password\s*=\s*['\"][^'\"]+['\"]"
-            "secret\s*=\s*['\"][^'\"]+['\"]"
-            "api[_-]?key\s*=\s*['\"][^'\"]+['\"]"
-            "token\s*=\s*['\"][^'\"]+['\"]"
-            "aws[_-]?access[_-]?key"
-            "aws[_-]?secret[_-]?key"
-            "private[_-]?key"
-            "-----BEGIN.*PRIVATE KEY-----"
-          )
-          FOUND_SECRETS=false
-          for pattern in "${PATTERNS[@]}"; do
-            if grep -r -iE "$pattern" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git --exclude="*.lock" . 2>/dev/null; then
-              echo "⚠️  WARNING: Potential secret pattern detected: $pattern"
-              FOUND_SECRETS=true
-            fi
-          done
-          if [ "$FOUND_SECRETS" = true ]; then
-            echo "❌ ERROR: Potential secrets detected. Review and remove hardcoded secrets."
-            exit 1
-          fi
-          echo "✅ No hardcoded secrets detected"
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
