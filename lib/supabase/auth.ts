@@ -19,6 +19,10 @@ if (supabaseUrl && supabaseAnonKey) {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
+        // Use localStorage for PKCE code verifier persistence
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // Enable PKCE flow explicitly
+        flowType: 'pkce',
       },
     });
   } catch (error) {
