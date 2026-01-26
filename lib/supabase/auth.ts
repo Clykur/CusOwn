@@ -101,6 +101,11 @@ export const signInWithGoogle = async (redirectTo?: string) => {
       provider: 'google',
       options: {
         redirectTo: baseUrl,
+        // Force PKCE flow (more secure, tokens not in URL)
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
     
