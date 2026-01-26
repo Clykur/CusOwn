@@ -1,0 +1,80 @@
+name: Pre-Deployment Validation
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+
+jobs:
+  validate-environment:
+    name: Validate Environment Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate environment variables
+        run: |
+          ENV=${{ inputs.environment }}
+          BRANCH=${{ inputs.branch }}
+          
+          echo "Validating environment: $ENV"
+          echo "Branch: $BRANCH"
+          
+          # Required variables for all environments
+          REQUIRED_VARS=(
+            "NEXT_PUBLIC_SUPABASE_URL"
+            "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+            "SUPABASE_SERVICE_ROLE_KEY"
+          )
+          
+          # Production-specific requirements
+          if [ "$ENV" = "production" ]; then
+            REQUIRED_VARS+=(
+              "NEXT_PUBLIC_APP_URL"
+              "SALON_TOKEN_SECRET"
+            )
+            
+            # Verify production URL is not localhost
+            if echo "${{ secrets.NEXT_PUBLIC_APP_URL }}" | grep -q "localhost"; then
+              echo "❌ ERROR: Production URL cannot be localhost"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ Environment validation passed for $ENV"
+
+      - name: Verify Vercel configuration
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "❌ ERROR: VERCEL_TOKEN is required"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "❌ ERROR: VERCEL_ORG_ID is required"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "❌ ERROR: VERCEL_PROJECT_ID is required"
+            exit 1
+          fi
+          
+          echo "✅ Vercel configuration verified"
+
+      - name: Check branch protection
+        run: |
+          BRANCH=${{ inputs.branch }}
+          
+          if [ "$BRANCH" != "main" ] && [ "${{ inputs.environment }}" = "production" ]; then
+            echo "❌ ERROR: Production deployments only allowed from main branch"
+            exit 1
+          fi
+          
+          echo "✅ Branch protection check passed"

@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { env } from '@/config/env';
+import { getBaseUrl } from '@/lib/utils/url';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -262,7 +263,8 @@ export const getSecureResourceUrl = (
   
   try {
     const token = generateResourceToken(resourceType, resourceId);
-    const url = baseUrl || '';
+    // If baseUrl is not provided, get it from environment/request context
+    const url = baseUrl || getBaseUrl();
     const encodedToken = encodeURIComponent(token);
     
     // Map resource types to URL patterns

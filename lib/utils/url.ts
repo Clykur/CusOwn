@@ -90,6 +90,11 @@ export const getClientBaseUrl = (): string => {
     // Ignore errors in Node.js environment
   }
   
-  return 'http://localhost:3000';
+  // Fallback: check environment variables and production status
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) return appUrl;
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl}`;
+  return isProduction() ? 'https://cusown.clykur.com' : (env.app.baseUrl || 'http://localhost:3000');
 };
 
