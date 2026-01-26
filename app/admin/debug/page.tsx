@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 
@@ -61,9 +61,7 @@ export default function DebugAuthPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex">
-        <Suspense fallback={<div className="w-64" />}>
-          <AdminSidebar />
-        </Suspense>
+        <AdminSidebar />
         <div className="flex-1 lg:ml-64">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-2xl font-bold mb-4">Loading debug information...</h1>
@@ -76,9 +74,7 @@ export default function DebugAuthPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-white flex">
-        <Suspense fallback={<div className="w-64" />}>
-          <AdminSidebar />
-        </Suspense>
+        <AdminSidebar />
         <div className="flex-1 lg:ml-64">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
@@ -91,9 +87,7 @@ export default function DebugAuthPage() {
 
   return (
     <div className="min-h-screen bg-white flex">
-      <Suspense fallback={<div className="w-64" />}>
-        <AdminSidebar />
-      </Suspense>
+      <AdminSidebar />
       <div className="flex-1 lg:ml-64">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold mb-6">Authentication Debug Information</h1>

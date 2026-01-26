@@ -55,7 +55,7 @@ jobs:
         run: npm audit --audit-level=moderate || true
 
   deploy-staging:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
     needs: [lint-and-test]
     runs-on: ubuntu-latest
     steps:
@@ -69,10 +69,12 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod=false'
           scope: ${{ secrets.VERCEL_ORG_ID }}
+          github-comment: true
+          github-deployment: false
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
-    needs: [lint-and-test, security-audit]
+    needs: [lint-and-test, security-audit, deploy-staging]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,3 +87,5 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
           scope: ${{ secrets.VERCEL_ORG_ID }}
+          github-comment: true
+          github-deployment: false

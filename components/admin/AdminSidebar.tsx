@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signOut, getUserProfile } from '@/lib/supabase/auth';
@@ -80,7 +80,7 @@ const navigation: NavItem[] = [
   },
 ];
 
-export default function AdminSidebar() {
+function AdminSidebarContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -231,5 +231,13 @@ export default function AdminSidebar() {
         </div>
       </aside>
     </>
+  );
+}
+
+export default function AdminSidebar() {
+  return (
+    <Suspense fallback={<div className="w-64" />}>
+      <AdminSidebarContent />
+    </Suspense>
   );
 }
