@@ -1,7 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { env } from '@/config/env';
-import { supabaseAdmin } from './server';
+
+// Lazy import cookies to avoid bundling in client
+let cookiesModule: typeof import('next/headers') | null = null;
+const getCookies = async () => {
+  if (typeof window !== 'undefined') {
+    throw new Error('createServerClient can only be used server-side');
+  }
+  if (!cookiesModule) {
+    cookiesModule = await import('next/headers');
+  }
+  return cookiesModule.cookies();
+};
+
+// Lazy import supabaseAdmin to avoid bundling in client
+let supabaseAdminInstance: any = null;
+const getSupabaseAdmin = async () => {
+  if (typeof window !== 'undefined') {
+    throw new Error('Supabase admin can only be used server-side');
+  }
+  if (!supabaseAdminInstance) {
+    const serverModule = await import('./server');
+    supabaseAdminInstance = serverModule.supabaseAdmin;
+  }
+  return supabaseAdminInstance;
+};
 
 /**
  * Server-side Supabase client with user session
@@ -11,7 +34,7 @@ import { supabaseAdmin } from './server';
  * that are set by the client-side auth flow.
  */
 export const createServerClient = async () => {
-  const cookieStore = await cookies();
+  const cookieStore = await getCookies();
   
   // Supabase stores session in specific cookie names
   // Format: sb-<project-ref>-auth-token
@@ -54,6 +77,7 @@ export const getServerUser = async (request?: Request) => {
   
   try {
     // Check if Supabase is configured
+    const supabaseAdmin = await getSupabaseAdmin();
     if (!supabaseAdmin) {
       if (DEBUG) console.log('[getServerUser] Supabase admin client not configured');
       return null;
@@ -78,6 +102,7 @@ export const getServerUser = async (request?: Request) => {
             const token = authHeader.substring(7);
             if (DEBUG) console.log('[getServerUser] Bearer token found, validating...');
             
+            const supabaseAdmin = await getSupabaseAdmin();
             if (!supabaseAdmin) {
               if (DEBUG) console.log('[getServerUser] Supabase admin not configured');
               return null;
@@ -96,7 +121,7 @@ export const getServerUser = async (request?: Request) => {
 
         // Try to get user from cookies (set by auth callback)
         try {
-          const cookieStore = await cookies();
+          const cookieStore = await getCookies();
           const projectRef = env.supabase.url.split('//')[1]?.split('.')[0] || '';
           
           // Check for access token in cookies
@@ -114,6 +139,7 @@ export const getServerUser = async (request?: Request) => {
           
           if (accessToken) {
             if (DEBUG) console.log('[getServerUser] Validating Supabase cookie token...');
+            const supabaseAdmin = await getSupabaseAdmin();
             if (!supabaseAdmin) {
               if (DEBUG) console.log('[getServerUser] Supabase admin not configured');
               return null;
@@ -130,6 +156,7 @@ export const getServerUser = async (request?: Request) => {
           // Also check for the session cookies we set in callback
           if (sessionAccessToken) {
             if (DEBUG) console.log('[getServerUser] Validating session cookie token...');
+            const supabaseAdmin = await getSupabaseAdmin();
             if (!supabaseAdmin) {
               if (DEBUG) console.log('[getServerUser] Supabase admin not configured');
               return null;
@@ -174,6 +201,7 @@ export const getServerUser = async (request?: Request) => {
 export const getServerUserProfile = async (userId: string) => {
   const DEBUG = process.env.NODE_ENV === 'development';
   
+  const supabaseAdmin = await getSupabaseAdmin();
   if (!supabaseAdmin) {
     if (DEBUG) console.log('[getServerUserProfile] Supabase admin client not configured');
     return null;

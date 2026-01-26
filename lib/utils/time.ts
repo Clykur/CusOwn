@@ -1,5 +1,8 @@
 export const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
+  if (!time) return 0;
+  const parts = time.split(':');
+  const hours = Number(parts[0]) || 0;
+  const minutes = Number(parts[1]) || 0;
   return hours * 60 + minutes;
 };
 
@@ -28,21 +31,63 @@ export const generateTimeSlots = (
   slotDuration: number
 ): Array<{ start: string; end: string }> => {
   const slots: Array<{ start: string; end: string }> = [];
-  let currentTime = openingTime;
+  
+  if (!openingTime || !closingTime || !slotDuration || slotDuration <= 0) {
+    console.error('Invalid slot generation parameters:', { openingTime, closingTime, slotDuration });
+    return slots;
+  }
 
-  while (isTimeBefore(currentTime, closingTime)) {
+  // Normalize time format to HH:MM:SS
+  const normalizeTime = (time: string): string => {
+    if (!time) return time;
+    // Remove any existing seconds
+    const parts = time.split(':');
+    if (parts.length === 3) {
+      return time; // Already has seconds
+    } else if (parts.length === 2) {
+      return time + ':00'; // Add seconds
+    } else {
+      console.error('Invalid time format:', time);
+      return time;
+    }
+  };
+
+  const normalizedOpening = normalizeTime(openingTime);
+  const normalizedClosing = normalizeTime(closingTime);
+
+  let currentTime = normalizedOpening;
+  const openingMinutes = timeToMinutes(normalizedOpening);
+  const closingMinutes = timeToMinutes(normalizedClosing);
+
+  if (openingMinutes >= closingMinutes) {
+    console.error('Invalid time range: opening time must be before closing time', { openingTime, closingTime });
+    return slots;
+  }
+
+  while (true) {
     const endTime = addMinutes(currentTime, slotDuration);
+    const endTimeMinutes = timeToMinutes(endTime);
 
-    if (isTimeAfter(endTime, closingTime) || endTime === closingTime) {
+    // Stop if end time exceeds closing time (not equal, to allow last slot ending at closing time)
+    if (endTimeMinutes > closingMinutes) {
       break;
     }
 
-    slots.push({
-      start: currentTime,
-      end: endTime,
-    });
+    // Only add slot if it doesn't exceed closing time
+    if (endTimeMinutes <= closingMinutes) {
+      slots.push({
+        start: currentTime,
+        end: endTime,
+      });
+    }
 
+    // Move to next slot start time
     currentTime = endTime;
+
+    // Safety check to prevent infinite loop
+    if (timeToMinutes(currentTime) >= closingMinutes) {
+      break;
+    }
   }
 
   return slots;

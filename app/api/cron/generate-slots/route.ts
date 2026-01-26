@@ -13,11 +13,11 @@ import { ERROR_MESSAGES, DAYS_TO_GENERATE_SLOTS } from '@/config/constants';
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || '';
-
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return errorResponse('Unauthorized', 401);
+    // SECURITY: Validate cron secret
+    const { validateCronSecret } = await import('@/lib/security/cron-auth');
+    const authError = validateCronSecret(request);
+    if (authError) {
+      return authError;
     }
 
     if (!supabaseAdmin) {

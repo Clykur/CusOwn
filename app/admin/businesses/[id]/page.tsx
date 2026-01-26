@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabaseAuth, isAdmin } from '@/lib/supabase/auth';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import { ROUTES, getAdminDashboardUrl } from '@/lib/utils/navigation';
 
 export default function EditBusinessPage() {
   const router = useRouter();
@@ -40,7 +42,7 @@ export default function EditBusinessPage() {
 
     const { data: { session } } = await supabaseAuth!.auth.getSession();
     if (!session?.user) {
-      router.push('/auth/login?redirect_to=/admin/dashboard');
+      router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD));
       return;
     }
 
@@ -139,7 +141,7 @@ export default function EditBusinessPage() {
       }
 
       alert('Business updated successfully! Notification sent to owner.');
-      router.push('/admin/dashboard');
+        router.push(ROUTES.ADMIN_DASHBOARD);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update business');
     } finally {
@@ -175,7 +177,7 @@ export default function EditBusinessPage() {
       }
 
       alert('Business deleted successfully!');
-      router.push('/admin/dashboard');
+      router.push(ROUTES.ADMIN_DASHBOARD);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete business');
     }
@@ -210,18 +212,20 @@ export default function EditBusinessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <button
-            onClick={() => router.push('/admin/dashboard')}
-            className="text-gray-600 hover:text-gray-900 mb-4"
-          >
-            ← Back to Dashboard
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Business</h1>
-          <p className="text-gray-600 mt-2">{business?.salon_name}</p>
-        </div>
+    <div className="min-h-screen bg-white flex">
+      <AdminSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="mb-8">
+            <button
+              onClick={() => router.push(getAdminDashboardUrl('businesses'))}
+              className="text-gray-600 hover:text-gray-900 mb-4"
+            >
+              ← Back to Dashboard
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900">Edit Business</h1>
+            <p className="text-gray-600 mt-2">{business?.salon_name}</p>
+          </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -386,6 +390,7 @@ export default function EditBusinessPage() {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

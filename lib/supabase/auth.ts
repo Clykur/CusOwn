@@ -80,6 +80,12 @@ export const getUserProfile = async (userId: string) => {
   }
 };
 
+import { getClientBaseUrl } from '@/lib/utils/url';
+
+const getOAuthBaseUrl = (): string => {
+  return getClientBaseUrl();
+};
+
 /**
  * Sign in with Google
  */
@@ -88,10 +94,13 @@ export const signInWithGoogle = async (redirectTo?: string) => {
     return { data: null, error: { message: 'Supabase not configured' } };
   }
   try {
+    // Use the provided redirectTo or construct from base URL
+    const baseUrl = redirectTo || `${getOAuthBaseUrl()}/auth/callback`;
+    
     const { data, error } = await supabaseAuth.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectTo || `${window.location.origin}/auth/callback`,
+        redirectTo: baseUrl,
       },
     });
     

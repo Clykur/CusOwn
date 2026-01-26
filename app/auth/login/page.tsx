@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithGoogle } from '@/lib/supabase/auth';
+import { ROUTES } from '@/lib/utils/navigation';
 
 function LoginContent() {
   const router = useRouter();
@@ -12,6 +13,37 @@ function LoginContent() {
 
   const redirectTo = searchParams.get('redirect_to') || '/';
   const role = searchParams.get('role') as 'owner' | 'customer' | null;
+  
+  const getRoleContext = () => {
+    if (role === 'owner') {
+      return {
+        title: 'Sign In to Create Your Business',
+        description: 'Create your booking page and start accepting appointments from customers.',
+        icon: (
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        ),
+      };
+    } else if (role === 'customer') {
+      return {
+        title: 'Sign In to Book Appointments',
+        description: 'Access your bookings and book new appointments easily.',
+        icon: (
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        ),
+      };
+    }
+    return {
+      title: 'Sign In to Continue',
+      description: 'Sign in with Google to access your account.',
+      icon: null,
+    };
+  };
+
+  const context = getRoleContext();
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -23,7 +55,8 @@ function LoginContent() {
       if (redirectTo) callbackParams.set('redirect_to', redirectTo);
       if (role) callbackParams.set('role', role);
       
-      const callbackUrl = `${window.location.origin}/auth/callback?${callbackParams.toString()}`;
+      const baseUrl = window.location.origin;
+      const callbackUrl = `${baseUrl}/auth/callback?${callbackParams.toString()}`;
       const { error } = await signInWithGoogle(callbackUrl);
 
       if (error) {
@@ -41,8 +74,15 @@ function LoginContent() {
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
-          <p className="text-gray-600">Sign in with Google to continue</p>
+          {context.icon && (
+            <div className="mb-4 flex justify-center">
+              <div className="bg-gray-100 rounded-full p-4">
+                {context.icon}
+              </div>
+            </div>
+          )}
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{context.title}</h1>
+          <p className="text-gray-600">{context.description}</p>
         </div>
 
         {error && (
@@ -88,7 +128,7 @@ function LoginContent() {
         </p>
 
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push(ROUTES.HOME)}
           className="mt-4 w-full text-gray-600 hover:text-gray-900 text-sm"
         >
           ← Back to Home

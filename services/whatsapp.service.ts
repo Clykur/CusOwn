@@ -4,6 +4,15 @@ import { getBookingUrl, getBaseUrl } from '@/lib/utils/url';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { NextRequest } from 'next/server';
 
+// Import security functions (server-side only)
+const getSecureResourceUrl = (resourceType: 'accept' | 'reject', resourceId: string, baseUrl?: string): string => {
+  if (typeof window !== 'undefined') {
+    throw new Error('getSecureResourceUrl can only be used server-side');
+  }
+  const { getSecureResourceUrl: getSecureUrl } = require('@/lib/utils/security');
+  return getSecureUrl(resourceType, resourceId, baseUrl);
+};
+
 export class WhatsAppService {
   getWhatsAppUrl(phoneNumber: string, message: string): string {
     const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
@@ -31,8 +40,9 @@ export class WhatsAppService {
     );
 
     const baseUrl = getBaseUrl(request);
-    const acceptUrl = `${baseUrl}${ROUTES.ACCEPT}/${booking.id}`;
-    const rejectUrl = `${baseUrl}${ROUTES.REJECT}/${booking.id}`;
+    // Generate secure URLs with tokens for accept/reject actions
+    const acceptUrl = getSecureResourceUrl('accept', booking.id, baseUrl);
+    const rejectUrl = getSecureResourceUrl('reject', booking.id, baseUrl);
 
     const messageWithLinks = `${message}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n*ACTION REQUIRED*\n\n` +
       `🟢 *ACCEPT* - Confirm this booking:\n${acceptUrl}\n\n` +

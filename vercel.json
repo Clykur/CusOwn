@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/expire-bookings",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-reservations",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/health-check",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

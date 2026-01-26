@@ -9,13 +9,21 @@ export type AuditActionType =
   | 'user_created'
   | 'user_updated'
   | 'user_deleted'
+  | 'booking_created'
   | 'booking_updated'
+  | 'booking_confirmed'
+  | 'booking_rejected'
   | 'booking_cancelled'
+  | 'booking_rescheduled'
+  | 'booking_no_show'
   | 'notification_sent'
   | 'data_corrected'
-  | 'system_config_changed';
+  | 'system_config_changed'
+  | 'slot_reserved'
+  | 'slot_released'
+  | 'slot_booked';
 
-export type AuditEntityType = 'business' | 'user' | 'booking' | 'system';
+export type AuditEntityType = 'business' | 'user' | 'booking' | 'system' | 'slot';
 
 export interface AuditLog {
   id: string;
@@ -33,7 +41,7 @@ export interface AuditLog {
 
 export class AuditService {
   async createAuditLog(
-    adminUserId: string,
+    userId: string | null, // Can be null for system actions
     actionType: AuditActionType,
     entityType: AuditEntityType,
     data: {
@@ -43,37 +51,47 @@ export class AuditService {
       description?: string;
       request?: NextRequest;
     }
-  ): Promise<AuditLog> {
+  ): Promise<AuditLog | null> {
     if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured');
+      console.error('[AUDIT] Supabase admin client not configured');
+      return null;
     }
 
-    const ipAddress = data.request?.headers.get('x-forwarded-for') || 
+    const ipAddress = data.request?.ip || 
+                      data.request?.headers.get('x-forwarded-for') || 
                       data.request?.headers.get('x-real-ip') || 
                       null;
     const userAgent = data.request?.headers.get('user-agent') || null;
 
-    const { data: auditLog, error } = await supabaseAdmin
-      .from('audit_logs')
-      .insert({
-        admin_user_id: adminUserId,
-        action_type: actionType,
-        entity_type: entityType,
-        entity_id: data.entityId || null,
-        old_data: data.oldData || null,
-        new_data: data.newData || null,
-        description: data.description || null,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-      })
-      .select()
-      .single();
+    try {
+      // Use NULL for system actions instead of fake UUID
+      // This requires admin_user_id to be nullable (see migration_fix_audit_logs_foreign_key.sql)
+      const { data: auditLog, error } = await supabaseAdmin
+        .from('audit_logs')
+        .insert({
+          admin_user_id: userId || null, // NULL for system actions
+          action_type: actionType,
+          entity_type: entityType,
+          entity_id: data.entityId || null,
+          old_data: data.oldData || null,
+          new_data: data.newData || null,
+          description: data.description || null,
+          ip_address: ipAddress,
+          user_agent: userAgent,
+        })
+        .select()
+        .single();
 
-    if (error) {
-      throw new Error(`Failed to create audit log: ${error.message}`);
+      if (error) {
+        console.error('[AUDIT] Failed to create audit log:', error);
+        return null;
+      }
+
+      return auditLog;
+    } catch (error) {
+      console.error('[AUDIT] Exception creating audit log:', error);
+      return null;
     }
-
-    return auditLog;
   }
 
   async getAuditLogs(filters?: {

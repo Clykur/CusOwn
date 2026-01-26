@@ -22,6 +22,11 @@ export const createSalonSchema = z.object({
   slot_duration: slotDurationSchema,
   address: z.string().min(5, 'Address must be at least 5 characters').max(500, 'Address must be at most 500 characters'),
   location: z.string().min(2, 'Location must be at least 2 characters').max(100, 'Location must be at most 100 characters'),
+  city: z.string().max(100, 'City must be at most 100 characters').optional(),
+  area: z.string().max(100, 'Area must be at most 100 characters').optional(),
+  pincode: z.string().max(10, 'Pincode must be at most 10 characters').optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 export type CreateSalonInput = z.infer<typeof createSalonSchema>;
@@ -37,9 +42,15 @@ export type Salon = {
   booking_link: string;
   address?: string;
   location?: string;
+  city?: string | null;
+  area?: string | null;
+  pincode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   qr_code?: string | null;
   category?: string;
   owner_user_id?: string | null;
+  suspended?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -64,6 +75,7 @@ export const createBookingSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
+  service_ids: z.array(z.string().uuid()).optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
@@ -77,6 +89,19 @@ export type Booking = {
   booking_id: string;
   status: typeof BOOKING_STATUS[keyof typeof BOOKING_STATUS];
   customer_user_id?: string | null;
+  total_duration_minutes?: number | null;
+  total_price_cents?: number | null;
+  services_count?: number | null;
+  cancelled_by?: 'customer' | 'owner' | 'system' | null;
+  cancellation_reason?: string | null;
+  cancelled_at?: string | null;
+  rescheduled_from_booking_id?: string | null;
+  rescheduled_at?: string | null;
+  rescheduled_by?: 'customer' | 'owner' | null;
+  reschedule_reason?: string | null;
+  no_show?: boolean;
+  no_show_marked_at?: string | null;
+  no_show_marked_by?: 'owner' | 'system' | null;
   created_at: string;
   updated_at: string;
 };

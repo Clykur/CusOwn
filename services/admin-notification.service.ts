@@ -3,6 +3,7 @@ import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { getBookingUrl, getBaseUrl } from '@/lib/utils/url';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { NextRequest } from 'next/server';
+import { ROUTES } from '@/lib/utils/navigation';
 
 export class AdminNotificationService {
   async notifyBusinessOwner(
@@ -75,7 +76,7 @@ export class AdminNotificationService {
     request?: NextRequest
   ): string {
     const baseUrl = getBaseUrl(request);
-    const bookingUrl = `${baseUrl}/categories/salon`;
+    const bookingUrl = `${baseUrl}${ROUTES.SALON_LIST}`;
 
     let statusMessage = '';
     if (status === 'confirmed') {

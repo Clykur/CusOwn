@@ -3,6 +3,7 @@ import { generateSlug, generateUniqueId, formatPhoneNumber } from '@/lib/utils/s
 import { CreateSalonInput, Salon } from '@/types';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { slotService } from './slot.service';
+import { cache } from 'react';
 
 export class SalonService {
   async createSalon(data: CreateSalonInput, ownerUserId?: string): Promise<Salon> {
@@ -47,7 +48,12 @@ export class SalonService {
         booking_link: bookingLink,
         address: data.address,
         location: data.location || null,
-        owner_user_id: ownerUserId || null, // Link to authenticated user if available
+        city: data.city || null,
+        area: data.area || null,
+        pincode: data.pincode || null,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        owner_user_id: ownerUserId || null,
       })
       .select()
       .single();
@@ -60,25 +66,35 @@ export class SalonService {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
+    // Generate slots immediately when business is created
+    // This ensures slots are available right away
+    try {
+      await slotService.generateInitialSlots(salon.id, {
+        opening_time: salon.opening_time,
+        closing_time: salon.closing_time,
+        slot_duration: salon.slot_duration,
+      });
+      console.log(`✅ Slots generated for new business: ${salon.salon_name} (${salon.id.substring(0, 8)}...)`);
+    } catch (slotError) {
+      // Log error but don't fail business creation
+      // Slots can be generated lazily later via getAvailableSlots
+      console.error(`⚠️  Failed to generate initial slots for business ${salon.id}:`, slotError);
+      console.error('Slots will be generated lazily when requested');
+    }
+
     // QR code will be generated asynchronously via API route
     // This prevents blocking the salon creation if QR generation is slow
 
-    await slotService.generateInitialSlots(salon.id, {
-      opening_time: salon.opening_time,
-      closing_time: salon.closing_time,
-      slot_duration: salon.slot_duration,
-    });
-
-    // Return salon (QR code will be added by API route)
     return salon;
   }
 
-  async getSalonByBookingLink(bookingLink: string): Promise<Salon | null> {
+  getSalonByBookingLink = cache(async (bookingLink: string): Promise<Salon | null> => {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('businesses')
-      .select('*')
+      .select('id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at')
       .eq('booking_link', bookingLink)
+      .eq('suspended', false)
       .single();
 
     if (error) {
@@ -89,15 +105,20 @@ export class SalonService {
     }
 
     return data;
-  }
+  });
 
-  async getSalonById(salonId: string): Promise<Salon | null> {
+  getSalonById = cache(async (salonId: string, includeSuspended = false): Promise<Salon | null> => {
     const supabaseAdmin = requireSupabaseAdmin();
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('businesses')
-      .select('*')
-      .eq('id', salonId)
-      .single();
+      .select('id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at')
+      .eq('id', salonId);
+    
+    if (!includeSuspended) {
+      query = query.eq('suspended', false);
+    }
+    
+    const { data, error } = await query.single();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -107,7 +128,7 @@ export class SalonService {
     }
 
     return data;
-  }
+  });
 }
 
 export const salonService = new SalonService();

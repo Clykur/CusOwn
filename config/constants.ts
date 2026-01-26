@@ -15,10 +15,12 @@ export const SLOT_STATUS = {
 
 export const DEFAULT_SLOT_DURATION = 30;
 
-export const DAYS_TO_GENERATE_SLOTS = 2;
+// Generate slots for 7 days initially (matches lazy generation window)
+export const DAYS_TO_GENERATE_SLOTS = 7;
 
-// Slot reservation timeout in minutes (5-10 minutes recommended)
-export const SLOT_RESERVATION_TIMEOUT_MINUTES = 10;
+import { env } from './env';
+
+export const SLOT_RESERVATION_TIMEOUT_MINUTES = env.payment.slotExpiryMinutes;
 
 // Number of days ahead to generate slots when lazy loading
 export const SLOT_GENERATION_WINDOW_DAYS = 7;
@@ -116,6 +118,12 @@ export const ERROR_MESSAGES = {
   NETWORK_ERROR: 'Unable to connect to the server. Please check your internet connection and try again.',
   UNEXPECTED_ERROR: 'An unexpected error occurred. Please try again.',
   LOADING_ERROR: 'Failed to load data. Please refresh the page and try again.',
+  BOOKING_CANNOT_BE_CANCELLED: 'This booking cannot be cancelled',
+  BOOKING_ALREADY_CANCELLED: 'This booking is already cancelled',
+  CANCELLATION_TOO_LATE: 'Cancellation must be at least 2 hours before appointment',
+  DOWNTIME_DATE_INVALID: 'Invalid date range for closure',
+  REMINDER_NOT_FOUND: 'Reminder not found',
+  REMINDER_ALREADY_SENT: 'Reminder already sent',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -126,7 +134,12 @@ export const SUCCESS_MESSAGES = {
   BOOKING_CREATED: 'Booking created successfully',
   BOOKING_CONFIRMED: 'Booking confirmed successfully',
   BOOKING_REJECTED: 'Booking rejected successfully',
+  BOOKING_CANCELLED: 'Booking cancelled successfully',
+  REMINDER_SENT: 'Reminder sent successfully',
 } as const;
 
-export const BOOKING_EXPIRY_HOURS = 24;
+export const BOOKING_EXPIRY_HOURS = parseInt(process.env.BOOKING_EXPIRY_HOURS || '24', 10);
+export const REMINDER_24H_BEFORE_HOURS = parseInt(process.env.REMINDER_24H_BEFORE_HOURS || '24', 10);
+export const REMINDER_2H_BEFORE_HOURS = parseInt(process.env.REMINDER_2H_BEFORE_HOURS || '2', 10);
+export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(process.env.CANCELLATION_MIN_HOURS_BEFORE || '2', 10);
 

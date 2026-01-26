@@ -1,25 +1,27 @@
 import { MetadataRoute } from 'next';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { getBaseUrl } from '@/lib/utils/url';
+import { ROUTES } from '@/lib/utils/navigation';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: baseUrl,
+      url: `${baseUrl}${ROUTES.HOME}`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/categories`,
+      url: `${baseUrl}${ROUTES.CATEGORIES}`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/categories/salon`,
+      url: `${baseUrl}${ROUTES.SALON_LIST}`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
@@ -29,31 +31,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic salon pages
   try {
     if (!supabaseAdmin) {
+      console.warn('Supabase admin not configured, returning static sitemap only');
       return staticPages;
     }
     
-    const { data: salons } = await supabaseAdmin
+    const { data: salons, error } = await supabaseAdmin
       .from('businesses')
       .select('id, booking_link, updated_at')
       .limit(1000); // Limit to prevent too large sitemap
+    
+    if (error) {
+      console.error('Error fetching businesses for sitemap:', error);
+      return staticPages;
+    }
 
-    const salonPages: MetadataRoute.Sitemap =
+    // Use booking links for sitemap (public, SEO-friendly) instead of secure token URLs
+    // Secure token URLs are for internal navigation only, not for public indexing
+    const bookingLinkPages: MetadataRoute.Sitemap =
       salons?.map((salon) => ({
-        url: `${baseUrl}/salon/${salon.id}`,
+        url: `${baseUrl}${ROUTES.BOOKING(salon.booking_link)}`,
         lastModified: salon.updated_at ? new Date(salon.updated_at) : new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       })) || [];
 
-    const bookingLinkPages: MetadataRoute.Sitemap =
-      salons?.map((salon) => ({
-        url: `${baseUrl}/b/${salon.booking_link}`,
-        lastModified: salon.updated_at ? new Date(salon.updated_at) : new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-      })) || [];
-
-    return [...staticPages, ...salonPages, ...bookingLinkPages];
+    return [...staticPages, ...bookingLinkPages];
   } catch (error) {
     // If database query fails, return only static pages
     console.error('Error generating sitemap:', error);

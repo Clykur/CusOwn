@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { API_ROUTES } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
+import { ROUTES } from '@/lib/utils/navigation';
+import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 
 export default function AcceptPage() {
   const params = useParams();
@@ -17,11 +19,26 @@ export default function AcceptPage() {
   const [success, setSuccess] = useState<{ whatsappUrl?: string } | false>(false);
 
   useEffect(() => {
+    // Pre-fetch CSRF token
+    getCSRFToken().catch(console.error);
+  }, []);
+
+  useEffect(() => {
     if (!id) return;
 
     const fetchBooking = async () => {
       try {
-        const response = await fetch(`${API_ROUTES.BOOKINGS}/${id}`);
+        // Extract token from URL if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        // Build URL with token if available
+        let url = `${API_ROUTES.BOOKINGS}/${id}`;
+        if (token) {
+          url += `?token=${encodeURIComponent(token)}`;
+        }
+
+        const response = await fetch(url);
         const result = await response.json();
 
         if (!response.ok) {
@@ -48,15 +65,34 @@ export default function AcceptPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_ROUTES.BOOKINGS}/${id}/accept`, {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+
+      // Include token from URL if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      
+      let url = `${API_ROUTES.BOOKINGS}/${id}/accept`;
+      if (token) {
+        url += `?token=${encodeURIComponent(token)}`;
+      }
+
+      const response = await fetch(url, {
         method: 'POST',
+        headers,
+        credentials: 'include',
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to confirm booking');
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorData.error || `Failed to confirm booking (${response.status})`);
       }
+
+      const result = await response.json();
 
       if (result.success && result.data?.whatsapp_url) {
         setSuccess({
@@ -65,9 +101,13 @@ export default function AcceptPage() {
         setTimeout(() => {
           window.open(result.data.whatsapp_url, '_blank');
         }, 300);
+      } else {
+        throw new Error(result.error || 'Failed to confirm booking');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      clearCSRFToken();
     } finally {
       setProcessing(false);
     }
@@ -119,7 +159,7 @@ export default function AcceptPage() {
             </a>
           )}
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push(ROUTES.HOME)}
             className="w-full bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors"
           >
             Done
@@ -208,7 +248,7 @@ export default function AcceptPage() {
             {processing ? 'Accepting...' : 'Accept'}
           </button>
           <button
-            onClick={() => router.push(`/reject/${id}`)}
+            onClick={() => router.push(ROUTES.REJECT(id))}
             disabled={processing || booking.status !== 'pending'}
             className="flex-1 bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >

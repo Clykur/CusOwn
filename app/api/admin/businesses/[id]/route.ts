@@ -59,6 +59,27 @@ export async function PATCH(
     const supabase = requireSupabaseAdmin();
     const body = await request.json();
 
+    // SECURITY: Filter input to prevent mass assignment
+    const { filterBusinessUpdateFields, validateStringLength } = await import('@/lib/security/input-filter');
+    const filteredBody = filterBusinessUpdateFields(body);
+
+    // SECURITY: Validate string lengths
+    if (filteredBody.salon_name && !validateStringLength(filteredBody.salon_name, 200)) {
+      return errorResponse('Salon name is too long', 400);
+    }
+    if (filteredBody.owner_name && !validateStringLength(filteredBody.owner_name, 200)) {
+      return errorResponse('Owner name is too long', 400);
+    }
+    if (filteredBody.address && !validateStringLength(filteredBody.address, 500)) {
+      return errorResponse('Address is too long', 400);
+    }
+    if (filteredBody.location && !validateStringLength(filteredBody.location, 200)) {
+      return errorResponse('Location is too long', 400);
+    }
+    if (filteredBody.suspended_reason && !validateStringLength(filteredBody.suspended_reason, 500)) {
+      return errorResponse('Suspension reason is too long', 400);
+    }
+
     // Get old data for audit
     const { data: oldBusiness } = await supabase
       .from('businesses')
@@ -70,20 +91,26 @@ export async function PATCH(
       return errorResponse('Business not found', 404);
     }
 
-    // Prepare update data
+    // Prepare update data from filtered input only
     const updateData: any = {};
-    if (body.salon_name !== undefined) updateData.salon_name = body.salon_name;
-    if (body.owner_name !== undefined) updateData.owner_name = body.owner_name;
-    if (body.whatsapp_number !== undefined) updateData.whatsapp_number = formatPhoneNumber(body.whatsapp_number);
-    if (body.opening_time !== undefined) updateData.opening_time = body.opening_time;
-    if (body.closing_time !== undefined) updateData.closing_time = body.closing_time;
-    if (body.slot_duration !== undefined) updateData.slot_duration = body.slot_duration;
-    if (body.address !== undefined) updateData.address = body.address;
-    if (body.location !== undefined) updateData.location = body.location;
-    if (body.suspended !== undefined) {
-      updateData.suspended = body.suspended;
-      updateData.suspended_at = body.suspended ? new Date().toISOString() : null;
-      updateData.suspended_reason = body.suspended_reason || null;
+    if (filteredBody.salon_name !== undefined) updateData.salon_name = filteredBody.salon_name;
+    if (filteredBody.owner_name !== undefined) updateData.owner_name = filteredBody.owner_name;
+    if (filteredBody.whatsapp_number !== undefined) updateData.whatsapp_number = formatPhoneNumber(filteredBody.whatsapp_number);
+    if (filteredBody.opening_time !== undefined) updateData.opening_time = filteredBody.opening_time;
+    if (filteredBody.closing_time !== undefined) updateData.closing_time = filteredBody.closing_time;
+    if (filteredBody.slot_duration !== undefined) {
+      const duration = Number(filteredBody.slot_duration);
+      if (isNaN(duration) || duration <= 0 || duration > 1440) {
+        return errorResponse('Invalid slot duration', 400);
+      }
+      updateData.slot_duration = duration;
+    }
+    if (filteredBody.address !== undefined) updateData.address = filteredBody.address;
+    if (filteredBody.location !== undefined) updateData.location = filteredBody.location;
+    if (filteredBody.suspended !== undefined) {
+      updateData.suspended = Boolean(filteredBody.suspended);
+      updateData.suspended_at = filteredBody.suspended ? new Date().toISOString() : null;
+      updateData.suspended_reason = filteredBody.suspended_reason || null;
     }
 
     const { data: updatedBusiness, error } = await supabase

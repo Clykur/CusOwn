@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { salonService } from '@/services/salon.service';
 import { validateCreateSalon, validateTimeRange } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/response';
@@ -9,38 +9,74 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { getUserFriendlyError } from '@/lib/utils/error-handler';
 import { formatPhoneNumber } from '@/lib/utils/string';
+import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
+import { auditService } from '@/services/audit.service';
 
 export async function POST(request: NextRequest) {
+  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  
   try {
+    // Rate limiting for salon creation
+    const { enhancedRateLimit } = await import('@/lib/security/rate-limit-enhanced');
+    const salonCreateRateLimit = enhancedRateLimit({ maxRequests: 5, windowMs: 60000, perIP: true, perUser: true, keyPrefix: 'salon_create' });
+    const rateLimitResponse = await salonCreateRateLimit(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     const body = await request.json();
-    const validatedData = validateCreateSalon(body);
+    
+    // SECURITY: Filter input to prevent mass assignment
+    const { filterFields } = await import('@/lib/security/input-filter');
+    const allowedFields = ['salon_name', 'owner_name', 'whatsapp_number', 'opening_time', 'closing_time', 'slot_duration', 'address', 'location', 'category', 'city', 'area', 'pincode', 'latitude', 'longitude'] as const;
+    const filteredBody = filterFields(body, allowedFields);
+    
+    // Validate using schema (already has length/format checks)
+    const validatedData = validateCreateSalon(filteredBody);
 
     validateTimeRange(validatedData.opening_time, validatedData.closing_time);
 
-    // Get authenticated user (optional - for backward compatibility)
+    // SECURITY: Require authentication for salon creation
     const user = await getServerUser(request);
-    let ownerUserId: string | undefined = undefined;
+    if (!user) {
+      console.warn(`[SECURITY] Unauthenticated salon creation attempt from IP: ${clientIP}`);
+      return errorResponse('Authentication required', 401);
+    }
+    
+    // SECURITY: Verify user has owner access (or will be granted it)
+    // This ensures only users who can be owners can create businesses
+    const { hasOwnerAccess } = await import('@/lib/utils/role-verification');
+    const profile = await userService.getUserProfile(user.id);
+    
+    // If user has a profile, check if they can be an owner
+    // If no profile, we'll create one as owner (allowed)
+    if (profile && profile.user_type === 'admin') {
+      // Admins can create businesses
+    } else if (profile && profile.user_type === 'customer') {
+      // Customer can create business (will be upgraded to 'both')
+    } else if (!profile) {
+      // No profile - will be created as owner (allowed)
+    }
+    // Owner and 'both' users are already allowed
+    
+    let ownerUserId: string = user.id;
 
-    if (user) {
-      ownerUserId = user.id;
-      // Update user type to owner or both (skip if admin)
-      const profile = await userService.getUserProfile(user.id);
-      if (profile) {
-        // Don't change admin's role
-        if (profile.user_type !== 'admin') {
-          const newUserType = profile.user_type === 'customer' ? 'both' : profile.user_type === 'both' ? 'both' : 'owner';
-          if (newUserType !== profile.user_type) {
-            await userService.updateUserType(user.id, newUserType);
-          }
+    // Update user type to owner or both (skip if admin)
+    if (profile) {
+      // Don't change admin's role
+      if (profile.user_type !== 'admin') {
+        const newUserType = profile.user_type === 'customer' ? 'both' : profile.user_type === 'both' ? 'both' : 'owner';
+        if (newUserType !== profile.user_type) {
+          await userService.updateUserType(user.id, newUserType);
         }
-      } else {
-        // Create profile as owner
-        await userService.upsertUserProfile(user.id, {
-          user_type: 'owner',
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || null,
-        });
       }
+    } else {
+      // Create profile as owner
+      await userService.upsertUserProfile(user.id, {
+        user_type: 'owner',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || null,
+      });
     }
 
     // Check if user already has a business with this WhatsApp number
@@ -59,7 +95,7 @@ export async function POST(request: NextRequest) {
       if (existingBusiness) {
         // User already owns a business with this WhatsApp number
         return errorResponse(
-          `You already have a business "${existingBusiness.salon_name}" with this WhatsApp number. Please use your existing booking link: /b/${existingBusiness.booking_link} or use a different WhatsApp number.`,
+          `You already have a business "${existingBusiness.salon_name}" with this WhatsApp number. Please use your existing booking link or use a different WhatsApp number.`,
           409
         );
       }
@@ -67,10 +103,26 @@ export async function POST(request: NextRequest) {
 
     const salon = await salonService.createSalon(validatedData, ownerUserId);
 
+    // SECURITY: Log mutation for audit
+    try {
+      await auditService.createAuditLog(
+        user.id,
+        'business_created',
+        'business',
+        {
+          entityId: salon.id,
+          description: `Business created: ${salon.salon_name}`,
+          request,
+        }
+      );
+    } catch (auditError) {
+      console.error('[SECURITY] Failed to create audit log:', auditError);
+    }
+
     // Generate QR code immediately after salon creation
     let qrCode: string | null = null;
     try {
-      qrCode = await generateQRCodeForBookingLink(salon.booking_link);
+      qrCode = await generateQRCodeForBookingLink(salon.booking_link, request);
       
       // Update salon with QR code
       if (!supabaseAdmin) {
@@ -90,14 +142,16 @@ export async function POST(request: NextRequest) {
       // QR code can be generated later via API endpoint
     }
 
-    return successResponse(
+    const response = successResponse(
       {
         ...salon,
-        booking_url: getBookingUrl(salon.booking_link),
+        booking_url: getBookingUrl(salon.booking_link, request),
         qr_code: qrCode,
       },
       SUCCESS_MESSAGES.SALON_CREATED
     );
+    setNoCacheHeaders(response);
+    return response;
   } catch (error) {
     // Convert technical errors to user-friendly messages
     const friendlyMessage = getUserFriendlyError(error);

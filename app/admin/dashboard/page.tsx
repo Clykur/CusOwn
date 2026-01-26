@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseAuth, getUserProfile, isAdmin } from '@/lib/supabase/auth';
+import SuccessMetricsDashboard from '@/components/admin/SuccessMetricsDashboard';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import { ROUTES } from '@/lib/utils/navigation';
+import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -56,14 +60,24 @@ interface BookingTrend {
   rejected: number;
 }
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [trends, setTrends] = useState<BookingTrend[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'bookings' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'bookings' | 'audit' | 'success-metrics'>('overview');
+
+  useEffect(() => {
+    const tab = searchParams?.get('tab') as typeof activeTab;
+    if (tab && ['overview', 'businesses', 'users', 'bookings', 'audit', 'success-metrics'].includes(tab)) {
+      setActiveTab(tab);
+    } else if (!tab) {
+      setActiveTab('overview');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -81,7 +95,7 @@ export default function AdminDashboardPage() {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       
       if (!session?.user) {
-        router.push('/auth/login?redirect_to=/admin/dashboard');
+        router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD));
         return;
       }
 
@@ -212,7 +226,7 @@ export default function AdminDashboardPage() {
 
           <div className="flex gap-3">
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push(ROUTES.HOME)}
               className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
             >
               Go to Home
@@ -230,12 +244,18 @@ export default function AdminDashboardPage() {
                       alert('Session expired. Please log in again.');
                       return;
                     }
+                    const csrfToken = await getCSRFToken();
+                    const headers: Record<string, string> = {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}`,
+                    };
+                    if (csrfToken) {
+                      headers['x-csrf-token'] = csrfToken;
+                    }
                     const res = await fetch('/api/admin/check-status', {
                       method: 'POST',
-                      headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`,
-                      },
+                      headers,
+                      credentials: 'include',
                       body: JSON.stringify({ email: user.email }),
                     });
                     const data = await res.json();
@@ -344,30 +364,14 @@ export default function AdminDashboardPage() {
   } : null;
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Platform-wide metrics and management</p>
-        </div>
-
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="flex space-x-8">
-            {(['overview', 'businesses', 'users', 'bookings', 'audit'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </nav>
-        </div>
+    <div className="min-h-screen bg-white flex">
+      <AdminSidebar />
+      <div className="flex-1 lg:ml-64">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <p className="text-gray-600">Platform-wide metrics and management</p>
+          </div>
 
         {activeTab === 'overview' && metrics && (
           <div className="space-y-6">
@@ -529,12 +533,33 @@ export default function AdminDashboardPage() {
         {activeTab === 'audit' && (
           <AuditLogsTab />
         )}
+
+        {activeTab === 'success-metrics' && (
+          <SuccessMetricsDashboard />
+        )}
+        </div>
       </div>
     </div>
   );
 }
 
+export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
+  );
+}
+
 function BusinessesTab() {
+  const router = useRouter();
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -632,7 +657,7 @@ function BusinessesTab() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
-                    onClick={() => window.location.href = `/admin/businesses/${business.id}`}
+                    onClick={() => router.push(ROUTES.ADMIN_BUSINESS(business.id))}
                     className="text-black hover:text-gray-700 mr-4"
                   >
                     Edit
@@ -744,6 +769,7 @@ function UsersTab() {
 }
 
 function BookingsTab() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -843,7 +869,7 @@ function BookingsTab() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
-                    onClick={() => window.location.href = `/admin/bookings/${booking.id}`}
+                    onClick={() => router.push(ROUTES.ADMIN_BOOKING(booking.id))}
                     className="text-black hover:text-gray-700"
                   >
                     Manage

@@ -10,6 +10,51 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES, BOOKING_STATUS } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const user = await getServerUser(request);
+    if (!user) {
+      return errorResponse('Authentication required', 401);
+    }
+
+    const isAdmin = await checkIsAdminServer(user.id);
+    if (!isAdmin) {
+      return errorResponse('Admin access required', 403);
+    }
+
+    const supabase = requireSupabaseAdmin();
+    
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        business:business_id (*),
+        slot:slot_id (*)
+      `)
+      .eq('id', params.id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return errorResponse('Booking not found', 404);
+      }
+      return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
+    }
+
+    if (!booking) {
+      return errorResponse('Booking not found', 404);
+    }
+
+    return successResponse(booking);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    return errorResponse(message, 500);
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -28,6 +73,29 @@ export async function PATCH(
     const supabase = requireSupabaseAdmin();
     const body = await request.json();
 
+    // SECURITY: Filter input to prevent mass assignment
+    const { filterBookingUpdateFields, validateStringLength, validateEnum } = await import('@/lib/security/input-filter');
+    const filteredBody = filterBookingUpdateFields(body);
+
+    // SECURITY: Validate enum values
+    if (filteredBody.status !== undefined) {
+      const validStatuses = ['pending', 'confirmed', 'rejected', 'cancelled'] as const;
+      if (!validateEnum(filteredBody.status, validStatuses)) {
+        return errorResponse('Invalid booking status', 400);
+      }
+    }
+
+    // SECURITY: Validate string lengths
+    if (filteredBody.customer_name && !validateStringLength(filteredBody.customer_name, 200)) {
+      return errorResponse('Customer name is too long', 400);
+    }
+    if (filteredBody.customer_phone && !validateStringLength(filteredBody.customer_phone, 20)) {
+      return errorResponse('Customer phone is too long', 400);
+    }
+    if (filteredBody.cancellation_reason && !validateStringLength(filteredBody.cancellation_reason, 500)) {
+      return errorResponse('Cancellation reason is too long', 400);
+    }
+
     // Get old booking data
     const { data: oldBooking } = await supabase
       .from('bookings')
@@ -43,13 +111,16 @@ export async function PATCH(
       return errorResponse('Booking not found', 404);
     }
 
-    // Prepare update data
+    // Prepare update data from filtered input only
     const updateData: any = {};
-    if (body.status !== undefined) {
-      updateData.status = body.status;
+    if (filteredBody.status !== undefined) {
+      updateData.status = filteredBody.status;
     }
-    if (body.customer_name !== undefined) updateData.customer_name = body.customer_name;
-    if (body.customer_phone !== undefined) updateData.customer_phone = body.customer_phone;
+    if (filteredBody.customer_name !== undefined) updateData.customer_name = filteredBody.customer_name;
+    if (filteredBody.customer_phone !== undefined) {
+      const { formatPhoneNumber } = await import('@/lib/utils/string');
+      updateData.customer_phone = formatPhoneNumber(filteredBody.customer_phone);
+    }
 
     const { data: updatedBooking, error } = await supabase
       .from('bookings')

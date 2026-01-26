@@ -2,14 +2,14 @@ import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
+import { validateCronSecret } from '@/lib/security/cron-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET || '';
-
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return errorResponse('Unauthorized', 401);
+    // SECURITY: Validate cron secret
+    const authError = validateCronSecret(request);
+    if (authError) {
+      return authError;
     }
 
     await bookingService.expireOldBookings();

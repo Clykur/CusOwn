@@ -1,0 +1,1731 @@
+============================================================
+🚀 RUNNING ALL CRITICAL PATH TESTS
+============================================================
+Test run started at: Tue Jan 27 01:44:49 IST 2026
+Output file: scripts/test-results_20260127_014449.log
+
+============================================================
+
+Running user journey test 1/12: Customer Journey...
+
+> cusown@0.1.0 test:customer-journey
+> ts-node --project scripts/tsconfig.json scripts/01-user-customer-journey.ts
+
+
+🧪 Running: STEP 1: Customer logs in
+   ⏱️  Started at: 1:44:50 AM
+   👤 User Action: Customer logs in
+      Details: {
+        "email": "test-customer-1769458490182@test.com"
+      }
+   Customer ID: b68b29f5...
+✅ PASSED: STEP 1: Customer logs in
+   ⏱️  Duration: 723ms
+
+🧪 Running: STEP 2: Browse available businesses
+   ⏱️  Started at: 1:44:50 AM
+   👤 User Action: Customer browses businesses
+   Found 10 businesses
+✅ PASSED: STEP 2: Browse available businesses
+   ⏱️  Duration: 229ms
+
+🧪 Running: STEP 3: View business details
+   ⏱️  Started at: 1:44:51 AM
+   👤 User Action: Customer views business details
+      Details: {
+        "businessName": "Elite Beauty Salon"
+      }
+   Business: Elite Beauty Salon
+   Location: Delhi
+✅ PASSED: STEP 3: View business details
+   ⏱️  Duration: 284ms
+
+🧪 Running: STEP 4: View available slots
+   ⏱️  Started at: 1:44:51 AM
+   👤 User Action: Customer views available slots
+   Found available slot: 2026-01-27 09:30:00 - 10:15:00
+✅ PASSED: STEP 4: View available slots
+   ⏱️  Duration: 366ms
+
+🧪 Running: STEP 5: Customer creates booking
+   ⏱️  Started at: 1:44:51 AM
+   👤 User Action: Customer creates booking
+      Details: {
+        "slotTime": "09:30:00"
+      }
+   ✅ Booking created successfully
+   📋 Booking ID: CUST-1769458491875
+   🏢 Business: Elite Beauty Salon
+   📅 Date: 2026-01-27
+   ⏰ Time: 09:30:00 - 10:15:00
+   💰 Price: ₹10.00
+   ⏱️  Duration: 30 minutes
+✅ PASSED: STEP 5: Customer creates booking
+   ⏱️  Duration: 243ms
+
+🧪 Running: STEP 6: Customer views their bookings
+   ⏱️  Started at: 1:44:52 AM
+   👤 User Action: Customer views their bookings
+   📊 Bookings Overview:
+      Total Bookings: 1
+      Pending: 1
+      Confirmed: 0
+      Cancelled: 0
+   📋 Latest Booking:
+      ID: CUST-1769458491875
+      Business: Elite Beauty Salon
+      Status: pending
+      Date: 2026-01-27
+      Time: 09:30:00
+✅ PASSED: STEP 6: Customer views their bookings
+   ⏱️  Duration: 188ms
+
+🧪 Running: STEP 7: Customer checks booking status
+   ⏱️  Started at: 1:44:52 AM
+   👤 User Action: Customer checks booking status
+   📋 Booking Details:
+      Booking ID: CUST-1769458491875
+      Status: PENDING
+      Customer: Test Customer
+      Phone: +919876543210
+      Business: Elite Beauty Salon
+      Date: 2026-01-27
+      Time: 09:30:00 - 10:15:00
+      Created: 1/27/2026, 1:44:51 AM
+✅ PASSED: STEP 7: Customer checks booking status
+   ⏱️  Duration: 185ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 7
+   ✅ Passed: 7 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 2372ms (2.37s)
+   ⏱️  Average Test Duration: 317ms
+   ⏱️  Test Execution Time: 2218ms
+
+✅ Passed Tests:
+   1. STEP 1: Customer logs in
+      ⏱️  Duration: 723ms
+   2. STEP 2: Browse available businesses
+      ⏱️  Duration: 229ms
+   3. STEP 3: View business details
+      ⏱️  Duration: 284ms
+   4. STEP 4: View available slots
+      ⏱️  Duration: 366ms
+   5. STEP 5: Customer creates booking
+      ⏱️  Duration: 243ms
+   6. STEP 6: Customer views their bookings
+      ⏱️  Duration: 188ms
+   7. STEP 7: Customer checks booking status
+      ⏱️  Duration: 185ms
+
+======================================================================
+
+
+Running user journey test 2/12: Owner Journey...
+
+> cusown@0.1.0 test:owner-journey
+> ts-node --project scripts/tsconfig.json scripts/02-user-owner-journey.ts
+
+
+🧪 Running: STEP 1: Owner logs in
+   ⏱️  Started at: 1:44:53 AM
+   👤 User Action: Owner logs in
+      Details: {
+        "email": "test-owner-1769458493100@test.com"
+      }
+   Owner ID: 79cf6c6c...
+✅ PASSED: STEP 1: Owner logs in
+   ⏱️  Duration: 538ms
+
+🧪 Running: STEP 2: Owner views dashboard (no business)
+   ⏱️  Started at: 1:44:53 AM
+   👤 User Action: Owner views dashboard
+   Owner has 0 businesses
+✅ PASSED: STEP 2: Owner views dashboard (no business)
+   ⏱️  Duration: 207ms
+
+🧪 Running: STEP 3: Owner creates business
+   ⏱️  Started at: 1:44:53 AM
+   👤 User Action: Owner creates business
+   ✅ Business created: Test Salon 1769458493937
+   📍 Location: Test City
+   🔗 Booking Link: test-salon-1769458493937
+   📱 WhatsApp: +9198765493937
+   ⏰ Hours: 09:00:00 - 18:00:00
+   ⏱️  Slot Duration: 30 minutes
+✅ PASSED: STEP 3: Owner creates business
+   ⏱️  Duration: 203ms
+
+🧪 Running: STEP 4: Owner views their business
+   ⏱️  Started at: 1:44:54 AM
+   👤 User Action: Owner views their business
+   Business: Test Salon 1769458493937
+✅ PASSED: STEP 4: Owner views their business
+   ⏱️  Duration: 201ms
+
+🧪 Running: STEP 5: Owner views bookings
+   ⏱️  Started at: 1:44:54 AM
+   👤 User Action: Owner views bookings
+   📊 Bookings Summary:
+      Total: 0
+      Pending: 0
+      Confirmed: 0
+      Cancelled: 0
+      Rejected: 0
+✅ PASSED: STEP 5: Owner views bookings
+   ⏱️  Duration: 210ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 5
+   ✅ Passed: 5 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1508ms (1.51s)
+   ⏱️  Average Test Duration: 272ms
+   ⏱️  Test Execution Time: 1359ms
+
+✅ Passed Tests:
+   1. STEP 1: Owner logs in
+      ⏱️  Duration: 538ms
+   2. STEP 2: Owner views dashboard (no business)
+      ⏱️  Duration: 207ms
+   3. STEP 3: Owner creates business
+      ⏱️  Duration: 203ms
+   4. STEP 4: Owner views their business
+      ⏱️  Duration: 201ms
+   5. STEP 5: Owner views bookings
+      ⏱️  Duration: 210ms
+
+======================================================================
+
+
+Running user journey test 3/12: Admin Journey...
+
+> cusown@0.1.0 test:admin-journey
+> ts-node --project scripts/tsconfig.json scripts/05-user-admin-journey.ts
+
+
+🧪 Running: STEP 1: Admin logs in
+   ⏱️  Started at: 1:44:55 AM
+   👤 User Action: Admin logs in
+      Details: {
+        "email": "test-admin-1769458495140@test.com"
+      }
+   Admin ID: 9e3264ad...
+✅ PASSED: STEP 1: Admin logs in
+   ⏱️  Duration: 804ms
+
+🧪 Running: STEP 2: Admin views dashboard
+   ⏱️  Started at: 1:44:55 AM
+   👤 User Action: Admin views dashboard
+   Active businesses: 21
+   Total bookings: 52
+✅ PASSED: STEP 2: Admin views dashboard
+   ⏱️  Duration: 291ms
+
+🧪 Running: STEP 3: Admin views all businesses
+   ⏱️  Started at: 1:44:56 AM
+   👤 User Action: Admin views businesses
+   Found 10 businesses
+✅ PASSED: STEP 3: Admin views all businesses
+   ⏱️  Duration: 224ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 3
+   ✅ Passed: 3 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1418ms (1.42s)
+   ⏱️  Average Test Duration: 440ms
+   ⏱️  Test Execution Time: 1319ms
+
+✅ Passed Tests:
+   1. STEP 1: Admin logs in
+      ⏱️  Duration: 804ms
+   2. STEP 2: Admin views dashboard
+      ⏱️  Duration: 291ms
+   3. STEP 3: Admin views all businesses
+      ⏱️  Duration: 224ms
+
+======================================================================
+
+
+Running user journey test 4/12: Admin as Customer...
+
+> cusown@0.1.0 test:admin-as-customer
+> ts-node --project scripts/tsconfig.json scripts/09-user-admin-as-customer.ts
+
+
+🧪 Running: STEP 1: Admin logs in
+   ⏱️  Started at: 1:44:57 AM
+   👤 User Action: Admin logs in
+      Details: {
+        "email": "test-admin-customer-1769458497126@test.com",
+        "role": "admin"
+   Admin ID: 416f2f56...
+✅ PASSED: STEP 1: Admin logs in
+   ⏱️  Duration: 743ms
+
+🧪 Running: STEP 2: Admin views customer dashboard
+   ⏱️  Started at: 1:44:57 AM
+   👤 User Action: Admin accesses customer dashboard
+   Admin has 0 bookings as customer
+✅ PASSED: STEP 2: Admin views customer dashboard
+   ⏱️  Duration: 170ms
+
+🧪 Running: STEP 3: Admin browses businesses (as customer)
+   ⏱️  Started at: 1:44:58 AM
+   👤 User Action: Admin browses businesses as customer
+   Found 10 businesses
+✅ PASSED: STEP 3: Admin browses businesses (as customer)
+   ⏱️  Duration: 213ms
+
+🧪 Running: STEP 4: Admin views available slots (as customer)
+   ⏱️  Started at: 1:44:58 AM
+   👤 User Action: Admin views available slots as customer
+   Available slot: 2026-01-27 09:30:00
+✅ PASSED: STEP 4: Admin views available slots (as customer)
+   ⏱️  Duration: 267ms
+
+🧪 Running: STEP 5: Admin creates booking (as customer)
+   ⏱️  Started at: 1:44:58 AM
+   👤 User Action: Admin creates booking as customer
+   ✅ Booking created successfully
+   📋 Booking ID: ADMIN-CUST-1769458498610
+   🏢 Business: Elite Beauty Salon
+   📅 Date: 2026-01-27
+   ⏰ Time: 09:30:00 - 10:15:00
+   👤 Customer: Admin as Customer
+✅ PASSED: STEP 5: Admin creates booking (as customer)
+   ⏱️  Duration: 192ms
+
+🧪 Running: STEP 6: Admin views their customer bookings
+   ⏱️  Started at: 1:44:58 AM
+   👤 User Action: Admin views customer bookings
+   📋 Booking Details:
+      Booking ID: ADMIN-CUST-1769458498610
+      Status: PENDING
+      Business: Elite Beauty Salon
+      Date: 2026-01-27
+      Time: 09:30:00 - 10:15:00
+✅ PASSED: STEP 6: Admin views their customer bookings
+   ⏱️  Duration: 207ms
+
+🧪 Running: STEP 7: Admin can still access admin features
+   ⏱️  Started at: 1:44:58 AM
+   👤 User Action: Admin accesses admin dashboard
+   🔐 Admin Access Verified:
+      Businesses Visible: 21
+      Bookings Visible: 53
+   ✅ Admin has both customer and admin access
+   📊 Multi-role functionality working correctly
+✅ PASSED: STEP 7: Admin can still access admin features
+   ⏱️  Duration: 243ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 7
+   ✅ Passed: 7 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 2300ms (2.30s)
+   ⏱️  Average Test Duration: 291ms
+   ⏱️  Test Execution Time: 2035ms
+
+✅ Passed Tests:
+   1. STEP 1: Admin logs in
+      ⏱️  Duration: 743ms
+   2. STEP 2: Admin views customer dashboard
+      ⏱️  Duration: 170ms
+   3. STEP 3: Admin browses businesses (as customer)
+      ⏱️  Duration: 213ms
+   4. STEP 4: Admin views available slots (as customer)
+      ⏱️  Duration: 267ms
+   5. STEP 5: Admin creates booking (as customer)
+      ⏱️  Duration: 192ms
+   6. STEP 6: Admin views their customer bookings
+      ⏱️  Duration: 207ms
+   7. STEP 7: Admin can still access admin features
+      ⏱️  Duration: 243ms
+
+======================================================================
+
+
+Running user journey test 5/12: Admin as Owner...
+
+> cusown@0.1.0 test:admin-as-owner
+> ts-node --project scripts/tsconfig.json scripts/10-user-admin-as-owner.ts
+
+
+🧪 Running: STEP 1: Admin logs in
+   ⏱️  Started at: 1:44:59 AM
+   👤 User Action: Admin logs in
+      Details: {
+        "email": "test-admin-owner-1769458499963@test.com",
+        "role": "admin"
+   Admin ID: c9e01937...
+✅ PASSED: STEP 1: Admin logs in
+   ⏱️  Duration: 647ms
+
+🧪 Running: STEP 2: Admin views owner dashboard
+   ⏱️  Started at: 1:45:00 AM
+   👤 User Action: Admin accesses owner dashboard
+   Admin has 0 businesses as owner
+✅ PASSED: STEP 2: Admin views owner dashboard
+   ⏱️  Duration: 198ms
+
+🧪 Running: STEP 3: Admin creates business (as owner)
+   ⏱️  Started at: 1:45:00 AM
+   👤 User Action: Admin creates business as owner
+   ✅ Business created: Admin Owner Business 1769458500902
+   📍 Location: Admin City
+   🔗 Booking Link: admin-owner-1769458500902
+   📱 WhatsApp: +9198765500902
+   ⏰ Hours: 09:00:00 - 18:00:00
+   👤 Owner: Admin Owner
+✅ PASSED: STEP 3: Admin creates business (as owner)
+   ⏱️  Duration: 205ms
+
+🧪 Running: STEP 4: Admin views their business (as owner)
+   ⏱️  Started at: 1:45:01 AM
+   👤 User Action: Admin views their business as owner
+   Business: Admin Owner Business 1769458500902
+   Status: Active
+✅ PASSED: STEP 4: Admin views their business (as owner)
+   ⏱️  Duration: 171ms
+
+🧪 Running: STEP 5: Admin views bookings for their business
+   ⏱️  Started at: 1:45:01 AM
+   👤 User Action: Admin views business bookings as owner
+   Found 0 bookings
+   Pending: 0
+   Confirmed: 0
+   Cancelled: 0
+✅ PASSED: STEP 5: Admin views bookings for their business
+   ⏱️  Duration: 238ms
+
+🧪 Running: STEP 6: Admin accepts booking (as owner)
+   ⏱️  Started at: 1:45:01 AM
+   No pending bookings to accept (skipping)
+✅ PASSED: STEP 6: Admin accepts booking (as owner)
+   ⏱️  Duration: 103ms
+
+🧪 Running: STEP 7: Admin views business analytics (as owner)
+   ⏱️  Started at: 1:45:01 AM
+   👤 User Action: Admin views business analytics as owner
+   📊 Business Analytics:
+      Total Bookings: 0
+      ✅ Confirmed: 0
+      ⏳ Pending: 0
+      ❌ Cancelled: 0
+      🚫 Rejected: 0
+✅ PASSED: STEP 7: Admin views business analytics (as owner)
+   ⏱️  Duration: 177ms
+
+🧪 Running: STEP 8: Admin can still access admin features
+   ⏱️  Started at: 1:45:01 AM
+   👤 User Action: Admin accesses admin dashboard
+   🔐 Admin Access Verified:
+      Businesses Visible: 22
+      Bookings Visible: 52
+   ✅ Admin has both owner and admin access
+   📊 Multi-role functionality working correctly
+✅ PASSED: STEP 8: Admin can still access admin features
+   ⏱️  Duration: 283ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 8
+   ✅ Passed: 8 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 2227ms (2.23s)
+   ⏱️  Average Test Duration: 253ms
+   ⏱️  Test Execution Time: 2022ms
+
+✅ Passed Tests:
+   1. STEP 1: Admin logs in
+      ⏱️  Duration: 647ms
+   2. STEP 2: Admin views owner dashboard
+      ⏱️  Duration: 198ms
+   3. STEP 3: Admin creates business (as owner)
+      ⏱️  Duration: 205ms
+   4. STEP 4: Admin views their business (as owner)
+      ⏱️  Duration: 171ms
+   5. STEP 5: Admin views bookings for their business
+      ⏱️  Duration: 238ms
+   6. STEP 6: Admin accepts booking (as owner)
+      ⏱️  Duration: 103ms
+   7. STEP 7: Admin views business analytics (as owner)
+      ⏱️  Duration: 177ms
+   8. STEP 8: Admin can still access admin features
+      ⏱️  Duration: 283ms
+
+======================================================================
+
+
+Running user journey test 6/12: Complete Booking Flow...
+
+> cusown@0.1.0 test:booking-flow
+> ts-node --project scripts/tsconfig.json scripts/03-user-booking-flow.ts
+
+
+🧪 Running: STEP 1: User browses and selects business
+   ⏱️  Started at: 1:45:02 AM
+   👤 User Action: User browses businesses
+   Selected: Elite Beauty Salon
+✅ PASSED: STEP 1: User browses and selects business
+   ⏱️  Duration: 582ms
+
+🧪 Running: STEP 2: User views available slots
+   ⏱️  Started at: 1:45:03 AM
+   👤 User Action: User views available slots
+   Selected slot: 2026-01-27 09:30:00
+✅ PASSED: STEP 2: User views available slots
+   ⏱️  Duration: 318ms
+
+🧪 Running: STEP 3: User creates booking
+   ⏱️  Started at: 1:45:03 AM
+   👤 User Action: User creates booking
+   ✅ Booking created successfully
+   📋 Booking ID: BOOK-1769458503719
+   🏢 Business: Elite Beauty Salon
+   📅 Slot: 2026-01-27 09:30:00 - 10:15:00
+   👤 Customer: Booking Test Customer
+   💰 Price: ₹10.00
+   ⏱️  Duration: 30 minutes
+✅ PASSED: STEP 3: User creates booking
+   ⏱️  Duration: 203ms
+
+🧪 Running: STEP 4: Booking is confirmed
+   ⏱️  Started at: 1:45:03 AM
+   👤 User Action: Booking is confirmed
+   ✅ Booking confirmed successfully
+   📋 Booking ID: BOOK-1769458503719
+   📊 Status: confirmed
+   📅 Date: 2026-01-27
+   ⏰ Time: 09:30:00 - 10:15:00
+   👤 Customer: Booking Test Customer
+✅ PASSED: STEP 4: Booking is confirmed
+   ⏱️  Duration: 309ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 4
+   ✅ Passed: 4 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1597ms (1.60s)
+   ⏱️  Average Test Duration: 353ms
+   ⏱️  Test Execution Time: 1412ms
+
+✅ Passed Tests:
+   1. STEP 1: User browses and selects business
+      ⏱️  Duration: 582ms
+   2. STEP 2: User views available slots
+      ⏱️  Duration: 318ms
+   3. STEP 3: User creates booking
+      ⏱️  Duration: 203ms
+   4. STEP 4: Booking is confirmed
+      ⏱️  Duration: 309ms
+
+======================================================================
+
+
+Running user journey test 7/12: Payment Flow...
+
+> cusown@0.1.0 test:payment-flow
+> ts-node --project scripts/tsconfig.json scripts/04-user-payment-flow.ts
+
+
+🧪 Running: STEP 1: User creates booking requiring payment
+   ⏱️  Started at: 1:45:04 AM
+   👤 User Action: User creates booking
+   Booking created: PAY-1769458505615
+✅ PASSED: STEP 1: User creates booking requiring payment
+   ⏱️  Duration: 976ms
+
+🧪 Running: STEP 2: User initiates UPI payment
+   ⏱️  Started at: 1:45:05 AM
+   👤 User Action: User initiates payment
+   ✅ Payment initiated
+   💳 Payment ID: pay_1769458505908
+   💰 Amount: ₹15.00
+   📊 Status: initiated
+   💳 Method: UPI
+   ⏰ Expires: 1/27/2026, 1:55:05 AM
+✅ PASSED: STEP 2: User initiates UPI payment
+   ⏱️  Duration: 262ms
+
+🧪 Running: STEP 3: Payment succeeds
+   ⏱️  Started at: 1:45:06 AM
+   👤 User Action: Payment succeeds
+   ✅ Payment verified successfully
+   💳 Payment Status: completed
+   📋 Booking Status: pending
+   💰 Amount Paid: ₹15.00
+   ⏰ Verified At: 1/27/2026, 1:45:06 AM
+✅ PASSED: STEP 3: Payment succeeds
+   ⏱️  Duration: 376ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 3
+   ✅ Passed: 3 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1843ms (1.84s)
+   ⏱️  Average Test Duration: 538ms
+   ⏱️  Test Execution Time: 1614ms
+
+✅ Passed Tests:
+   1. STEP 1: User creates booking requiring payment
+      ⏱️  Duration: 976ms
+   2. STEP 2: User initiates UPI payment
+      ⏱️  Duration: 262ms
+   3. STEP 3: Payment succeeds
+      ⏱️  Duration: 376ms
+
+======================================================================
+
+
+Running user journey test 8/12: Concurrent Operations...
+
+> cusown@0.1.0 test:concurrent-ops
+> ts-node --project scripts/tsconfig.json scripts/06-user-concurrent-operations.ts
+
+
+🧪 Running: STEP 1: Multiple users compete for same slot
+   ⏱️  Started at: 1:45:07 AM
+   👤 User Action: 10 users try to book same slot simultaneously
+   🔄 Concurrent Test Results:
+      Total Requests: 10
+      ✅ Successful: 1
+      ❌ Failed: 9
+      📊 Success Rate: 10.0%
+   📋 Failure Breakdown:
+      Slot already reserved: 9
+   ✅ Race condition prevented: Only 1 booking succeeded
+   🔒 Slot reservation system working correctly
+   🔐 Database locking (FOR UPDATE) prevented double-booking
+   ⚡ All 10 requests processed atomically
+✅ PASSED: STEP 1: Multiple users compete for same slot
+   ⏱️  Duration: 1365ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 1
+   ✅ Passed: 1 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1512ms (1.51s)
+   ⏱️  Average Test Duration: 1365ms
+   ⏱️  Test Execution Time: 1365ms
+
+✅ Passed Tests:
+   1. STEP 1: Multiple users compete for same slot
+      ⏱️  Duration: 1365ms
+
+======================================================================
+
+
+Running user journey test 9/12: Slot Management...
+
+> cusown@0.1.0 test:slot-management
+> ts-node --project scripts/tsconfig.json scripts/07-user-slot-management.ts
+
+
+🧪 Running: STEP 1: User views available slots
+   ⏱️  Started at: 1:45:09 AM
+   👤 User Action: User views available slots
+   Found 10 available slots for 2026-01-27
+✅ PASSED: STEP 1: User views available slots
+   ⏱️  Duration: 348ms
+
+🧪 Running: STEP 2: User reserves a slot
+   ⏱️  Started at: 1:45:09 AM
+   👤 User Action: User reserves slot
+   ✅ Slot reserved successfully
+   📋 Slot ID: c7b276d8...
+   📅 Date: 2026-01-27
+   ⏰ Time: 09:30:00 - 10:15:00
+   🔒 Reserved Until: 1/27/2026, 1:55:09 AM
+   📊 Status: reserved
+✅ PASSED: STEP 2: User reserves a slot
+   ⏱️  Duration: 459ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 2
+   ✅ Passed: 2 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 907ms (0.91s)
+   ⏱️  Average Test Duration: 404ms
+   ⏱️  Test Execution Time: 807ms
+
+✅ Passed Tests:
+   1. STEP 1: User views available slots
+      ⏱️  Duration: 348ms
+   2. STEP 2: User reserves a slot
+      ⏱️  Duration: 459ms
+
+======================================================================
+
+
+Running user journey test 10/12: Error Scenarios...
+
+> cusown@0.1.0 test:error-scenarios
+> ts-node --project scripts/tsconfig.json scripts/08-user-error-scenarios.ts
+
+
+🧪 Running: STEP 1: Try to book suspended business
+   ⏱️  Started at: 1:45:10 AM
+   👤 User Action: User tries to book suspended business
+   ✅ Error handling verified
+   🚫 Booking correctly rejected: Business is suspended
+   🔒 Suspension check working as expected
+✅ PASSED: STEP 1: Try to book suspended business
+   ⏱️  Duration: 702ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 1
+   ✅ Passed: 1 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 703ms (0.70s)
+   ⏱️  Average Test Duration: 702ms
+   ⏱️  Test Execution Time: 702ms
+
+✅ Passed Tests:
+   1. STEP 1: Try to book suspended business
+      ⏱️  Duration: 702ms
+
+======================================================================
+
+
+Running user journey test 11/12: Comprehensive Edge Cases (DSA Methods)...
+
+> cusown@0.1.0 test:edge-cases
+> ts-node --project scripts/tsconfig.json scripts/11-edge-cases-comprehensive.ts
+
+
+🧪 Running: EDGE CASE 1: Valid state transitions
+   ⏱️  Started at: 1:45:11 AM
+   ✅ State machine validation passed
+   📊 Transitions: 3
+   🔄 Current state: cancelled
+✅ PASSED: EDGE CASE 1: Valid state transitions
+   ⏱️  Duration: 9ms
+
+🧪 Running: EDGE CASE 2: Queue-based workflow execution
+   ⏱️  Started at: 1:45:11 AM
+   ✅ Queue-based workflow executed correctly
+   📋 Execution order: create_booking -> reserve_slot -> confirm_booking -> send_notification
+   ⏱️  Completed actions: 4
+✅ PASSED: EDGE CASE 2: Queue-based workflow execution
+   ⏱️  Duration: 0ms
+
+🧪 Running: EDGE CASE 3: Multiple concurrent booking attempts
+   ⏱️  Started at: 1:45:11 AM
+   ✅ Race condition handled correctly
+   📊 Attempts: 5, Successful: 1, Failed: 4
+✅ PASSED: EDGE CASE 3: Multiple concurrent booking attempts
+   ⏱️  Duration: 897ms
+
+🧪 Running: EDGE CASE 4: State tracking across operations
+   ⏱️  Started at: 1:45:12 AM
+   ✅ State tracking working correctly
+   📊 Tracked keys: customer_id, business_id, slot_id, booking_id, booking_status
+   📋 History entries: 5
+✅ PASSED: EDGE CASE 4: State tracking across operations
+   ⏱️  Duration: 715ms
+
+🧪 Running: EDGE CASE 5: Invalid state transition prevention
+   ⏱️  Started at: 1:45:13 AM
+   ✅ Invalid state transitions prevented
+   📊 Final status: confirmed
+✅ PASSED: EDGE CASE 5: Invalid state transition prevention
+   ⏱️  Duration: 780ms
+
+🧪 Running: EDGE CASE 6: Boundary condition testing
+   ⏱️  Started at: 1:45:14 AM
+   ✅ Boundary conditions tested
+   📊 Concurrent operations: 20
+   ✅ Successful: 20
+   ❌ Failed: 0
+✅ PASSED: EDGE CASE 6: Boundary condition testing
+   ⏱️  Duration: 701ms
+
+🧪 Running: EDGE CASE 7: Data integrity validation
+   ⏱️  Started at: 1:45:15 AM
+   ✅ Data integrity validated
+   📊 Booking ID: EDGE-INTEGRITY-1769458515550
+   🔗 Business: Elite Beauty Salon
+   📅 Slot: 2026-01-27
+✅ PASSED: EDGE CASE 7: Data integrity validation
+   ⏱️  Duration: 672ms
+
+🧪 Running: EDGE CASE 8: Error recovery and rollback
+   ⏱️  Started at: 1:45:15 AM
+   ✅ Error recovery working correctly
+   🚫 Error handled: Slot not found
+✅ PASSED: EDGE CASE 8: Error recovery and rollback
+   ⏱️  Duration: 422ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 8
+   ✅ Passed: 8 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 4387ms (4.39s)
+   ⏱️  Average Test Duration: 525ms
+   ⏱️  Test Execution Time: 4196ms
+
+✅ Passed Tests:
+   1. EDGE CASE 1: Valid state transitions
+      ⏱️  Duration: 9ms
+   2. EDGE CASE 2: Queue-based workflow execution
+   3. EDGE CASE 3: Multiple concurrent booking attempts
+      ⏱️  Duration: 897ms
+   4. EDGE CASE 4: State tracking across operations
+      ⏱️  Duration: 715ms
+   5. EDGE CASE 5: Invalid state transition prevention
+      ⏱️  Duration: 780ms
+   6. EDGE CASE 6: Boundary condition testing
+      ⏱️  Duration: 701ms
+   7. EDGE CASE 7: Data integrity validation
+      ⏱️  Duration: 672ms
+   8. EDGE CASE 8: Error recovery and rollback
+      ⏱️  Duration: 422ms
+
+======================================================================
+
+
+Running user journey test 12/12: Slot Service Comprehensive Testing...
+
+> cusown@0.1.0 test:slot-service
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/12-slot-service-comprehensive.ts
+
+
+🧪 Running: SLOT SERVICE 1: Generate slots for business
+   ⏱️  Started at: 1:45:17 AM
+   👤 User Action: Generate slots for date
+   ✅ Generated 14 slots for 2026-01-27
+   📊 Business: Elite Beauty Salon
+   ⏰ Hours: 09:30:00 - 19:30:00
+   ⏱️  Duration: 45 minutes
+✅ PASSED: SLOT SERVICE 1: Generate slots for business
+   ⏱️  Duration: 1190ms
+
+🧪 Running: SLOT SERVICE 2: Get available slots (lazy generation)
+   ⏱️  Started at: 1:45:18 AM
+   👤 User Action: Get available slots with lazy generation
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-01-29 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-01-31 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-02-01 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-02-03 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-01-28 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-01-30 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-02-02 (13 inserted)
+✅ Generated slots for 6 future dates: 2026-01-28, 2026-01-30, 2026-01-31, 2026-02-01, 2026-02-02, 2026-02-03
+   ✅ Retrieved 13 available slots
+   📅 Date: 2026-01-29
+   ⏰ First slot: 09:30:00 - 10:15:00
+   ⏰ Last slot: 18:30:00 - 19:15:00
+✅ PASSED: SLOT SERVICE 2: Get available slots (lazy generation)
+   ⏱️  Duration: 1732ms
+
+🧪 Running: SLOT SERVICE 3: Get slot by ID
+   ⏱️  Started at: 1:45:20 AM
+   👤 User Action: Get slot by ID
+   ✅ Slot retrieved successfully
+   📋 Slot ID: c7b276d8...
+   📅 Date: 2026-01-27
+   ⏰ Time: 09:30:00 - 10:15:00
+   📊 Status: available
+✅ PASSED: SLOT SERVICE 3: Get slot by ID
+   ⏱️  Duration: 487ms
+
+🧪 Running: SLOT SERVICE 4: Reserve slot
+   ⏱️  Started at: 1:45:20 AM
+   👤 User Action: Reserve slot via service
+   ✅ Slot reserved successfully
+   📊 Status: reserved
+   🔒 Reserved Until: 1/27/2026, 1:55:21 AM
+✅ PASSED: SLOT SERVICE 4: Reserve slot
+   ⏱️  Duration: 851ms
+
+🧪 Running: SLOT SERVICE 5: Release reserved slot
+   ⏱️  Started at: 1:45:21 AM
+   👤 User Action: Release slot via service
+   ✅ Slot released successfully
+   📊 Status: available
+   🔓 Reserved Until: null
+✅ PASSED: SLOT SERVICE 5: Release reserved slot
+   ⏱️  Duration: 1125ms
+
+🧪 Running: SLOT SERVICE 6: Book reserved slot
+   ⏱️  Started at: 1:45:22 AM
+   👤 User Action: Book slot via service
+   ✅ Slot booked successfully
+   📊 Status: booked
+   🔒 Reserved Until: null
+✅ PASSED: SLOT SERVICE 6: Book reserved slot
+   ⏱️  Duration: 1100ms
+
+🧪 Running: SLOT SERVICE 7: Release expired reservations
+   ⏱️  Started at: 1:45:23 AM
+   👤 User Action: Release expired reservations
+   ✅ Released 1 expired reservations
+   📊 Expired slot status: available (should be available)
+   📊 Active slot status: available (should be reserved)
+✅ PASSED: SLOT SERVICE 7: Release expired reservations
+   ⏱️  Duration: 1308ms
+
+🧪 Running: SLOT SERVICE 8: Update slot status
+   ⏱️  Started at: 1:45:24 AM
+   👤 User Action: Update slot status
+   ✅ Slot status updated successfully
+   📊 Status: reserved
+✅ PASSED: SLOT SERVICE 8: Update slot status
+   ⏱️  Duration: 667ms
+
+🧪 Running: SLOT SERVICE 9: Invalid state transition prevention
+   ⏱️  Started at: 1:45:25 AM
+   👤 User Action: Try invalid state transition
+   ✅ Correctly prevented reserving booked slot
+✅ PASSED: SLOT SERVICE 9: Invalid state transition prevention
+   ⏱️  Duration: 1228ms
+
+🧪 Running: SLOT SERVICE 10: Past slot filtering
+   ⏱️  Started at: 1:45:26 AM
+   👤 User Action: Get slots for today (past slots filtered)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-01-26 (13 inserted)
+✅ Generated 13 slots for 457860e5-41cb-406d-88ec-c2959737c2c4 on 2026-01-25 (13 inserted)
+✅ Generated slots for 1 future dates: 2026-01-25
+   ✅ Retrieved 13 slots for today
+   📊 Past slots filtered: Yes
+   ⏰ Current time: 1:45
+✅ PASSED: SLOT SERVICE 10: Past slot filtering
+   ⏱️  Duration: 1740ms
+
+🧪 Running: SLOT SERVICE 11: Slot generation skips existing slots
+   ⏱️  Started at: 1:45:28 AM
+   ✅ First generation: 14 slots
+   ✅ Second generation: 14 slots
+   🔒 Duplicate prevention: Working
+✅ PASSED: SLOT SERVICE 11: Slot generation skips existing slots
+   ⏱️  Duration: 1023ms
+
+🧪 Running: SLOT SERVICE 12: Get non-existent slot
+   ⏱️  Started at: 1:45:29 AM
+   👤 User Action: Get non-existent slot
+   ✅ Correctly returned null for non-existent slot
+✅ PASSED: SLOT SERVICE 12: Get non-existent slot
+   ⏱️  Duration: 205ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 12
+   ✅ Passed: 12 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 12758ms (12.76s)
+   ⏱️  Average Test Duration: 1055ms
+   ⏱️  Test Execution Time: 12656ms
+
+✅ Passed Tests:
+   1. SLOT SERVICE 1: Generate slots for business
+      ⏱️  Duration: 1190ms
+   2. SLOT SERVICE 2: Get available slots (lazy generation)
+      ⏱️  Duration: 1732ms
+   3. SLOT SERVICE 3: Get slot by ID
+      ⏱️  Duration: 487ms
+   4. SLOT SERVICE 4: Reserve slot
+      ⏱️  Duration: 851ms
+   5. SLOT SERVICE 5: Release reserved slot
+      ⏱️  Duration: 1125ms
+   6. SLOT SERVICE 6: Book reserved slot
+      ⏱️  Duration: 1100ms
+   7. SLOT SERVICE 7: Release expired reservations
+      ⏱️  Duration: 1308ms
+   8. SLOT SERVICE 8: Update slot status
+      ⏱️  Duration: 667ms
+   9. SLOT SERVICE 9: Invalid state transition prevention
+      ⏱️  Duration: 1228ms
+   10. SLOT SERVICE 10: Past slot filtering
+      ⏱️  Duration: 1740ms
+   11. SLOT SERVICE 11: Slot generation skips existing slots
+      ⏱️  Duration: 1023ms
+   12. SLOT SERVICE 12: Get non-existent slot
+      ⏱️  Duration: 205ms
+
+======================================================================
+
+
+============================================================
+PRODUCTION-GRADE TEST SUITE (PHASES 1-9)
+============================================================
+
+Running Phase 1/9: Schema Validation...
+
+> cusown@0.1.0 test:phase1
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/13-phase1-schema-validation.ts
+
+
+🧪 Running: SCHEMA 1: Businesses - Required columns exist
+   ⏱️  Started at: 1:45:30 AM
+   👤 User Action: Verify businesses table schema
+   ✅ All required columns exist in businesses table
+✅ PASSED: SCHEMA 1: Businesses - Required columns exist
+   ⏱️  Duration: 238ms
+
+🧪 Running: SCHEMA 2: Businesses - NOT NULL constraints enforced
+   ⏱️  Started at: 1:45:30 AM
+   👤 User Action: Test NOT NULL constraints
+   ✅ NOT NULL constraints enforced (salon_name)
+✅ PASSED: SCHEMA 2: Businesses - NOT NULL constraints enforced
+   ⏱️  Duration: 170ms
+
+🧪 Running: SCHEMA 3: Businesses - UNIQUE constraint on booking_link
+   ⏱️  Started at: 1:45:30 AM
+   👤 User Action: Test unique booking_link constraint
+   ✅ UNIQUE constraint enforced on booking_link
+✅ PASSED: SCHEMA 3: Businesses - UNIQUE constraint on booking_link
+   ⏱️  Duration: 335ms
+
+🧪 Running: SCHEMA 4: Businesses - UNIQUE constraint on whatsapp_number
+   ⏱️  Started at: 1:45:31 AM
+   👤 User Action: Test unique whatsapp_number constraint
+   ✅ UNIQUE constraint enforced on whatsapp_number
+✅ PASSED: SCHEMA 4: Businesses - UNIQUE constraint on whatsapp_number
+   ⏱️  Duration: 269ms
+
+🧪 Running: SCHEMA 5: Businesses - CHECK constraint on slot_duration
+   ⏱️  Started at: 1:45:31 AM
+   👤 User Action: Test CHECK constraint on slot_duration
+   ✅ CHECK constraint enforced on slot_duration
+✅ PASSED: SCHEMA 5: Businesses - CHECK constraint on slot_duration
+   ⏱️  Duration: 169ms
+
+🧪 Running: SCHEMA 6: Slots - Foreign key to businesses enforced
+   ⏱️  Started at: 1:45:31 AM
+   👤 User Action: Test foreign key constraint on slots
+   ✅ Foreign key constraint enforced on slots.business_id
+✅ PASSED: SCHEMA 6: Slots - Foreign key to businesses enforced
+   ⏱️  Duration: 190ms
+
+🧪 Running: SCHEMA 7: Slots - CHECK constraint on status
+   ⏱️  Started at: 1:45:31 AM
+   👤 User Action: Test CHECK constraint on slot status
+   ✅ CHECK constraint enforced on slots.status
+✅ PASSED: SCHEMA 7: Slots - CHECK constraint on status
+   ⏱️  Duration: 406ms
+
+🧪 Running: SCHEMA 8: Slots - UNIQUE constraint on (business_id, date, start_time, end_time)
+   ⏱️  Started at: 1:45:32 AM
+   👤 User Action: Test unique slot constraint
+   ✅ UNIQUE constraint enforced on slots composite key
+✅ PASSED: SCHEMA 8: Slots - UNIQUE constraint on (business_id, date, start_time, end_time)
+   ⏱️  Duration: 515ms
+
+🧪 Running: SCHEMA 9: Bookings - Foreign key to businesses enforced
+   ⏱️  Started at: 1:45:32 AM
+   👤 User Action: Test foreign key constraint on bookings
+   ✅ Foreign key constraint enforced on bookings.business_id
+✅ PASSED: SCHEMA 9: Bookings - Foreign key to businesses enforced
+   ⏱️  Duration: 171ms
+
+🧪 Running: SCHEMA 10: Bookings - Foreign key to slots enforced
+   ⏱️  Started at: 1:45:32 AM
+   👤 User Action: Test foreign key constraint on bookings.slot_id
+   ✅ Foreign key constraint enforced on bookings.slot_id
+✅ PASSED: SCHEMA 10: Bookings - Foreign key to slots enforced
+   ⏱️  Duration: 262ms
+
+🧪 Running: SCHEMA 11: Bookings - UNIQUE constraint on booking_id
+   ⏱️  Started at: 1:45:33 AM
+   👤 User Action: Test unique booking_id constraint
+   ✅ UNIQUE constraint enforced on bookings.booking_id
+✅ PASSED: SCHEMA 11: Bookings - UNIQUE constraint on booking_id
+   ⏱️  Duration: 459ms
+
+🧪 Running: SCHEMA 12: Bookings - CHECK constraint on status
+   ⏱️  Started at: 1:45:33 AM
+   👤 User Action: Test CHECK constraint on booking status
+   ✅ CHECK constraint enforced on bookings.status
+✅ PASSED: SCHEMA 12: Bookings - CHECK constraint on status
+   ⏱️  Duration: 355ms
+
+🧪 Running: SCHEMA 13: Payments - Foreign key to bookings enforced
+   ⏱️  Started at: 1:45:34 AM
+   👤 User Action: Test foreign key constraint on payments
+   ✅ Foreign key constraint enforced on payments.booking_id
+✅ PASSED: SCHEMA 13: Payments - Foreign key to bookings enforced
+   ⏱️  Duration: 181ms
+
+🧪 Running: SCHEMA 14: Payments - CHECK constraint on amount_cents
+   ⏱️  Started at: 1:45:34 AM
+   👤 User Action: Test CHECK constraint on payment amount
+   ✅ CHECK constraint enforced on payments.amount_cents
+✅ PASSED: SCHEMA 14: Payments - CHECK constraint on amount_cents
+   ⏱️  Duration: 314ms
+
+🧪 Running: SCHEMA 15: Payments - UNIQUE constraint on idempotency_key
+   ⏱️  Started at: 1:45:34 AM
+   👤 User Action: Test unique idempotency_key constraint
+   ✅ UNIQUE constraint enforced on payments.idempotency_key
+✅ PASSED: SCHEMA 15: Payments - UNIQUE constraint on idempotency_key
+   ⏱️  Duration: 393ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 15
+   ✅ Passed: 15 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 4760ms (4.76s)
+   ⏱️  Average Test Duration: 295ms
+   ⏱️  Test Execution Time: 4427ms
+
+✅ Passed Tests:
+   1. SCHEMA 1: Businesses - Required columns exist
+      ⏱️  Duration: 238ms
+   2. SCHEMA 2: Businesses - NOT NULL constraints enforced
+      ⏱️  Duration: 170ms
+   3. SCHEMA 3: Businesses - UNIQUE constraint on booking_link
+      ⏱️  Duration: 335ms
+   4. SCHEMA 4: Businesses - UNIQUE constraint on whatsapp_number
+      ⏱️  Duration: 269ms
+   5. SCHEMA 5: Businesses - CHECK constraint on slot_duration
+      ⏱️  Duration: 169ms
+   6. SCHEMA 6: Slots - Foreign key to businesses enforced
+      ⏱️  Duration: 190ms
+   7. SCHEMA 7: Slots - CHECK constraint on status
+      ⏱️  Duration: 406ms
+   8. SCHEMA 8: Slots - UNIQUE constraint on (business_id, date, start_time, end_time)
+      ⏱️  Duration: 515ms
+   9. SCHEMA 9: Bookings - Foreign key to businesses enforced
+      ⏱️  Duration: 171ms
+   10. SCHEMA 10: Bookings - Foreign key to slots enforced
+      ⏱️  Duration: 262ms
+   11. SCHEMA 11: Bookings - UNIQUE constraint on booking_id
+      ⏱️  Duration: 459ms
+   12. SCHEMA 12: Bookings - CHECK constraint on status
+      ⏱️  Duration: 355ms
+   13. SCHEMA 13: Payments - Foreign key to bookings enforced
+      ⏱️  Duration: 181ms
+   14. SCHEMA 14: Payments - CHECK constraint on amount_cents
+      ⏱️  Duration: 314ms
+   15. SCHEMA 15: Payments - UNIQUE constraint on idempotency_key
+      ⏱️  Duration: 393ms
+
+======================================================================
+
+
+Running Phase 2/9: Atomic Booking Transactions...
+
+> cusown@0.1.0 test:phase2
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/14-phase2-atomic-booking-transactions.ts
+
+
+🧪 Running: ATOMIC 1: Single user booking succeeds
+   ⏱️  Started at: 1:45:35 AM
+   👤 User Action: Create single booking
+   ✅ Booking created: 6f026ab7...
+   ✅ Slot reserved: 42bdbb8b...
+   ✅ Slot status: reserved
+   ✅ Booking status: pending
+✅ PASSED: ATOMIC 1: Single user booking succeeds
+   ⏱️  Duration: 659ms
+
+🧪 Running: ATOMIC 2: Concurrent bookings - only one succeeds
+   ⏱️  Started at: 1:45:36 AM
+   👤 User Action: Simulate concurrent booking attempts
+   ✅ Only one booking succeeded (Booking 1)
+   ✅ Failed booking error: Slot is reserved
+   ✅ Slot status: reserved
+   ✅ Total bookings for slot: 1
+✅ PASSED: ATOMIC 2: Concurrent bookings - only one succeeds
+   ⏱️  Duration: 702ms
+
+🧪 Running: ATOMIC 3: Booking on already reserved slot fails
+   ⏱️  Started at: 1:45:37 AM
+   👤 User Action: Try booking already reserved slot
+   ✅ Second booking correctly rejected: Slot is reserved
+   ✅ Only one booking exists from this test
+✅ PASSED: ATOMIC 3: Booking on already reserved slot fails
+   ⏱️  Duration: 835ms
+
+🧪 Running: ATOMIC 4: Booking on already booked slot fails
+   ⏱️  Started at: 1:45:38 AM
+   👤 User Action: Try booking already booked slot
+   ✅ Second booking correctly rejected: Slot already booked
+   ✅ Slot status: booked
+✅ PASSED: ATOMIC 4: Booking on already booked slot fails
+   ⏱️  Duration: 740ms
+
+🧪 Running: ATOMIC 5: Booking on suspended business fails
+   ⏱️  Started at: 1:45:38 AM
+   👤 User Action: Try booking on suspended business
+   ✅ Booking correctly rejected: Business is suspended
+✅ PASSED: ATOMIC 5: Booking on suspended business fails
+   ⏱️  Duration: 663ms
+
+🧪 Running: ATOMIC 6: Booking with slot from wrong business fails
+   ⏱️  Started at: 1:45:39 AM
+   ⚠️  Only one business found, skipping test
+✅ PASSED: ATOMIC 6: Booking with slot from wrong business fails
+   ⏱️  Duration: 141ms
+
+🧪 Running: ATOMIC 7: No partial writes on failure
+   ⏱️  Started at: 1:45:39 AM
+   👤 User Action: Test transaction rollback
+   ✅ Slot state unchanged: available
+   ✅ Booking count unchanged: 0
+   ✅ No partial writes detected
+✅ PASSED: ATOMIC 7: No partial writes on failure
+   ⏱️  Duration: 860ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 7
+   ✅ Passed: 7 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 4777ms (4.78s)
+   ⏱️  Average Test Duration: 657ms
+   ⏱️  Test Execution Time: 4600ms
+
+✅ Passed Tests:
+   1. ATOMIC 1: Single user booking succeeds
+      ⏱️  Duration: 659ms
+   2. ATOMIC 2: Concurrent bookings - only one succeeds
+      ⏱️  Duration: 702ms
+   3. ATOMIC 3: Booking on already reserved slot fails
+      ⏱️  Duration: 835ms
+   4. ATOMIC 4: Booking on already booked slot fails
+      ⏱️  Duration: 740ms
+   5. ATOMIC 5: Booking on suspended business fails
+      ⏱️  Duration: 663ms
+   6. ATOMIC 6: Booking with slot from wrong business fails
+      ⏱️  Duration: 141ms
+   7. ATOMIC 7: No partial writes on failure
+      ⏱️  Duration: 860ms
+
+======================================================================
+
+
+Running Phase 3/9: State Machines...
+
+> cusown@0.1.0 test:phase3
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/15-phase3-state-machines.ts
+
+
+🧪 Running: STATE 1: Slot - available → reserved (valid)
+   ⏱️  Started at: 1:45:41 AM
+   👤 User Action: Test slot state transition: available → reserved
+   ✅ Transition allowed: available → reserved
+   ✅ Slot status: reserved
+✅ PASSED: STATE 1: Slot - available → reserved (valid)
+   ⏱️  Duration: 1069ms
+
+🧪 Running: STATE 2: Slot - reserved → booked (valid)
+   ⏱️  Started at: 1:45:42 AM
+   👤 User Action: Test slot state transition: reserved → booked
+   ✅ Transition allowed: reserved → booked
+   ✅ Slot status: booked
+✅ PASSED: STATE 2: Slot - reserved → booked (valid)
+   ⏱️  Duration: 1401ms
+
+🧪 Running: STATE 3: Slot - reserved → available (valid)
+   ⏱️  Started at: 1:45:43 AM
+   👤 User Action: Test slot state transition: reserved → available
+   ✅ Transition allowed: reserved → available
+   ✅ Slot status: available
+✅ PASSED: STATE 3: Slot - reserved → available (valid)
+   ⏱️  Duration: 2078ms
+
+🧪 Running: STATE 4: Slot - available → booked (invalid)
+   ⏱️  Started at: 1:45:45 AM
+   👤 User Action: Test invalid slot transition: available → booked
+   ✅ Invalid transition correctly rejected: available → booked
+✅ PASSED: STATE 4: Slot - available → booked (invalid)
+   ⏱️  Duration: 102ms
+
+🧪 Running: STATE 5: Slot - booked → reserved (invalid)
+   ⏱️  Started at: 1:45:45 AM
+   👤 User Action: Test invalid slot transition: booked → reserved
+   ✅ Invalid transition correctly rejected: booked → reserved
+✅ PASSED: STATE 5: Slot - booked → reserved (invalid)
+   ⏱️  Duration: 102ms
+
+🧪 Running: STATE 6: Booking - pending → confirmed (valid)
+   ⏱️  Started at: 1:45:46 AM
+   👤 User Action: Test booking state transition: pending → confirmed
+   ✅ Transition allowed: pending → confirmed
+   ✅ Booking status: confirmed
+✅ PASSED: STATE 6: Booking - pending → confirmed (valid)
+   ⏱️  Duration: 923ms
+
+🧪 Running: STATE 7: Booking - pending → rejected (valid)
+   ⏱️  Started at: 1:45:46 AM
+   👤 User Action: Test booking state transition: pending → rejected
+   ✅ Transition allowed: pending → rejected
+   ✅ Booking status: rejected
+✅ PASSED: STATE 7: Booking - pending → rejected (valid)
+   ⏱️  Duration: 613ms
+
+🧪 Running: STATE 8: Booking - rejected → cancelled (invalid)
+   ⏱️  Started at: 1:45:47 AM
+   👤 User Action: Test invalid booking transition: rejected → cancelled
+   ✅ Invalid transition correctly rejected: rejected → cancelled
+✅ PASSED: STATE 8: Booking - rejected → cancelled (invalid)
+   ⏱️  Duration: 101ms
+
+🧪 Running: STATE 9: Payment - initiated → completed (valid)
+   ⏱️  Started at: 1:45:47 AM
+   👤 User Action: Test payment state transition: initiated → completed
+   ✅ Transition allowed: initiated → completed
+✅ PASSED: STATE 9: Payment - initiated → completed (valid)
+   ⏱️  Duration: 102ms
+
+🧪 Running: STATE 10: Payment - initiated → failed (valid)
+   ⏱️  Started at: 1:45:47 AM
+   👤 User Action: Test payment state transition: initiated → failed
+   ✅ Transition allowed: initiated → failed
+✅ PASSED: STATE 10: Payment - initiated → failed (valid)
+   ⏱️  Duration: 102ms
+
+🧪 Running: STATE 11: Payment - completed → failed (invalid)
+   ⏱️  Started at: 1:45:47 AM
+   👤 User Action: Test invalid payment transition: completed → failed
+   ✅ Invalid transition correctly rejected: completed → failed
+✅ PASSED: STATE 11: Payment - completed → failed (invalid)
+   ⏱️  Duration: 102ms
+
+🧪 Running: STATE 12: Payment - expired → completed (invalid)
+   ⏱️  Started at: 1:45:47 AM
+   👤 User Action: Test invalid payment transition: expired → completed
+   ✅ Invalid transition correctly rejected: expired → completed
+✅ PASSED: STATE 12: Payment - expired → completed (invalid)
+   ⏱️  Duration: 102ms
+
+🧪 Running: STATE 13: Direct DB update bypass attempt fails
+   ⏱️  Started at: 1:45:48 AM
+   👤 User Action: Try direct DB update to bypass state machine
+   ⚠️  Direct DB update succeeded - ensure application-level validation
+✅ PASSED: STATE 13: Direct DB update bypass attempt fails
+   ⏱️  Duration: 668ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 13
+   ✅ Passed: 13 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 7671ms (7.67s)
+   ⏱️  Average Test Duration: 574ms
+   ⏱️  Test Execution Time: 7465ms
+
+✅ Passed Tests:
+   1. STATE 1: Slot - available → reserved (valid)
+      ⏱️  Duration: 1069ms
+   2. STATE 2: Slot - reserved → booked (valid)
+      ⏱️  Duration: 1401ms
+   3. STATE 3: Slot - reserved → available (valid)
+      ⏱️  Duration: 2078ms
+   4. STATE 4: Slot - available → booked (invalid)
+      ⏱️  Duration: 102ms
+   5. STATE 5: Slot - booked → reserved (invalid)
+      ⏱️  Duration: 102ms
+   6. STATE 6: Booking - pending → confirmed (valid)
+      ⏱️  Duration: 923ms
+   7. STATE 7: Booking - pending → rejected (valid)
+      ⏱️  Duration: 613ms
+   8. STATE 8: Booking - rejected → cancelled (invalid)
+      ⏱️  Duration: 101ms
+   9. STATE 9: Payment - initiated → completed (valid)
+      ⏱️  Duration: 102ms
+   10. STATE 10: Payment - initiated → failed (valid)
+      ⏱️  Duration: 102ms
+   11. STATE 11: Payment - completed → failed (invalid)
+      ⏱️  Duration: 102ms
+   12. STATE 12: Payment - expired → completed (invalid)
+      ⏱️  Duration: 102ms
+   13. STATE 13: Direct DB update bypass attempt fails
+      ⏱️  Duration: 668ms
+
+======================================================================
+
+
+Running Phase 4/9: Payment Safety...
+
+> cusown@0.1.0 test:phase4
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/16-phase4-payment-safety.ts
+
+
+🧪 Running: PAYMENT 1: Payment idempotency key prevents duplicates
+   ⏱️  Started at: 1:45:49 AM
+   👤 User Action: Test payment idempotency
+   ✅ Idempotency key enforced: duplicate key value violates unique constraint "payments_idempotency_key_key"
+✅ PASSED: PAYMENT 1: Payment idempotency key prevents duplicates
+   ⏱️  Duration: 719ms
+
+🧪 Running: PAYMENT 2: Payment attempts tracked on failure
+   ⏱️  Started at: 1:45:50 AM
+   👤 User Action: Test payment attempts tracking
+   ✅ Payment attempts tracked: 1 attempt(s)
+   ✅ Last attempt status: failed
+   ✅ Error message: Test failure reason
+✅ PASSED: PAYMENT 2: Payment attempts tracked on failure
+   ⏱️  Duration: 1281ms
+
+🧪 Running: PAYMENT 3: Duplicate webhook does not double-confirm
+   ⏱️  Started at: 1:45:51 AM
+   👤 User Action: Test duplicate webhook prevention
+   ✅ Duplicate webhook handled idempotently
+   ✅ Booking status unchanged: pending
+✅ PASSED: PAYMENT 3: Duplicate webhook does not double-confirm
+   ⏱️  Duration: 828ms
+
+🧪 Running: PAYMENT 4: Payment and booking state consistency
+   ⏱️  Started at: 1:45:52 AM
+   👤 User Action: Test payment-booking state consistency
+   ⚠️  Payment confirmation function not available or failed: Payment not completed
+✅ PASSED: PAYMENT 4: Payment and booking state consistency
+   ⏱️  Duration: 797ms
+
+🧪 Running: PAYMENT 5: Expired payments cannot be completed
+   ⏱️  Started at: 1:45:53 AM
+   👤 User Action: Test expired payment handling
+   ✅ Expired payments cannot transition to completed
+✅ PASSED: PAYMENT 5: Expired payments cannot be completed
+   ⏱️  Duration: 103ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 5
+   ✅ Passed: 5 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 3994ms (3.99s)
+   ⏱️  Average Test Duration: 746ms
+   ⏱️  Test Execution Time: 3728ms
+
+✅ Passed Tests:
+   1. PAYMENT 1: Payment idempotency key prevents duplicates
+      ⏱️  Duration: 719ms
+   2. PAYMENT 2: Payment attempts tracked on failure
+      ⏱️  Duration: 1281ms
+   3. PAYMENT 3: Duplicate webhook does not double-confirm
+      ⏱️  Duration: 828ms
+   4. PAYMENT 4: Payment and booking state consistency
+      ⏱️  Duration: 797ms
+   5. PAYMENT 5: Expired payments cannot be completed
+      ⏱️  Duration: 103ms
+
+======================================================================
+
+
+Running Phase 5/9: RBAC & Authorization...
+
+> cusown@0.1.0 test:phase5
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/17-phase5-rbac-authorization.ts
+
+
+🧪 Running: RBAC 1: Customer cannot modify businesses
+   ⏱️  Started at: 1:45:54 AM
+   👤 User Action: Customer tries to modify business
+   ✅ Test completed (service role bypasses RLS - expected)
+   ⚠️  Note: API endpoints should enforce RBAC at application level
+✅ PASSED: RBAC 1: Customer cannot modify businesses
+   ⏱️  Duration: 994ms
+
+🧪 Running: RBAC 2: Owner can only manage own business
+   ⏱️  Started at: 1:45:55 AM
+   👤 User Action: Owner2 tries to modify Owner1 business
+   ✅ Test completed (service role bypasses RLS - expected)
+   ⚠️  Note: API endpoints should enforce owner checks at application level
+✅ PASSED: RBAC 2: Owner can only manage own business
+   ⏱️  Duration: 1149ms
+
+🧪 Running: RBAC 3: Suspended business blocks bookings
+   ⏱️  Started at: 1:45:56 AM
+   👤 User Action: Try to book on suspended business
+   ✅ Suspended business correctly blocks bookings
+✅ PASSED: RBAC 3: Suspended business blocks bookings
+   ⏱️  Duration: 560ms
+
+🧪 Running: RBAC 4: Role verification works correctly
+   ⏱️  Started at: 1:45:56 AM
+   👤 User Action: Verify role checks
+   ✅ Customer role: customer
+   ✅ Owner role: owner
+✅ PASSED: RBAC 4: Role verification works correctly
+   ⏱️  Duration: 851ms
+
+🧪 Running: RBAC 5: Missing profile handled correctly
+   ⏱️  Started at: 1:45:57 AM
+   👤 User Action: Test missing profile handling
+   ✅ Missing profile correctly returns null
+✅ PASSED: RBAC 5: Missing profile handled correctly
+   ⏱️  Duration: 207ms
+
+🧪 Running: RBAC 6: Admin can override restrictions
+   ⏱️  Started at: 1:45:57 AM
+   👤 User Action: Admin overrides suspended business
+   ✅ Admin can access business data (override capability verified)
+✅ PASSED: RBAC 6: Admin can override restrictions
+   ⏱️  Duration: 531ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 6
+   ✅ Passed: 6 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 4374ms (4.37s)
+   ⏱️  Average Test Duration: 715ms
+   ⏱️  Test Execution Time: 4292ms
+
+✅ Passed Tests:
+   1. RBAC 1: Customer cannot modify businesses
+      ⏱️  Duration: 994ms
+   2. RBAC 2: Owner can only manage own business
+      ⏱️  Duration: 1149ms
+   3. RBAC 3: Suspended business blocks bookings
+      ⏱️  Duration: 560ms
+   4. RBAC 4: Role verification works correctly
+      ⏱️  Duration: 851ms
+   5. RBAC 5: Missing profile handled correctly
+      ⏱️  Duration: 207ms
+   6. RBAC 6: Admin can override restrictions
+      ⏱️  Duration: 531ms
+
+======================================================================
+
+
+Running Phase 6/9: Abuse & Rate Limiting...
+
+> cusown@0.1.0 test:phase6
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/18-phase6-abuse-rate-limiting.ts
+
+
+🧪 Running: ABUSE 1: Slot hoarding detection
+   ⏱️  Started at: 1:45:58 AM
+   👤 User Action: Simulate slot hoarding
+   ✅ Reserved 1 slots
+✅ PASSED: ABUSE 1: Slot hoarding detection
+   ⏱️  Duration: 873ms
+
+🧪 Running: ABUSE 2: Concurrent reservation attempts
+   ⏱️  Started at: 1:45:59 AM
+   👤 User Action: Simulate concurrent reservation abuse
+   ✅ Concurrent attempts: 1 succeeded
+✅ PASSED: ABUSE 2: Concurrent reservation attempts
+   ⏱️  Duration: 467ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 2
+   ✅ Passed: 2 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1491ms (1.49s)
+   ⏱️  Average Test Duration: 670ms
+   ⏱️  Test Execution Time: 1340ms
+
+✅ Passed Tests:
+   1. ABUSE 1: Slot hoarding detection
+      ⏱️  Duration: 873ms
+   2. ABUSE 2: Concurrent reservation attempts
+      ⏱️  Duration: 467ms
+
+======================================================================
+
+
+Running Phase 7/9: Config & Env Safety...
+
+> cusown@0.1.0 test:phase7
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/19-phase7-config-env-safety.ts
+
+
+🧪 Running: CONFIG 1: Critical config values exist
+   ⏱️  Started at: 1:46:00 AM
+   👤 User Action: Verify critical config values
+   ✅ Config values exist
+✅ PASSED: CONFIG 1: Critical config values exist
+   ⏱️  Duration: 111ms
+
+🧪 Running: CONFIG 2: Env validation works
+   ⏱️  Started at: 1:46:01 AM
+   👤 User Action: Test env validation
+   ✅ Env validation passed
+✅ PASSED: CONFIG 2: Env validation works
+   ⏱️  Duration: 102ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 2
+   ✅ Passed: 2 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 213ms (0.21s)
+   ⏱️  Average Test Duration: 107ms
+   ⏱️  Test Execution Time: 213ms
+
+✅ Passed Tests:
+   1. CONFIG 1: Critical config values exist
+      ⏱️  Duration: 111ms
+   2. CONFIG 2: Env validation works
+      ⏱️  Duration: 102ms
+
+======================================================================
+
+
+Running Phase 8/9: Audit Logging...
+
+> cusown@0.1.0 test:phase8
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/20-phase8-audit-logging.ts
+
+
+🧪 Running: AUDIT 1: Slot transitions create audit logs
+   ⏱️  Started at: 1:46:01 AM
+   👤 User Action: Test slot transition audit logging
+   ✅ Audit log created
+✅ PASSED: AUDIT 1: Slot transitions create audit logs
+   ⏱️  Duration: 1069ms
+
+🧪 Running: AUDIT 2: Audit logs contain required fields
+   ⏱️  Started at: 1:46:02 AM
+   ✅ All required fields present
+✅ PASSED: AUDIT 2: Audit logs contain required fields
+   ⏱️  Duration: 72ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 2
+   ✅ Passed: 2 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 1205ms (1.21s)
+   ⏱️  Average Test Duration: 571ms
+   ⏱️  Test Execution Time: 1141ms
+
+✅ Passed Tests:
+   1. AUDIT 1: Slot transitions create audit logs
+      ⏱️  Duration: 1069ms
+   2. AUDIT 2: Audit logs contain required fields
+      ⏱️  Duration: 72ms
+
+======================================================================
+
+
+Running Phase 9/9: End-to-End Flows...
+
+> cusown@0.1.0 test:phase9
+> ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/21-phase9-e2e-flows.ts
+
+
+🧪 Running: E2E 1: Happy path - complete booking flow
+   ⏱️  Started at: 1:46:03 AM
+   👤 User Action: E2E: Complete booking flow
+   ⚠️  Payment confirmation function not available: undefined
+✅ PASSED: E2E 1: Happy path - complete booking flow
+   ⏱️  Duration: 1013ms
+
+🧪 Running: E2E 2: Negative flow - payment failure
+   ⏱️  Started at: 1:46:04 AM
+   👤 User Action: E2E: Payment failure flow
+   ✅ Payment failed correctly
+   ✅ Booking remains pending: pending
+   ✅ Slot remains reserved: reserved
+✅ PASSED: E2E 2: Negative flow - payment failure
+   ⏱️  Duration: 792ms
+
+🧪 Running: E2E 3: Concurrent bookings - only one succeeds
+   ⏱️  Started at: 1:46:05 AM
+   👤 User Action: E2E: Concurrent bookings
+   ✅ Concurrent bookings: 1 succeeded, 4 failed
+   ✅ Only one booking exists
+✅ PASSED: E2E 3: Concurrent bookings - only one succeeds
+   ⏱️  Duration: 743ms
+
+======================================================================
+📊 DETAILED TEST SUMMARY
+======================================================================
+
+📈 Overall Statistics:
+   Total Tests: 3
+   ✅ Passed: 3 (100.0%)
+   ❌ Failed: 0 (0.0%)
+   ⏱️  Total Duration: 2818ms (2.82s)
+   ⏱️  Average Test Duration: 849ms
+   ⏱️  Test Execution Time: 2548ms
+
+✅ Passed Tests:
+   1. E2E 1: Happy path - complete booking flow
+      ⏱️  Duration: 1013ms
+   2. E2E 2: Negative flow - payment failure
+      ⏱️  Duration: 792ms
+   3. E2E 3: Concurrent bookings - only one succeeds
+      ⏱️  Duration: 743ms
+
+======================================================================
+
+
+============================================================
+✅ ALL TEST SUITES COMPLETED
+============================================================
+Test run completed at: Tue Jan 27 01:46:06 IST 2026
+📝 Full output saved to: scripts/test-results_20260127_014449.log
+============================================================

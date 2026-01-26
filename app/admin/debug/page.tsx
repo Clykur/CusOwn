@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabaseAuth } from '@/lib/supabase/auth';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+
+// Force dynamic rendering - this page requires runtime data
+export const dynamic = 'force-dynamic';
 
 export default function DebugAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -56,9 +60,14 @@ export default function DebugAuthPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Loading debug information...</h1>
+      <div className="min-h-screen bg-white flex">
+        <Suspense fallback={<div className="w-64" />}>
+          <AdminSidebar />
+        </Suspense>
+        <div className="flex-1 lg:ml-64">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 className="text-2xl font-bold mb-4">Loading debug information...</h1>
+          </div>
         </div>
       </div>
     );
@@ -66,18 +75,27 @@ export default function DebugAuthPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
-          <p className="text-gray-600">{error}</p>
+      <div className="min-h-screen bg-white flex">
+        <Suspense fallback={<div className="w-64" />}>
+          <AdminSidebar />
+        </Suspense>
+        <div className="flex-1 lg:ml-64">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
+            <p className="text-gray-600">{error}</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-white flex">
+      <Suspense fallback={<div className="w-64" />}>
+        <AdminSidebar />
+      </Suspense>
+      <div className="flex-1 lg:ml-64">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold mb-6">Authentication Debug Information</h1>
         
         <div className="space-y-6">
@@ -156,6 +174,7 @@ export default function DebugAuthPage() {
               <li>Check console logs for detailed debugging information</li>
             </ol>
           </section>
+        </div>
         </div>
       </div>
     </div>

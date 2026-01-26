@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseAuth, signOut, getUserProfile, isAdmin } from '@/lib/supabase/auth';
 import type { User } from '@supabase/supabase-js';
+import { ROUTES } from '@/lib/utils/navigation';
 
 // Check if Supabase is configured
 const isSupabaseConfigured = () => {
@@ -114,7 +115,7 @@ export default function AuthButton() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/');
+    router.push(ROUTES.HOME);
   };
 
   if (loading) {
@@ -123,56 +124,29 @@ export default function AuthButton() {
     );
   }
 
-  const handleAdminClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      router.push('/auth/login?redirect_to=/admin/dashboard');
-      return;
-    }
-
-    // Double-check admin status before navigating
-    const adminCheck = await isAdmin(user.id);
-    if (!adminCheck) {
-      alert('You are not an admin user. Please contact support if you believe this is an error.');
-      return;
-    }
-
-    router.push('/admin/dashboard');
-  };
-
   if (!user) {
     return (
-      <button
-        onClick={handleAdminClick}
-        className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-      >
-        Admin
-      </button>
+      <Link href={ROUTES.AUTH_LOGIN()}>
+        <button className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors">
+          Sign In
+        </button>
+      </Link>
     );
   }
 
-  // Show one clear CTA button based on user type
+  // Show clear navigation based on user type - NO admin buttons in regular header
   if (userType === 'owner') {
     return (
       <div className="flex items-center gap-3">
-        {isAdminUser && (
-          <button
-            onClick={handleAdminClick}
-            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Admin
-          </button>
-        )}
         <button
-          onClick={() => router.push('/owner/dashboard')}
+          onClick={() => router.push(ROUTES.OWNER_DASHBOARD_BASE)}
           className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
         >
-          Owner Dashboard
+          My Dashboard
         </button>
         <button
           onClick={handleSignOut}
-          className="px-3 py-2 text-gray-600 hover:text-gray-900 text-sm"
+          className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
         >
           Sign Out
         </button>
@@ -180,26 +154,24 @@ export default function AuthButton() {
     );
   }
 
-  // Customer CTA - show bookings or browse
+  // Customer navigation
   return (
     <div className="flex items-center gap-3">
-      {isAdminUser && (
-        <button
-          onClick={handleAdminClick}
-          className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-        >
-          Admin
-        </button>
-      )}
       <button
-        onClick={() => router.push('/categories/salon')}
+        onClick={() => router.push(ROUTES.CUSTOMER_DASHBOARD)}
         className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
+      >
+        My Bookings
+      </button>
+      <button
+        onClick={() => router.push(ROUTES.SALON_LIST)}
+        className="px-6 py-2 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
       >
         Book Appointment
       </button>
       <button
         onClick={handleSignOut}
-        className="px-3 py-2 text-gray-600 hover:text-gray-900 text-sm"
+        className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
       >
         Sign Out
       </button>

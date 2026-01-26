@@ -1,4 +1,5 @@
 import { getBookingUrl } from './url';
+import { NextRequest } from 'next/server';
 
 /**
  * Generate QR code data URL for a booking link
@@ -28,9 +29,11 @@ export const generateQRCodeDataUrl = async (bookingUrl: string): Promise<string>
 /**
  * Generate QR code for a booking link
  * Returns base64 encoded image string
+ * @param bookingLink - The booking link identifier
+ * @param request - Optional NextRequest for proper URL generation (production vs dev)
  */
-export const generateQRCodeForBookingLink = async (bookingLink: string): Promise<string> => {
-  const bookingUrl = getBookingUrl(bookingLink);
+export const generateQRCodeForBookingLink = async (bookingLink: string, request?: NextRequest): Promise<string> => {
+  const bookingUrl = getBookingUrl(bookingLink, request);
   return generateQRCodeDataUrl(bookingUrl);
 };
 

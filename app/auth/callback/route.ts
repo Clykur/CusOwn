@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { env } from '@/config/env';
 import { userService } from '@/services/user.service';
+import { getBaseUrl } from '@/lib/utils/url';
+import { ROUTES } from '@/lib/utils/navigation';
 
 /**
  * Handle OAuth callback from Google
@@ -12,6 +14,8 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const cookieStore = await cookies();
+  
+  const baseUrl = getBaseUrl(request);
 
   if (code) {
     const supabase = createClient(env.supabase.url, env.supabase.anonKey, {
@@ -49,10 +53,10 @@ export async function GET(request: NextRequest) {
       try {
         profile = await userService.getUserProfile(data.user.id);
         
-        // If user is admin, redirect immediately - don't change their status
-        if (profile?.user_type === 'admin') {
-          return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-        }
+          // If user is admin, redirect immediately - don't change their status
+          if (profile?.user_type === 'admin') {
+            return NextResponse.redirect(new URL(ROUTES.ADMIN_DASHBOARD, baseUrl));
+          }
       } catch {
         // Profile might not exist yet, continue
       }
@@ -89,7 +93,7 @@ export async function GET(request: NextRequest) {
           profile = await userService.getUserProfile(data.user.id);
           // Double-check admin status after profile creation
           if (profile?.user_type === 'admin') {
-            return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+            return NextResponse.redirect(new URL(ROUTES.ADMIN_DASHBOARD, baseUrl));
           }
         } catch {
           profile = null;
@@ -98,7 +102,7 @@ export async function GET(request: NextRequest) {
 
       // Final check if user is admin - admins go directly to admin dashboard
       if (profile?.user_type === 'admin') {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+        return NextResponse.redirect(new URL(ROUTES.ADMIN_DASHBOARD, baseUrl));
       }
 
       // Redirect based on role
@@ -106,42 +110,37 @@ export async function GET(request: NextRequest) {
       
       // If redirect_to is set and it's not the callback itself, use it
       if (redirectTo && !redirectTo.includes('/auth/callback')) {
-        return NextResponse.redirect(new URL(redirectTo, request.url));
+        // Ensure redirect_to uses the correct base URL
+        const redirectUrl = redirectTo.startsWith('http') 
+          ? redirectTo 
+          : new URL(redirectTo, baseUrl).toString();
+        return NextResponse.redirect(redirectUrl);
       }
 
-      // Default redirects based on selected role
+      // Use canonical user state system for redirects
+      const { getUserState } = await import('@/lib/utils/user-state');
+      const stateResult = await getUserState(data.user.id);
+      
+      // If state system provides a redirect URL, use it
+      if (stateResult.redirectUrl) {
+        return NextResponse.redirect(new URL(stateResult.redirectUrl, baseUrl));
+      }
+      
+      // Fallback: Default redirects based on selected role
       if (selectedRole === 'owner') {
-        // Check if user has businesses
-        if (profile) {
-          const businesses = await userService.getUserBusinesses(data.user.id);
-          if (businesses && businesses.length > 0) {
-            return NextResponse.redirect(new URL('/owner/dashboard', request.url));
-          }
-        }
-        return NextResponse.redirect(new URL('/setup', request.url));
+        // Will be handled by state system, but fallback to setup
+        return NextResponse.redirect(new URL(ROUTES.SETUP, baseUrl));
       } else if (selectedRole === 'customer') {
-        // Customer - redirect to browse/book appointments
-        return NextResponse.redirect(new URL('/categories/salon', request.url));
+        return NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, baseUrl));
       } else {
-        // No role selected - check existing profile
-        if (profile) {
-          if (profile.user_type === 'owner' || profile.user_type === 'both') {
-            const businesses = await userService.getUserBusinesses(data.user.id);
-            if (businesses && businesses.length > 0) {
-              return NextResponse.redirect(new URL('/owner/dashboard', request.url));
-            }
-            return NextResponse.redirect(new URL('/setup', request.url));
-          } else {
-            return NextResponse.redirect(new URL('/categories/salon', request.url));
-          }
-        }
-        // Default to customer flow if no profile
-        return NextResponse.redirect(new URL('/categories/salon', request.url));
+        // Default to customer dashboard
+        return NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, baseUrl));
       }
     }
   }
 
   // If error or no code, redirect to home
-  return NextResponse.redirect(new URL('/', request.url));
+  // baseUrl is already defined at the top of the function
+  return NextResponse.redirect(new URL(ROUTES.HOME, baseUrl));
 }
 

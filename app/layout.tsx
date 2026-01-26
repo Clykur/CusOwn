@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/layout/Header';
+import UniversalSidebar from '@/components/layout/UniversalSidebar';
+import '@/lib/init/events';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Cusown - Salon Booking Made Simple',
-  description: 'The easiest way for small salons to manage bookings',
+  title: 'CusOwn - Appointment Management for Service Businesses',
+  description: 'A modern appointment and slot management platform for service businesses. Simple, reliable, and built to scale.',
   // Next.js will automatically detect icon.svg in the app directory
   // No need to specify it in metadata
 };
@@ -20,6 +22,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <UniversalSidebar />
+        <Header />
         {children}
       </body>
     </html>

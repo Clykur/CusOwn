@@ -82,8 +82,16 @@ export const logError = (error: unknown, context?: string): void => {
       console.error(error);
     }
   }
-  // In production, errors should be logged to an error tracking service
-  // Example: Sentry, LogRocket, etc.
+
+  if (typeof window !== 'undefined' && (window as any).Sentry) {
+    (window as any).Sentry.captureException(error, { tags: { context } });
+  }
+
+  if (context && typeof window === 'undefined') {
+    // Server-side error logging
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    // Performance monitoring can be added here if needed
+  }
 };
 
 /**
