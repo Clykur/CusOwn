@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { env } from '@/config/env';
+import { createBrowserClient } from '@supabase/ssr';
 
 /**
  * Client-side Supabase client for authentication
@@ -10,18 +10,41 @@ const supabaseAnonKey = typeof window !== 'undefined' ? (env.supabase.anonKey ||
 
 // Only create client if we have valid credentials
 // Use a dummy client if credentials are missing to prevent crashes
-let supabaseAuth: ReturnType<typeof createClient> | null = null;
+let supabaseAuth: ReturnType<typeof createBrowserClient> | null = null;
 
 if (supabaseUrl && supabaseAnonKey) {
   try {
-    supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    // Cookie-based storage is required for SSR frameworks to reliably persist PKCE verifier.
+    // This prevents "PKCE code verifier not found in storage" across redirects.
+    supabaseAuth = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        get(name) {
+          if (typeof document === 'undefined') return undefined;
+          const cookies = document.cookie.split(';').map((c) => c.trim());
+          const match = cookies.find((c) => c.startsWith(`${name}=`));
+          return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : undefined;
+        },
+        set(name, value, options) {
+          if (typeof document === 'undefined') return;
+          const opts = options ?? {};
+          const parts = [`${name}=${encodeURIComponent(value)}`];
+          parts.push(`Path=${opts.path ?? '/'}`);
+          if (opts.maxAge != null) parts.push(`Max-Age=${opts.maxAge}`);
+          if (opts.expires) parts.push(`Expires=${opts.expires.toUTCString()}`);
+          if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`);
+          if (opts.secure) parts.push('Secure');
+          document.cookie = parts.join('; ');
+        },
+        remove(name, options) {
+          if (typeof document === 'undefined') return;
+          const opts = options ?? {};
+          document.cookie = `${name}=; Path=${opts.path ?? '/'}; Max-Age=0`;
+        },
+      },
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
-        // Use localStorage for PKCE code verifier persistence
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        // Enable PKCE flow explicitly
         flowType: 'pkce',
       },
     });

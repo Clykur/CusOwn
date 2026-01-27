@@ -37,90 +37,82 @@ function SelectRoleContent() {
       setLoading(false);
       return;
     }
-    supabaseAuth.auth.getSession().then(async ({ data: { session } }) => {
+    const run = async () => {
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
       if (session?.user) {
         setUser(session.user);
+
         // Check if user is admin - redirect directly to admin dashboard
         const adminCheck = await isAdmin(session.user.id);
         if (adminCheck) {
           router.push(ROUTES.ADMIN_DASHBOARD);
           return;
         }
+
         // If user has a profile and role, check if they're trying to switch roles
         try {
           const { getUserProfile } = await import('@/lib/supabase/auth');
           const profile = await getUserProfile(session.user.id);
           if (profile) {
             const userType = (profile as any).user_type;
-            
+
             // If user already has 'both' role, always allow role selection
             if (userType === 'both') {
-              // Set selected role from URL if provided, otherwise keep current selection
-              if (urlRole) {
-                setSelectedRole(urlRole);
-              }
+              if (urlRole) setSelectedRole(urlRole);
               setLoading(false);
               return;
             }
-            
+
             // If user is trying to switch roles (has one role, wants the other), allow it
-            if (urlRole === 'owner' && (userType === 'customer')) {
+            if (urlRole === 'owner' && userType === 'customer') {
               setSelectedRole('owner');
               setLoading(false);
               return;
             }
-            
-            if (urlRole === 'customer' && (userType === 'owner')) {
+
+            if (urlRole === 'customer' && userType === 'owner') {
               setSelectedRole('customer');
               setLoading(false);
               return;
             }
-            
+
             // If no role in URL and user already has a single role, redirect them
-            // Use canonical user state system
             if (!urlRole) {
               const { getUserState } = await import('@/lib/utils/user-state');
               const stateResult = await getUserState(session.user.id);
-              
-              // If user has a clear state with redirect, use it
+
               if (stateResult.redirectUrl && stateResult.state !== 'S5' && stateResult.state !== 'S6') {
                 router.push(stateResult.redirectUrl);
                 return;
               }
-              
-              // For 'both' role users, allow them to choose
-              if (userType === 'both') {
-                setLoading(false);
-                return;
-              }
-              
-              // For single-role users, redirect based on state
+
               if (userType === 'owner') {
-                if (stateResult.businessCount >= 1) {
-                  router.push(ROUTES.OWNER_DASHBOARD_BASE);
-                  return;
-                } else {
-                  router.push(ROUTES.SETUP);
-                  return;
-                }
-              } else if (userType === 'customer') {
-                // Allow customer to stay and potentially switch to owner
-                setLoading(false);
+                router.push(stateResult.businessCount >= 1 ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.SETUP);
                 return;
               }
-            } else {
-              // URL has a role parameter - allow selection even if user has a different role
-              setSelectedRole(urlRole);
+
+              // Customer stays and can switch roles
               setLoading(false);
               return;
             }
+
+            // URL has a role parameter - allow selection even if user has a different role
+            setSelectedRole(urlRole);
+            setLoading(false);
+            return;
           }
         } catch {
           // Continue to role selection if profile check fails
         }
       }
+
       setLoading(false);
-    });
+    };
+
+    run().catch(() => setLoading(false));
   }, [router, urlRole]);
 
   const handleContinue = async () => {

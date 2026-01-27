@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { env } from '@/config/env';
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
 
 // Lazy import cookies to avoid bundling in client
 let cookiesModule: typeof import('next/headers') | null = null;
@@ -35,36 +35,26 @@ const getSupabaseAdmin = async () => {
  */
 export const createServerClient = async () => {
   const cookieStore = await getCookies();
-  
-  // Supabase stores session in specific cookie names
-  // Format: sb-<project-ref>-auth-token
-  const projectRef = env.supabase.url.split('//')[1]?.split('.')[0] || '';
-  const accessTokenKey = `sb-${projectRef}-auth-token`;
-  
-  const accessToken = cookieStore.get(accessTokenKey)?.value;
-  
-  const supabase = createClient(env.supabase.url, env.supabase.anonKey, {
+
+  // Use @supabase/ssr so cookies are the canonical storage for sessions/PKCE.
+  // Server-side should not auto-refresh tokens or persist sessions in-memory.
+  return createSupabaseServerClient(env.supabase.url, env.supabase.anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          cookieStore.set(name, value, options);
+        });
+      },
+    },
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+      detectSessionInUrl: false,
     },
   });
-
-  // If we have an access token, set it
-  if (accessToken) {
-    try {
-      // Parse the token to get user info
-      const tokenParts = accessToken.split('.');
-      if (tokenParts.length === 3) {
-        // Token is JWT, we can decode it (basic check)
-        // For actual auth, we'll use the admin client to verify
-      }
-    } catch {
-      // Ignore token parsing errors
-    }
-  }
-
-  return supabase;
 };
 
 /**

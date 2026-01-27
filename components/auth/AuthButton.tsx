@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseAuth, signOut, getUserProfile, isAdmin } from '@/lib/supabase/auth';
-import type { User } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { ROUTES } from '@/lib/utils/navigation';
 
 // Check if Supabase is configured
@@ -29,26 +29,32 @@ export default function AuthButton() {
       return;
     }
 
-        // Get initial session with error handling
-        supabaseAuth!.auth.getSession()
-          .then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-              loadUserProfile(session.user.id);
-            } else {
-              setLoading(false);
-            }
-          })
-          .catch((error) => {
-            console.error('Failed to get session:', error);
-            setLoading(false);
-          });
+    // Get initial session with error handling
+    const initSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadUserProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to get session:', error);
+        setLoading(false);
+      }
+    };
+
+    initSession();
 
         // Listen for auth changes
         try {
           const {
             data: { subscription },
-          } = supabaseAuth!.auth.onAuthStateChange((_event, session) => {
+          } = supabaseAuth!.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           loadUserProfile(session.user.id);
