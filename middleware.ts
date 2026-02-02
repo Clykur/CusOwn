@@ -15,10 +15,11 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const duration = Date.now() - startTime;
 
+  // Fire-and-forget: do not block response on metrics (avoids extra latency per request)
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    await performanceMonitor.recordAPITiming(request.nextUrl.pathname, duration);
-    await metricsService.increment(`api.${request.nextUrl.pathname}.requests`);
-    await metricsService.increment('api.requests.total');
+    void performanceMonitor.recordAPITiming(request.nextUrl.pathname, duration);
+    void metricsService.increment(`api.${request.nextUrl.pathname}.requests`);
+    void metricsService.increment('api.requests.total');
   }
 
   return response;

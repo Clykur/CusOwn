@@ -41,6 +41,21 @@ Then click "Run"
 
 **Expected Result:** Should complete without errors
 
+### 5. Run Migration: Supabase Linter Remediation (optional but recommended)
+
+Fixes Supabase database linter errors and warnings: SECURITY INVOKER views, RLS on public tables, function `search_path`, audit policy, and RLS performance (`(select auth.uid())`).
+
+Copy and paste the entire contents of:
+```
+database/migration_supabase_linter_remediation.sql
+```
+
+Then click "Run"
+
+**Expected Result:** Should complete without errors. Run after base migrations and RLS migrations.
+
+**Auth (manual):** To fix "Leaked Password Protection Disabled" warning, enable it in Supabase Dashboard → Authentication → Settings → Password Protection → enable "Check for compromised passwords".
+
 ---
 
 ## Troubleshooting

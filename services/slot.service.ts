@@ -9,11 +9,11 @@ import {
   SLOT_GENERATION_WINDOW_DAYS,
 } from '@/config/constants';
 import { downtimeService } from './downtime.service';
-import { 
-  slotTemplateCache, 
-  slotPoolManager, 
+import {
+  slotTemplateCache,
+  slotPoolManager,
   dateSlotOptimizer,
-  generateOptimizedSlots 
+  generateOptimizedSlots
 } from './slot-optimizer.service';
 
 // Ensure we're using the constant
@@ -89,7 +89,7 @@ export class SlotService {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
-    
+
     // Insert slots in batches to avoid overwhelming the database
     const BATCH_SIZE = 100;
     for (let i = 0; i < slotsToCreate.length; i += BATCH_SIZE) {
@@ -180,7 +180,7 @@ export class SlotService {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
-    
+
     // Insert slots - ensure they're actually written to database
     const { error, data } = await supabaseAdmin
       .from('slots')
@@ -214,7 +214,7 @@ export class SlotService {
 
     // Normalize date format (ensure YYYY-MM-DD)
     const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
-    
+
     const { data: existingSlots } = await supabaseAdmin
       .from('slots')
       .select('id')
@@ -232,7 +232,7 @@ export class SlotService {
           await this.generateSlotsForDate(bid, date, cfg);
         }
       );
-      
+
       // Optimize future date generation - only generate missing dates
       if (!supabaseAdmin) {
         throw new Error('Database not configured');
@@ -255,7 +255,7 @@ export class SlotService {
           return !!(data && data.length > 0);
         }
       );
-      
+
       // Batch generate missing dates using pool manager
       if (missingDates.length > 0) {
         const generationRequests = missingDates.map(date => ({
@@ -263,7 +263,7 @@ export class SlotService {
           date,
           config: salonConfig,
         }));
-        
+
         await slotPoolManager.batchGenerateSlots(
           generationRequests,
           async (bid, date, cfg) => {
@@ -272,7 +272,7 @@ export class SlotService {
             });
           }
         );
-        
+
         console.log(`✅ Generated slots for ${missingDates.length} future dates: ${missingDates.join(', ')}`);
       }
     }
@@ -298,7 +298,7 @@ export class SlotService {
 
     // Process and filter slots
     const processedSlots: Slot[] = [];
-    
+
     for (const slot of data || []) {
       // For today's slots, check if slot time has passed
       let isPast = false;
@@ -306,7 +306,7 @@ export class SlotService {
         const [hours, minutes] = slot.start_time.split(':').map(Number);
         const slotDateTime = new Date(now);
         slotDateTime.setHours(hours, minutes, 0, 0);
-        
+
         // If current time is >= slot start time, the slot has passed
         isPast = now >= slotDateTime;
       }
@@ -335,7 +335,7 @@ export class SlotService {
       processedSlots.push(slot);
     }
 
-    metricsService.recordTiming('slots.fetch', Date.now() - startTime);
+    void metricsService.recordTiming('slots.fetch', Date.now() - startTime);
     return processedSlots;
   }
 
@@ -343,7 +343,7 @@ export class SlotService {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
-      const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('slots')
       .select('id, business_id, date, start_time, end_time, status, reserved_until, created_at')
       .eq('id', slotId)
@@ -459,21 +459,21 @@ export class SlotService {
     }
 
     await emitSlotReserved(updatedSlot);
-    
-      try {
-        await auditService.createAuditLog(
-          null,
-          'slot_reserved',
-          'slot',
-          {
-            entityId: slotId,
-            description: `Slot reserved until ${reservedUntil.toISOString()}`,
-          }
-        );
-      } catch (auditError) {
-        console.error('[AUDIT] Failed to log slot reservation:', auditError);
-      }
-    
+
+    try {
+      await auditService.createAuditLog(
+        null,
+        'slot_reserved',
+        'slot',
+        {
+          entityId: slotId,
+          description: `Slot reserved until ${reservedUntil.toISOString()}`,
+        }
+      );
+    } catch (auditError) {
+      console.error('[AUDIT] Failed to log slot reservation:', auditError);
+    }
+
     return true;
   }
 
@@ -510,7 +510,7 @@ export class SlotService {
     const updatedSlot = await this.getSlotById(slotId);
     if (updatedSlot) {
       await emitSlotReleased(updatedSlot);
-      
+
       try {
         await auditService.createAuditLog(
           null,
@@ -584,7 +584,7 @@ export class SlotService {
     const updatedSlot = await this.getSlotById(slotId);
     if (updatedSlot) {
       await emitSlotBooked(updatedSlot);
-      
+
       try {
         await auditService.createAuditLog(
           null,
