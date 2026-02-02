@@ -9,7 +9,15 @@ export const isValidUUID = (id: string): boolean => {
 };
 
 // Resource types for URL tokenization
-export type ResourceType = 'salon' | 'booking' | 'booking-status' | 'owner-dashboard' | 'accept' | 'reject' | 'admin-business' | 'admin-booking';
+export type ResourceType =
+  | 'salon'
+  | 'booking'
+  | 'booking-status'
+  | 'owner-dashboard'
+  | 'accept'
+  | 'reject'
+  | 'admin-business'
+  | 'admin-booking';
 
 // Get secret for resource type (all use same secret for now, but can be separated)
 const getResourceSecret = (resourceType: ResourceType): string => {
@@ -75,7 +83,8 @@ export const validateResourceToken = (
   if (!token || !resourceId) return false;
 
   // Validate token format (64 chars for new, 32/16 for legacy)
-  const isValidFormat = /^[0-9a-f]{64}$/i.test(token) || /^[0-9a-f]{32}$/i.test(token) || /^[0-9a-f]{16}$/i.test(token);
+  const isValidFormat =
+    /^[0-9a-f]{64}$/i.test(token) || /^[0-9a-f]{32}$/i.test(token) || /^[0-9a-f]{16}$/i.test(token);
   if (!isValidFormat) return false;
 
   try {
@@ -123,28 +132,44 @@ export const validateResourceToken = (
       }
 
       // Priority 6: Check every hour for rest of validity window
-      for (let t = currentTime - 21600; t >= currentTime - TOKEN_VALIDITY_WINDOW - TOKEN_TIME_TOLERANCE; t -= 3600) {
+      for (
+        let t = currentTime - 21600;
+        t >= currentTime - TOKEN_VALIDITY_WINDOW - TOKEN_TIME_TOLERANCE;
+        t -= 3600
+      ) {
         if (!timeWindows.includes(t)) {
           timeWindows.push(t);
         }
       }
 
       // Priority 7: Check future times (clock skew tolerance) - every second for next 2 min
-      for (let t = currentTime + 1; t <= currentTime + 120 && t <= currentTime + TOKEN_TIME_TOLERANCE; t += 1) {
+      for (
+        let t = currentTime + 1;
+        t <= currentTime + 120 && t <= currentTime + TOKEN_TIME_TOLERANCE;
+        t += 1
+      ) {
         if (!timeWindows.includes(t)) {
           timeWindows.push(t);
         }
       }
 
       // Priority 8: Check future times - every 10 seconds for next 2-5 min
-      for (let t = currentTime + 120; t <= currentTime + 300 && t <= currentTime + TOKEN_TIME_TOLERANCE; t += 10) {
+      for (
+        let t = currentTime + 120;
+        t <= currentTime + 300 && t <= currentTime + TOKEN_TIME_TOLERANCE;
+        t += 10
+      ) {
         if (!timeWindows.includes(t)) {
           timeWindows.push(t);
         }
       }
 
       // Priority 9: Check future times - every minute for next 5-30 min
-      for (let t = currentTime + 300; t <= currentTime + 1800 && t <= currentTime + TOKEN_TIME_TOLERANCE; t += 60) {
+      for (
+        let t = currentTime + 300;
+        t <= currentTime + 1800 && t <= currentTime + TOKEN_TIME_TOLERANCE;
+        t += 60
+      ) {
         if (!timeWindows.includes(t)) {
           timeWindows.push(t);
         }
@@ -214,28 +239,20 @@ export const getSecureResourceUrl = (
   resourceId: string,
   baseUrl?: string
 ): string => {
-  try {
-    const token = generateResourceToken(resourceType, resourceId);
-    // If baseUrl is not provided, get it from environment/request context
-    const url = baseUrl || getBaseUrl();
-    const encodedToken = encodeURIComponent(token);
-    
-    // Map resource types to URL patterns
-    const urlPatterns: Record<ResourceType, string> = {
-      'salon': `/salon/${resourceId}?token=${encodedToken}`,
-      'booking': `/b/${resourceId}?token=${encodedToken}`,
-      'booking-status': `/booking/${resourceId}?token=${encodedToken}`,
-      'owner-dashboard': `/owner/${resourceId}?token=${encodedToken}`,
-      'accept': `/accept/${resourceId}?token=${encodedToken}`,
-      'reject': `/reject/${resourceId}?token=${encodedToken}`,
-      'admin-business': `/admin/businesses/${resourceId}?token=${encodedToken}`,
-      'admin-booking': `/admin/bookings/${resourceId}?token=${encodedToken}`,
-    };
-    
-    return `${url}${urlPatterns[resourceType]}`;
-  } catch (error) {
-    throw error;
-  }
+  const token = generateResourceToken(resourceType, resourceId);
+  const url = baseUrl || getBaseUrl();
+  const encodedToken = encodeURIComponent(token);
+  const urlPatterns: Record<ResourceType, string> = {
+    salon: `/salon/${resourceId}?token=${encodedToken}`,
+    booking: `/b/${resourceId}?token=${encodedToken}`,
+    'booking-status': `/booking/${resourceId}?token=${encodedToken}`,
+    'owner-dashboard': `/owner/${resourceId}?token=${encodedToken}`,
+    accept: `/accept/${resourceId}?token=${encodedToken}`,
+    reject: `/reject/${resourceId}?token=${encodedToken}`,
+    'admin-business': `/admin/businesses/${resourceId}?token=${encodedToken}`,
+    'admin-booking': `/admin/bookings/${resourceId}?token=${encodedToken}`,
+  };
+  return `${url}${urlPatterns[resourceType]}`;
 };
 
 // Generate secure salon URL with token (legacy wrapper)
@@ -257,5 +274,14 @@ export const sanitizeInput = (input: string): string => {
   return input.trim().replace(/[<>]/g, '');
 };
 
-export { sanitizeString, sanitizeNumber, sanitizeInteger, sanitizeEmail, sanitizePhone, sanitizeUUID, sanitizeDate, sanitizeTime, sanitizeObject } from '@/lib/security/input-sanitizer';
-
+export {
+  sanitizeString,
+  sanitizeNumber,
+  sanitizeInteger,
+  sanitizeEmail,
+  sanitizePhone,
+  sanitizeUUID,
+  sanitizeDate,
+  sanitizeTime,
+  sanitizeObject,
+} from '@/lib/security/input-sanitizer';

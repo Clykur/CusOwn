@@ -1,5 +1,4 @@
 import { BOOKING_LINK_PREFIX } from '@/config/constants';
-import { env } from '@/config/env';
 import { NextRequest } from 'next/server';
 
 const isLocalhost = (url: string): boolean => {
@@ -20,20 +19,24 @@ export const getBaseUrl = (request?: NextRequest): string => {
     }
     const host = request.headers.get('host');
     if (host) {
-      const protocol = request.headers.get('x-forwarded-proto') || (isLocalhost(host) ? 'http' : 'https');
+      const protocol =
+        request.headers.get('x-forwarded-proto') || (isLocalhost(host) ? 'http' : 'https');
       return `${protocol}://${host}`;
     }
   }
 
   // Check if we're in Node.js environment (not browser)
-  const isNode = typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
-  
+  const isNode =
+    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+
   if (isNode) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl) return appUrl;
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
-    return isProduction() ? 'https://cusown.clykur.com' : (env.app.baseUrl || 'http://localhost:3000');
+    return isProduction()
+      ? 'https://cusown.clykur.com'
+      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   }
 
   // Browser environment - check for window object safely
@@ -48,7 +51,9 @@ export const getBaseUrl = (request?: NextRequest): string => {
     // Ignore errors in Node.js environment
   }
 
-  return isProduction() ? 'https://cusown.clykur.com' : (env.app.baseUrl || 'http://localhost:3000');
+  return isProduction()
+    ? 'https://cusown.clykur.com'
+    : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 };
 
 /** Canonical short URL for sharing (e.g. WhatsApp). Use /b/[bookingLink] only; no long query params. */
@@ -69,16 +74,19 @@ export const getApiUrl = (path: string, request?: NextRequest): string => {
 
 export const getClientBaseUrl = (): string => {
   // Check if we're in Node.js environment (not browser)
-  const isNode = typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
-  
+  const isNode =
+    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+
   if (isNode) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl) return appUrl;
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
-    return isProduction() ? 'https://cusown.clykur.com' : 'http://localhost:3000';
+    return isProduction()
+      ? 'https://cusown.clykur.com'
+      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   }
-  
+
   // Browser environment - check for window object safely
   try {
     if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
@@ -90,12 +98,13 @@ export const getClientBaseUrl = (): string => {
   } catch {
     // Ignore errors in Node.js environment
   }
-  
+
   // Fallback: check environment variables and production status
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) return appUrl;
   const vercelUrl = process.env.VERCEL_URL;
   if (vercelUrl) return `https://${vercelUrl}`;
-  return isProduction() ? 'https://cusown.clykur.com' : (env.app.baseUrl || 'http://localhost:3000');
+  return isProduction()
+    ? 'https://cusown.clykur.com'
+    : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 };
-

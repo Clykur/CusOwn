@@ -36,7 +36,13 @@
     "test:phase6": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/abuse-rate-limiting.security.ts",
     "test:phase7": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/config-env-safety.test.ts",
     "test:phase8": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/audit-logging.test.ts",
-    "test:phase9": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/e2e-flows.test.ts"
+    "test:phase9": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/e2e-flows.test.ts",
+    "test:unit": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/run-unit-tests.ts",
+    "test:unit:utils": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-utils-string.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-utils-time.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-utils-validation.test.ts",
+    "test:unit:state": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-state-machines-pure.test.ts",
+    "test:unit:security": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-utils-security.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-input-sanitizer.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-input-filter.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-csrf.test.ts",
+    "test:unit:policies": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-config-policies.test.ts",
+    "test:unit:coverage": "SALON_TOKEN_SECRET=test-secret c8 --reporter=text --reporter=html --include='lib/**/*.ts' --include='config/**/*.ts' --include='types/**/*.ts' --exclude='**/*.test.ts' --exclude='**/*.security.ts' --exclude='scripts/**' ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/run-unit-tests.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -55,6 +61,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "c8": "^10.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",

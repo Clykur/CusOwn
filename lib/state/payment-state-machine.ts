@@ -10,6 +10,7 @@ export interface PaymentStateTransition {
 }
 
 const transitions: PaymentStateTransition[] = [
+  { from: 'failed', event: 'verify', to: 'failed', allowed: false },
   { from: 'initiated', event: 'verify', to: 'completed', allowed: true },
   { from: 'initiated', event: 'fail', to: 'failed', allowed: true },
   { from: 'initiated', event: 'expire', to: 'expired', allowed: true },
@@ -23,17 +24,17 @@ const transitions: PaymentStateTransition[] = [
 
 export class PaymentStateMachine {
   canTransition(from: PaymentStatus, event: PaymentEvent): boolean {
-    const transition = transitions.find(t => t.from === from && t.event === event);
+    const transition = transitions.find((t) => t.from === from && t.event === event);
     return transition?.allowed || false;
   }
 
   getNextState(from: PaymentStatus, event: PaymentEvent): PaymentStatus | null {
-    const transition = transitions.find(t => t.from === from && t.event === event);
+    const transition = transitions.find((t) => t.from === from && t.event === event);
     return transition?.allowed ? transition.to : null;
   }
 
   validateTransition(from: PaymentStatus, to: PaymentStatus, event: PaymentEvent): boolean {
-    const transition = transitions.find(t => t.from === from && t.event === event);
+    const transition = transitions.find((t) => t.from === from && t.event === event);
     return transition?.to === to && transition?.allowed === true;
   }
 }

@@ -8,7 +8,10 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-async function get(url: string, headers: Record<string, string> = {}): Promise<{ status: number; ok: boolean }> {
+async function get(
+  url: string,
+  headers: Record<string, string> = {}
+): Promise<{ status: number; ok: boolean }> {
   const res = await fetch(url, { method: 'GET', headers });
   return { status: res.status, ok: res.ok };
 }
@@ -77,3 +80,5 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+
+export {};

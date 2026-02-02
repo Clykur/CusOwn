@@ -23,14 +23,69 @@ async function main() {
   const cases: { name: string; body: unknown; expectStatus?: number }[] = [
     { name: 'empty body', body: {} },
     { name: 'null body', body: null },
-    { name: 'missing salon_id and slot_id', body: { customer_name: 'A', customer_phone: '+919999999999' } },
-    { name: 'invalid salon_id format', body: { salon_id: 'not-a-uuid', slot_id: '00000000-0000-0000-0000-000000000001', customer_name: 'A', customer_phone: '+919999999999' } },
-    { name: 'invalid slot_id format', body: { salon_id: '00000000-0000-0000-0000-000000000001', slot_id: 'x', customer_name: 'A', customer_phone: '+919999999999' } },
-    { name: 'empty customer_name', body: { salon_id: '00000000-0000-0000-0000-000000000001', slot_id: '00000000-0000-0000-0000-000000000002', customer_name: '', customer_phone: '+919999999999' } },
-    { name: 'empty customer_phone', body: { salon_id: '00000000-0000-0000-0000-000000000001', slot_id: '00000000-0000-0000-0000-000000000002', customer_name: 'A', customer_phone: '' } },
-    { name: 'extra unknown fields', body: { salon_id: '00000000-0000-0000-0000-000000000001', slot_id: '00000000-0000-0000-0000-000000000002', customer_name: 'A', customer_phone: '+919999999999', admin: true } },
-    { name: 'wrong types', body: { salon_id: 123, slot_id: [], customer_name: 1, customer_phone: null } },
-    { name: 'huge name', body: { salon_id: '00000000-0000-0000-0000-000000000001', slot_id: '00000000-0000-0000-0000-000000000002', customer_name: 'x'.repeat(300), customer_phone: '+919999999999' } },
+    {
+      name: 'missing salon_id and slot_id',
+      body: { customer_name: 'A', customer_phone: '+919999999999' },
+    },
+    {
+      name: 'invalid salon_id format',
+      body: {
+        salon_id: 'not-a-uuid',
+        slot_id: '00000000-0000-0000-0000-000000000001',
+        customer_name: 'A',
+        customer_phone: '+919999999999',
+      },
+    },
+    {
+      name: 'invalid slot_id format',
+      body: {
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: 'x',
+        customer_name: 'A',
+        customer_phone: '+919999999999',
+      },
+    },
+    {
+      name: 'empty customer_name',
+      body: {
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: '',
+        customer_phone: '+919999999999',
+      },
+    },
+    {
+      name: 'empty customer_phone',
+      body: {
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: 'A',
+        customer_phone: '',
+      },
+    },
+    {
+      name: 'extra unknown fields',
+      body: {
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: 'A',
+        customer_phone: '+919999999999',
+        admin: true,
+      },
+    },
+    {
+      name: 'wrong types',
+      body: { salon_id: 123, slot_id: [], customer_name: 1, customer_phone: null },
+    },
+    {
+      name: 'huge name',
+      body: {
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: 'x'.repeat(300),
+        customer_phone: '+919999999999',
+      },
+    },
   ];
 
   let passed = 0;
@@ -57,3 +112,5 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+
+export {};

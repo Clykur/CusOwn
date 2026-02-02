@@ -1,6 +1,6 @@
 import { SLOT_STATUS } from '@/config/constants';
 
-export type SlotState = typeof SLOT_STATUS[keyof typeof SLOT_STATUS];
+export type SlotState = (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS];
 export type SlotEvent = 'reserve' | 'book' | 'release' | 'expire';
 
 export interface SlotStateTransition {
@@ -11,6 +11,7 @@ export interface SlotStateTransition {
 }
 
 const transitions: SlotStateTransition[] = [
+  { from: 'available', event: 'release', to: 'available', allowed: false },
   { from: 'available', event: 'reserve', to: 'reserved', allowed: true },
   { from: 'reserved', event: 'book', to: 'booked', allowed: true },
   { from: 'reserved', event: 'release', to: 'available', allowed: true },
@@ -20,17 +21,17 @@ const transitions: SlotStateTransition[] = [
 
 export class SlotStateMachine {
   canTransition(from: SlotState, event: SlotEvent): boolean {
-    const transition = transitions.find(t => t.from === from && t.event === event);
+    const transition = transitions.find((t) => t.from === from && t.event === event);
     return transition?.allowed || false;
   }
 
   getNextState(from: SlotState, event: SlotEvent): SlotState | null {
-    const transition = transitions.find(t => t.from === from && t.event === event);
+    const transition = transitions.find((t) => t.from === from && t.event === event);
     return transition?.allowed ? transition.to : null;
   }
 
   validateTransition(from: SlotState, to: SlotState, event: SlotEvent): boolean {
-    const transition = transitions.find(t => t.from === from && t.event === event);
+    const transition = transitions.find((t) => t.from === from && t.event === event);
     return transition?.to === to && transition?.allowed === true;
   }
 }

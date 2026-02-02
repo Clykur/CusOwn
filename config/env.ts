@@ -11,7 +11,13 @@ export const env = {
     secret: process.env.CRON_SECRET || '',
   },
   security: {
-    salonTokenSecret: process.env.SALON_TOKEN_SECRET || process.env.CRON_SECRET || 'default-secret-change-in-production',
+    get salonTokenSecret(): string {
+      return (
+        process.env.SALON_TOKEN_SECRET ||
+        process.env.CRON_SECRET ||
+        'default-secret-change-in-production'
+      );
+    },
     razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     /** Phase 5: Signed URL TTL (seconds). Tokens cannot escalate privilege (resourceType in HMAC). */
@@ -65,4 +71,3 @@ export const validateEnv = (): void => {
     );
   }
 };
-
