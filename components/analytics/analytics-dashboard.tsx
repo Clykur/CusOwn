@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils/string';
 import { supabaseAuth } from '@/lib/supabase/auth';
+import AnalyticsDashboardSkeleton from '@/components/analytics/analytics-dashboard.skeleton';
 
 interface AnalyticsData {
   totalBookings: number;
@@ -53,30 +54,42 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
       if (!supabaseAuth) {
         throw new Error('Authentication not available');
       }
-      
-      const { data: { session }, error: sessionError } = await supabaseAuth.auth.getSession();
-      
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabaseAuth.auth.getSession();
+
       if (sessionError || !session?.access_token) {
         throw new Error('Authentication required');
       }
 
       const headers = {
-        'Authorization': `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       };
 
       const [overviewRes, dailyRes, peakRes] = await Promise.all([
-        fetch(`/api/owner/analytics?business_id=${businessId}&type=overview&start_date=${startDate}&end_date=${endDate}`, {
-          headers,
-          credentials: 'include',
-        }),
-        fetch(`/api/owner/analytics?business_id=${businessId}&type=daily&start_date=${startDate}&end_date=${endDate}`, {
-          headers,
-          credentials: 'include',
-        }),
-        fetch(`/api/owner/analytics?business_id=${businessId}&type=peak-hours&start_date=${startDate}&end_date=${endDate}`, {
-          headers,
-          credentials: 'include',
-        }),
+        fetch(
+          `/api/owner/analytics?business_id=${businessId}&type=overview&start_date=${startDate}&end_date=${endDate}`,
+          {
+            headers,
+            credentials: 'include',
+          }
+        ),
+        fetch(
+          `/api/owner/analytics?business_id=${businessId}&type=daily&start_date=${startDate}&end_date=${endDate}`,
+          {
+            headers,
+            credentials: 'include',
+          }
+        ),
+        fetch(
+          `/api/owner/analytics?business_id=${businessId}&type=peak-hours&start_date=${startDate}&end_date=${endDate}`,
+          {
+            headers,
+            credentials: 'include',
+          }
+        ),
       ]);
 
       if (overviewRes.ok) {
@@ -101,7 +114,9 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
   const handleExport = async () => {
     setExporting(true);
     try {
-      const response = await fetch(`/api/owner/analytics/export?business_id=${businessId}&start_date=${startDate}&end_date=${endDate}`);
+      const response = await fetch(
+        `/api/owner/analytics/export?business_id=${businessId}&start_date=${startDate}&end_date=${endDate}`
+      );
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -121,23 +136,7 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
   };
 
   if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse" aria-busy="true">
-        <div className="flex justify-between items-center">
-          <div className="h-8 bg-gray-200 rounded w-32" />
-          <div className="flex gap-4">
-            <div className="h-10 bg-gray-200 rounded w-40" />
-            <div className="h-10 bg-gray-200 rounded w-40" />
-          </div>
-        </div>
-        <div className="h-64 bg-gray-200 rounded-lg" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded-lg" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AnalyticsDashboardSkeleton />;
   }
 
   return (
@@ -198,7 +197,9 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
                 <div className="flex-1 bg-gray-200 rounded-full h-4 relative">
                   <div
                     className="bg-black h-4 rounded-full"
-                    style={{ width: `${(item.bookingCount / Math.max(...peakHours.map(p => p.bookingCount))) * 100}%` }}
+                    style={{
+                      width: `${(item.bookingCount / Math.max(...peakHours.map((p) => p.bookingCount))) * 100}%`,
+                    }}
                   />
                 </div>
                 <span className="text-sm font-medium w-12 text-right">{item.bookingCount}</span>

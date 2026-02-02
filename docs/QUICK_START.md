@@ -9,6 +9,7 @@ CRON_SECRET=/Djn4+BJe1+OUoZKZ8yU2WSpo+iYkk9B2Jqnw0w9kyA=
 ```
 
 Or generate your own:
+
 ```bash
 openssl rand -base64 32
 ```
@@ -32,16 +33,17 @@ npm run dev:clean
 export CRON_SECRET="your-secret-from-env"
 
 # Test reminders
-./test-cron.sh reminders
+./scripts/test-cron.sh reminders
 
 # Test booking expiry
-./test-cron.sh expire
+./scripts/test-cron.sh expire
 
 # Test cleanup
-./test-cron.sh cleanup
+./scripts/test-cron.sh cleanup
 ```
 
 Or use curl directly:
+
 ```bash
 curl -X POST http://localhost:3000/api/cron/send-reminders \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
@@ -56,6 +58,7 @@ vercel deploy
 ```
 
 Cron jobs will automatically run:
+
 - Reminders: Every 5 minutes
 - Booking expiry: Every hour
 - Reservation cleanup: Every 10 minutes
@@ -65,6 +68,7 @@ Cron jobs will automatically run:
 Follow `TESTING_GUIDE.md` for complete testing instructions.
 
 Quick test:
+
 1. Create a booking → Check status page works
 2. Cancel booking → Verify cancellation
 3. Add holiday → Verify slots blocked

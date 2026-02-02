@@ -1,21 +1,18 @@
 'use client';
 
-const skeletonBase = 'bg-gray-200 rounded animate-pulse';
+const skeletonBase = 'bg-gray-200 rounded skeleton-shimmer';
 
 /** Base skeleton block; use for consistent spacing and a11y. */
 export function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div
-      className={`${skeletonBase} ${className}`}
-      aria-busy="true"
-      aria-hidden="true"
-    />
-  );
+  return <div className={`${skeletonBase} ${className}`} aria-busy="true" aria-hidden="true" />;
 }
 
 export function SkeletonCard() {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 animate-pulse" aria-busy="true">
+    <div
+      className="bg-white border border-gray-200 rounded-lg p-6 skeleton-shimmer"
+      aria-busy="true"
+    >
       <div className={`h-4 ${skeletonBase} w-1/4 mb-4`}></div>
       <div className={`h-8 ${skeletonBase} w-1/2`}></div>
     </div>
@@ -27,7 +24,7 @@ export function SkeletonTable() {
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden" aria-busy="true">
       <div className="p-6 space-y-4">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex items-center space-x-4 animate-pulse">
+          <div key={i} className="flex items-center space-x-4 skeleton-shimmer">
             <div className={`h-12 ${skeletonBase} w-1/4`}></div>
             <div className={`h-12 ${skeletonBase} w-1/4`}></div>
             <div className={`h-12 ${skeletonBase} w-1/4`}></div>
@@ -43,7 +40,7 @@ export function SkeletonCardList() {
   return (
     <div className="space-y-4" aria-busy="true">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse">
+        <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 skeleton-shimmer">
           <div className={`h-5 ${skeletonBase} w-3/4 mb-3`}></div>
           <div className={`h-4 ${skeletonBase} w-1/2 mb-2`}></div>
           <div className={`h-4 ${skeletonBase} w-1/3`}></div>
@@ -73,7 +70,10 @@ export function HomeSkeleton() {
         <div className={`h-10 ${skeletonBase} w-64 mx-auto mb-8`} />
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-8 animate-pulse">
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-gray-200 p-8 skeleton-shimmer"
+            >
               <div className={`h-12 w-12 ${skeletonBase} rounded-lg mb-6`} />
               <div className={`h-7 ${skeletonBase} w-2/3 mb-4`} />
               <div className={`h-4 ${skeletonBase} w-full mb-2`} />
@@ -98,7 +98,7 @@ export function CategoryGridSkeleton() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 animate-pulse">
+              <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 skeleton-shimmer">
                 <div className={`h-20 w-20 ${skeletonBase} rounded-2xl mx-auto mb-6`} />
                 <div className={`h-8 ${skeletonBase} w-1/2 mx-auto mb-3`} />
                 <div className={`h-4 ${skeletonBase} w-full mb-6`} />
@@ -124,7 +124,10 @@ export function SalonListSkeleton() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-xl border-2 border-gray-200 p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-xl border-2 border-gray-200 p-6 skeleton-shimmer"
+              >
                 <div className="flex justify-between mb-3">
                   <div className={`h-6 ${skeletonBase} w-2/3`} />
                   <div className={`h-5 ${skeletonBase} w-16 rounded-full`} />
@@ -149,7 +152,7 @@ export function BookingPageSkeleton() {
   return (
     <div className="min-h-screen bg-white py-12 px-4" aria-busy="true">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8 animate-pulse">
+        <div className="bg-white rounded-lg shadow-lg p-8 skeleton-shimmer">
           <div className={`h-9 ${skeletonBase} w-3/4 mb-2`} />
           <div className={`h-5 ${skeletonBase} w-48 mb-8`} />
           <div className={`h-4 ${skeletonBase} w-24 mb-2`} />
@@ -186,7 +189,10 @@ export function CustomerDashboardSkeleton() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-xl shadow-md p-6 border border-gray-200 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-xl shadow-md p-6 border border-gray-200 skeleton-shimmer"
+              >
                 <div className="flex items-center gap-3">
                   <div className={`h-12 w-12 ${skeletonBase} rounded-lg`} />
                   <div className="flex-1">
@@ -200,7 +206,10 @@ export function CustomerDashboardSkeleton() {
           <div className={`h-6 ${skeletonBase} w-32 mb-4`} />
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 sm:p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 sm:p-6 skeleton-shimmer"
+              >
                 <div className="flex justify-between mb-4">
                   <div className={`h-6 ${skeletonBase} w-2/3`} />
                   <div className={`h-6 ${skeletonBase} w-20 rounded-full`} />
@@ -235,14 +244,17 @@ export function OwnerDashboardSkeleton() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-xl border border-gray-200 p-4 skeleton-shimmer"
+              >
                 <div className={`h-4 ${skeletonBase} w-16 mb-2`} />
                 <div className={`h-8 ${skeletonBase} w-12`} />
               </div>
             ))}
           </div>
           <div className={`h-6 ${skeletonBase} w-40 mb-4`} />
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden animate-pulse">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden skeleton-shimmer">
             <div className="p-4 border-b border-gray-200 flex gap-4">
               <div className={`h-4 ${skeletonBase} w-20`} />
               <div className={`h-4 ${skeletonBase} w-24`} />
@@ -275,14 +287,17 @@ export function AdminDashboardSkeleton() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-lg border border-gray-200 p-4 skeleton-shimmer"
+              >
                 <div className={`h-4 ${skeletonBase} w-20 mb-2`} />
                 <div className={`h-8 ${skeletonBase} w-14`} />
               </div>
             ))}
           </div>
           <div className={`h-6 ${skeletonBase} w-48 mb-4`} />
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden animate-pulse">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden skeleton-shimmer">
             <div className="p-4 border-b border-gray-200 grid grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className={`h-4 ${skeletonBase} w-20`} />
@@ -307,7 +322,7 @@ export function AcceptRejectSkeleton() {
     <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
       <div className="max-w-md w-full">
         <div className={`h-4 ${skeletonBase} w-full mb-6`} />
-        <div className="bg-white rounded-lg shadow-lg p-8 animate-pulse">
+        <div className="bg-white rounded-lg shadow-lg p-8 skeleton-shimmer">
           <div className={`h-16 w-16 ${skeletonBase} rounded-full mx-auto mb-4`} />
           <div className={`h-7 ${skeletonBase} w-3/4 mx-auto mb-4`} />
           <div className={`h-4 ${skeletonBase} w-full mb-6`} />
@@ -326,7 +341,7 @@ export function SelectRoleSkeleton() {
         <div className={`h-5 ${skeletonBase} w-72 mx-auto mb-12`} />
         <div className="grid sm:grid-cols-2 gap-6">
           {[1, 2].map((i) => (
-            <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 animate-pulse">
+            <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 skeleton-shimmer">
               <div className={`h-14 w-14 ${skeletonBase} rounded-xl mb-6`} />
               <div className={`h-7 ${skeletonBase} w-2/3 mb-4`} />
               <div className={`h-4 ${skeletonBase} w-full mb-2`} />
@@ -368,7 +383,7 @@ export function ProfileSkeleton() {
       <div className="flex-1 lg:ml-64">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className={`h-4 ${skeletonBase} w-20 mb-6`} />
-          <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 skeleton-shimmer">
             <div className="flex items-center gap-4 mb-6">
               <div className={`h-16 w-16 ${skeletonBase} rounded-full`} />
               <div>
@@ -397,7 +412,7 @@ export function LoginSkeleton() {
       <div className="max-w-md w-full">
         <div className={`h-9 ${skeletonBase} w-32 mx-auto mb-2`} />
         <div className={`h-5 ${skeletonBase} w-48 mx-auto mb-8`} />
-        <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 skeleton-shimmer">
           <div className={`h-12 ${skeletonBase} w-full rounded-lg mb-4`} />
           <div className={`h-12 ${skeletonBase} w-full rounded-lg mb-6`} />
           <div className={`h-12 ${skeletonBase} w-full rounded-lg`} />
@@ -413,7 +428,7 @@ export function BookingStatusSkeleton() {
       <div className="flex-1 lg:ml-64">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className={`h-4 ${skeletonBase} w-28 mb-6`} />
-          <div className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 skeleton-shimmer">
             <div className={`h-6 ${skeletonBase} w-24 mb-4`} />
             <div className={`h-7 ${skeletonBase} w-2/3 mb-4`} />
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -444,7 +459,10 @@ export function RedirectSkeleton() {
 
 export function SalonCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 p-6 animate-pulse h-full flex flex-col" aria-busy="true">
+    <div
+      className="bg-white rounded-xl border-2 border-gray-200 p-6 skeleton-shimmer h-full flex flex-col"
+      aria-busy="true"
+    >
       <div className="flex justify-between mb-3">
         <div className={`h-6 ${skeletonBase} w-2/3`} />
         <div className={`h-5 ${skeletonBase} w-16 rounded-full`} />
@@ -471,7 +489,10 @@ export function SlotGridSkeleton() {
 
 export function DashboardStatSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse" aria-busy="true">
+    <div
+      className="bg-white rounded-xl border border-gray-200 p-4 skeleton-shimmer"
+      aria-busy="true"
+    >
       <div className={`h-4 ${skeletonBase} w-16 mb-2`} />
       <div className={`h-8 ${skeletonBase} w-12`} />
     </div>
@@ -480,7 +501,10 @@ export function DashboardStatSkeleton() {
 
 export function TableRowSkeleton({ cols = 4 }: { cols?: number }) {
   return (
-    <div className="flex items-center gap-4 p-4 border-b border-gray-100 animate-pulse" aria-busy="true">
+    <div
+      className="flex items-center gap-4 p-4 border-b border-gray-100 skeleton-shimmer"
+      aria-busy="true"
+    >
       {Array.from({ length: cols }).map((_, i) => (
         <div key={i} className={`h-4 ${skeletonBase} flex-1 min-w-0`} />
       ))}
@@ -491,7 +515,10 @@ export function TableRowSkeleton({ cols = 4 }: { cols?: number }) {
 /** Table skeleton for admin tabs (header + rows). */
 export function AdminTableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number } = {}) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden animate-pulse" aria-busy="true">
+    <div
+      className="bg-white border border-gray-200 rounded-lg overflow-hidden skeleton-shimmer"
+      aria-busy="true"
+    >
       <div className="bg-gray-50 px-6 py-3 flex gap-4 border-b border-gray-200">
         {Array.from({ length: cols }).map((_, i) => (
           <div key={i} className={`h-4 ${skeletonBase} flex-1 min-w-0`} />
@@ -513,7 +540,7 @@ export function AdminTableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols
 /** Inline list skeleton for audit logs / cards. */
 export function ListSkeleton({ items = 4 }: { items?: number } = {}) {
   return (
-    <div className="space-y-3 animate-pulse" aria-busy="true">
+    <div className="space-y-3 skeleton-shimmer" aria-busy="true">
       {Array.from({ length: items }).map((_, i) => (
         <div key={i} className="flex gap-4 p-4 bg-white border border-gray-200 rounded-lg">
           <div className={`h-4 ${skeletonBase} w-24 flex-shrink-0`} />

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test script for cron jobs
-# Usage: ./test-cron.sh [reminders|expire|cleanup|health]
+# Usage: ./scripts/test-cron.sh [reminders|expire|cleanup|health]
 
 CRON_SECRET="${CRON_SECRET:-your-random-secret-key-here}"
 BASE_URL="${BASE_URL:-http://localhost:3000}"

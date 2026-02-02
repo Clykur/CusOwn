@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import SuccessMetricsDashboardSkeleton from '@/components/admin/success-metrics-dashboard.skeleton';
 
 interface TechnicalMetrics {
   apiResponseTimeP95: number;
@@ -50,19 +51,24 @@ export default function SuccessMetricsDashboard() {
         return;
       }
 
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         console.error('No session found');
         setLoading(false);
         return;
       }
 
-      const response = await fetch(`/api/metrics/success?start_date=${startDate}&end_date=${endDate}&include_alerts=true`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      
+      const response = await fetch(
+        `/api/metrics/success?start_date=${startDate}&end_date=${endDate}&include_alerts=true`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
@@ -81,23 +87,7 @@ export default function SuccessMetricsDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse" aria-busy="true">
-        <div className="flex justify-between items-center">
-          <div className="h-8 bg-gray-200 rounded w-40" />
-          <div className="flex gap-4">
-            <div className="h-10 bg-gray-200 rounded w-40" />
-            <div className="h-10 bg-gray-200 rounded w-40" />
-          </div>
-        </div>
-        <div className="h-64 bg-gray-200 rounded-lg" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded-lg" />
-          ))}
-        </div>
-      </div>
-    );
+    return <SuccessMetricsDashboardSkeleton />;
   }
 
   return (
@@ -126,28 +116,36 @@ export default function SuccessMetricsDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">API Response (p95)</p>
-              <p className={`text-2xl font-bold ${technical.apiResponseTimeP95 > 200 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${technical.apiResponseTimeP95 > 200 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {technical.apiResponseTimeP95}ms
               </p>
               <p className="text-xs text-gray-500">Target: &lt;200ms</p>
             </div>
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">Uptime</p>
-              <p className={`text-2xl font-bold ${technical.uptime < 99.9 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${technical.uptime < 99.9 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {technical.uptime.toFixed(2)}%
               </p>
               <p className="text-xs text-gray-500">Target: &gt;99.9%</p>
             </div>
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">Error Rate</p>
-              <p className={`text-2xl font-bold ${technical.errorRate > 0.1 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${technical.errorRate > 0.1 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {technical.errorRate.toFixed(3)}%
               </p>
               <p className="text-xs text-gray-500">Target: &lt;0.1%</p>
             </div>
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">DB Query (p95)</p>
-              <p className={`text-2xl font-bold ${technical.dbQueryTimeP95 > 100 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${technical.dbQueryTimeP95 > 100 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {technical.dbQueryTimeP95}ms
               </p>
               <p className="text-xs text-gray-500">Target: &lt;100ms</p>
@@ -167,21 +165,27 @@ export default function SuccessMetricsDashboard() {
             </div>
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">No-Show Rate</p>
-              <p className={`text-2xl font-bold ${business.noShowRate > 10 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${business.noShowRate > 10 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {business.noShowRate.toFixed(2)}%
               </p>
               <p className="text-xs text-gray-500">Target: &lt;10%</p>
             </div>
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">Owner Retention</p>
-              <p className={`text-2xl font-bold ${business.ownerRetention < 80 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${business.ownerRetention < 80 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {business.ownerRetention.toFixed(2)}%
               </p>
               <p className="text-xs text-gray-500">Target: &gt;80%</p>
             </div>
             <div className="p-4 border rounded">
               <p className="text-sm text-gray-600">Completion Rate</p>
-              <p className={`text-2xl font-bold ${business.bookingCompletionRate < 90 ? 'text-red-600' : 'text-green-600'}`}>
+              <p
+                className={`text-2xl font-bold ${business.bookingCompletionRate < 90 ? 'text-red-600' : 'text-green-600'}`}
+              >
                 {business.bookingCompletionRate.toFixed(2)}%
               </p>
               <p className="text-xs text-gray-500">Target: &gt;90%</p>
@@ -208,7 +212,9 @@ export default function SuccessMetricsDashboard() {
                   </span>
                   <span
                     className={`px-2 py-1 rounded text-xs ${
-                      t.status === 'pass' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                      t.status === 'pass'
+                        ? 'bg-green-200 text-green-800'
+                        : 'bg-red-200 text-red-800'
                     }`}
                   >
                     {t.status === 'pass' ? 'PASS' : 'FAIL'}

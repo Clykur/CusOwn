@@ -3,6 +3,7 @@
 ## ✅ Cron Jobs Configured
 
 ### Health Check Cron (NEW)
+
 - **Endpoint**: `/api/cron/health-check`
 - **Schedule**: Every 5 minutes (`*/5 * * * *`)
 - **Purpose**: Monitor application health and track uptime
@@ -11,6 +12,7 @@
 - **Status**: ✅ Configured in `vercel.json`
 
 ### Existing Cron Jobs
+
 - ✅ Send Reminders: Every 5 minutes
 - ✅ Expire Bookings: Every hour
 - ✅ Cleanup Reservations: Every 10 minutes
@@ -20,6 +22,7 @@
 ## ✅ Metrics Endpoint
 
 ### Success Metrics API
+
 - **Endpoint**: `/api/metrics/success`
 - **Access**: Admin only
 - **Authentication**: Required (Supabase auth)
@@ -29,22 +32,26 @@
 ### Access Methods
 
 **1. Via Admin Dashboard:**
+
 - Navigate to Admin Dashboard
 - Click "Success Metrics" tab
 - View real-time metrics and thresholds
 
 **2. Via API:**
+
 ```bash
 GET /api/metrics/success?start_date=2026-01-01&end_date=2026-01-25&include_alerts=true
 Authorization: Bearer YOUR_AUTH_TOKEN
 ```
 
 **Query Parameters:**
+
 - `start_date` (optional): Start date for metrics (default: 30 days ago)
 - `end_date` (optional): End date for metrics (default: today)
 - `include_alerts` (optional): Include alert generation (default: false)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -84,16 +91,19 @@ Authorization: Bearer YOUR_AUTH_TOKEN
 ### 1. Set CRON_SECRET
 
 **Generate Secret:**
+
 ```bash
 openssl rand -base64 32
 ```
 
 **Add to `.env.local`:**
+
 ```bash
 CRON_SECRET=your-generated-secret-here
 ```
 
 **Add to Vercel:**
+
 1. Go to Vercel Dashboard → Project Settings → Environment Variables
 2. Add `CRON_SECRET` with your generated secret
 3. Apply to Production, Preview, and Development
@@ -101,11 +111,13 @@ CRON_SECRET=your-generated-secret-here
 ### 2. Deploy to Vercel
 
 **Automatic Setup:**
+
 - `vercel.json` already configured
 - Deploy: `vercel deploy` or push to main branch
 - Cron jobs start automatically
 
 **Verify:**
+
 - Go to Vercel Dashboard → Cron Jobs
 - Check all 4 cron jobs are scheduled
 - Verify health check runs every 5 minutes
@@ -113,17 +125,20 @@ CRON_SECRET=your-generated-secret-here
 ### 3. Test Health Check
 
 **Local Testing:**
+
 ```bash
-./test-cron.sh health
+./scripts/test-cron.sh health
 ```
 
 **Or manually:**
+
 ```bash
 curl -X GET http://localhost:3000/api/cron/health-check \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -140,18 +155,21 @@ curl -X GET http://localhost:3000/api/cron/health-check \
 ### 4. Access Metrics Endpoint
 
 **As Admin User:**
+
 1. Log in with admin account
 2. Navigate to `/admin/dashboard`
 3. Click "Success Metrics" tab
 4. View metrics dashboard
 
 **Via API (Admin Token Required):**
+
 ```bash
 curl http://localhost:3000/api/metrics/success \
   -H "Authorization: Bearer YOUR_ADMIN_AUTH_TOKEN"
 ```
 
 **Verify Admin Access:**
+
 - Endpoint requires authentication
 - Checks admin role via `isAdmin()` function
 - Returns 403 if not admin
@@ -161,6 +179,7 @@ curl http://localhost:3000/api/metrics/success \
 ## Verification Checklist
 
 ### Cron Jobs
+
 - [x] Health check cron added to `vercel.json`
 - [x] Health check endpoint accepts GET and POST
 - [x] CRON_SECRET authentication implemented
@@ -170,6 +189,7 @@ curl http://localhost:3000/api/metrics/success \
 - [ ] All cron jobs running successfully
 
 ### Metrics Endpoint
+
 - [x] Endpoint created: `/api/metrics/success`
 - [x] Admin authentication required
 - [x] Admin authorization check implemented
@@ -186,6 +206,7 @@ curl http://localhost:3000/api/metrics/success \
 ## Monitoring
 
 ### Health Check Monitoring
+
 - Runs every 5 minutes
 - Results stored in `metric_timings` table
 - Metric name: `health.check`
@@ -193,6 +214,7 @@ curl http://localhost:3000/api/metrics/success \
 - Alerts if uptime < 99.9%
 
 ### Metrics Monitoring
+
 - Access via admin dashboard
 - Real-time metrics display
 - Threshold status indicators
@@ -203,18 +225,21 @@ curl http://localhost:3000/api/metrics/success \
 ## Troubleshooting
 
 ### Health Check Not Running
+
 1. Verify `CRON_SECRET` is set in Vercel
 2. Check `vercel.json` configuration
 3. Review Vercel cron job logs
 4. Verify endpoint URL is correct
 
 ### Metrics Endpoint Returns 403
+
 1. Verify user is logged in
 2. Check user has admin role
 3. Verify `isAdmin()` function works
 4. Check authentication token
 
 ### Metrics Not Displaying
+
 1. Verify database migration run
 2. Check metrics tables exist
 3. Verify data in `metrics` and `metric_timings` tables

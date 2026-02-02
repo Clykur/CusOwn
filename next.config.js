@@ -16,7 +16,7 @@ const nextConfig = {
         '@/lib/supabase/server': false,
       };
     }
-    
+
     // Better error handling for chunk loading
     if (!isServer && dev) {
       config.optimization = {
@@ -45,7 +45,7 @@ const nextConfig = {
         },
       };
     }
-    
+
     return config;
   },
   async headers() {
@@ -88,7 +88,6 @@ const nextConfig = {
   async rewrites() {
     return [];
   },
-}
+};
 
-module.exports = nextConfig
-
+module.exports = nextConfig;
