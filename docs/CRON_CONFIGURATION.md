@@ -1,5 +1,10 @@
 # Cron Jobs Configuration - Complete ✅
 
+**Scheduling:** Crons are run by **GitHub Actions** (not Vercel). See `.github/workflows/scheduled-crons.yml`.  
+Add repo secrets: `CRON_SECRET`, `CRON_APP_URL` (e.g. `https://your-app.vercel.app`).
+
+---
+
 ## ✅ Configured Cron Jobs
 
 ### 1. Health Check (NEW)
@@ -26,17 +31,18 @@
 
 ---
 
-## ✅ Vercel Configuration
+## ✅ Scheduling (GitHub Actions)
 
-**File**: `vercel.json`
-- All cron jobs configured
-- Health check added
-- Schedules optimized
+**File**: `.github/workflows/scheduled-crons.yml`
+- Workflow runs every 15 minutes (schedule: `*/15 * * * *`)
+- **Every 15 min:** trim-metric-timings, expire-payments
+- **01:00 UTC:** expire-bookings
+- **02:00 UTC:** cleanup-reservations
+- **03:00 UTC:** health-check
+- **09:00 UTC:** send-reminders
 
-**Deployment:**
-- Cron jobs run automatically on Vercel
-- No additional setup required
-- Monitor via Vercel dashboard
+**Required repo Secrets:** `CRON_SECRET`, `CRON_APP_URL`  
+**Vercel crons:** Disabled (empty `vercel.json`). Use this workflow or any external cron that calls the same API endpoints with `Authorization: Bearer <CRON_SECRET>`.
 
 ---
 

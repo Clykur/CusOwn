@@ -1,0 +1,72 @@
+# Scheduled cron jobs – replaces Vercel crons.
+# Requires: CRON_SECRET and CRON_APP_URL in GitHub repo Secrets.
+# CRON_APP_URL = your app root (e.g. https://cusown.clykur.com or https://your-app.vercel.app).
+
+name: Scheduled Crons
+
+on:
+  schedule:
+    # Every 15 minutes (trim-metric-timings); also used to run daily jobs at fixed hours
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+env:
+  CI: true
+
+jobs:
+  cron-tasks:
+    name: Run scheduled tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Set app URL and secret
+        id: env
+        run: |
+          echo "app_url=${CRON_APP_URL}" >> $GITHUB_OUTPUT
+          echo "secret_set=$([ -n \"$CRON_SECRET\" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+        env:
+          CRON_APP_URL: ${{ secrets.CRON_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+      - name: Skip if secrets missing
+        if: steps.env.outputs.secret_set != 'true' || steps.env.outputs.app_url == ''
+        run: |
+          echo "CRON_SECRET or CRON_APP_URL not set in repo Secrets – skipping scheduled crons."
+          echo "Add CRON_APP_URL (e.g. https://your-app.vercel.app) and CRON_SECRET to run these."
+          exit 0
+
+      - name: Call cron endpoints by schedule
+        env:
+          APP_URL: ${{ steps.env.outputs.app_url }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          AUTH="Authorization: Bearer $CRON_SECRET"
+          H=$(date +%H)
+          M=$(date +%M)
+
+          # Every 15 min: trim metric timings + expire payments
+          curl -sf -X POST "$APP_URL/api/cron/trim-metric-timings" -H "$AUTH" -m 60 || true
+          curl -sf -X POST "$APP_URL/api/cron/expire-payments" -H "$AUTH" -m 60 || true
+
+          # 01:00 – expire bookings
+          if [ "$H" = "01" ] && [ "$M" -lt 15 ]; then
+            curl -sf -X POST "$APP_URL/api/cron/expire-bookings" -H "$AUTH" -m 120 || true
+          fi
+
+          # 02:00 – cleanup reservations
+          if [ "$H" = "02" ] && [ "$M" -lt 15 ]; then
+            curl -sf -X POST "$APP_URL/api/cron/cleanup-reservations" -H "$AUTH" -m 120 || true
+          fi
+
+          # 03:00 – health check
+          if [ "$H" = "03" ] && [ "$M" -lt 15 ]; then
+            curl -sf -X GET "$APP_URL/api/cron/health-check" -H "$AUTH" -m 30 || true
+          fi
+
+          # 09:00 – send reminders
+          if [ "$H" = "09" ] && [ "$M" -lt 15 ]; then
+            curl -sf -X POST "$APP_URL/api/cron/send-reminders" -H "$AUTH" -m 300 || true
+          fi
+
+          echo "Scheduled cron run completed."
+        shell: bash
