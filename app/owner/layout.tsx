@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import OwnerSidebar from '@/components/owner/OwnerSidebar';
-import MobileBottomNav from '@/components/owner/MobileBottomNav';
+import OwnerSidebar from '@/components/owner/owner-sidebar';
+import MobileBottomNav from '@/components/owner/mobile-bottom-nav';
 
 export default function OwnerLayout({
   children,

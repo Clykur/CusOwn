@@ -3,6 +3,14 @@ import { ERROR_MESSAGES } from '@/config/constants';
 import { env } from '@/config/env';
 import { generateUPIPaymentLink, generateUPIQRCode, generateTransactionId, generatePaymentId } from '@/lib/utils/upi-payment';
 import { paymentStateMachine } from '@/lib/state/payment-state-machine';
+import { auditService } from '@/services/audit.service';
+import { logPaymentLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
+import {
+  METRICS_PAYMENT_CREATED,
+  METRICS_PAYMENT_SUCCEEDED,
+  METRICS_PAYMENT_FAILED,
+} from '@/config/constants';
+import { metricsService } from '@/lib/monitoring/metrics';
 
 export type PaymentProvider = 'razorpay' | 'stripe' | 'cash' | 'upi';
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'partially_refunded' | 'initiated' | 'expired';
@@ -32,6 +40,7 @@ export type Payment = {
   attempt_count?: number | null;
   created_at: string;
   updated_at: string;
+  webhook_payload_hash?: string | null;
 };
 
 export class PaymentService {
@@ -78,6 +87,18 @@ export class PaymentService {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
+    try {
+      await auditService.createAuditLog(null, 'payment_created', 'payment', {
+        entityId: payment.id,
+        newData: { booking_id: bookingId, provider, amount_cents: amountCents, status: payment.status },
+        description: `Payment created (${provider})`,
+      });
+    } catch (auditErr) {
+      console.error('[AUDIT] Failed to log payment_created:', auditErr);
+    }
+    await metricsService.increment(METRICS_PAYMENT_CREATED);
+    logPaymentLifecycle({ payment_id: payment.id, booking_id: bookingId, action: 'payment_created', actor: 'user' });
+
     return payment;
   }
 
@@ -88,6 +109,25 @@ export class PaymentService {
     webhookData?: { signature?: string; payloadHash?: string }
   ): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
+
+    const { data: currentPayment, error: fetchError } = await supabaseAdmin
+      .from('payments')
+      .select('*')
+      .eq('id', paymentId)
+      .single();
+
+    if (fetchError || !currentPayment) {
+      throw new Error('Payment not found');
+    }
+
+    if (currentPayment.status === status) {
+      return currentPayment;
+    }
+
+    const event = status === 'completed' ? 'verify' : status === 'failed' ? 'fail' : (status === 'refunded' || status === 'partially_refunded') ? 'refund' : null;
+    if (event && !paymentStateMachine.canTransition(currentPayment.status as PaymentStatus, event)) {
+      throw new Error(`Invalid payment state transition: ${currentPayment.status} -> ${status}`);
+    }
 
     const updateData: any = {
       status,
@@ -121,6 +161,27 @@ export class PaymentService {
 
     if (!payment) {
       throw new Error('Payment not found');
+    }
+
+    const auditAction = status === 'completed' ? 'payment_succeeded' : status === 'failed' ? 'payment_failed' : (status === 'refunded' || status === 'partially_refunded') ? 'payment_refunded' : null;
+    if (auditAction) {
+      try {
+        await auditService.createAuditLog(null, auditAction, 'payment', {
+          entityId: paymentId,
+          oldData: { status: currentPayment.status },
+          newData: { status: payment.status },
+          description: `Payment ${auditAction.replace('payment_', '')}`,
+        });
+      } catch (auditErr) {
+        console.error('[AUDIT] Failed to log payment state change:', auditErr);
+      }
+      if (status === 'completed') {
+        await metricsService.increment(METRICS_PAYMENT_SUCCEEDED);
+        logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_succeeded', actor: 'system' });
+      } else if (status === 'failed') {
+        await metricsService.increment(METRICS_PAYMENT_FAILED);
+        logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_failed', actor: 'system' });
+      }
     }
 
     return payment;
@@ -240,6 +301,18 @@ export class PaymentService {
       transaction_id: transactionId,
     });
 
+    try {
+      await auditService.createAuditLog(null, 'payment_created', 'payment', {
+        entityId: payment.id,
+        newData: { booking_id: bookingId, provider: 'upi', amount_cents: amountCents, status: 'initiated' },
+        description: 'Payment created (upi)',
+      });
+    } catch (auditErr) {
+      console.error('[AUDIT] Failed to log payment_created:', auditErr);
+    }
+    await metricsService.increment(METRICS_PAYMENT_CREATED);
+    logPaymentLifecycle({ payment_id: payment.id, booking_id: bookingId, action: 'payment_created', actor: 'user' });
+
     return payment;
   }
 
@@ -323,6 +396,19 @@ export class PaymentService {
       metadata
     );
 
+    try {
+      await auditService.createAuditLog(verifiedBy === 'system' ? null : verifiedBy, 'payment_succeeded', 'payment', {
+        entityId: paymentId,
+        oldData: { status: oldStatus },
+        newData: { status: 'completed' },
+        description: 'Payment verified',
+      });
+    } catch (auditErr) {
+      console.error('[AUDIT] Failed to log payment_succeeded:', auditErr);
+    }
+    await metricsService.increment(METRICS_PAYMENT_SUCCEEDED);
+    logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_succeeded', actor: verifiedBy === 'system' ? 'system' : 'user' });
+
     return updatedPayment;
   }
 
@@ -396,6 +482,19 @@ export class PaymentService {
       'failed',
       { reason, attempt_count: newAttemptCount }
     );
+
+    try {
+      await auditService.createAuditLog(actorId || null, 'payment_failed', 'payment', {
+        entityId: paymentId,
+        oldData: { status: oldStatus },
+        newData: { status: 'failed' },
+        description: reason || 'Payment failed',
+      });
+    } catch (auditErr) {
+      console.error('[AUDIT] Failed to log payment_failed:', auditErr);
+    }
+    await metricsService.increment(METRICS_PAYMENT_FAILED);
+    logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_failed', actor: actorId ? 'user' : 'system', reason });
 
     return updatedPayment;
   }

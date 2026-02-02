@@ -51,6 +51,7 @@ export const getBaseUrl = (request?: NextRequest): string => {
   return isProduction() ? 'https://cusown.clykur.com' : (env.app.baseUrl || 'http://localhost:3000');
 };
 
+/** Canonical short URL for sharing (e.g. WhatsApp). Use /b/[bookingLink] only; no long query params. */
 export const getBookingUrl = (bookingLink: string, request?: NextRequest): string => {
   const baseUrl = getBaseUrl(request);
   return `${baseUrl}${BOOKING_LINK_PREFIX}${bookingLink}`;

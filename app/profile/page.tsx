@@ -7,6 +7,7 @@ import { supabaseAuth } from '@/lib/supabase/auth';
 import { ROUTES, getOwnerDashboardUrl, getSecureOwnerDashboardUrlClient } from '@/lib/utils/navigation';
 import { formatDate } from '@/lib/utils/string';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
+import { ProfileSkeleton } from '@/components/ui/skeleton';
 
 interface ProfileData {
   id: string;
@@ -204,14 +205,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error && !profileData) {
@@ -240,14 +234,7 @@ export default function ProfilePage() {
   }
 
   if (!profileData) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   return (

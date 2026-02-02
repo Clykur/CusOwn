@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import RescheduleButton from '@/components/booking/RescheduleButton';
 import { ROUTES } from '@/lib/utils/navigation';
 
 interface CustomerBookingCardProps {
@@ -14,7 +13,6 @@ interface CustomerBookingCardProps {
 
 export default function CustomerBookingCard({
   booking,
-  availableSlots = [],
   secureUrl,
 }: CustomerBookingCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -154,7 +152,7 @@ export default function CustomerBookingCard({
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions: dashboard = overview only; lifecycle (reschedule/cancel) on booking status page */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           {secureUrl && (
             <Link
@@ -166,23 +164,6 @@ export default function CustomerBookingCard({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
-          )}
-          
-          {/* Reschedule Button */}
-          {(booking.status === 'confirmed' || booking.status === 'pending') &&
-           booking.slot &&
-           availableSlots.length > 0 &&
-           !booking.no_show && (
-            <div className="flex-1 sm:flex-initial">
-              <RescheduleButton
-                bookingId={booking.id}
-                currentSlot={booking.slot}
-                businessId={booking.business_id}
-                availableSlots={availableSlots}
-                onRescheduled={() => window.location.reload()}
-                rescheduledBy="customer"
-              />
-            </div>
           )}
         </div>
 

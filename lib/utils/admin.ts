@@ -1,27 +1,27 @@
+import { isAdminProfile, type ProfileLike } from '@/lib/utils/role-verification';
+
 /**
  * Get user profile - works in both client and server contexts
  */
 async function getUserProfileSafe(userId: string): Promise<any> {
-  // Check if we're in a server context (no window object)
   if (typeof window === 'undefined') {
-    // Server-side: use server-auth
     const { getServerUserProfile } = await import('@/lib/supabase/server-auth');
     return getServerUserProfile(userId);
   } else {
-    // Client-side: use client auth
     const { getUserProfile } = await import('@/lib/supabase/auth');
     return getUserProfile(userId);
   }
 }
 
 /**
- * Check if current user is admin (client-side)
+ * Check if current user is admin.
+ * Pass profile when already fetched (O(1)); otherwise fetches once.
  */
-export const checkIsAdmin = async (userId: string): Promise<boolean> => {
+export const checkIsAdmin = async (userId: string, profile?: ProfileLike | null): Promise<boolean> => {
+  if (profile !== undefined) return isAdminProfile(profile ?? null);
   try {
-    const profile = await getUserProfileSafe(userId);
-    if (!profile) return false;
-    return (profile as any).user_type === 'admin';
+    const p = await getUserProfileSafe(userId);
+    return isAdminProfile(p ?? null);
   } catch {
     return false;
   }

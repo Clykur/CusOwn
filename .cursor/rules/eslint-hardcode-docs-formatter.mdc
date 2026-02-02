@@ -1,0 +1,31 @@
+---
+description: ESLint, no hardcodes, concise docs, code format
+alwaysApply: true
+---
+
+# ESLint, Hardcode Checks, Documentation, Formatter
+
+## ESLint
+
+- **Before finishing**: Run `npm run lint` (Next.js ESLint). Fix all errors in changed files.
+- **Warnings**: Address React hooks deps, `@next/next/no-img-element`, and other reported warnings in the files you touch. Do not add new violations.
+- **Config**: Project uses `next/core-web-vitals` (`.eslintrc.json`). Do not disable rules without explicit user request.
+
+## Hardcode checks
+
+- **User-facing strings**: Use `ERROR_MESSAGES`, `SUCCESS_MESSAGES`, `UI_BOOKING_STATE`, `UI_IDEMPOTENT` from `@/config/constants`. Add new messages to constants; do not inline in components or API routes.
+- **Config / env**: Use `config/env.ts` (`env.booking.expiryHours`, etc.) and `config/constants.ts`. No raw `process.env` in services, API handlers, or lib.
+- **Numbers and limits**: Use named constants (e.g. `RATE_LIMIT_BOOKING_MAX_PER_WINDOW`, `CANCELLATION_MIN_HOURS_BEFORE`). No magic numbers for timeouts, limits, or status logic.
+- **API response shape**: Use `successResponse` / `errorResponse` from `@/lib/utils/response`. Do not return ad-hoc JSON shapes.
+
+## Documentation
+
+- **Keep it short**: One-line or short block only when needed (e.g. "Phase 6: feature flag for canary."). No verbose paragraphs.
+- **What to document**: Non-obvious invariants, phase/scope references, public API intent. Omit the obvious (e.g. "returns the booking" when the function name is `getBooking`).
+- **Policy/scope files**: `config/*.policy.ts` may contain brief scope and exit-criteria bullets; keep them concise.
+
+## Code formatter
+
+- **Consistency**: Same quote style, indent (2 spaces), and line length as the rest of the file. No trailing whitespace.
+- **Tooling**: Use `npm run lint`; fix any formatting issues it reports. If the project adds Prettier later, use it.
+- **Imports**: Group and order as in existing files (e.g. external first, then `@/` aliases, then relative). No unused imports.

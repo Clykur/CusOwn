@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabaseAuth, getUserProfile, isAdmin } from '@/lib/supabase/auth';
-import SuccessMetricsDashboard from '@/components/admin/SuccessMetricsDashboard';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import SuccessMetricsDashboard from '@/components/admin/success-metrics-dashboard';
+import AdminSidebar from '@/components/admin/admin-sidebar';
+import { AdminDashboardSkeleton, AdminTableSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { Line, Bar } from 'react-chartjs-2';
@@ -194,14 +195,7 @@ function AdminDashboardContent() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   if (error) {
@@ -545,14 +539,7 @@ function AdminDashboardContent() {
 
 export default function AdminDashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<AdminDashboardSkeleton />}>
       <AdminDashboardContent />
     </Suspense>
   );
@@ -600,7 +587,7 @@ function BusinessesTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-600">Loading businesses...</div>;
+    return <AdminTableSkeleton rows={6} cols={6} />;
   }
 
   return (
@@ -713,7 +700,7 @@ function UsersTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-600">Loading users...</div>;
+    return <AdminTableSkeleton rows={6} cols={5} />;
   }
 
   return (
@@ -810,7 +797,7 @@ function BookingsTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-600">Loading bookings...</div>;
+    return <AdminTableSkeleton rows={6} cols={5} />;
   }
 
   return (
@@ -1025,7 +1012,7 @@ function AuditLogsTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-600">Loading audit logs...</div>;
+    return <ListSkeleton items={6} />;
   }
 
   return (

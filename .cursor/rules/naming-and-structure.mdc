@@ -1,0 +1,21 @@
+---
+description: Project-wide naming and structure
+alwaysApply: true
+---
+
+# Naming and structure
+
+## File naming
+- **Config**: `config/*.policy.ts` for phase/scope docs; `constants.ts`, `env.ts` for values.
+- **Lib**: kebab-case or descriptive suffixes: `rate-limit-api.security.ts`, `lifecycle-structured-log.ts`, `audit-pii-redact.security.ts`.
+- **Components**: kebab-case filenames (`admin-sidebar.tsx`, `booking-card.tsx`). Exports remain PascalCase.
+- **Scripts**: kebab-case; `.test.ts` or `.security.ts` suffix. No `01-`, `phase1-` prefixes.
+- **Database**: kebab-case migration names with `.migration.sql` or `.rpc.sql`-style purpose.
+
+## Path aliases
+- Use `@/` for project root: `@/config/constants`, `@/lib/utils/response`, `@/services/booking.service`, `@/components/ui/button`.
+
+## What to avoid
+- No vague names: `temp.ts`, `fix.ts`, `utils2.ts`.
+- No phase-only or number-only names: `23-phase5-privilege-escalation.ts` → `prevent-privilege-escalation.security.ts`.
+- No new files that duplicate responsibility; prefer extending existing services or config.

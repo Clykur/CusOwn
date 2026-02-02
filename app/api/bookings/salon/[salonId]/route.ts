@@ -14,6 +14,8 @@ export async function GET(
   const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   
   try {
+    await bookingService.runLazyExpireIfNeeded();
+
     const { salonId } = params;
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || undefined;

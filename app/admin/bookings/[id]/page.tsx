@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { ROUTES } from '@/lib/utils/navigation';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminSidebar from '@/components/admin/admin-sidebar';
+import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
 
 export default function AdminBookingPage() {
   const router = useRouter();
@@ -118,14 +119,7 @@ export default function AdminBookingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading booking...</p>
-        </div>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   if (error && !booking) {

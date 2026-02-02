@@ -120,6 +120,8 @@ export const ERROR_MESSAGES = {
   LOADING_ERROR: 'Failed to load data. Please refresh the page and try again.',
   BOOKING_CANNOT_BE_CANCELLED: 'This booking cannot be cancelled',
   BOOKING_ALREADY_CANCELLED: 'This booking is already cancelled',
+  BOOKING_ALREADY_CONFIRMED: 'Booking already confirmed',
+  BOOKING_ALREADY_REJECTED: 'Booking already rejected',
   CANCELLATION_TOO_LATE: 'Cancellation must be at least 2 hours before appointment',
   DOWNTIME_DATE_INVALID: 'Invalid date range for closure',
   REMINDER_NOT_FOUND: 'Reminder not found',
@@ -138,8 +140,80 @@ export const SUCCESS_MESSAGES = {
   REMINDER_SENT: 'Reminder sent successfully',
 } as const;
 
+/** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */
+export const UI_BOOKING_STATE = {
+  PENDING: 'Waiting for confirmation',
+  CONFIRMED: 'Your appointment is confirmed!',
+  REJECTED: 'This slot is not available',
+  CANCELLED: 'This booking has been cancelled',
+  /** When status is cancelled and cancelled_by === 'system' (expired). */
+  EXPIRED: 'This request has expired',
+} as const;
+
+/** Phase 6: Idempotent success copy (e.g. user clicked Accept again on already-confirmed booking). */
+export const UI_IDEMPOTENT = {
+  ALREADY_CONFIRMED: 'This booking is already confirmed.',
+  ALREADY_REJECTED: 'This booking was already declined.',
+} as const;
+
+/** UI behavior hardening: context and clarity copy (no visual redesign). */
+export const UI_CONTEXT = {
+  SECURE_ACTION_LINK: 'You are viewing a secure one-time booking action link.',
+  GO_TO_OWNER_DASHBOARD: 'Go to owner dashboard to manage more bookings',
+  BOOKING_STATUS_SINGLE: 'This page shows a single booking.',
+  DASHBOARD_PURPOSE: 'Booking history and overview.',
+  DEPRECATED_DASHBOARD: 'This dashboard is deprecated. Redirecting…',
+  ROOT_CHECKING_ACCOUNT: 'Checking your account…',
+  ADMIN_CONSOLE: 'Admin Console',
+  YOU_ARE_IN_ADMIN_MODE: 'You are in admin mode',
+  VIEWING_AS_CUSTOMER: 'Viewing as: Customer',
+  VIEWING_AS_OWNER: 'Viewing as: Owner',
+  VIEWING_AS_ADMIN: 'Viewing as: Admin',
+  ROLE_OWNER_HELPER: 'Manages a business and receives bookings.',
+  ROLE_CUSTOMER_HELPER: 'Books services.',
+  ROLE_BOTH_HELPER: 'Does both.',
+} as const;
+
+/** Contextual error messages (no internal details). */
+export const UI_ERROR_CONTEXT = {
+  BOOKING_PAGE: 'This slot may no longer be available.',
+  DASHBOARD_PAGE: 'Something went wrong. Try refreshing or return to dashboard.',
+  ACCEPT_REJECT_PAGE: 'This link may have expired or already been used.',
+  GENERIC: 'Something went wrong. Try again.',
+} as const;
+
 export const BOOKING_EXPIRY_HOURS = parseInt(process.env.BOOKING_EXPIRY_HOURS || '24', 10);
 export const REMINDER_24H_BEFORE_HOURS = parseInt(process.env.REMINDER_24H_BEFORE_HOURS || '24', 10);
 export const REMINDER_2H_BEFORE_HOURS = parseInt(process.env.REMINDER_2H_BEFORE_HOURS || '2', 10);
 export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(process.env.CANCELLATION_MIN_HOURS_BEFORE || '2', 10);
+
+/** Phase 3: Metric names for SRE. Alert if GET /api/health checks.cron_expire_bookings_last_run_ts is older than X minutes. */
+export const METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN = 'cron.expire_bookings.last_run_ts';
+export const METRICS_EXPIRED_BY_CRON = 'bookings.expired_by_cron';
+export const METRICS_EXPIRED_BY_LAZY_HEAL = 'bookings.expired_by_lazy_heal';
+
+/** Phase 4: Lifecycle metrics for dashboards (booking funnel, payment success). */
+export const METRICS_BOOKING_CREATED = 'booking_created';
+export const METRICS_BOOKING_CONFIRMED = 'booking_confirmed';
+export const METRICS_BOOKING_REJECTED = 'booking_rejected';
+export const METRICS_BOOKING_CANCELLED_USER = 'booking_cancelled_user';
+export const METRICS_BOOKING_CANCELLED_SYSTEM = 'booking_cancelled_system';
+export const METRICS_PAYMENT_CREATED = 'payment_created';
+export const METRICS_PAYMENT_SUCCEEDED = 'payment_succeeded';
+export const METRICS_PAYMENT_FAILED = 'payment_failed';
+
+/** Phase 5: Rate limits (security). Booking creation per IP + per user. */
+export const RATE_LIMIT_BOOKING_WINDOW_MS = 60_000;
+export const RATE_LIMIT_BOOKING_MAX_PER_WINDOW = 10;
+/** Phase 5: Admin endpoints — per user + per IP. */
+export const RATE_LIMIT_ADMIN_WINDOW_MS = 60_000;
+export const RATE_LIMIT_ADMIN_MAX_PER_WINDOW = 100;
+
+/** Phase 5: Refund/cancellation policy (documentation; no product change). */
+export const REFUND_POLICY_NOTE = 'Refunds follow payment provider policy and business discretion.';
+
+/** Auth observability: every deny must emit these metrics (auth_denied vs auth_missing vs auth_invalid_token). */
+export const METRICS_AUTH_MISSING = 'auth_missing';
+export const METRICS_AUTH_DENIED = 'auth_denied';
+export const METRICS_AUTH_INVALID_TOKEN = 'auth_invalid_token';
 

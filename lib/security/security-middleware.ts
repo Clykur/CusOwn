@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeRequestBody } from './input-sanitizer';
 import { csrfProtection } from './csrf';
-import { userRateLimit, ipRateLimit } from './rate-limit-enhanced';
+import { userRateLimit, ipRateLimit } from './rate-limit-api.security';
 
 export const securityMiddleware = async (request: NextRequest): Promise<NextResponse | null> => {
   if (!request.nextUrl.pathname.startsWith('/api/')) {

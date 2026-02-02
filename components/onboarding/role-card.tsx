@@ -8,6 +8,7 @@ interface RoleCardProps {
   selected: boolean;
   onClick: () => void;
   recommended?: boolean;
+  helperText?: string;
 }
 
 export default function RoleCard({
@@ -18,6 +19,7 @@ export default function RoleCard({
   selected,
   onClick,
   recommended = false,
+  helperText,
 }: RoleCardProps) {
   return (
     <button
@@ -47,6 +49,9 @@ export default function RoleCard({
       </div>
       <h3 className="text-2xl font-bold text-gray-900 mb-2">{title}</h3>
       <p className="text-gray-600 mb-4">{description}</p>
+      {helperText && (
+        <p className="text-sm text-gray-500 mb-3">{helperText}</p>
+      )}
       <ul className="text-sm text-gray-600 space-y-2">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2">

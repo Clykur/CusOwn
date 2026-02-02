@@ -15,6 +15,7 @@ import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { isValidUUID } from '@/lib/utils/security';
 import Breadcrumb from '@/components/ui/breadcrumb';
+import { RedirectSkeleton } from '@/components/ui/skeleton';
 
 export default function SalonDetailPage() {
   const params = useParams();
@@ -122,8 +123,16 @@ export default function SalonDetailPage() {
         if (!isMounted) return;
 
         if (result.success && result.data) {
-          setSalon(result.data);
+          const data = result.data as Salon & { booking_link?: string };
+          setSalon(data);
           setError(null);
+          // Canonical booking entry: redirect to /b/[bookingLink] only (one mental model)
+          if (data.booking_link) {
+            const tokenParam = searchParams.get('token');
+            const q = tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : '';
+            router.replace(`/b/${data.booking_link}${q}`);
+            return;
+          }
         } else {
           throw new Error(result.error || 'Salon not found');
         }
@@ -138,14 +147,9 @@ export default function SalonDetailPage() {
       }
     };
 
-    // Debounce rapid interactions
-    const timeoutId = setTimeout(() => {
-      fetchSalon();
-    }, 100);
-
+    fetchSalon();
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
     };
   }, [salonId, searchParams, router]);
 
@@ -400,14 +404,7 @@ export default function SalonDetailPage() {
   }, [slots]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <RedirectSkeleton />;
   }
 
   if (error && !salon) {
@@ -425,6 +422,16 @@ export default function SalonDetailPage() {
   }
 
   if (!salon) return null;
+
+  // Canonical booking: do not show form on /salon; redirect to /b/[bookingLink] only
+  if ((salon as Salon & { booking_link?: string }).booking_link) {
+    return (
+      <>
+        <RedirectSkeleton />
+        <p className="sr-only" aria-live="polite">Redirecting to booking page…</p>
+      </>
+    );
+  }
 
   if (success) {
     return (
@@ -653,9 +660,9 @@ export default function SalonDetailPage() {
                   Select Time
                 </label>
                 {loadingSlots ? (
-                  <span className="text-xs text-gray-500 flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-400 border-t-transparent"></div>
-                    Loading...
+                  <span className="text-xs text-gray-500 flex items-center gap-2" aria-busy="true">
+                    <div className="animate-pulse h-3 w-3 rounded bg-gray-200"></div>
+                    Updating slots…
                   </span>
                 ) : (
                   <span className="text-xs font-medium text-gray-600 bg-white px-2.5 py-1 rounded-full border border-gray-300">
@@ -665,8 +672,10 @@ export default function SalonDetailPage() {
               </div>
               
               {loadingSlots ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-400 border-t-transparent"></div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 py-4" aria-busy="true">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <div key={i} className="h-10 bg-gray-200 rounded-lg animate-pulse" />
+                  ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">

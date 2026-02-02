@@ -45,14 +45,10 @@ export default function SalonCard({ salon }: SalonCardProps) {
         }
       };
 
-      const timeoutId = setTimeout(() => {
-        generateUrl();
-      }, 50);
-
+      generateUrl();
       return () => {
         cancelled = true;
         isMounted = false;
-        clearTimeout(timeoutId);
       };
     } else {
       // For public listings without id, just use booking_link

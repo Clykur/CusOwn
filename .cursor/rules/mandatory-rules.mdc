@@ -1,0 +1,28 @@
+---
+description: Mandatory — all Cursor rules must be strictly followed
+alwaysApply: true
+---
+
+# Mandatory Cursor Rules
+
+These rules MUST be strictly followed for every prompt and all ongoing development.
+
+## Compliance
+
+- **Adhere to all previously defined Cursor rules** in `.cursor/rules/` (project-overview, api-routes, security, config-and-constants, components, services-and-audit, database, scripts, error-handling, next-app-structure, types-and-validation, naming-and-structure, ux-backend-truth).
+- **Apply the same architectural patterns, coding standards, and constraints** already established in the codebase. Do not introduce new patterns that conflict with existing ones.
+- **Never override, ignore, or relax existing rules** unless the user explicitly instructs you to do so (e.g. "ignore X for this change").
+- **Generate code that is fully consistent** with the current codebase and enforced rules. Match existing style, imports, error handling, and structure.
+
+## New implementations
+
+- All new implementations **comply with these rules by default**.
+- Any deviation **requires explicit user approval** before applying.
+- When in doubt, follow existing files in the same domain (e.g. copy patterns from `app/api/bookings/route.ts` for new booking APIs).
+
+## Checklist before considering work done
+
+1. **ESLint**: Run `npm run lint` (or `next lint`). Fix all reported errors and warnings in changed files.
+2. **Hardcodes**: No magic numbers, raw user-facing strings, or `process.env` in business logic. Use `config/constants.ts`, `config/env.ts`, `ERROR_MESSAGES`, `SUCCESS_MESSAGES`, `UI_BOOKING_STATE`, etc.
+3. **Documentation**: Add only necessary, non-verbose comments (e.g. purpose of a function or non-obvious invariant). No essay-style comments.
+4. **Formatter**: Code must be formatted consistently. Use the project linter/formatter; do not leave trailing whitespace or inconsistent quotes/indent.

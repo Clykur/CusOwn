@@ -9,6 +9,15 @@ import { serviceService } from './service.service';
 import { bookingStateMachine } from '@/lib/state/booking-state-machine';
 import { emitBookingCreated, emitBookingConfirmed, emitBookingRejected, emitBookingCancelled } from '@/lib/events/booking-events';
 import { metricsService } from '@/lib/monitoring/metrics';
+import { auditService } from '@/services/audit.service';
+import { logBookingLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
+import {
+  METRICS_BOOKING_CREATED,
+  METRICS_BOOKING_CONFIRMED,
+  METRICS_BOOKING_REJECTED,
+  METRICS_BOOKING_CANCELLED_USER,
+  METRICS_BOOKING_CANCELLED_SYSTEM,
+} from '@/config/constants';
 import { cache } from 'react';
 
 export class BookingService {
@@ -97,6 +106,14 @@ export class BookingService {
     if (bookingWithDetails) {
       await emitBookingCreated(bookingWithDetails);
       await metricsService.increment('bookings.created');
+      await metricsService.increment(METRICS_BOOKING_CREATED);
+      logBookingLifecycle({
+        booking_id: booking.id,
+        slot_id: booking.slot_id,
+        action: 'booking_created',
+        actor: customerUserId || 'anonymous',
+        source: 'api',
+      });
     }
 
     return booking;
@@ -211,6 +228,14 @@ export class BookingService {
     if (bookingWithDetails) {
       await emitBookingConfirmed(bookingWithDetails);
       await metricsService.increment('bookings.confirmed');
+      await metricsService.increment(METRICS_BOOKING_CONFIRMED);
+      logBookingLifecycle({
+        booking_id: bookingId,
+        slot_id: bookingWithDetails.slot_id,
+        action: 'booking_confirmed',
+        actor: actorId || 'system',
+        source: 'api',
+      });
     }
 
     return confirmedBooking;
@@ -251,6 +276,14 @@ export class BookingService {
     if (bookingWithDetails) {
       await emitBookingRejected(bookingWithDetails);
       await metricsService.increment('bookings.rejected');
+      await metricsService.increment(METRICS_BOOKING_REJECTED);
+      logBookingLifecycle({
+        booking_id: bookingId,
+        slot_id: booking.slot_id,
+        action: 'booking_rejected',
+        actor: 'owner',
+        source: 'api',
+      });
     }
 
     return data;
@@ -307,51 +340,75 @@ export class BookingService {
     return bookingsWithDetails;
   }
 
-  async expireOldBookings(): Promise<void> {
+  /**
+   * Expire pending bookings older than env.booking.expiryHours.
+   * Uses DB RPC expire_pending_bookings_atomically for transactional safety (booking + slot in one transaction).
+   * Emits events and audit logs for each expired booking after the RPC succeeds.
+   * Phase 3: source drives metrics (expired_by_cron vs expired_by_lazy_heal).
+   */
+  async expireOldBookings(options?: { source?: 'cron' | 'lazy_heal' }): Promise<void> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
-    const expiryTime = new Date();
-    expiryTime.setHours(expiryTime.getHours() - env.booking.expiryHours);
 
-    const { data: expiredBookings, error: fetchError } = await supabaseAdmin
-      .from('bookings')
-      .select('id, slot_id, status, business_id')
-      .eq('status', BOOKING_STATUS.PENDING)
-      .lt('created_at', expiryTime.toISOString());
+    const source = options?.source ?? 'cron';
+    const metricName = source === 'lazy_heal' ? 'bookings.expired_by_lazy_heal' : 'bookings.expired_by_cron';
 
-    if (fetchError) {
-      throw new Error(fetchError.message || ERROR_MESSAGES.DATABASE_ERROR);
+    const { data: result, error: rpcError } = await supabaseAdmin.rpc('expire_pending_bookings_atomically', {
+      p_expiry_hours: env.booking.expiryHours,
+    });
+
+    if (rpcError) {
+      throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    if (!expiredBookings || expiredBookings.length === 0) {
+    if (!result || !result.success) {
+      const errMsg = result?.error || 'Expire bookings RPC failed';
+      throw new Error(errMsg);
+    }
+
+    const bookingIds: string[] = Array.isArray(result.booking_ids) ? result.booking_ids : [];
+    if (bookingIds.length === 0) {
       return;
     }
-
-    const bookingIds = expiredBookings.map((b) => b.id);
-    const slotIds = expiredBookings.map((b) => b.slot_id);
-    const now = new Date().toISOString();
-
-    await supabaseAdmin
-      .from('bookings')
-      .update({ 
-        status: BOOKING_STATUS.CANCELLED,
-        cancelled_by: 'system',
-        cancelled_at: now
-      })
-      .in('id', bookingIds);
 
     for (const bookingId of bookingIds) {
       const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
       if (bookingWithDetails) {
         await emitBookingCancelled(bookingWithDetails, 'system');
+        await metricsService.increment(metricName);
+        await metricsService.increment(METRICS_BOOKING_CANCELLED_SYSTEM);
+        logBookingLifecycle({
+          booking_id: bookingId,
+          slot_id: bookingWithDetails.slot_id,
+          action: 'booking_cancelled',
+          actor: 'system',
+          source: source,
+          reason: 'expired',
+        });
+        try {
+          await auditService.createAuditLog(null, 'booking_cancelled', 'booking', {
+            entityId: bookingId,
+            description: 'Booking expired by system',
+            newData: { status: BOOKING_STATUS.CANCELLED, cancelled_by: 'system' },
+          });
+        } catch (auditErr) {
+          console.error('[AUDIT] Failed to log expired booking:', auditErr);
+        }
       }
     }
+  }
 
-    await supabaseAdmin
-      .from('slots')
-      .update({ status: SLOT_STATUS.AVAILABLE })
-      .in('id', slotIds);
+  /**
+   * Phase 3: Run lazy expiration (same RPC as cron). Safe to call on every booking read/mutation.
+   * Does not throw — failures are logged so user request is not broken.
+   */
+  async runLazyExpireIfNeeded(): Promise<void> {
+    try {
+      await this.expireOldBookings({ source: 'lazy_heal' });
+    } catch (err) {
+      console.error('[LAZY_EXPIRE] Failed to run lazy expire:', err instanceof Error ? err.message : err);
+    }
   }
 
   async cancelBookingByCustomer(bookingId: string, reason?: string): Promise<Booking> {
@@ -403,6 +460,15 @@ export class BookingService {
     if (bookingWithDetails) {
       await emitBookingCancelled(bookingWithDetails, 'customer');
       await metricsService.increment('bookings.cancelled');
+      await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
+      logBookingLifecycle({
+        booking_id: bookingId,
+        slot_id: booking.slot_id,
+        action: 'booking_cancelled',
+        actor: 'customer',
+        source: 'api',
+        reason: reason || undefined,
+      });
     }
 
     return data;
@@ -449,6 +515,15 @@ export class BookingService {
     if (bookingWithDetails) {
       await emitBookingCancelled(bookingWithDetails, 'owner');
       await metricsService.increment('bookings.cancelled');
+      await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
+      logBookingLifecycle({
+        booking_id: bookingId,
+        slot_id: booking.slot_id,
+        action: 'booking_cancelled',
+        actor: 'owner',
+        source: 'api',
+        reason: reason || undefined,
+      });
     }
 
     return data;

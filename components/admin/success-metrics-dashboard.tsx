@@ -81,7 +81,23 @@ export default function SuccessMetricsDashboard() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading metrics...</div>;
+    return (
+      <div className="space-y-6 animate-pulse" aria-busy="true">
+        <div className="flex justify-between items-center">
+          <div className="h-8 bg-gray-200 rounded w-40" />
+          <div className="flex gap-4">
+            <div className="h-10 bg-gray-200 rounded w-40" />
+            <div className="h-10 bg-gray-200 rounded w-40" />
+          </div>
+        </div>
+        <div className="h-64 bg-gray-200 rounded-lg" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-20 bg-gray-200 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

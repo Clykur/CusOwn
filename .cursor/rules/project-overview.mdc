@@ -1,0 +1,25 @@
+---
+description: Core project context, tech stack, and phase policy — always apply
+alwaysApply: true
+---
+
+# CusOwn — Project Overview
+
+## Tech stack
+- **Framework**: Next.js 14 (App Router)
+- **Backend**: Supabase (Postgres, Auth, Service Role)
+- **API**: Route handlers in `app/api/**/route.ts`; use `successResponse` / `errorResponse` from `@/lib/utils/response`
+- **State**: State machines in `lib/state/` (booking, payment, slot); atomic DB RPCs for critical paths
+
+## Core principles (do not violate)
+- **No business-logic changes** without Product Owner / Technical Lead approval. Phase policy files in `config/*.policy.ts` are locked.
+- **Payment–booking**: Payment is optional; booking can be confirmed without payment. No new coupling in core flows.
+- **Invariants**: One confirmed booking per slot (DB-enforced). Booking lifecycle: state machine only (pending → confirm | reject | cancel | expire).
+- **Security**: No unauthenticated state mutation. Cron endpoints require `CRON_SECRET`. Admin endpoints require `checkIsAdmin(user.id)` and admin rate limit.
+- **Observability**: Structured lifecycle logs (booking_id, slot_id, action, actor, source). Audit logs PII-redacted. Use constants from `config/constants.ts` and `config/env.ts`; no magic numbers or raw `process.env` in business logic.
+
+## Key paths
+- Config: `config/constants.ts`, `config/env.ts`, `config/*.policy.ts`
+- Security: `lib/security/rate-limit-api.security.ts`, `lib/security/audit-pii-redact.security.ts`, `lib/utils/security.ts` (signed URLs)
+- Services: `services/booking.service.ts`, `services/audit.service.ts`, `services/payment.service.ts`
+- API responses: `successResponse(data, message?)`, `errorResponse(error, status)`; use `ERROR_MESSAGES` / `SUCCESS_MESSAGES` from constants.

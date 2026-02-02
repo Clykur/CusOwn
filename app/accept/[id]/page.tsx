@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { API_ROUTES } from '@/config/constants';
+import { API_ROUTES, UI_BOOKING_STATE, UI_IDEMPOTENT, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { AcceptRejectSkeleton } from '@/components/ui/skeleton';
 
 export default function AcceptPage() {
   const params = useParams();
@@ -94,13 +95,12 @@ export default function AcceptPage() {
 
       const result = await response.json();
 
-      if (result.success && result.data?.whatsapp_url) {
-        setSuccess({
-          whatsappUrl: result.data.whatsapp_url,
-        });
-        setTimeout(() => {
-          window.open(result.data.whatsapp_url, '_blank');
-        }, 300);
+      if (result.success && result.data) {
+        const whatsappUrl = result.data.whatsapp_url;
+        setSuccess({ whatsappUrl: whatsappUrl ?? undefined });
+        if (whatsappUrl) {
+          setTimeout(() => window.open(whatsappUrl, '_blank'), 300);
+        }
       } else {
         throw new Error(result.error || 'Failed to confirm booking');
       }
@@ -114,22 +114,16 @@ export default function AcceptPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <AcceptRejectSkeleton />;
   }
 
   if (error && !booking) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Not Found</h2>
-          <p className="text-gray-600 mb-8">{error}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Unable to load</h2>
+          <p className="text-gray-600 mb-8">{UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}</p>
+          <a href={ROUTES.HOME} className="inline-block bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900">Go home</a>
         </div>
       </div>
     );
@@ -158,9 +152,15 @@ export default function AcceptPage() {
               Open WhatsApp Again
             </a>
           )}
+          <a
+            href={ROUTES.OWNER_DASHBOARD_BASE}
+            className="block w-full bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors mb-3"
+          >
+            {UI_CONTEXT.GO_TO_OWNER_DASHBOARD}
+          </a>
           <button
             onClick={() => router.push(ROUTES.HOME)}
-            className="w-full bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors"
+            className="w-full bg-gray-100 text-gray-700 font-medium py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors"
           >
             Done
           </button>
@@ -175,6 +175,45 @@ export default function AcceptPage() {
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Not Found</h2>
           <p className="text-gray-600 mb-8">Unable to load booking details.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (booking.status === 'cancelled') {
+    const isExpired = booking.cancelled_by === 'system';
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{isExpired ? UI_BOOKING_STATE.EXPIRED : UI_BOOKING_STATE.CANCELLED}</h2>
+          <p className="text-gray-600 mb-8">
+            {isExpired ? 'This request is no longer valid. The customer can book a new slot.' : 'This booking was cancelled and can no longer be confirmed.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (booking.status === 'confirmed') {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Already confirmed</h2>
+          <p className="text-gray-600 mb-6">{UI_IDEMPOTENT.ALREADY_CONFIRMED}</p>
+          <button onClick={() => router.push(ROUTES.HOME)} className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900">
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (booking.status === 'rejected') {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{UI_BOOKING_STATE.REJECTED}</h2>
+          <p className="text-gray-600 mb-8">This booking was already declined.</p>
         </div>
       </div>
     );
@@ -199,6 +238,7 @@ export default function AcceptPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+        <p className="text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">{UI_CONTEXT.SECURE_ACTION_LINK}</p>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm Booking</h2>
 
         <div className="space-y-4 mb-6">
@@ -243,6 +283,7 @@ export default function AcceptPage() {
           <button
             onClick={handleAccept}
             disabled={processing || booking.status !== 'pending'}
+            aria-busy={processing}
             className="flex-1 bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {processing ? 'Accepting...' : 'Accept'}

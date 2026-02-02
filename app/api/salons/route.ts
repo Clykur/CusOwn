@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   
   try {
     // Rate limiting for salon creation
-    const { enhancedRateLimit } = await import('@/lib/security/rate-limit-enhanced');
+    const { enhancedRateLimit } = await import('@/lib/security/rate-limit-api.security');
     const salonCreateRateLimit = enhancedRateLimit({ maxRequests: 5, windowMs: 60000, perIP: true, perUser: true, keyPrefix: 'salon_create' });
     const rateLimitResponse = await salonCreateRateLimit(request);
     if (rateLimitResponse) {

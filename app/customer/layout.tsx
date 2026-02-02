@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import CustomerSidebar from '@/components/customer/CustomerSidebar';
-import CustomerMobileBottomNav from '@/components/customer/MobileBottomNav';
+import CustomerSidebar from '@/components/customer/customer-sidebar';
+import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
 
 export default function CustomerLayout({
   children,

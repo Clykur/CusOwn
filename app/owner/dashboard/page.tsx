@@ -8,6 +8,7 @@ import { getUserState, getRedirectMessage } from '@/lib/utils/user-state';
 import { Salon } from '@/types';
 import { formatDate } from '@/lib/utils/string';
 import { ROUTES, getOwnerDashboardUrl, getSecureOwnerDashboardUrlClient } from '@/lib/utils/navigation';
+import { RedirectSkeleton } from '@/components/ui/skeleton';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -236,14 +237,7 @@ function OwnerDashboardPageContent() {
 
   if (businesses.length === 0) {
     router.replace(ROUTES.SETUP);
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecting to setup...</p>
-        </div>
-      </div>
-    );
+    return <RedirectSkeleton />;
   }
 
   return (

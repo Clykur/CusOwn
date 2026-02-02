@@ -9,7 +9,7 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { getBookingStatusUrl } from '@/lib/utils/url';
-import { bookingRateLimitEnhanced } from '@/lib/security/rate-limit-enhanced';
+import { bookingRateLimitEnhanced } from '@/lib/security/rate-limit-api.security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES, SLOT_STATUS } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
@@ -21,6 +21,8 @@ export async function POST(request: NextRequest) {
   const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   
   try {
+    await bookingService.runLazyExpireIfNeeded();
+
     const rateLimitResponse = await bookingRateLimitEnhanced(request);
     if (rateLimitResponse) {
       return rateLimitResponse;

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSecureSalonUrl } from '@/lib/utils/security';
-import { isValidUUID } from '@/lib/utils/security';
+import { getSecureSalonUrl, isValidUUID } from '@/lib/utils/security';
+import { env } from '@/config/env';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 
 // Rate limit: 50 requests per minute per IP
 const strictRateLimit = enhancedRateLimit({ maxRequests: 50, windowMs: 60000, perIP: true, keyPrefix: 'secure_url_gen' });
@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
     }
     console.log('[URL_GEN] Token validation passed, length:', token.length);
 
-    // Security: Add metadata about token expiration
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+    const ttlMs = (env.security.signedUrlTtlSeconds ?? 86400) * 1000;
+    const expiresAt = new Date(Date.now() + ttlMs);
     console.log('[URL_GEN] Token expires at:', expiresAt.toISOString());
 
     const duration = Date.now() - startTime;

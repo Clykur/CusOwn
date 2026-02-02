@@ -5,7 +5,7 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { paymentService } from '@/services/payment.service';
 import { bookingService } from '@/services/booking.service';
 import { slotService } from '@/services/slot.service';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
 

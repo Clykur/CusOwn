@@ -9,6 +9,7 @@ import { formatDate, formatTime } from '@/lib/utils/string';
 import { isTimeInRange } from '@/lib/utils/time';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { BookingPageSkeleton } from '@/components/ui/skeleton';
 
 export default function BookingPage() {
   const params = useParams();
@@ -272,14 +273,7 @@ export default function BookingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <BookingPageSkeleton />;
   }
 
   if (error && !salon) {

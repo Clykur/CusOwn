@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
+import { redactPiiForAudit } from '@/lib/security/audit-pii-redact.security';
 
 export type AuditActionType =
   | 'business_created'
@@ -21,9 +22,13 @@ export type AuditActionType =
   | 'system_config_changed'
   | 'slot_reserved'
   | 'slot_released'
-  | 'slot_booked';
+  | 'slot_booked'
+  | 'payment_created'
+  | 'payment_succeeded'
+  | 'payment_failed'
+  | 'payment_refunded';
 
-export type AuditEntityType = 'business' | 'user' | 'booking' | 'system' | 'slot';
+export type AuditEntityType = 'business' | 'user' | 'booking' | 'system' | 'slot' | 'payment';
 
 export interface AuditLog {
   id: string;
@@ -64,17 +69,19 @@ export class AuditService {
     const userAgent = data.request?.headers.get('user-agent') || null;
 
     try {
+      // Phase 5: PII minimization — redact before storing
+      const oldData = data.oldData != null ? redactPiiForAudit(data.oldData as Record<string, unknown>) : null;
+      const newData = data.newData != null ? redactPiiForAudit(data.newData as Record<string, unknown>) : null;
       // Use NULL for system actions instead of fake UUID
-      // This requires admin_user_id to be nullable (see migration_fix_audit_logs_foreign_key.sql)
       const { data: auditLog, error } = await supabaseAdmin
         .from('audit_logs')
         .insert({
-          admin_user_id: userId || null, // NULL for system actions
+          admin_user_id: userId || null,
           action_type: actionType,
           entity_type: entityType,
           entity_id: data.entityId || null,
-          old_data: data.oldData || null,
-          new_data: data.newData || null,
+          old_data: oldData,
+          new_data: newData,
           description: data.description || null,
           ip_address: ipAddress,
           user_agent: userAgent,

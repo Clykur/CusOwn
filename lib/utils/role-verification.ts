@@ -1,9 +1,38 @@
 /**
  * Role verification utilities
- * Centralized functions to verify user roles and access
+ * Centralized functions to verify user roles and access.
+ * O(1) profile-based checks used by API auth pipeline to avoid N+1.
  */
 
 export type UserType = 'owner' | 'customer' | 'both' | 'admin';
+
+/** Profile shape for O(1) role checks (no refetch). */
+export interface ProfileLike {
+  user_type?: string;
+}
+
+/**
+ * O(1) check: is profile admin? Use when profile already fetched (single fetch per request).
+ */
+export function isAdminProfile(profile: ProfileLike | null): boolean {
+  return profile?.user_type === 'admin';
+}
+
+/**
+ * O(1) check: does profile have owner access (owner, both, or admin)?
+ */
+export function hasOwnerProfile(profile: ProfileLike | null): boolean {
+  const t = profile?.user_type;
+  return t === 'owner' || t === 'both' || t === 'admin';
+}
+
+/**
+ * O(1) check: does profile have customer access (customer, both, or admin)?
+ */
+export function hasCustomerProfile(profile: ProfileLike | null): boolean {
+  const t = profile?.user_type;
+  return t === 'customer' || t === 'both' || t === 'admin';
+}
 
 /**
  * Get user profile - works in both client and server contexts
@@ -22,45 +51,42 @@ async function getUserProfileSafe(userId: string): Promise<any> {
 }
 
 /**
- * Check if user has owner access (owner, both, or admin)
+ * Check if user has owner access (owner, both, or admin).
+ * Pass profile to avoid second fetch (O(1) when profile provided).
  */
-export async function hasOwnerAccess(userId: string): Promise<boolean> {
+export async function hasOwnerAccess(userId: string, profile?: ProfileLike | null): Promise<boolean> {
+  if (profile !== undefined) return hasOwnerProfile(profile ?? null);
   try {
-    const profile = await getUserProfileSafe(userId);
-    if (!profile) return false;
-    
-    const userType = (profile as any).user_type;
-    return userType === 'owner' || userType === 'both' || userType === 'admin';
+    const p = await getUserProfileSafe(userId);
+    return hasOwnerProfile(p ?? null);
   } catch {
     return false;
   }
 }
 
 /**
- * Check if user has customer access (customer, both, or admin)
+ * Check if user has customer access (customer, both, or admin).
+ * Pass profile to avoid second fetch (O(1) when profile provided).
  */
-export async function hasCustomerAccess(userId: string): Promise<boolean> {
+export async function hasCustomerAccess(userId: string, profile?: ProfileLike | null): Promise<boolean> {
+  if (profile !== undefined) return hasCustomerProfile(profile ?? null);
   try {
-    const profile = await getUserProfileSafe(userId);
-    if (!profile) return false;
-    
-    const userType = (profile as any).user_type;
-    return userType === 'customer' || userType === 'both' || userType === 'admin';
+    const p = await getUserProfileSafe(userId);
+    return hasCustomerProfile(p ?? null);
   } catch {
     return false;
   }
 }
 
 /**
- * Check if user has admin access
+ * Check if user has admin access.
+ * Pass profile to avoid second fetch (O(1) when profile provided).
  */
-export async function hasAdminAccess(userId: string): Promise<boolean> {
+export async function hasAdminAccess(userId: string, profile?: ProfileLike | null): Promise<boolean> {
+  if (profile !== undefined) return isAdminProfile(profile ?? null);
   try {
-    const profile = await getUserProfileSafe(userId);
-    if (!profile) return false;
-    
-    const userType = (profile as any).user_type;
-    return userType === 'admin';
+    const p = await getUserProfileSafe(userId);
+    return isAdminProfile(p ?? null);
   } catch {
     return false;
   }

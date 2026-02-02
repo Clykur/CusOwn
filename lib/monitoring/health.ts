@@ -1,18 +1,21 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { performanceMonitor } from './performance';
+import { metricsService } from './metrics';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy';
   checks: {
     database: 'up' | 'down';
     timestamp: string;
+    /** Phase 3: Unix seconds when cron.expire_bookings last ran. Alert if (now_ts - this) > X minutes. */
+    cron_expire_bookings_last_run_ts?: number;
   };
 }
 
 export const checkHealth = async (): Promise<HealthStatus> => {
   const startTime = Date.now();
-  const checks = {
-    database: 'down' as 'up' | 'down',
+  const checks: HealthStatus['checks'] = {
+    database: 'down',
     timestamp: new Date().toISOString(),
   };
 
@@ -23,6 +26,12 @@ export const checkHealth = async (): Promise<HealthStatus> => {
     } catch {
       checks.database = 'down';
     }
+  }
+
+  const lastRunTsRaw = await metricsService.getCount('cron.expire_bookings.last_run_ts');
+  const lastRunTs = typeof lastRunTsRaw === 'number' ? lastRunTsRaw : Number(lastRunTsRaw);
+  if (lastRunTs > 0 && !Number.isNaN(lastRunTs)) {
+    checks.cron_expire_bookings_last_run_ts = lastRunTs;
   }
 
   const duration = Date.now() - startTime;

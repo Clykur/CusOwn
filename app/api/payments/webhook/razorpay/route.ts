@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { paymentService } from '@/services/payment.service';
-import { bookingService } from '@/services/booking.service';
-import { slotService } from '@/services/slot.service';
 import { verifyRazorpayWebhook, getWebhookSecret } from '@/lib/security/webhook-verification';
 import { createHash } from 'crypto';
+
+/** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
 
 export async function POST(request: NextRequest) {
   const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
@@ -77,18 +77,6 @@ export async function POST(request: NextRequest) {
       providerPaymentId,
       { signature, payloadHash }
     );
-
-    if (paymentStatus === 'completed' && payment.status !== 'completed') {
-      const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
-      if (booking && booking.status === 'pending') {
-        await bookingService.confirmBooking(booking.id, 'system');
-      }
-    } else if (paymentStatus === 'failed' && payment.status !== 'failed') {
-      const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
-      if (booking && booking.status === 'pending') {
-        await slotService.releaseSlot(booking.slot_id);
-      }
-    }
 
     return successResponse({ success: true });
   } catch (error) {

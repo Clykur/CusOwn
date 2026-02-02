@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/utils/navigation';
+import { UI_CONTEXT } from '@/config/constants';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { shouldRedirectUser } from '@/lib/utils/user-state';
+import { HomeSkeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   const router = useRouter();
@@ -43,14 +45,7 @@ export default function Home() {
   }, [router]);
 
   if (checkingAuth || loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <HomeSkeleton />;
   }
 
   return (
@@ -86,7 +81,7 @@ export default function Home() {
             <p className="mt-8 text-xl leading-8 text-gray-600 max-w-3xl mx-auto font-light">
               A professional appointment and slot management platform that works for your business and your customers. 
               <span className="block mt-2 text-gray-500 text-lg">
-                Simple, reliable, and built to scale.
+                Simple, reliable, and designed to grow with you.
               </span>
             </p>
             

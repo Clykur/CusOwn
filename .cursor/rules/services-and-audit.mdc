@@ -1,0 +1,20 @@
+---
+description: Services, audit logs, and lifecycle logging
+globs: services/**/*.ts, lib/monitoring/**/*.ts
+alwaysApply: false
+---
+
+# Services and audit
+
+## Services
+- Business logic lives in `services/*.service.ts`. API routes call services; services do not import route handlers.
+- Use `auditService.createAuditLog(userId, actionType, entityType, { entityId, oldData, newData, description, request })` for state-changing actions. Use `checkIsAdmin` / ownership checks before admin-only actions.
+
+## Audit data
+- Pass `oldData`/`newData` through `redactPiiForAudit` before passing to `createAuditLog`. Do not store raw PII in audit_logs.
+
+## Lifecycle logging
+- Use `logBookingLifecycle({ booking_id, slot_id, action, actor, source })` and `logPaymentLifecycle({ payment_id, booking_id, action, actor })` from `@/lib/monitoring/lifecycle-structured-log` for booking/payment state changes. Only IDs and action/actor/source; no PII.
+
+## Metrics
+- Increment counters via `metricsService.increment(metricName)`. Metric names are in `config/constants.ts` (e.g. METRICS_BOOKING_CREATED, METRICS_PAYMENT_SUCCEEDED). Use them; do not hardcode strings.

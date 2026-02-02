@@ -8,7 +8,8 @@ import { CreateSalonInput } from '@/types';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
-import OnboardingProgress from '@/components/onboarding/OnboardingProgress';
+import OnboardingProgress from '@/components/onboarding/onboarding-progress';
+import { SetupSkeleton } from '@/components/ui/skeleton';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 
 export default function SetupPage() {
@@ -246,38 +247,16 @@ export default function SetupPage() {
           window.dispatchEvent(new Event('businessCreated'));
           window.dispatchEvent(new Event('userStateChanged'));
           
-          // Wait a moment for database to update, then verify business was created
+          // Force a fresh state check (skip cache) so redirect sees correct role
           if (session?.user) {
-            await new Promise(resolve => setTimeout(resolve, 800)); // Wait 800ms for DB update
-            
-            // Force a fresh state check (skip cache) to verify business count
-            const freshState = await getUserState(session.user.id, { skipCache: true });
-            console.log('[SETUP] Fresh state after business creation:', {
-              businessCount: freshState.businessCount,
-              state: freshState.state,
-              canAccessOwnerDashboard: freshState.canAccessOwnerDashboard,
-            });
-            
-            // If business count is still 0, wait a bit more and check again
-            if (freshState.businessCount === 0) {
-              console.warn('[SETUP] Business count still 0, waiting a bit more...');
-              await new Promise(resolve => setTimeout(resolve, 500));
-              const secondCheck = await getUserState(session.user.id, { skipCache: true });
-              console.log('[SETUP] Second state check:', {
-                businessCount: secondCheck.businessCount,
-                state: secondCheck.state,
-              });
-            }
+            await getUserState(session.user.id, { skipCache: true });
           }
         } catch (e) {
           console.warn('[SETUP] Could not notify other tabs:', e);
         }
         
-        // After successful business creation, redirect to owner dashboard
-        // Use a small delay to show success message and allow state to update
-        setTimeout(() => {
-          router.push(ROUTES.OWNER_DASHBOARD_BASE);
-        }, 1500);
+        // Navigate immediately; loading.tsx shows skeleton at destination
+        router.push(ROUTES.OWNER_DASHBOARD_BASE);
       } else {
         throw new Error(result.error || 'Failed to create business. Please try again.');
       }
@@ -462,14 +441,7 @@ export default function SetupPage() {
 }
 
   if (checkingAuth) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <SetupSkeleton />;
   }
 
   if (!user) {

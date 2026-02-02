@@ -7,6 +7,7 @@ import { signOut, getUserProfile } from '@/lib/supabase/auth';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { getUserState } from '@/lib/utils/user-state';
+import { UI_CONTEXT } from '@/config/constants';
 
 interface NavItem {
   name: string;
@@ -273,7 +274,7 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
           {/* Logo/Header */}
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900">Business Owner</h2>
-            <p className="text-sm text-gray-500 mt-1">CusOwn Platform</p>
+            <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
           </div>
 
           {/* Navigation */}

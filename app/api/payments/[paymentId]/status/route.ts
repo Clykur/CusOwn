@@ -3,7 +3,7 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { paymentService } from '@/services/payment.service';
 import { bookingService } from '@/services/booking.service';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 
 const statusRateLimit = enhancedRateLimit({
   maxRequests: 30,

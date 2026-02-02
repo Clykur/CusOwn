@@ -1,0 +1,23 @@
+---
+description: Phase 6 — UX reflects backend truth; no dark states
+globs: app/**/*.tsx, components/**/*.tsx
+alwaysApply: false
+---
+
+# UX and backend truth (Phase 6)
+
+## Map backend state to UI
+- Use `UI_BOOKING_STATE` and `UI_IDEMPOTENT` from `@/config/constants` for booking state copy. Do not hardcode "confirmed", "cancelled", "expired" strings.
+- **Expired**: When `booking.status === 'cancelled'` and `booking.cancelled_by === 'system'`, show explicit "expired" message (UI_BOOKING_STATE.EXPIRED), not generic "cancelled".
+- **Idempotent success**: When API returns 200 and booking is already in target state (e.g. already confirmed), show success state with UI_IDEMPOTENT.ALREADY_CONFIRMED / ALREADY_REJECTED — do not show an error.
+
+## Handle all states explicitly
+- Accept/reject pages: Handle loading, error (no booking), cancelled (expired vs user cancel), confirmed, rejected, and pending. Do not leave users on a blank or generic error when state is known.
+- Booking status page: Use getStatusMessage with UI_BOOKING_STATE; for cancelled, differentiate expired (cancelled_by === 'system') vs user cancel.
+
+## Disable unsafe rapid actions
+- Disable submit buttons when `processing` or when action is not applicable (e.g. booking.status !== 'pending'). Use `aria-busy={processing}` for accessibility.
+- Do not reset `processing` until the request has completed (success or error). This prevents double-submit.
+
+## Marketing
+- Do not promise guarantees we cannot honour (e.g. "100% uptime", "always"). Prefer "designed to grow" over "built to scale". See docs/MARKETING_CLAIMS.md.

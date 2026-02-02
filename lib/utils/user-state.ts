@@ -484,16 +484,16 @@ export function clearUserStateCache(): void {
  */
 export function getRedirectMessage(reason: string): string {
   const messages: Record<string, string> = {
-    'admin_user': 'Redirecting to admin dashboard...',
-    'owner_no_business': 'You need to create a business first. Redirecting to setup...',
-    'owner_with_business': 'Loading your businesses...',
-    'both_no_business': 'You need to create a business to access owner features. Redirecting to setup...',
-    'both_with_business': 'Loading your dashboard...',
-    'customer_only': 'Loading your bookings...',
+    'admin_user': 'Redirecting to admin dashboard…',
+    'owner_no_business': 'You need to create a business first. Redirecting to setup…',
+    'owner_with_business': 'Taking you to your businesses…',
+    'both_no_business': 'You need to create a business to access owner features. Redirecting to setup…',
+    'both_with_business': 'Taking you to your dashboard…',
+    'customer_only': 'Taking you to your bookings…',
     'no_profile': 'Please complete your profile setup.',
     'unauthenticated': 'Please sign in to continue.',
     'error': 'An error occurred. Please try again.',
   };
   
-  return messages[reason] || 'Redirecting...';
+  return messages[reason] || 'Redirecting…';
 }

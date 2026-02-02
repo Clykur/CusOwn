@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signOut, getUserProfile } from '@/lib/supabase/auth';
-import { ROUTES } from '@/lib/utils/navigation';
 import { supabaseAuth } from '@/lib/supabase/auth';
 
 interface NavItem {
@@ -13,41 +12,80 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+import { getAdminDashboardUrl } from '@/lib/utils/navigation';
+import { UI_CONTEXT } from '@/config/constants';
+
 const navigation: NavItem[] = [
   {
-    name: 'My Bookings',
-    href: ROUTES.CUSTOMER_DASHBOARD,
+    name: 'Overview',
+    href: getAdminDashboardUrl(),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       </svg>
     ),
   },
   {
-    name: 'Book Appointment',
-    href: ROUTES.CATEGORIES,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Browse Salons',
-    href: ROUTES.SALON_LIST,
+    name: 'Businesses',
+    href: getAdminDashboardUrl('businesses'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
       </svg>
     ),
   },
+  {
+    name: 'Users',
+    href: getAdminDashboardUrl('users'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Bookings',
+    href: getAdminDashboardUrl('bookings'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Audit Logs',
+    href: getAdminDashboardUrl('audit'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Success Metrics',
+    href: getAdminDashboardUrl('success-metrics'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Profile',
+    href: '/profile',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
 ];
 
-export default function CustomerSidebar() {
+function AdminSidebarContent() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [navigating, setNavigating] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
 
@@ -60,10 +98,6 @@ export default function CustomerSidebar() {
       alert('Failed to logout. Please try again.');
     }
   };
-
-  useEffect(() => {
-    setNavigating(null);
-  }, [pathname]);
 
   useEffect(() => {
     const loadUserInfo = async () => {
@@ -87,7 +121,7 @@ export default function CustomerSidebar() {
           }
         }
       } catch (error) {
-        console.error('[CustomerSidebar] Error loading user info:', error);
+        console.error('[AdminSidebar] Error loading user info:', error);
       }
     };
 
@@ -95,27 +129,11 @@ export default function CustomerSidebar() {
   }, []);
 
   const isActive = (href: string) => {
-    // Check exact matches first
-    if (pathname === href) {
-      return true;
-    }
-    
-    // Dashboard: active on dashboard or booking status pages
-    if (href === ROUTES.CUSTOMER_DASHBOARD) {
-      return pathname === ROUTES.CUSTOMER_DASHBOARD || pathname?.startsWith('/booking/');
-    }
-    
-    // Categories: active only on /categories (not on /categories/salon or /salon/)
-    if (href === ROUTES.CATEGORIES) {
-      return pathname === ROUTES.CATEGORIES;
-    }
-    
-    // Salon List: active on /categories/salon or /salon/[id]
-    if (href === ROUTES.SALON_LIST) {
-      return pathname === ROUTES.SALON_LIST || pathname?.startsWith('/salon/');
-    }
-    
-    return false;
+    // Other admin routes
+    if (pathname !== '/admin/dashboard') return false;
+    const currentTab = searchParams?.get('tab') || 'overview';
+    const hrefTab = href.includes('?tab=') ? href.split('tab=')[1] : 'overview';
+    return currentTab === hrefTab;
   };
 
   return (
@@ -124,10 +142,9 @@ export default function CustomerSidebar() {
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2.5 bg-white border-2 border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-all"
-          aria-label="Toggle menu"
+          className="p-2 bg-white border border-gray-300 rounded-lg shadow-md"
         >
-          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {sidebarOpen ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             ) : (
@@ -154,38 +171,26 @@ export default function CustomerSidebar() {
         <div className="h-full flex flex-col">
           {/* Logo/Header */}
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Customer</h2>
-            <p className="text-sm text-gray-500 mt-1">CusOwn Platform</p>
+            <h2 className="text-xl font-bold text-gray-900">{UI_CONTEXT.ADMIN_CONSOLE}</h2>
+            <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.YOU_ARE_IN_ADMIN_MODE}</p>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const active = isActive(item.href);
-              const isNavigating = navigating === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={(e) => {
-                    if (item.href !== pathname) {
-                      setNavigating(item.href);
-                      setSidebarOpen(false);
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     active
-                      ? 'bg-black text-white shadow-md'
-                      : isNavigating
-                      ? 'bg-gray-100 text-gray-700'
-                      : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
+                      ? 'bg-black text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <span className={isNavigating ? 'animate-spin' : ''}>
-                    {item.icon}
-                  </span>
+                  {item.icon}
                   <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
                 </Link>
               );
@@ -196,7 +201,7 @@ export default function CustomerSidebar() {
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center justify-between gap-3">
               <Link
-                href={ROUTES.PROFILE}
+                href="/profile"
                 className="flex-1 min-w-0 flex items-center gap-3"
               >
                 <div className="flex-shrink-0">
@@ -227,5 +232,13 @@ export default function CustomerSidebar() {
         </div>
       </aside>
     </>
+  );
+}
+
+export default function AdminSidebar() {
+  return (
+    <Suspense fallback={<div className="w-64" />}>
+      <AdminSidebarContent />
+    </Suspense>
   );
 }

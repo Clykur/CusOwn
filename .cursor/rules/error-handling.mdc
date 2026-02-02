@@ -1,0 +1,19 @@
+---
+description: Error handling and validation
+globs: app/api/**/*.ts, services/**/*.ts, lib/**/*.ts
+alwaysApply: false
+---
+
+# Error handling
+
+## API routes
+- Use `errorResponse(error: string, status)` from `@/lib/utils/response`. Use `ERROR_MESSAGES` from `@/config/constants` for user-facing strings.
+- Catch: `const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR; return errorResponse(message, 500);`
+- Do not swallow errors; log and return appropriate status (400/401/403/404/409/500).
+
+## Validation
+- Validate UUIDs with `isValidUUID(id)` from `@/lib/utils/security` before use. Return 404 with `ERROR_MESSAGES.BOOKING_NOT_FOUND` etc. when invalid or not found.
+- Use Zod schemas in `types/index.ts` and validation helpers in `lib/utils/validation.ts` for request bodies. Filter body with `filterFields(body, allowedFields)` from `@/lib/security/input-filter` before validation.
+
+## Idempotency
+- For accept/reject/cancel: if already in target state → 200 with current state; if in conflicting terminal state → 409.

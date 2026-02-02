@@ -1,0 +1,29 @@
+---
+description: API route patterns and conventions
+globs: app/api/**/*.ts
+alwaysApply: false
+---
+
+# API route conventions
+
+## Response shape
+- Use `successResponse(data, message?)` and `errorResponse(error, status)` from `@/lib/utils/response`.
+- Do not return raw `NextResponse.json` for success/error; keep shape `{ success, data?, error?, message? }`.
+
+## Errors and messages
+- Use `ERROR_MESSAGES` and `SUCCESS_MESSAGES` from `@/config/constants` for user-facing strings. Add new messages to constants if needed.
+- Catch blocks: `const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR; return errorResponse(message, 500);`
+
+## Order of operations (mutations)
+1. Lazy expire (booking flows): `await bookingService.runLazyExpireIfNeeded()` at start of try.
+2. Rate limit: call rate limiter first; return 429 if it returns a response.
+3. Auth: `getServerUser(request)`; return 401 if required and missing.
+4. Authorization: owner/admin/customer checks via `userService.getUserBusinesses`, `checkIsAdmin`, or token validation with `validateResourceToken(resourceType, id, token)`.
+5. Input: validate UUIDs with `isValidUUID`; filter body with `filterFields` / input-filter; validate with schemas or `validateCreateBooking` etc.
+6. Business logic via services; then `successResponse` or `errorResponse`.
+
+## Idempotency
+- Accept/reject/cancel: if booking is already in target state, return 200 with current state. If in conflicting terminal state, return 409.
+
+## Cron routes
+- Protect with `CRON_SECRET` (header or Bearer). Return 401 when secret missing or invalid.

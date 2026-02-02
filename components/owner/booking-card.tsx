@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import RescheduleButton from '@/components/booking/RescheduleButton';
-import NoShowButton from '@/components/booking/NoShowButton';
+import RescheduleButton from '@/components/booking/reschedule-button';
+import NoShowButton from '@/components/booking/no-show-button';
 
 interface BookingCardProps {
   booking: any;

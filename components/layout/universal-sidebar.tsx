@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { getUserState } from '@/lib/utils/user-state';
-import AdminSidebar from '@/components/admin/AdminSidebar';
-import OwnerSidebar from '@/components/owner/OwnerSidebar';
-import CustomerSidebar from '@/components/customer/CustomerSidebar';
+import AdminSidebar from '@/components/admin/admin-sidebar';
+import OwnerSidebar from '@/components/owner/owner-sidebar';
+import CustomerSidebar from '@/components/customer/customer-sidebar';
 
 export default function UniversalSidebar() {
   const pathname = usePathname();

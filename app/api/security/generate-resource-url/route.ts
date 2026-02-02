@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSecureResourceUrl, isValidUUID } from '@/lib/utils/security';
+import { env } from '@/config/env';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { salonService } from '@/services/salon.service';
@@ -98,8 +99,8 @@ export async function POST(request: NextRequest) {
 
     const secureUrl = getSecureResourceUrl(resourceType as ResourceType, resourceId);
     const urlPath = secureUrl.replace(/^https?:\/\/[^/]+/, '');
-    
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const ttlMs = (env.security.signedUrlTtlSeconds ?? 86400) * 1000;
+    const expiresAt = new Date(Date.now() + ttlMs);
 
     return successResponse({ 
       url: urlPath,

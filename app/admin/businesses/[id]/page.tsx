@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabaseAuth, isAdmin } from '@/lib/supabase/auth';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminSidebar from '@/components/admin/admin-sidebar';
+import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
 import { ROUTES, getAdminDashboardUrl } from '@/lib/utils/navigation';
 
 export default function EditBusinessPage() {
@@ -184,14 +185,7 @@ export default function EditBusinessPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   if (error && !business) {

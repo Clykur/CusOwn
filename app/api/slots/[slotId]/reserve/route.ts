@@ -3,7 +3,7 @@ import { slotService } from '@/services/slot.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { isValidUUID } from '@/lib/utils/security';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
 import { getServerUser } from '@/lib/supabase/server-auth';
 

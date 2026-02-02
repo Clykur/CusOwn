@@ -1,0 +1,19 @@
+---
+description: Database migrations and RPC naming
+globs: database/**/*.sql
+alwaysApply: false
+---
+
+# Database conventions
+
+## Migration file names
+- Use **kebab-case** and a clear purpose suffix: `expire-pending-bookings-transactional.migration.sql`, `payment-audit-replay-webhook.migration.sql`.
+- Do not use phase numbers or vague names like `migration_fix.sql`. Name describes what the migration does.
+
+## Content
+- Critical booking/slot changes: prefer **transactional RPCs** (e.g. `expire_pending_bookings_atomically`) so expiry and slot release happen in one transaction.
+- Extend `audit_logs` action_type/entity_type via CHECK constraints when adding new audit actions (e.g. payment_created, payment_succeeded).
+- Add unique partial indexes where invariants must hold (e.g. one confirmed booking per slot, webhook payload hash for replay protection).
+
+## SQL style
+- Do not alter business logic in migrations without alignment with phase policy. Comment purpose at top of file.

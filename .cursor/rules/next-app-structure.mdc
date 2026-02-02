@@ -1,0 +1,21 @@
+---
+description: Next.js App Router structure and constraints
+globs: app/**/*
+alwaysApply: false
+---
+
+# Next.js App structure
+
+## Route handlers
+- API routes live in `app/api/**/route.ts`. The file **must** be named `route.ts`; folder path defines the URL. Do not rename route files.
+- Export `GET`, `POST`, `PATCH`, `DELETE` etc. as async functions with `(request: NextRequest, { params }?)` signature.
+
+## Pages
+- Pages live in `app/**/page.tsx`. File must be named `page.tsx`. Use `layout.tsx` for shared layout per segment.
+
+## Imports
+- Use `@/` path alias for config, lib, services, components, types.
+- Server-only code: use `@/lib/supabase/server-auth`, `@/lib/supabase/server`; do not import these in client components.
+
+## Caching
+- Use `setNoCacheHeaders(response)` from `@/lib/cache/next-cache` for booking/status responses that must not be cached.

@@ -1,18 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
-import { getServerUser } from '@/lib/supabase/server-auth';
+import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
+import { userService } from '@/services/user.service';
 import { auditService } from '@/services/audit.service';
+import { isAdminProfile } from '@/lib/utils/role-verification';
+import { logAuthDeny } from '@/lib/monitoring/auth-audit';
+
+const ROUTE = 'POST /api/bookings/[id]/cancel';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await bookingService.runLazyExpireIfNeeded();
+
     const { id } = params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
@@ -22,76 +29,71 @@ export async function POST(
     
     const body = await request.json().catch(() => ({}));
     
-    // SECURITY: Filter input to prevent mass assignment
     const { filterFields, validateStringLength } = await import('@/lib/security/input-filter');
     const allowedFields: (keyof typeof body)[] = ['reason', 'cancelled_by'];
     const filteredBody = filterFields(body, allowedFields);
     
     const { reason, cancelled_by } = filteredBody;
     
-    // SECURITY: Validate cancelled_by enum
     if (cancelled_by !== undefined && cancelled_by !== 'customer' && cancelled_by !== 'owner') {
-      console.warn(`[SECURITY] Invalid cancelled_by value from IP: ${clientIP}`);
       return errorResponse('Invalid cancellation type', 400);
     }
     
-    // SECURITY: Validate reason length
     if (reason !== undefined && !validateStringLength(reason, 500)) {
       return errorResponse('Cancellation reason is too long', 400);
     }
 
     const booking = await bookingService.getBookingByUuid(id);
     if (!booking) {
-      console.warn(`[SECURITY] Booking not found for cancellation from IP: ${clientIP}, Booking: ${id.substring(0, 8)}...`);
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    const user = await getServerUser(request);
+    const ctx = await getAuthContext(request);
+    const user = ctx?.user ?? null;
     
-    // Authorization: Verify user has permission to cancel
     let isAuthorized = false;
     let cancelMethod: 'customer' | 'owner' = 'customer';
     
     if (cancelled_by === 'owner') {
-      // Owner cancellation requires ownership verification
       if (!user) {
-        console.warn(`[SECURITY] Unauthenticated owner cancellation attempt from IP: ${clientIP}, Booking: ${id.substring(0, 8)}...`);
+        logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
         return errorResponse('Authentication required', 401);
       }
-      
-      const { userService } = await import('@/services/user.service');
       const userBusinesses = await userService.getUserBusinesses(user.id);
       const hasAccess = userBusinesses.some(b => b.id === booking.business_id);
-      
-      if (!hasAccess) {
-        const profile = await userService.getUserProfile(user.id);
-        const isAdmin = profile?.user_type === 'admin';
-        if (!isAdmin) {
-          console.warn(`[SECURITY] Unauthorized owner cancellation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Booking: ${id.substring(0, 8)}...`);
-          return errorResponse('Access denied', 403);
-        }
+      if (!hasAccess && !isAdminProfile(ctx!.profile)) {
+        logAuthDeny({
+          user_id: user.id,
+          route: ROUTE,
+          reason: 'auth_denied',
+          role: (ctx!.profile as any)?.user_type ?? 'unknown',
+          resource: id,
+        });
+        return errorResponse('Access denied', 403);
       }
-      
       isAuthorized = true;
       cancelMethod = 'owner';
     } else {
-      // Customer cancellation requires customer verification
       if (user) {
         const isCustomer = booking.customer_user_id === user.id;
         if (isCustomer) {
           isAuthorized = true;
           cancelMethod = 'customer';
         } else {
-          console.warn(`[SECURITY] Unauthorized customer cancellation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Booking: ${id.substring(0, 8)}...`);
+          logAuthDeny({
+            user_id: user.id,
+            route: ROUTE,
+            reason: 'auth_denied',
+            resource: id,
+          });
           return errorResponse('Access denied', 403);
         }
       } else {
-        // For unauthenticated users, only allow if booking has no customer_user_id (legacy)
         if (!booking.customer_user_id) {
           isAuthorized = true;
           cancelMethod = 'customer';
         } else {
-          console.warn(`[SECURITY] Unauthenticated cancellation attempt for authenticated booking from IP: ${clientIP}, Booking: ${id.substring(0, 8)}...`);
+          logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
           return errorResponse('Authentication required', 401);
         }
       }
@@ -99,6 +101,13 @@ export async function POST(
 
     if (!isAuthorized) {
       return errorResponse('Access denied', 403);
+    }
+
+    // Idempotency: already cancelled → return 200 with current state (same result as success)
+    if (booking.status === 'cancelled') {
+      const response = successResponse(booking, SUCCESS_MESSAGES.BOOKING_CANCELLED);
+      setNoCacheHeaders(response);
+      return response;
     }
 
     let cancelledBooking;

@@ -14,6 +14,12 @@ export const env = {
     salonTokenSecret: process.env.SALON_TOKEN_SECRET || process.env.CRON_SECRET || 'default-secret-change-in-production',
     razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    /** Phase 5: Signed URL TTL (seconds). Tokens cannot escalate privilege (resourceType in HMAC). */
+    signedUrlTtlSeconds: parseInt(process.env.SIGNED_URL_TTL_SECONDS || '86400', 10), // 24h default
+  },
+  /** Phase 5: Audit retention (days). Logs older than this may be purged per policy. */
+  audit: {
+    retentionDays: parseInt(process.env.AUDIT_RETENTION_DAYS || '90', 10),
   },
   monitoring: {
     sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN || '',

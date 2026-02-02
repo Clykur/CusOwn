@@ -1,21 +1,15 @@
 import { NextRequest } from 'next/server';
-import { getServerUser } from '@/lib/supabase/server-auth';
 import { adminService } from '@/services/admin.service';
-import { checkIsAdminServer } from '@/lib/utils/admin';
+import { requireAdmin } from '@/lib/utils/api-auth-pipeline';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 
+const ROUTE = 'GET /api/admin/bookings';
+
 export async function GET(request: NextRequest) {
   try {
-    const user = await getServerUser(request);
-    if (!user) {
-      return errorResponse('Authentication required', 401);
-    }
-
-    const isAdmin = await checkIsAdminServer(user.id);
-    if (!isAdmin) {
-      return errorResponse('Admin access required', 403);
-    }
+    const auth = await requireAdmin(request, ROUTE);
+    if (auth instanceof Response) return auth;
 
     const searchParams = request.nextUrl.searchParams;
     const businessId = searchParams.get('business_id') || undefined;

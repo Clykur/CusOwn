@@ -51,6 +51,24 @@ export class MetricsService {
       return [];
     }
   }
+
+  /**
+   * Phase 3: Set a gauge value (e.g. cron last run timestamp). Upserts by metric name.
+   * Value is stored as BIGINT (e.g. Unix seconds for last_run_ts).
+   */
+  async setGauge(metric: string, value: number): Promise<void> {
+    if (!supabaseAdmin) return;
+    try {
+      await supabaseAdmin
+        .from('metrics')
+        .upsert(
+          { metric, value: Math.floor(value), updated_at: new Date().toISOString() },
+          { onConflict: 'metric' }
+        );
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const metricsService = new MetricsService();

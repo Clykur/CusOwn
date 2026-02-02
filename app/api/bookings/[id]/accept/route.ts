@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { reminderService } from '@/services/reminder.service';
@@ -6,12 +6,15 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID, validateResourceToken } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
-import { getServerUser } from '@/lib/supabase/server-auth';
+import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline';
 import { userService } from '@/services/user.service';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { auditService } from '@/services/audit.service';
+import { isAdminProfile } from '@/lib/utils/role-verification';
+import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
 const acceptRateLimit = enhancedRateLimit({ maxRequests: 10, windowMs: 60000, perIP: true, keyPrefix: 'booking_accept' });
+const ROUTE = 'POST /api/bookings/[id]/accept';
 
 export async function POST(
   request: NextRequest,
@@ -20,59 +23,68 @@ export async function POST(
   const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   
   try {
+    await bookingService.runLazyExpireIfNeeded();
+
     const rateLimitResponse = await acceptRateLimit(request);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = params;
     if (!id || !isValidUUID(id)) {
-      console.warn(`[SECURITY] Invalid booking ID format from IP: ${clientIP}`);
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    // Validate token if provided
     const token = request.nextUrl.searchParams.get('token');
     if (token) {
-      let decodedToken = token;
-      try {
-        decodedToken = decodeURIComponent(token);
-      } catch {
-        // Use original token if decoding fails
-      }
-      
+      const decodedToken = (() => { try { return decodeURIComponent(token); } catch { return token; } })();
       if (!validateResourceToken('accept', id, decodedToken)) {
-        console.warn(`[SECURITY] Invalid accept token from IP: ${clientIP}, Booking: ${id.substring(0, 8)}...`);
-        return errorResponse('Invalid or expired access token', 403);
+        return denyInvalidToken(request, ROUTE, id);
       }
     }
 
-    // Verify ownership: user must own the business for this booking
-    const user = await getServerUser(request);
     const booking = await bookingService.getBookingByUuidWithDetails(id);
-    
     if (!booking) {
-      console.warn(`[SECURITY] Booking not found from IP: ${clientIP}, Booking: ${id.substring(0, 8)}...`);
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    // Authorization check: user must own the business
-    if (user) {
-      const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(b => b.id === booking.business_id);
-      if (!hasAccess) {
-        // Check if user is admin
-        const profile = await userService.getUserProfile(user.id);
-        const isAdmin = profile?.user_type === 'admin';
-        if (!isAdmin) {
-          console.warn(`[SECURITY] Unauthorized accept attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Booking: ${id.substring(0, 8)}...`);
-          return errorResponse('Access denied', 403);
-        }
+    const ctx = await getAuthContext(request);
+    if (ctx) {
+      const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
+      const ownsBusiness = userBusinesses.some(b => b.id === booking.business_id);
+      if (!ownsBusiness && !isAdminProfile(ctx.profile)) {
+        logAuthDeny({
+          user_id: ctx.user.id,
+          route: ROUTE,
+          reason: 'auth_denied',
+          role: (ctx.profile as any)?.user_type ?? 'unknown',
+          resource: id,
+        });
+        return errorResponse('Access denied', 403);
       }
     } else if (!token) {
-      // If no user and no token, deny access
-      console.warn(`[SECURITY] Unauthenticated accept attempt from IP: ${clientIP}, Booking: ${id.substring(0, 8)}...`);
+      logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
       return errorResponse('Authentication required', 401);
+    }
+
+    const user = ctx?.user ?? null;
+
+    // Idempotency: already confirmed → return 200 with current state (same result as success)
+    if (booking.status === 'confirmed') {
+      const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
+      if (bookingWithDetails?.salon?.address?.trim()) {
+        const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(bookingWithDetails, bookingWithDetails.salon, request);
+        const response = successResponse({ ...booking, whatsapp_url: whatsappUrl }, SUCCESS_MESSAGES.BOOKING_CONFIRMED);
+        setNoCacheHeaders(response);
+        return response;
+      }
+      const response = successResponse(booking, SUCCESS_MESSAGES.BOOKING_CONFIRMED);
+      setNoCacheHeaders(response);
+      return response;
+    }
+    if (booking.status === 'rejected') {
+      return errorResponse(ERROR_MESSAGES.BOOKING_ALREADY_REJECTED, 409);
+    }
+    if (booking.status === 'cancelled') {
+      return errorResponse(ERROR_MESSAGES.BOOKING_ALREADY_CANCELLED, 409);
     }
 
     const confirmedBooking = await bookingService.confirmBooking(id, user?.id);

@@ -2,7 +2,7 @@
 
 export default function SummaryCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 animate-pulse">
+    <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 animate-pulse" aria-busy="true" aria-hidden="true">
       <div className="flex items-center gap-3">
         <div className="bg-gray-200 rounded-lg p-3 w-12 h-12"></div>
         <div className="flex-1">

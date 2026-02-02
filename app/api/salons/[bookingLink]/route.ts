@@ -4,7 +4,7 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID, validateSalonToken } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 
 // Strict rate limiting for salon access: 30 requests per minute per IP

@@ -13,6 +13,8 @@ export async function GET(
   const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   
   try {
+    await bookingService.runLazyExpireIfNeeded();
+
     const { bookingId } = params;
     if (!bookingId) {
       console.warn(`[SECURITY] Missing bookingId from IP: ${clientIP}`);

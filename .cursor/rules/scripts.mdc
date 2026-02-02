@@ -1,0 +1,19 @@
+---
+description: Test and QA script naming and structure
+globs: scripts/**/*.ts
+alwaysApply: false
+---
+
+# Script conventions
+
+## File names
+- **kebab-case**; no leading numbers or phase labels.
+- Suffixes: `.test.ts` for journey/validation tests, `.security.ts` for security/abuse/privilege tests.
+- Examples: `user-customer-journey.test.ts`, `schema-validation.test.ts`, `abuse-rate-limiting.security.ts`, `fuzz-booking-api.security.ts`, `prevent-privilege-escalation.security.ts`.
+
+## References
+- Script paths are in `package.json` under `test:customer-journey`, `test:phase1`, etc. Update `package.json` when renaming or adding scripts.
+- `run-all-tests.sh` invokes npm scripts by name; no direct script filenames in the shell script.
+
+## Execution
+- Use `ts-node` with `--project scripts/tsconfig.json`; use `tsconfig-paths/register` when scripts need `@/` path resolution.

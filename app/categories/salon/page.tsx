@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import Pagination from '@/components/ui/pagination';
 import { Salon } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
-import SalonCard from '@/components/salon/SalonCard';
+import SalonCard from '@/components/salon/salon-card';
 import Breadcrumb from '@/components/ui/breadcrumb';
+import { SalonCardSkeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
 
 const ITEMS_PER_PAGE = 12;
@@ -196,9 +197,10 @@ export default function SalonListPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-black border-r-transparent"></div>
-            <p className="mt-4 text-gray-600 text-lg">Loading salons...</p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SalonCardSkeleton key={i} />
+            ))}
           </div>
         ) : filteredSalons.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200 p-16 text-center">

@@ -259,6 +259,88 @@
 
 ---
 
+## Runbook: Cron Failure (expire-bookings)
+
+### Symptoms
+- `cron.expire_bookings.last_run_ts` stale in health check
+- Pending bookings not expiring on time
+- Slots stuck with expired reservations
+
+### Steps
+1. **Verify Cron Not Running**
+   - Call `GET /api/health` and check `checks.cron_expire_bookings_last_run_ts`
+   - If value is old (>2× cron interval), cron is not running
+
+2. **Check Vercel Cron**
+   - Vercel Dashboard → Project → Cron Jobs
+   - Confirm `expire-bookings` schedule and last execution
+   - Check CRON_SECRET is set and matches `vercel.json`
+
+3. **Manual Run (One-Off)**
+   - `POST /api/cron/expire-bookings` with header `Authorization: Bearer <CRON_SECRET>` or `x-cron-secret: <CRON_SECRET>` (per your route)
+   - Confirm 200 and that `cron.expire_bookings.last_run_ts` updates
+
+4. **Lazy Heal**
+   - User traffic triggers `runLazyExpireIfNeeded()` on booking APIs; pending bookings will expire on next read/mutation. No immediate action required for correctness.
+
+5. **Fix Root Cause**
+   - Fix Vercel cron config or external scheduler; re-deploy if needed
+   - Document in post-mortem
+
+---
+
+## Runbook: Double Booking Alert
+
+### Symptoms
+- Report or alert: more than one confirmed booking for the same slot
+- Unique constraint violation on `idx_bookings_one_confirmed_per_slot`
+
+### Steps
+1. **Confirm Violation**
+   - Query: `SELECT slot_id, COUNT(*) FROM bookings WHERE status = 'confirmed' GROUP BY slot_id HAVING COUNT(*) > 1`
+   - If rows returned, data inconsistency exists (should be prevented by DB constraint)
+
+2. **Identify Conflicting Rows**
+   - For each `slot_id` from step 1, list bookings with id, created_at, customer_id
+
+3. **Resolution (Manual)**
+   - Decide which booking to keep (e.g. first confirmed, or by business rule)
+   - For the other(s): update status to `cancelled`, create audit log with action e.g. `booking_cancelled` (source: system), release slot if needed
+   - Prefer doing this in a transaction and documenting in audit
+
+4. **Prevention**
+   - Ensure accept/confirm flow is the only path to `confirmed` and uses the unique index
+   - Review recent code changes to slot/booking confirmation logic
+
+---
+
+## Runbook: Payment Mismatch
+
+### Symptoms
+- Payment marked succeeded in provider but not in app (or vice versa)
+- Customer charged but booking not updated (Phase 2+: payment and booking are decoupled; booking may stay pending)
+- Duplicate webhook processing or replay
+
+### Steps
+1. **Gather Facts**
+   - Booking ID and Payment ID from support/ticket
+   - Check `payments` table: status, provider_ref, webhook_payload_hash
+   - Check `audit_logs` for entity_type `payment` and entity_id = payment_id
+
+2. **Idempotency / Replay**
+   - If duplicate webhook: `webhook_payload_hash` should prevent double application; confirm unique index exists and was used
+   - If payment was applied twice, treat as refund/ops fix per provider
+
+3. **Reconciliation**
+   - Compare provider dashboard (Razorpay/UPI) with `payments` row
+   - If provider shows success and app shows failed: consider manual status update only after verifying with provider and logging in audit (use same state machine as `updatePaymentStatus`)
+   - Do not change booking/slot state from payment runbook (booking confirmation is separate flow)
+
+4. **Communication**
+   - Refund or adjust per policy; inform customer and document
+
+---
+
 ## Emergency Contacts
 
 - **On-Call Engineer**: [Configure in monitoring system]

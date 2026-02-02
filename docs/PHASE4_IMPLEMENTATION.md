@@ -79,7 +79,7 @@
 ## Files Created
 
 ### Security
-- `lib/security/rate-limit-enhanced.ts` - Enhanced rate limiting
+- `lib/security/rate-limit-api.security.ts` - API rate limiting
 - `lib/security/input-sanitizer.ts` - Input sanitization functions
 - `lib/security/csrf.ts` - CSRF protection
 - `lib/security/security-middleware.ts` - Security middleware

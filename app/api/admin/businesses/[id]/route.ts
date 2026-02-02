@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getServerUser } from '@/lib/supabase/server-auth';
-import { checkIsAdminServer } from '@/lib/utils/admin';
+import { requireAdmin } from '@/lib/utils/api-auth-pipeline';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { auditService } from '@/services/audit.service';
 import { adminNotificationService } from '@/services/admin-notification.service';
@@ -8,20 +7,17 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
 
+const ROUTE_GET = 'GET /api/admin/businesses/[id]';
+const ROUTE_PATCH = 'PATCH /api/admin/businesses/[id]';
+const ROUTE_DELETE = 'DELETE /api/admin/businesses/[id]';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getServerUser(request);
-    if (!user) {
-      return errorResponse('Authentication required', 401);
-    }
-
-    const isAdmin = await checkIsAdminServer(user.id);
-    if (!isAdmin) {
-      return errorResponse('Admin access required', 403);
-    }
+    const auth = await requireAdmin(request, ROUTE_GET);
+    if (auth instanceof Response) return auth;
 
     const supabase = requireSupabaseAdmin();
     const { data: business, error } = await supabase
@@ -46,15 +42,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getServerUser(request);
-    if (!user) {
-      return errorResponse('Authentication required', 401);
-    }
-
-    const isAdmin = await checkIsAdminServer(user.id);
-    if (!isAdmin) {
-      return errorResponse('Admin access required', 403);
-    }
+    const auth = await requireAdmin(request, ROUTE_PATCH);
+    if (auth instanceof Response) return auth;
 
     const supabase = requireSupabaseAdmin();
     const body = await request.json();
@@ -133,7 +122,7 @@ export async function PATCH(
     });
 
     await auditService.createAuditLog(
-      user.id,
+      auth.user.id,
       'business_updated',
       'business',
       {
@@ -171,15 +160,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getServerUser(request);
-    if (!user) {
-      return errorResponse('Authentication required', 401);
-    }
-
-    const isAdmin = await checkIsAdminServer(user.id);
-    if (!isAdmin) {
-      return errorResponse('Admin access required', 403);
-    }
+    const auth = await requireAdmin(request, ROUTE_DELETE);
+    if (auth instanceof Response) return auth;
 
     const supabase = requireSupabaseAdmin();
 
@@ -206,7 +188,7 @@ export async function DELETE(
 
     // Create audit log
     await auditService.createAuditLog(
-      user.id,
+      auth.user.id,
       'business_deleted',
       'business',
       {

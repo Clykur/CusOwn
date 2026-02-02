@@ -3,7 +3,7 @@ import { slotService } from '@/services/slot.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { isValidUUID } from '@/lib/utils/security';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 
 const releaseRateLimit = enhancedRateLimit({ maxRequests: 20, windowMs: 60000, perIP: true, keyPrefix: 'slot_release' });
 

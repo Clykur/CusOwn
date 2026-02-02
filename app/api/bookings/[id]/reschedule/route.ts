@@ -15,6 +15,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    await bookingService.runLazyExpireIfNeeded();
+
     const { id } = params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);

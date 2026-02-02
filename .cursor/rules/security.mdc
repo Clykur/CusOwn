@@ -1,0 +1,25 @@
+---
+description: Security patterns — rate limits, auth, signed URLs, PII
+globs: lib/security/**/*.ts, app/api/**/*.ts
+alwaysApply: false
+---
+
+# Security rules
+
+## Rate limiting
+- Booking creation: use `bookingRateLimitEnhanced` from `@/lib/security/rate-limit-api.security`. Limits are in `config/constants.ts` (RATE_LIMIT_BOOKING_*, RATE_LIMIT_ADMIN_*).
+- Admin endpoints: apply `adminRateLimit(request)` before auth; return immediately if it returns a response (429).
+- Other mutation/read endpoints: use `enhancedRateLimit` with appropriate window/max and keyPrefix.
+
+## Auth and authorization
+- Admin: use `checkIsAdmin(user.id)` from `@/lib/utils/admin`. Do not use deprecated `checkIsAdminServer`.
+- Signed URLs: tokens are scoped by `resourceType` (accept, reject, salon, booking-status, etc.). Validate with `validateResourceToken(resourceType, resourceId, token)`. TTL from `env.security.signedUrlTtlSeconds`. Do not log full resourceId or token.
+
+## Cron
+- Endpoints under `app/api/cron/*` must verify `CRON_SECRET` (e.g. `x-cron-secret` or `Authorization: Bearer <CRON_SECRET>`). Return 401 if missing or invalid.
+
+## PII and audit
+- Audit payloads: pass `oldData`/`newData` through `redactPiiForAudit` from `@/lib/security/audit-pii-redact.security` before storing. Structured lifecycle logs use only IDs (booking_id, slot_id); no customer name/phone/email in logs.
+
+## Input
+- Filter request body with `filterFields(body, allowedFields)` from `@/lib/security/input-filter`. Validate lengths with `validateStringLength`. Validate enums and UUIDs before use.

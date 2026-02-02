@@ -4,7 +4,7 @@ import { isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { bookingService } from '@/services/booking.service';
 import { paymentService } from '@/services/payment.service';
-import { enhancedRateLimit } from '@/lib/security/rate-limit-enhanced';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 
 const paymentRateLimit = enhancedRateLimit({

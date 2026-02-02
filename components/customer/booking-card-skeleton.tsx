@@ -2,7 +2,7 @@
 
 export default function BookingCardSkeleton() {
   return (
-    <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl overflow-hidden animate-pulse">
+    <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl overflow-hidden animate-pulse" aria-busy="true" aria-hidden="true">
       <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-4">

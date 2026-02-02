@@ -1,0 +1,15 @@
+---
+description: Types and Zod validation
+globs: types/**/*.ts, lib/utils/validation.ts
+alwaysApply: false
+---
+
+# Types and validation
+
+## Types
+- Shared types live in `types/index.ts`: `BookingWithDetails`, `Slot`, `Salon`, schemas (createSalonSchema, etc.). Use `z.infer<>` for input types.
+- Use `BOOKING_STATUS`, `SLOT_STATUS` from `@/config/constants` in types and state machines.
+
+## Validation
+- Use `validateCreateBooking` and validation helpers from `@/lib/utils/validation` for API input. Validate string lengths with `validateStringLength` from `@/lib/security/input-filter`; validate enums with `validateEnum` where applicable.
+- Do not trust request body; filter allowed fields and validate types and ranges before calling services.

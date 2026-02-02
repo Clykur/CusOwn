@@ -23,7 +23,7 @@ Replaced all static imports of `server-auth.ts` with dynamic imports that check 
 - **After:** Added `getUserProfileSafe()` helper with dynamic imports
 - **Impact:** Admin check functions work in both contexts
 
-### 4. `lib/security/rate-limit-enhanced.ts` ✅
+### 4. `lib/security/rate-limit-api.security.ts` ✅
 - **Before:** Static import of `getServerUser`
 - **After:** Dynamic import inside the function
 - **Impact:** Rate limiting works correctly in API routes

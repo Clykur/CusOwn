@@ -7,9 +7,9 @@ import { supabaseAuth, getUserProfile } from '@/lib/supabase/auth';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { ROUTES } from '@/lib/utils/navigation';
 import Breadcrumb from '@/components/ui/breadcrumb';
-import CustomerBookingCard from '@/components/customer/BookingCard';
-import BookingCardSkeleton from '@/components/customer/BookingCardSkeleton';
-import SummaryCardSkeleton from '@/components/customer/SummaryCardSkeleton';
+import CustomerBookingCard from '@/components/customer/booking-card';
+import BookingCardSkeleton from '@/components/customer/booking-card-skeleton';
+import SummaryCardSkeleton from '@/components/customer/summary-card-skeleton';
 
 export default function CustomerDashboardPage() {
   const router = useRouter();
@@ -181,7 +181,7 @@ export default function CustomerDashboardPage() {
         ]} />
         
         {loading ? (
-          <>
+          <div aria-busy="true">
             {/* Header Skeleton */}
             <div className="mb-6 sm:mb-8 animate-pulse">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
@@ -209,7 +209,7 @@ export default function CustomerDashboardPage() {
               <BookingCardSkeleton />
               <BookingCardSkeleton />
             </div>
-          </>
+          </div>
         ) : (
           <>
             <div className="mb-6 sm:mb-8">

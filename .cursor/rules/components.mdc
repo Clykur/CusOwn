@@ -1,0 +1,19 @@
+---
+description: Component file naming and imports
+globs: components/**/*.tsx, app/**/*.tsx
+alwaysApply: false
+---
+
+# Component conventions
+
+## File names
+- Use **kebab-case** for component file names: `admin-header.tsx`, `booking-card.tsx`, `onboarding-progress.tsx`.
+- UI primitives in `components/ui/`: `button.tsx`, `input.tsx`, `breadcrumb.tsx`, `pagination.tsx`, `skeleton.tsx`, `pull-to-refresh.tsx`.
+
+## Imports
+- Import by path: `@/components/admin/admin-sidebar`, `@/components/booking/reschedule-button`, `@/components/ui/button`.
+- Component **exports** (default or named) stay PascalCase: `AdminSidebar`, `RescheduleButton`, `Button`.
+
+## Structure
+- One main component per file; default export for page-level or feature components.
+- Shared UI (Button, Input) may use named exports from `components/ui/*`.

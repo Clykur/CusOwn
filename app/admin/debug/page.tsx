@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabaseAuth } from '@/lib/supabase/auth';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminSidebar from '@/components/admin/admin-sidebar';
 
 // Force dynamic rendering - this page requires runtime data
 export const dynamic = 'force-dynamic';
@@ -63,8 +63,13 @@ export default function DebugAuthPage() {
       <div className="min-h-screen bg-white flex">
         <AdminSidebar />
         <div className="flex-1 lg:ml-64">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-2xl font-bold mb-4">Loading debug information...</h1>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse" aria-busy="true">
+            <div className="h-8 bg-gray-200 rounded w-64 mb-6" />
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-16 bg-gray-200 rounded-lg" />
+              ))}
+            </div>
           </div>
         </div>
       </div>

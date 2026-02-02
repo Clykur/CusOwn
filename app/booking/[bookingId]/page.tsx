@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { UI_BOOKING_STATE, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError } from '@/lib/utils/error-handler';
-import RescheduleButton from '@/components/booking/RescheduleButton';
+import RescheduleButton from '@/components/booking/reschedule-button';
 import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import Breadcrumb from '@/components/ui/breadcrumb';
+import { BookingStatusSkeleton } from '@/components/ui/skeleton';
 
 export default function BookingStatusPage() {
   const params = useParams();
@@ -140,14 +142,7 @@ export default function BookingStatusPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <BookingStatusSkeleton />;
   }
 
   if (error || !booking) {
@@ -155,7 +150,7 @@ export default function BookingStatusPage() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Not Found</h2>
-          <p className="text-gray-600 mb-8">{error || 'The booking you are looking for does not exist.'}</p>
+          <p className="text-gray-600 mb-8">{UI_ERROR_CONTEXT.BOOKING_PAGE}</p>
           <Link href={ROUTES.HOME} className="inline-block px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors">
             Go to Home
           </Link>
@@ -182,13 +177,13 @@ export default function BookingStatusPage() {
   const getStatusMessage = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'Your appointment is confirmed!';
+        return UI_BOOKING_STATE.CONFIRMED;
       case 'pending':
-        return 'Waiting for owner confirmation';
+        return UI_BOOKING_STATE.PENDING;
       case 'rejected':
-        return 'This slot is not available';
+        return UI_BOOKING_STATE.REJECTED;
       case 'cancelled':
-        return 'This booking has been cancelled';
+        return booking.cancelled_by === 'system' ? UI_BOOKING_STATE.EXPIRED : UI_BOOKING_STATE.CANCELLED;
       default:
         return status;
     }
@@ -208,6 +203,7 @@ export default function BookingStatusPage() {
           <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Booking Status</h1>
+            <p className="text-sm text-gray-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
             <div className="flex items-center gap-2 text-gray-600">
               <span>Booking ID:</span>
               <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg">{booking.booking_id}</span>
