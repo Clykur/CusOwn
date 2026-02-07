@@ -40,10 +40,12 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
       }
 
       try {
-        const { data: { session } } = await supabaseAuth.auth.getSession();
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
         if (session?.user) {
           setUserEmail(session.user.email || '');
-          
+
           // Get user profile for full name
           try {
             const profile = await getUserProfile(session.user.id);
@@ -55,17 +57,21 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
           } catch {
             setUserName(session.user.email?.split('@')[0] || 'User');
           }
-          
+
           const stateResult = await getUserState(session.user.id);
           setHasBusinesses(stateResult.businessCount > 0);
-          
+
           // If user has businesses and we're on /owner/dashboard, fetch first business link
           // This ensures the Dashboard link points to a specific business dashboard
-          if (stateResult.businessCount > 0 && pathname === ROUTES.OWNER_DASHBOARD_BASE && !firstBusinessLink) {
+          if (
+            stateResult.businessCount > 0 &&
+            pathname === ROUTES.OWNER_DASHBOARD_BASE &&
+            !firstBusinessLink
+          ) {
             try {
               const response = await fetch('/api/owner/businesses', {
                 headers: {
-                  'Authorization': `Bearer ${session.access_token}`,
+                  Authorization: `Bearer ${session.access_token}`,
                 },
               });
               if (response.ok) {
@@ -111,7 +117,7 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
     return () => {
       window.removeEventListener('businessCreated', handleBusinessCreated);
     };
-  }, [pathname]);
+  }, [pathname, firstBusinessLink]);
 
   // Memoize dashboard href to prevent it from changing on every render
   const dashboardHref = useMemo(() => {
@@ -119,14 +125,19 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
     if (bookingLink) {
       return getOwnerDashboardUrl(bookingLink);
     }
-    
+
     // If we're on /owner/dashboard and have firstBusinessLink, navigate to first business
     if (pathname === ROUTES.OWNER_DASHBOARD_BASE && firstBusinessLink) {
       const href = getOwnerDashboardUrl(firstBusinessLink);
-      console.log('[OwnerSidebar] Dashboard href pointing to first business:', firstBusinessLink, '->', href);
+      console.log(
+        '[OwnerSidebar] Dashboard href pointing to first business:',
+        firstBusinessLink,
+        '->',
+        href
+      );
       return href;
     }
-    
+
     // If we're on /owner/dashboard but don't have firstBusinessLink yet, still return dashboard
     // The link will be updated once firstBusinessLink is loaded
     return ROUTES.OWNER_DASHBOARD_BASE;
@@ -139,7 +150,12 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
       href: `${ROUTES.OWNER_DASHBOARD_BASE}?tab=dashboard`,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+          />
         </svg>
       ),
       requiresBusiness: true,
@@ -149,7 +165,12 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
       href: `${ROUTES.OWNER_DASHBOARD_BASE}?tab=businesses`,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          />
         </svg>
       ),
       requiresBusiness: true,
@@ -169,9 +190,10 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
   // Filter navigation based on user state
   // If user has no businesses, only show "Create Business"
   // If user has businesses, show all items
-  const navigation = hasBusinesses === false 
-    ? allNavigationItems.filter(item => !item.requiresBusiness)
-    : allNavigationItems;
+  const navigation =
+    hasBusinesses === false
+      ? allNavigationItems.filter((item) => !item.requiresBusiness)
+      : allNavigationItems;
 
   const handleLogout = async () => {
     try {
@@ -190,16 +212,16 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
 
   const isActive = (href: string, itemName: string) => {
     if (!pathname) return false;
-    
+
     // Normalize paths for comparison (remove query params and trailing slashes)
     const normalizedPathname = pathname.split('?')[0].replace(/\/$/, '') || '';
     const normalizedHref = href.split('?')[0].replace(/\/$/, '') || '';
-    
+
     // Setup page: exact match
     if (itemName === 'Create Business' || normalizedHref === '/setup' || href === '/setup') {
       return normalizedPathname === '/setup' || pathname === '/setup';
     }
-    
+
     // Dashboard: active when on /owner/dashboard with tab=dashboard or no tab, OR on specific business dashboard
     if (itemName === 'Dashboard') {
       if (normalizedPathname === '/owner/dashboard') {
@@ -207,23 +229,26 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
         const tab = urlParams.get('tab');
         return tab === 'dashboard' || !tab; // Default to dashboard if no tab
       }
-      
+
       // Active if on a specific business dashboard
       if (bookingLink) {
         const expectedUrl = getOwnerDashboardUrl(bookingLink);
         const normalizedExpected = expectedUrl.split('?')[0].replace(/\/$/, '');
-        return normalizedPathname === normalizedExpected || normalizedPathname?.startsWith(`/owner/${bookingLink}`);
+        return (
+          normalizedPathname === normalizedExpected ||
+          normalizedPathname?.startsWith(`/owner/${bookingLink}`)
+        );
       }
-      
+
       // If no bookingLink, check if we're on a specific business dashboard (not /owner/dashboard)
       const ownerMatch = normalizedPathname.match(/^\/owner\/([^\/]+)$/);
       if (ownerMatch && ownerMatch[1] !== 'dashboard') {
         return true; // We're on a specific business dashboard
       }
-      
+
       return false; // Not on a specific business dashboard
     }
-    
+
     // My Businesses: active when on /owner/dashboard with tab=businesses
     if (itemName === 'My Businesses') {
       if (normalizedPathname === '/owner/dashboard') {
@@ -233,9 +258,11 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
       }
       return false;
     }
-    
+
     // Default: exact match or starts with
-    return normalizedPathname === normalizedHref || normalizedPathname?.startsWith(normalizedHref + '/');
+    return (
+      normalizedPathname === normalizedHref || normalizedPathname?.startsWith(normalizedHref + '/')
+    );
   };
 
   return (
@@ -248,9 +275,19 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             )}
           </svg>
         </button>
@@ -288,10 +325,11 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
                 const active = isActive(item.href, item.name);
                 const normalizedPathname = pathname?.split('?')[0]?.replace(/\/$/, '') || '';
                 const normalizedHref = item.href.split('?')[0]?.replace(/\/$/, '') || '';
-                
+
                 // Only show navigating state if we're actually going to a different page
-                const isNavigating = navigating === item.href && normalizedHref !== normalizedPathname;
-                
+                const isNavigating =
+                  navigating === item.href && normalizedHref !== normalizedPathname;
+
                 return (
                   <Link
                     key={item.name}
@@ -303,7 +341,10 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
                         if (firstBusinessLink) {
                           e.preventDefault();
                           const targetUrl = getOwnerDashboardUrl(firstBusinessLink);
-                          console.log('[OwnerSidebar] Navigating to first business dashboard:', targetUrl);
+                          console.log(
+                            '[OwnerSidebar] Navigating to first business dashboard:',
+                            targetUrl
+                          );
                           setNavigating(targetUrl);
                           setSidebarOpen(false);
                           router.push(targetUrl);
@@ -314,7 +355,7 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
                         setNavigating(null);
                         return;
                       }
-                      
+
                       // For other links, only set navigating if we're actually navigating to a different page
                       if (normalizedHref !== normalizedPathname) {
                         setNavigating(item.href);
@@ -325,16 +366,16 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
                       }
                     }}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      active
-                        ? 'bg-black text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                      active ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                     aria-current={active ? 'page' : undefined}
                   >
                     <span className={`flex-shrink-0 ${isNavigating ? 'animate-spin' : ''}`}>
                       {item.icon}
                     </span>
-                    <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
+                    <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                      {item.name}
+                    </span>
                   </Link>
                 );
               })
@@ -344,22 +385,27 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
           {/* Profile Section */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center justify-between gap-3">
-              <Link
-                href={ROUTES.PROFILE}
-                className="flex-1 min-w-0 flex items-center gap-3"
-              >
+              <Link href={ROUTES.PROFILE} className="flex-1 min-w-0 flex items-center gap-3">
                 <div className="flex-shrink-0">
-                  <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-8 h-8 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-sm font-semibold text-gray-900 truncate">
                     {userName || 'User'}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">
-                    {userEmail || ''}
-                  </span>
+                  <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
                 </div>
               </Link>
               <button
@@ -368,7 +414,12 @@ export default function OwnerSidebar({ bookingLink }: OwnerSidebarProps) {
                 title="Sign Out"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
                 </svg>
               </button>
             </div>

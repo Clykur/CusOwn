@@ -22,13 +22,13 @@ function SelectRoleContent() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
-  // Sync URL role with state when URL changes
+  // Sync URL role with state when URL changes (only run when urlRole changes, not selectedRole)
   useEffect(() => {
     if (urlRole && urlRole !== selectedRole) {
       console.log('[Role Select] URL role changed to:', urlRole);
       setSelectedRole(urlRole);
     }
-  }, [urlRole]);
+  }, [urlRole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Check if user is already logged in
@@ -86,13 +86,19 @@ function SelectRoleContent() {
               const { getUserState } = await import('@/lib/utils/user-state');
               const stateResult = await getUserState(session.user.id);
 
-              if (stateResult.redirectUrl && stateResult.state !== 'S5' && stateResult.state !== 'S6') {
+              if (
+                stateResult.redirectUrl &&
+                stateResult.state !== 'S5' &&
+                stateResult.state !== 'S6'
+              ) {
                 router.push(stateResult.redirectUrl);
                 return;
               }
 
               if (userType === 'owner') {
-                router.push(stateResult.businessCount >= 1 ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.SETUP);
+                router.push(
+                  stateResult.businessCount >= 1 ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.SETUP
+                );
                 return;
               }
 
@@ -119,12 +125,14 @@ function SelectRoleContent() {
 
   const handleContinue = async () => {
     if (!selectedRole || processing) return;
-    
+
     setProcessing(true);
-    
+
     if (user) {
       try {
-        const { data: { session } } = await supabaseAuth!.auth.getSession();
+        const {
+          data: { session },
+        } = await supabaseAuth!.auth.getSession();
         if (!session) {
           router.push(ROUTES.AUTH_LOGIN('/auth/callback') + `&role=${selectedRole}`);
           return;
@@ -133,7 +141,7 @@ function SelectRoleContent() {
         const csrfToken = await getCSRFToken();
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         };
         if (csrfToken) {
           headers['x-csrf-token'] = csrfToken;
@@ -144,13 +152,13 @@ function SelectRoleContent() {
           credentials: 'include',
           body: JSON.stringify({ role: selectedRole }),
         });
-        
+
         if (response.ok) {
           const result = await response.json();
           // Role update successful - use canonical user state to determine redirect
           const { getUserState } = await import('@/lib/utils/user-state');
           const stateResult = await getUserState(user.id);
-          
+
           if (stateResult.redirectUrl) {
             router.push(stateResult.redirectUrl);
           } else {
@@ -164,11 +172,11 @@ function SelectRoleContent() {
         } else {
           const errorData = await response.json().catch(() => ({}));
           console.error('Role update failed:', errorData);
-          
+
           // Even if API fails, check current state and redirect
           const { getUserState } = await import('@/lib/utils/user-state');
           const stateResult = await getUserState(user.id);
-          
+
           if (stateResult.redirectUrl) {
             router.push(stateResult.redirectUrl);
           } else {
@@ -196,7 +204,7 @@ function SelectRoleContent() {
   };
 
   const steps = ['Choose Role', user ? 'Complete Setup' : 'Sign In', 'Get Started'];
-  const currentStep = user ? (selectedRole ? 2 : 1) : (selectedRole ? 2 : 1);
+  const currentStep = user ? (selectedRole ? 2 : 1) : selectedRole ? 2 : 1;
 
   const handleRoleSelect = (role: 'owner' | 'customer') => {
     // Always allow role selection - update state immediately
@@ -222,7 +230,8 @@ function SelectRoleContent() {
             How would you like to use CusOwn?
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose your role to get started. Don&apos;t worry, you can switch roles or use both anytime.
+            Choose your role to get started. Don&apos;t worry, you can switch roles or use both
+            anytime.
           </p>
         </div>
 
@@ -235,7 +244,12 @@ function SelectRoleContent() {
             helperText={UI_CONTEXT.ROLE_OWNER_HELPER}
             icon={
               <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
               </svg>
             }
             features={[
@@ -255,7 +269,12 @@ function SelectRoleContent() {
             helperText={UI_CONTEXT.ROLE_CUSTOMER_HELPER}
             icon={
               <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             }
             features={[
@@ -273,13 +292,25 @@ function SelectRoleContent() {
         {user && (
           <div className="mb-8 bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">You&apos;re signed in as {user.email}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  You&apos;re signed in as {user.email}
+                </p>
                 <p className="text-xs text-gray-600 mt-1">
-                  {selectedRole 
+                  {selectedRole
                     ? `Selecting ${selectedRole === 'owner' ? 'Business Owner' : 'Customer'} role. Your account will be updated when you continue.`
                     : 'Choose a role to continue. You can switch roles anytime from your dashboard.'}
                 </p>
@@ -327,13 +358,14 @@ function SelectRoleContent() {
 
 export default function SelectRolePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      }
+    >
       <SelectRoleContent />
     </Suspense>
   );
 }
-

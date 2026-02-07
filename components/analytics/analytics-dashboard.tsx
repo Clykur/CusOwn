@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { formatDate } from '@/lib/utils/string';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import AnalyticsDashboardSkeleton from '@/components/analytics/analytics-dashboard.skeleton';
@@ -43,11 +43,7 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [businessId, startDate, endDate]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
       // Get session for authentication
@@ -109,7 +105,11 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
     } finally {
       setLoading(false);
     }
-  };
+  }, [businessId, startDate, endDate]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const handleExport = async () => {
     setExporting(true);

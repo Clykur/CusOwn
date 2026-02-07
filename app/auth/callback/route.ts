@@ -3,19 +3,18 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { env } from '@/config/env';
 import { userService } from '@/services/user.service';
-import { getBaseUrl } from '@/lib/utils/url';
+import { getOAuthRedirect } from '@/lib/auth/getOAuthRedirect';
 import { ROUTES } from '@/lib/utils/navigation';
 
 /**
  * OAuth callback handler (server-side).
- *
- * IMPORTANT: This must be a route handler (not a page) so PKCE code verifier
- * can be read from cookies and exchanged securely server-side.
+ * Redirect base is derived from the incoming request only (host + proto), not env.
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const baseUrl = getBaseUrl(request);
+  const baseUrlFromRequest = getOAuthRedirect('/auth/callback', request);
+  const baseUrl = `${new URL(baseUrlFromRequest).origin}/`;
 
   // If no code, just go home
   if (!code) {

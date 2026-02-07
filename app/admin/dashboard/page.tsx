@@ -69,11 +69,16 @@ function AdminDashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [trends, setTrends] = useState<BookingTrend[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'bookings' | 'audit' | 'success-metrics'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'businesses' | 'users' | 'bookings' | 'audit' | 'success-metrics'
+  >('overview');
 
   useEffect(() => {
     const tab = searchParams?.get('tab') as typeof activeTab;
-    if (tab && ['overview', 'businesses', 'users', 'bookings', 'audit', 'success-metrics'].includes(tab)) {
+    if (
+      tab &&
+      ['overview', 'businesses', 'users', 'bookings', 'audit', 'success-metrics'].includes(tab)
+    ) {
       setActiveTab(tab);
     } else if (!tab) {
       setActiveTab('overview');
@@ -93,8 +98,10 @@ function AdminDashboardContent() {
         setLoading(false);
         return;
       }
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
       if (!session?.user) {
         router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD));
         return;
@@ -113,19 +120,19 @@ function AdminDashboardContent() {
       // Check admin status with detailed info
       const statusRes = await fetch('/api/admin/check-status', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
-      
+
       console.log('[Admin Dashboard] Check-status response:', {
         status: statusRes.status,
         ok: statusRes.ok,
       });
-      
+
       const statusData = await statusRes.json();
-      
+
       console.log('[Admin Dashboard] Check-status data:', statusData);
-      
+
       if (!statusData.success) {
         const errorMsg = statusData.error || 'Failed to check admin status';
         console.error('[Admin Dashboard] Check-status failed:', errorMsg);
@@ -139,9 +146,13 @@ function AdminDashboardContent() {
       if (!is_admin) {
         // Show helpful error message
         if (!profile_exists) {
-          setError(`Your profile doesn't exist yet. User type: ${user_type || 'none'}. Please contact support or use the migration query to set admin status.`);
+          setError(
+            `Your profile doesn't exist yet. User type: ${user_type || 'none'}. Please contact support or use the migration query to set admin status.`
+          );
         } else {
-          setError(`You don't have admin access. Current user type: ${user_type}. Please run the migration query to set your account as admin.`);
+          setError(
+            `You don't have admin access. Current user type: ${user_type}. Please run the migration query to set your account as admin.`
+          );
         }
         setLoading(false);
         return;
@@ -161,14 +172,16 @@ function AdminDashboardContent() {
         setError('Supabase not configured');
         return;
       }
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         setError('Session expired. Please log in again.');
         return;
       }
 
       const authHeaders = {
-        'Authorization': `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       };
 
       const [metricsRes, trendsRes] = await Promise.all([
@@ -204,7 +217,7 @@ function AdminDashboardContent() {
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          
+
           {error.includes('migration') && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left">
               <p className="text-sm text-yellow-800 mb-2">
@@ -212,7 +225,12 @@ function AdminDashboardContent() {
               </p>
               <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
                 <li>Go to Supabase Dashboard → SQL Editor</li>
-                <li>Run the migration query from <code className="bg-yellow-100 px-1 rounded">database/migration_set_admin_quick.sql</code></li>
+                <li>
+                  Run the migration query from{' '}
+                  <code className="bg-yellow-100 px-1 rounded">
+                    database/migration_set_admin_quick.sql
+                  </code>
+                </li>
                 <li>Refresh this page</li>
               </ol>
             </div>
@@ -225,7 +243,8 @@ function AdminDashboardContent() {
             >
               Go to Home
             </button>
-            {user?.email === 'chinnuk0521@gmail.com' && (
+            {(user?.email === 'chinnuk0521@gmail.com' ||
+              user?.email === 'karthiknaramala9949@gmail.com') && (
               <button
                 onClick={async () => {
                   try {
@@ -233,7 +252,9 @@ function AdminDashboardContent() {
                       alert('Supabase not configured');
                       return;
                     }
-                    const { data: { session } } = await supabaseAuth.auth.getSession();
+                    const {
+                      data: { session },
+                    } = await supabaseAuth.auth.getSession();
                     if (!session) {
                       alert('Session expired. Please log in again.');
                       return;
@@ -241,7 +262,7 @@ function AdminDashboardContent() {
                     const csrfToken = await getCSRFToken();
                     const headers: Record<string, string> = {
                       'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${session.access_token}`,
+                      Authorization: `Bearer ${session.access_token}`,
                     };
                     if (csrfToken) {
                       headers['x-csrf-token'] = csrfToken;
@@ -276,28 +297,28 @@ function AdminDashboardContent() {
 
   // Bar chart for Booking Trends (30 Days) - using different shades of black/gray
   const bookingTrendsChart = {
-    labels: trends.map(t => {
+    labels: trends.map((t) => {
       const date = new Date(t.date);
       return `${date.getMonth() + 1}/${date.getDate()}`;
     }),
     datasets: [
       {
         label: 'Total Bookings',
-        data: trends.map(t => t.total),
+        data: trends.map((t) => t.total),
         backgroundColor: 'rgb(0, 0, 0)', // Pure black
         borderColor: 'rgb(0, 0, 0)',
         borderWidth: 2,
       },
       {
         label: 'Confirmed',
-        data: trends.map(t => t.confirmed),
+        data: trends.map((t) => t.confirmed),
         backgroundColor: 'rgb(64, 64, 64)', // Dark gray
         borderColor: 'rgb(64, 64, 64)',
         borderWidth: 2,
       },
       {
         label: 'Rejected',
-        data: trends.map(t => t.rejected),
+        data: trends.map((t) => t.rejected),
         backgroundColor: 'rgb(128, 128, 128)', // Medium gray
         borderColor: 'rgb(128, 128, 128)',
         borderWidth: 2,
@@ -306,56 +327,60 @@ function AdminDashboardContent() {
   };
 
   // Bar chart for Booking Status Distribution - using different shades
-  const bookingStatusChart = metrics ? {
-    labels: ['Confirmed', 'Pending', 'Rejected', 'Cancelled'],
-    datasets: [
-      {
-        label: 'Number of Bookings',
-        data: [
-          metrics.confirmedBookings,
-          metrics.pendingBookings,
-          metrics.rejectedBookings,
-          metrics.cancelledBookings,
+  const bookingStatusChart = metrics
+    ? {
+        labels: ['Confirmed', 'Pending', 'Rejected', 'Cancelled'],
+        datasets: [
+          {
+            label: 'Number of Bookings',
+            data: [
+              metrics.confirmedBookings,
+              metrics.pendingBookings,
+              metrics.rejectedBookings,
+              metrics.cancelledBookings,
+            ],
+            backgroundColor: [
+              'rgb(0, 0, 0)', // Pure black - Confirmed
+              'rgb(64, 64, 64)', // Dark gray - Pending
+              'rgb(128, 128, 128)', // Medium gray - Rejected
+              'rgb(192, 192, 192)', // Light gray - Cancelled
+            ],
+            borderColor: 'rgb(0, 0, 0)',
+            borderWidth: 2,
+          },
         ],
-        backgroundColor: [
-          'rgb(0, 0, 0)',        // Pure black - Confirmed
-          'rgb(64, 64, 64)',     // Dark gray - Pending
-          'rgb(128, 128, 128)',  // Medium gray - Rejected
-          'rgb(192, 192, 192)',  // Light gray - Cancelled
-        ],
-        borderColor: 'rgb(0, 0, 0)',
-        borderWidth: 2,
-      },
-    ],
-  } : null;
+      }
+    : null;
 
   // Line chart for Growth Trends - single line with different point colors
-  const growthChart = metrics ? {
-    labels: ['Businesses', 'Bookings', 'Owners'],
-    datasets: [
-      {
-        label: 'Growth Rate (%)',
-        data: [
-          metrics.growthRate.businesses,
-          metrics.growthRate.bookings,
-          metrics.growthRate.owners,
+  const growthChart = metrics
+    ? {
+        labels: ['Businesses', 'Bookings', 'Owners'],
+        datasets: [
+          {
+            label: 'Growth Rate (%)',
+            data: [
+              metrics.growthRate.businesses,
+              metrics.growthRate.bookings,
+              metrics.growthRate.owners,
+            ],
+            borderColor: 'rgb(0, 0, 0)', // Pure black line
+            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 8,
+            pointBackgroundColor: [
+              'rgb(0, 0, 0)', // Pure black for Businesses
+              'rgb(64, 64, 64)', // Dark gray for Bookings
+              'rgb(128, 128, 128)', // Medium gray for Owners
+            ],
+            pointBorderColor: 'rgb(0, 0, 0)',
+            pointBorderWidth: 2,
+          },
         ],
-        borderColor: 'rgb(0, 0, 0)', // Pure black line
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-        borderWidth: 3,
-        tension: 0.4,
-        fill: true,
-        pointRadius: 8,
-        pointBackgroundColor: [
-          'rgb(0, 0, 0)',        // Pure black for Businesses
-          'rgb(64, 64, 64)',     // Dark gray for Bookings
-          'rgb(128, 128, 128)',  // Medium gray for Owners
-        ],
-        pointBorderColor: 'rgb(0, 0, 0)',
-        pointBorderWidth: 2,
-      },
-    ],
-  } : null;
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -367,170 +392,166 @@ function AdminDashboardContent() {
             <p className="text-gray-600">Platform-wide metrics and management</p>
           </div>
 
-        {activeTab === 'overview' && metrics && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Businesses</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.totalBusinesses}</div>
-                <div className="text-xs text-gray-500 mt-2">
-                  {metrics.growthRate.businesses > 0 ? '+' : ''}
-                  {metrics.growthRate.businesses.toFixed(1)}% growth
+          {activeTab === 'overview' && metrics && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">Total Businesses</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.totalBusinesses}</div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    {metrics.growthRate.businesses > 0 ? '+' : ''}
+                    {metrics.growthRate.businesses.toFixed(1)}% growth
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">Active Businesses</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.activeBusinesses}</div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    {metrics.suspendedBusinesses} suspended
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">Total Bookings</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.totalBookings}</div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    {metrics.growthRate.bookings > 0 ? '+' : ''}
+                    {metrics.growthRate.bookings.toFixed(1)}% growth
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">Total Owners</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.totalOwners}</div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    {metrics.growthRate.owners > 0 ? '+' : ''}
+                    {metrics.growthRate.owners.toFixed(1)}% growth
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Active Businesses</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.activeBusinesses}</div>
-                <div className="text-xs text-gray-500 mt-2">
-                  {metrics.suspendedBusinesses} suspended
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">Bookings Today</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.bookingsToday}</div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">This Week</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.bookingsThisWeek}</div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">This Month</div>
+                  <div className="text-3xl font-bold text-gray-900">
+                    {metrics.bookingsThisMonth}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="text-sm text-gray-600 mb-1">Total Customers</div>
+                  <div className="text-3xl font-bold text-gray-900">{metrics.totalCustomers}</div>
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Bookings</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.totalBookings}</div>
-                <div className="text-xs text-gray-500 mt-2">
-                  {metrics.growthRate.bookings > 0 ? '+' : ''}
-                  {metrics.growthRate.bookings.toFixed(1)}% growth
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Booking Trends (30 Days)
+                  </h3>
+                  {trends.length > 0 ? (
+                    <Bar
+                      data={bookingTrendsChart}
+                      options={{
+                        responsive: true,
+                        plugins: {
+                          legend: {
+                            position: 'top' as const,
+                          },
+                          title: {
+                            display: false,
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }}
+                    />
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No data available</p>
+                  )}
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Booking Status Distribution
+                  </h3>
+                  {bookingStatusChart ? (
+                    <Bar
+                      data={bookingStatusChart}
+                      options={{
+                        responsive: true,
+                        plugins: {
+                          legend: {
+                            position: 'top' as const,
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }}
+                    />
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No data available</p>
+                  )}
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Owners</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.totalOwners}</div>
-                <div className="text-xs text-gray-500 mt-2">
-                  {metrics.growthRate.owners > 0 ? '+' : ''}
-                  {metrics.growthRate.owners.toFixed(1)}% growth
+              <div className="grid grid-cols-1 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Growth Trends</h3>
+                  {growthChart ? (
+                    <Line
+                      data={growthChart}
+                      options={{
+                        responsive: true,
+                        plugins: {
+                          legend: {
+                            position: 'top' as const,
+                          },
+                          title: {
+                            display: false,
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
+                        },
+                      }}
+                    />
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No data available</p>
+                  )}
                 </div>
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Bookings Today</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.bookingsToday}</div>
-              </div>
+          {activeTab === 'businesses' && <BusinessesTab />}
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">This Week</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.bookingsThisWeek}</div>
-              </div>
+          {activeTab === 'users' && <UsersTab />}
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">This Month</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.bookingsThisMonth}</div>
-              </div>
+          {activeTab === 'bookings' && <BookingsTab />}
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Customers</div>
-                <div className="text-3xl font-bold text-gray-900">{metrics.totalCustomers}</div>
-              </div>
-            </div>
+          {activeTab === 'audit' && <AuditLogsTab />}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Trends (30 Days)</h3>
-                {trends.length > 0 ? (
-                  <Bar
-                    data={bookingTrendsChart}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          position: 'top' as const,
-                        },
-                        title: {
-                          display: false,
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    }}
-                  />
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No data available</p>
-                )}
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Status Distribution</h3>
-                {bookingStatusChart ? (
-                  <Bar
-                    data={bookingStatusChart}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          position: 'top' as const,
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    }}
-                  />
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No data available</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Growth Trends</h3>
-                {growthChart ? (
-                  <Line
-                    data={growthChart}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          position: 'top' as const,
-                        },
-                        title: {
-                          display: false,
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    }}
-                  />
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No data available</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'businesses' && (
-          <BusinessesTab />
-        )}
-
-        {activeTab === 'users' && (
-          <UsersTab />
-        )}
-
-        {activeTab === 'bookings' && (
-          <BookingsTab />
-        )}
-
-        {activeTab === 'audit' && (
-          <AuditLogsTab />
-        )}
-
-        {activeTab === 'success-metrics' && (
-          <SuccessMetricsDashboard />
-        )}
+          {activeTab === 'success-metrics' && <SuccessMetricsDashboard />}
         </div>
       </div>
     </div>
@@ -561,7 +582,9 @@ function BusinessesTab() {
         setLoading(false);
         return;
       }
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         console.error('No session found');
         setLoading(false);
@@ -570,7 +593,7 @@ function BusinessesTab() {
 
       const res = await fetch('/api/admin/businesses', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
       const data = await res.json();
@@ -620,11 +643,15 @@ function BusinessesTab() {
             {businesses.map((business) => (
               <tr key={business.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{business.salon_name || business.name || 'N/A'}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {business.salon_name || business.name || 'N/A'}
+                  </div>
                   <div className="text-sm text-gray-500">{business.booking_link}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{business.owner?.full_name || business.owner_name}</div>
+                  <div className="text-sm text-gray-900">
+                    {business.owner?.full_name || business.owner_name}
+                  </div>
                   <div className="text-sm text-gray-500">{business.owner?.email || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -634,11 +661,11 @@ function BusinessesTab() {
                   {business.bookingCount || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    business.suspended
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      business.suspended ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}
+                  >
                     {business.suspended ? 'Suspended' : 'Active'}
                   </span>
                 </td>
@@ -674,7 +701,9 @@ function UsersTab() {
         setLoading(false);
         return;
       }
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         console.error('No session found');
         setLoading(false);
@@ -683,7 +712,7 @@ function UsersTab() {
 
       const res = await fetch('/api/admin/users', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
       const data = await res.json();
@@ -732,9 +761,7 @@ function UsersTab() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {user.full_name || 'N/A'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.email}
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                     {user.user_type}
@@ -771,7 +798,9 @@ function BookingsTab() {
         setLoading(false);
         return;
       }
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         console.error('No session found');
         setLoading(false);
@@ -780,7 +809,7 @@ function BookingsTab() {
 
       const res = await fetch('/api/admin/bookings?limit=50', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
       const data = await res.json();
@@ -845,12 +874,17 @@ function BookingsTab() {
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    booking.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      booking.status === 'confirmed'
+                        ? 'bg-green-100 text-green-800'
+                        : booking.status === 'rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : booking.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {booking.status}
                   </span>
                 </td>
@@ -888,7 +922,9 @@ function AuditLogsTab() {
         setLoading(false);
         return;
       }
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         console.error('No session found');
         setLoading(false);
@@ -897,7 +933,7 @@ function AuditLogsTab() {
 
       const res = await fetch('/api/admin/audit-logs?limit=100', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
       const data = await res.json();
@@ -927,15 +963,21 @@ function AuditLogsTab() {
     // Business actions
     if (actionType === 'business_updated' || actionType === 'business_suspended') {
       const changes: string[] = [];
-      
+
       // Check for suspended status change
-      if (oldData.suspended !== undefined && newData.suspended !== undefined && oldData.suspended !== newData.suspended) {
-        changes.push(newData.suspended ? 'Business was suspended' : 'Business suspension was removed');
+      if (
+        oldData.suspended !== undefined &&
+        newData.suspended !== undefined &&
+        oldData.suspended !== newData.suspended
+      ) {
+        changes.push(
+          newData.suspended ? 'Business was suspended' : 'Business suspension was removed'
+        );
         if (newData.suspended && newData.suspended_reason) {
           changes.push(`Reason: ${newData.suspended_reason}`);
         }
       }
-      
+
       // Check for other field changes
       const fields: Record<string, string> = {
         salon_name: 'Business Name',
@@ -949,7 +991,11 @@ function AuditLogsTab() {
       };
 
       for (const [key, label] of Object.entries(fields)) {
-        if (oldData[key] !== undefined && newData[key] !== undefined && oldData[key] !== newData[key]) {
+        if (
+          oldData[key] !== undefined &&
+          newData[key] !== undefined &&
+          oldData[key] !== newData[key]
+        ) {
           const oldVal = oldData[key] === null ? 'Not set' : String(oldData[key]);
           const newVal = newData[key] === null ? 'Not set' : String(newData[key]);
           changes.push(`${label} changed from "${oldVal}" to "${newVal}"`);
@@ -974,7 +1020,9 @@ function AuditLogsTab() {
         changes.push(`User type changed from ${oldData.user_type} to ${newData.user_type}`);
       }
       if (oldData.full_name !== newData.full_name) {
-        changes.push(`Name changed from "${oldData.full_name || 'Not set'}" to "${newData.full_name || 'Not set'}"`);
+        changes.push(
+          `Name changed from "${oldData.full_name || 'Not set'}" to "${newData.full_name || 'Not set'}"`
+        );
       }
       return changes.length > 0 ? changes.join('. ') : 'User details were updated';
     }
@@ -1002,10 +1050,7 @@ function AuditLogsTab() {
     // Default: return the description or a generic message
     if (log.description) {
       // Try to format the technical description
-      return log.description
-        .replace(/→/g, ' to ')
-        .replace(/:/g, ': ')
-        .replace(/,/g, ', ');
+      return log.description.replace(/→/g, ' to ').replace(/:/g, ': ').replace(/,/g, ', ');
     }
 
     return `${actionType.replace(/_/g, ' ')} performed`;
@@ -1089,9 +1134,7 @@ function AuditLogsTab() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {log.entity_type} {log.entity_id ? `(${log.entity_id.substring(0, 8)}...)` : ''}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {formatAuditDescription(log)}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{formatAuditDescription(log)}</td>
                   {isDev && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
@@ -1111,4 +1154,3 @@ function AuditLogsTab() {
     </div>
   );
 }
-

@@ -1,13 +1,12 @@
 import { NextRequest } from 'next/server';
-import { getServerUser } from '@/lib/supabase/server-auth';
-import { getServerUserProfile } from '@/lib/supabase/server-auth';
+import { getServerUser, getServerUserProfile } from '@/lib/supabase/server-auth';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 
 export async function GET(request: NextRequest) {
   const DEBUG = process.env.NODE_ENV === 'development';
-  
+
   try {
     if (DEBUG) {
       console.log('[check-status] Request received');
@@ -18,11 +17,14 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await getServerUser(request);
-    
+
     if (DEBUG) {
-      console.log('[check-status] User check result:', user ? { id: user.id, email: user.email } : 'null');
+      console.log(
+        '[check-status] User check result:',
+        user ? { id: user.id, email: user.email } : 'null'
+      );
     }
-    
+
     if (!user) {
       if (DEBUG) console.log('[check-status] No user found, returning 401');
       return errorResponse('Authentication required', 401);
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Try to get profile using admin client directly as fallback
     let profile = await getServerUserProfile(user.id);
-    
+
     // If profile not found via getServerUserProfile, try direct admin query
     if (!profile && requireSupabaseAdmin) {
       try {
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
           .select('*')
           .eq('id', user.id)
           .single();
-        
+
         if (!profileError && profileData) {
           profile = profileData;
           if (DEBUG) console.log('[check-status] Profile found via direct admin query');
@@ -48,12 +50,19 @@ export async function GET(request: NextRequest) {
           console.log('[check-status] Direct admin query error:', profileError?.message);
         }
       } catch (directError) {
-        if (DEBUG) console.log('[check-status] Direct admin query exception:', directError instanceof Error ? directError.message : 'Unknown');
+        if (DEBUG)
+          console.log(
+            '[check-status] Direct admin query exception:',
+            directError instanceof Error ? directError.message : 'Unknown'
+          );
       }
     }
-    
+
     if (DEBUG) {
-      console.log('[check-status] Profile check result:', profile ? { user_type: profile.user_type, id: profile.id } : 'null');
+      console.log(
+        '[check-status] Profile check result:',
+        profile ? { user_type: profile.user_type, id: profile.id } : 'null'
+      );
       if (!profile) {
         console.log('[check-status] Attempting to verify profile exists in database...');
         // Double-check with a raw query
@@ -65,11 +74,14 @@ export async function GET(request: NextRequest) {
             .eq('id', user.id);
           console.log('[check-status] Profile count in DB:', count);
         } catch (e) {
-          console.log('[check-status] Count query failed:', e instanceof Error ? e.message : 'Unknown');
+          console.log(
+            '[check-status] Count query failed:',
+            e instanceof Error ? e.message : 'Unknown'
+          );
         }
       }
     }
-    
+
     return successResponse({
       user_id: user.id,
       email: user.email,
@@ -77,12 +89,14 @@ export async function GET(request: NextRequest) {
       user_type: profile?.user_type || 'none',
       is_admin: profile?.user_type === 'admin',
       profile: profile,
-      debug: DEBUG ? {
-        hasRequest: !!request,
-        hasAuthHeader: !!request.headers.get('authorization'),
-        profileQueryAttempted: true,
-        profileFound: !!profile,
-      } : undefined,
+      debug: DEBUG
+        ? {
+            hasRequest: !!request,
+            hasAuthHeader: !!request.headers.get('authorization'),
+            profileQueryAttempted: true,
+            profileFound: !!profile,
+          }
+        : undefined,
     });
   } catch (error) {
     if (DEBUG) {
@@ -103,7 +117,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email } = body;
 
-    if (!email || email !== 'chinnuk0521@gmail.com') {
+    if (!email || email !== 'chinnuk0521@gmail.com' || email !== 'karthiknaramala9949@gmail.com') {
       return errorResponse('Unauthorized: Only specific admin email can set admin status', 403);
     }
 
@@ -112,7 +126,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = requireSupabaseAdmin();
-    
+
     // Check if profile exists
     const { data: existingProfile } = await supabase
       .from('user_profiles')
@@ -163,4 +177,3 @@ export async function POST(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

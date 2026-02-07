@@ -5,8 +5,8 @@ import { createBrowserClient } from '@supabase/ssr';
  * Client-side Supabase client for authentication
  * Use this in client components for login/logout
  */
-const supabaseUrl = typeof window !== 'undefined' ? (env.supabase.url || '') : '';
-const supabaseAnonKey = typeof window !== 'undefined' ? (env.supabase.anonKey || '') : '';
+const supabaseUrl = typeof window !== 'undefined' ? env.supabase.url || '' : '';
+const supabaseAnonKey = typeof window !== 'undefined' ? env.supabase.anonKey || '' : '';
 
 // Only create client if we have valid credentials
 // Use a dummy client if credentials are missing to prevent crashes
@@ -62,7 +62,10 @@ export { supabaseAuth };
 export const getCurrentUser = async () => {
   if (!supabaseAuth) return null;
   try {
-    const { data: { user }, error } = await supabaseAuth.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabaseAuth.auth.getUser();
     if (error) return null;
     return user;
   } catch {
@@ -77,7 +80,9 @@ export const getUserProfile = async (userId: string) => {
   if (!supabaseAuth) return null;
   try {
     // First check if we have a valid session
-    const { data: { session } } = await supabaseAuth.auth.getSession();
+    const {
+      data: { session },
+    } = await supabaseAuth.auth.getSession();
     if (!session) return null;
 
     const { data, error } = await supabaseAuth
@@ -85,7 +90,7 @@ export const getUserProfile = async (userId: string) => {
       .select('*')
       .eq('id', userId)
       .single();
-    
+
     if (error) {
       // If error is "not found" (PGRST116), that's okay - profile doesn't exist yet
       if (error.code === 'PGRST116') {
@@ -107,11 +112,7 @@ export const getUserProfile = async (userId: string) => {
   }
 };
 
-import { getClientBaseUrl } from '@/lib/utils/url';
-
-const getOAuthBaseUrl = (): string => {
-  return getClientBaseUrl();
-};
+import { getOAuthRedirect } from '@/lib/auth/getOAuthRedirect';
 
 /**
  * Sign in with Google
@@ -121,21 +122,44 @@ export const signInWithGoogle = async (redirectTo?: string) => {
     return { data: null, error: { message: 'Supabase not configured' } };
   }
   try {
-    // Use the provided redirectTo or construct from base URL
-    const baseUrl = redirectTo || `${getOAuthBaseUrl()}/auth/callback`;
-    
+    let baseUrl = redirectTo || getOAuthRedirect('/auth/callback');
+
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      const currentOrigin = window.location.origin;
+      try {
+        const parsed = new URL(baseUrl);
+        if (parsed.origin !== currentOrigin) {
+          baseUrl = `${currentOrigin}${parsed.pathname}${parsed.search}`;
+        }
+      } catch {
+        baseUrl = `${currentOrigin}/auth/callback`;
+      }
+    }
+
+    if (
+      process.env.NODE_ENV === 'development' &&
+      typeof window !== 'undefined' &&
+      window.location?.origin
+    ) {
+      const redirectOrigin = new URL(baseUrl).origin;
+      if (redirectOrigin !== window.location.origin) {
+        throw new Error(
+          `OAuth redirect must match current origin (dev guard). Current: ${window.location.origin}, redirect: ${redirectOrigin}`
+        );
+      }
+    }
+
     const { data, error } = await supabaseAuth.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: baseUrl,
-        // Force PKCE flow (more secure, tokens not in URL)
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
         },
       },
     });
-    
+
     return { data, error };
   } catch (error: any) {
     return { data: null, error };
@@ -185,4 +209,3 @@ export const isAdmin = async (userId: string): Promise<boolean> => {
   if (!profile) return false;
   return (profile as any).user_type === 'admin';
 };
-

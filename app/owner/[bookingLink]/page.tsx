@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
 import { ROUTES } from '@/lib/utils/navigation';
 import { Salon, BookingWithDetails, Slot } from '@/types';
@@ -25,7 +26,9 @@ export default function OwnerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'bookings' | 'slots' | 'downtime' | 'analytics'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'slots' | 'downtime' | 'analytics'>(
+    'bookings'
+  );
   const [holidays, setHolidays] = useState<any[]>([]);
   const [closures, setClosures] = useState<any[]>([]);
   const [newHolidayDate, setNewHolidayDate] = useState('');
@@ -47,8 +50,10 @@ export default function OwnerDashboardPage() {
         return;
       }
 
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
       if (!session?.user) {
         // Not authenticated - redirect to login
         window.location.href = '/auth/login';
@@ -71,7 +76,7 @@ export default function OwnerDashboardPage() {
 
     const refreshData = () => {
       const now = Date.now();
-      if (isRefreshing || (now - lastRefreshTime) < MIN_REFRESH_INTERVAL) {
+      if (isRefreshing || now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
         return;
       }
 
@@ -79,16 +84,16 @@ export default function OwnerDashboardPage() {
       refreshTimeout = setTimeout(() => {
         isRefreshing = true;
         lastRefreshTime = Date.now();
-        
+
         // Only refresh if tab is visible and salon is loaded
         if (typeof document !== 'undefined' && !document.hidden && salon) {
           const date = selectedDate || new Date().toISOString().split('T')[0];
-          
+
           // Trigger re-fetch by updating a dependency or calling fetch functions
           // The useEffect for bookings/slots will handle the actual fetch
           setSelectedDate(date); // This will trigger the useEffect
         }
-        
+
         isRefreshing = false;
       }, 500); // Debounce delay
     };
@@ -121,7 +126,7 @@ export default function OwnerDashboardPage() {
         // Extract token from URL if present (for secure access)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        
+
         // Build URL with token if available
         let url = `${API_ROUTES.SALONS}/${bookingLink}`;
         if (token) {
@@ -131,7 +136,9 @@ export default function OwnerDashboardPage() {
         // Include authentication for owner dashboard access
         const headers: HeadersInit = {};
         if (supabaseAuth) {
-          const { data: { session } } = await supabaseAuth.auth.getSession();
+          const {
+            data: { session },
+          } = await supabaseAuth.auth.getSession();
           if (session?.access_token) {
             headers['Authorization'] = `Bearer ${session.access_token}`;
           }
@@ -155,9 +162,13 @@ export default function OwnerDashboardPage() {
             window.location.href = '/owner/dashboard';
             return;
           }
-          
+
           // If token is missing and it's a UUID, try to generate secure URL
-          if (response.status === 403 && !token && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingLink)) {
+          if (
+            response.status === 403 &&
+            !token &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingLink)
+          ) {
             try {
               const { getSecureOwnerDashboardUrlClient } = await import('@/lib/utils/navigation');
               const secureUrl = await getSecureOwnerDashboardUrlClient(bookingLink);
@@ -173,7 +184,7 @@ export default function OwnerDashboardPage() {
 
         if (result.success && result.data) {
           setSalon(result.data);
-          
+
           // If QR code doesn't exist, fetch it
           if (!result.data.qr_code) {
             try {
@@ -183,7 +194,7 @@ export default function OwnerDashboardPage() {
               }
               const qrResult = await qrResponse.json();
               if (qrResult.success && qrResult.data?.qr_code) {
-                setSalon((prev) => prev ? { ...prev, qr_code: qrResult.data.qr_code } : null);
+                setSalon((prev) => (prev ? { ...prev, qr_code: qrResult.data.qr_code } : null));
               }
             } catch (qrError) {
               logError(qrError, 'QR Code Fetch');
@@ -205,7 +216,7 @@ export default function OwnerDashboardPage() {
   // Fetch bookings and slots function - can be called from multiple places
   const fetchBookingsAndSlots = useCallback(async () => {
     if (!salon) return;
-    
+
     // Don't fetch if tab is hidden
     if (typeof document !== 'undefined' && document.hidden) {
       return;
@@ -223,9 +234,12 @@ export default function OwnerDashboardPage() {
         if (!supabaseAuth) {
           return;
         }
-        
-        const { data: { session }, error: sessionError } = await supabaseAuth.auth.getSession();
-        
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabaseAuth.auth.getSession();
+
         if (sessionError || !session?.access_token) {
           return;
         }
@@ -233,7 +247,7 @@ export default function OwnerDashboardPage() {
         abortController = new AbortController();
         const response = await fetch(`${API_ROUTES.BOOKINGS}/salon/${salon.id}?date=${date}`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           credentials: 'include',
           signal: abortController.signal,
@@ -267,9 +281,12 @@ export default function OwnerDashboardPage() {
         if (!supabaseAuth) {
           return;
         }
-        
-        const { data: { session }, error: sessionError } = await supabaseAuth.auth.getSession();
-        
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabaseAuth.auth.getSession();
+
         if (sessionError || !session?.access_token) {
           return;
         }
@@ -277,7 +294,7 @@ export default function OwnerDashboardPage() {
         abortController = new AbortController();
         const response = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${date}`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           credentials: 'include',
           signal: abortController.signal,
@@ -320,7 +337,7 @@ export default function OwnerDashboardPage() {
   // Fetch downtime function - can be called from multiple places
   const fetchDowntime = useCallback(async () => {
     if (!salon) return;
-    
+
     // Don't fetch if tab is hidden
     if (typeof document !== 'undefined' && document.hidden) {
       return;
@@ -352,7 +369,7 @@ export default function OwnerDashboardPage() {
   // Fetch downtime when salon changes or tab becomes visible
   useEffect(() => {
     if (!salon) return;
-    
+
     // Don't fetch if tab is hidden
     if (typeof document !== 'undefined' && document.hidden) {
       return;
@@ -360,7 +377,6 @@ export default function OwnerDashboardPage() {
 
     fetchDowntime();
   }, [salon, fetchDowntime]);
-
 
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -516,7 +532,11 @@ export default function OwnerDashboardPage() {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({ start_date: newClosureStart, end_date: newClosureEnd, reason: newClosureReason }),
+        body: JSON.stringify({
+          start_date: newClosureStart,
+          end_date: newClosureEnd,
+          reason: newClosureReason,
+        }),
       });
       if (response.ok) {
         setNewClosureStart('');
@@ -595,12 +615,24 @@ export default function OwnerDashboardPage() {
             href={`${ROUTES.OWNER_DASHBOARD_BASE}?tab=businesses`}
             className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-6 h-6 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 truncate">{salon.salon_name}</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+              {salon.salon_name}
+            </h1>
             <p className="text-sm lg:text-base text-gray-600">Owner Dashboard</p>
           </div>
         </div>
@@ -611,11 +643,13 @@ export default function OwnerDashboardPage() {
         <div className="flex flex-col md:flex-row items-center md:items-start gap-4 lg:gap-6">
           <div className="flex-shrink-0">
             {salon.qr_code ? (
-              <div className="flex justify-center bg-white p-3 lg:p-4 rounded-lg border-2 border-gray-200">
-                <img
+              <div className="flex justify-center bg-white p-3 lg:p-4 rounded-lg border-2 border-gray-200 relative w-40 h-40 lg:w-48 lg:h-48">
+                <Image
                   src={salon.qr_code}
                   alt="QR Code"
-                  className="w-40 h-40 lg:w-48 lg:h-48"
+                  fill
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
             ) : (
@@ -636,7 +670,12 @@ export default function OwnerDashboardPage() {
                   className="h-11 px-6 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
                   </svg>
                   Download QR Code
                 </button>
@@ -690,7 +729,7 @@ export default function OwnerDashboardPage() {
             Analytics
           </button>
         </div>
-        
+
         <div className="p-4 lg:p-6">
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
@@ -715,11 +754,25 @@ export default function OwnerDashboardPage() {
                   <div className="space-y-4">
                     {bookings.length === 0 ? (
                       <div className="bg-white border border-gray-200 rounded-lg p-8 lg:p-12 text-center">
-                        <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        <svg
+                          className="w-12 h-12 text-gray-400 mx-auto mb-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                          />
                         </svg>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
-                        <p className="text-sm text-gray-500 mb-4">No bookings found for this date</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No bookings found
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          No bookings found for this date
+                        </p>
                         <button
                           onClick={() => fetchBookingsAndSlots()}
                           className="h-11 px-6 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
@@ -780,15 +833,20 @@ export default function OwnerDashboardPage() {
                         {bookings.map((booking) => (
                           <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{booking.customer_name}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {booking.customer_name}
+                              </div>
                               <div className="text-sm text-gray-500">{booking.customer_phone}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {booking.slot ? (
                                 <div>
-                                  <div className="text-sm text-gray-900">{formatDate(booking.slot.date)}</div>
+                                  <div className="text-sm text-gray-900">
+                                    {formatDate(booking.slot.date)}
+                                  </div>
                                   <div className="text-sm text-gray-500">
-                                    {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
+                                    {formatTime(booking.slot.start_time)} -{' '}
+                                    {formatTime(booking.slot.end_time)}
                                   </div>
                                 </div>
                               ) : (
@@ -805,7 +863,9 @@ export default function OwnerDashboardPage() {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="text-sm text-gray-500 font-mono">{booking.booking_id}</span>
+                              <span className="text-sm text-gray-500 font-mono">
+                                {booking.booking_id}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex flex-col gap-2">
@@ -820,47 +880,63 @@ export default function OwnerDashboardPage() {
                                     <>
                                       <button
                                         onClick={() => handleAccept(booking.id)}
-                                        disabled={processingBookingId === booking.id || processingBookingId !== null}
+                                        disabled={
+                                          processingBookingId === booking.id ||
+                                          processingBookingId !== null
+                                        }
                                         className="h-9 px-4 bg-black text-white text-xs font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
-                                        {processingBookingId === booking.id ? 'Accepting...' : 'Accept'}
+                                        {processingBookingId === booking.id
+                                          ? 'Accepting...'
+                                          : 'Accept'}
                                       </button>
                                       <button
                                         onClick={() => handleReject(booking.id)}
-                                        disabled={processingBookingId === booking.id || processingBookingId !== null}
+                                        disabled={
+                                          processingBookingId === booking.id ||
+                                          processingBookingId !== null
+                                        }
                                         className="h-9 px-4 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
-                                        {processingBookingId === booking.id ? 'Processing...' : 'Reject'}
+                                        {processingBookingId === booking.id
+                                          ? 'Processing...'
+                                          : 'Reject'}
                                       </button>
                                     </>
                                   )}
-                                  {(booking.status === 'confirmed' || booking.status === 'pending') && (
+                                  {(booking.status === 'confirmed' ||
+                                    booking.status === 'pending') && (
                                     <>
                                       <button
                                         onClick={() => handleCancel(booking.id)}
-                                        disabled={processingBookingId === booking.id || processingBookingId !== null}
+                                        disabled={
+                                          processingBookingId === booking.id ||
+                                          processingBookingId !== null
+                                        }
                                         className="h-9 px-4 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
-                                        {processingBookingId === booking.id ? 'Cancelling...' : 'Cancel'}
+                                        {processingBookingId === booking.id
+                                          ? 'Cancelling...'
+                                          : 'Cancel'}
                                       </button>
-                                    {booking.slot && slots.length > 0 && !booking.no_show && (
-                                      <RescheduleButton
-                                        bookingId={booking.id}
-                                        currentSlot={booking.slot}
-                                        businessId={salon.id}
-                                        availableSlots={slots}
-                                        onRescheduled={fetchBookingsAndSlots}
-                                        rescheduledBy="owner"
-                                      />
-                                    )}
-                                  </>
-                                )}
-                                {booking.status === 'confirmed' && !booking.no_show && (
-                                  <NoShowButton
-                                    bookingId={booking.id}
-                                    onMarked={fetchBookingsAndSlots}
-                                  />
-                                )}
+                                      {booking.slot && slots.length > 0 && !booking.no_show && (
+                                        <RescheduleButton
+                                          bookingId={booking.id}
+                                          currentSlot={booking.slot}
+                                          businessId={salon.id}
+                                          availableSlots={slots}
+                                          onRescheduled={fetchBookingsAndSlots}
+                                          rescheduledBy="owner"
+                                        />
+                                      )}
+                                    </>
+                                  )}
+                                  {booking.status === 'confirmed' && !booking.no_show && (
+                                    <NoShowButton
+                                      bookingId={booking.id}
+                                      onMarked={fetchBookingsAndSlots}
+                                    />
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -878,27 +954,31 @@ export default function OwnerDashboardPage() {
               {/* Available Column */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Available</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    Available
+                  </h3>
                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slots.filter(s => s.status === 'available').length}
+                    {slots.filter((s) => s.status === 'available').length}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slots.filter(s => s.status === 'available').length === 0 ? (
+                  {slots.filter((s) => s.status === 'available').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-gray-500">No available slots</p>
                     </div>
                   ) : (
-                    slots.filter(s => s.status === 'available').map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="bg-white border-2 border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                    slots
+                      .filter((s) => s.status === 'available')
+                      .map((slot) => (
+                        <div
+                          key={slot.id}
+                          className="bg-white border-2 border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
+                        >
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </div>
               </div>
@@ -906,27 +986,31 @@ export default function OwnerDashboardPage() {
               {/* Reserved Column */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Reserved</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    Reserved
+                  </h3>
                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slots.filter(s => s.status === 'reserved').length}
+                    {slots.filter((s) => s.status === 'reserved').length}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slots.filter(s => s.status === 'reserved').length === 0 ? (
+                  {slots.filter((s) => s.status === 'reserved').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-gray-500">No reserved slots</p>
                     </div>
                   ) : (
-                    slots.filter(s => s.status === 'reserved').map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="bg-white border-2 border-gray-400 rounded-lg p-3 hover:border-gray-500 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                    slots
+                      .filter((s) => s.status === 'reserved')
+                      .map((slot) => (
+                        <div
+                          key={slot.id}
+                          className="bg-white border-2 border-gray-400 rounded-lg p-3 hover:border-gray-500 transition-colors"
+                        >
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </div>
               </div>
@@ -934,27 +1018,31 @@ export default function OwnerDashboardPage() {
               {/* Booked Column */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Booked</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    Booked
+                  </h3>
                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slots.filter(s => s.status === 'booked').length}
+                    {slots.filter((s) => s.status === 'booked').length}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slots.filter(s => s.status === 'booked').length === 0 ? (
+                  {slots.filter((s) => s.status === 'booked').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-gray-500">No booked slots</p>
                     </div>
                   ) : (
-                    slots.filter(s => s.status === 'booked').map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="bg-gray-50 border-2 border-black rounded-lg p-3"
-                      >
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                    slots
+                      .filter((s) => s.status === 'booked')
+                      .map((slot) => (
+                        <div
+                          key={slot.id}
+                          className="bg-gray-50 border-2 border-black rounded-lg p-3"
+                        >
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </div>
               </div>
@@ -965,7 +1053,9 @@ export default function OwnerDashboardPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Holidays</h3>
                 <div className="space-y-3 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Holiday Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Holiday Date
+                    </label>
                     <input
                       type="date"
                       value={newHolidayDate}
@@ -974,7 +1064,9 @@ export default function OwnerDashboardPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Holiday Name (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Holiday Name (Optional)
+                    </label>
                     <input
                       type="text"
                       value={newHolidayName}
@@ -989,7 +1081,12 @@ export default function OwnerDashboardPage() {
                     className="w-full h-11 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                     Add Holiday
                   </button>
@@ -997,10 +1094,17 @@ export default function OwnerDashboardPage() {
                 {holidays.length > 0 && (
                   <div className="space-y-2">
                     {holidays.map((holiday) => (
-                      <div key={holiday.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div
+                        key={holiday.id}
+                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                      >
                         <div>
-                          <p className="font-medium text-gray-900">{formatDate(holiday.holiday_date)}</p>
-                          {holiday.holiday_name && <p className="text-sm text-gray-600">{holiday.holiday_name}</p>}
+                          <p className="font-medium text-gray-900">
+                            {formatDate(holiday.holiday_date)}
+                          </p>
+                          {holiday.holiday_name && (
+                            <p className="text-sm text-gray-600">{holiday.holiday_name}</p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1011,7 +1115,9 @@ export default function OwnerDashboardPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Closures</h3>
                 <div className="space-y-3 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date
+                    </label>
                     <input
                       type="date"
                       value={newClosureStart}
@@ -1029,7 +1135,9 @@ export default function OwnerDashboardPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reason (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reason (Optional)
+                    </label>
                     <input
                       type="text"
                       value={newClosureReason}
@@ -1044,7 +1152,12 @@ export default function OwnerDashboardPage() {
                     className="w-full h-11 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                     Add Closure
                   </button>
@@ -1052,12 +1165,17 @@ export default function OwnerDashboardPage() {
                 {closures.length > 0 && (
                   <div className="space-y-2">
                     {closures.map((closure) => (
-                      <div key={closure.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div
+                        key={closure.id}
+                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                      >
                         <div>
                           <p className="font-medium text-gray-900">
                             {formatDate(closure.start_date)} - {formatDate(closure.end_date)}
                           </p>
-                          {closure.reason && <p className="text-sm text-gray-600">{closure.reason}</p>}
+                          {closure.reason && (
+                            <p className="text-sm text-gray-600">{closure.reason}</p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1073,4 +1191,3 @@ export default function OwnerDashboardPage() {
     </div>
   );
 }
-

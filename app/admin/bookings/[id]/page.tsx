@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { ROUTES } from '@/lib/utils/navigation';
@@ -11,17 +11,13 @@ export default function AdminBookingPage() {
   const router = useRouter();
   const params = useParams();
   const bookingId = params?.id as string;
-  
+
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadBooking();
-  }, [bookingId]);
-
-  const loadBooking = async () => {
+  const loadBooking = useCallback(async () => {
     try {
       if (!supabaseAuth) {
         setError('Supabase not configured');
@@ -29,7 +25,9 @@ export default function AdminBookingPage() {
         return;
       }
 
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_BOOKING(bookingId)));
         return;
@@ -37,7 +35,7 @@ export default function AdminBookingPage() {
 
       const res = await fetch(`/api/admin/bookings/${bookingId}`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
@@ -64,7 +62,11 @@ export default function AdminBookingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookingId, router]);
+
+  useEffect(() => {
+    loadBooking();
+  }, [loadBooking]);
 
   const handleAction = async (action: 'accept' | 'reject' | 'cancel', reason?: string) => {
     if (!booking) return;
@@ -76,7 +78,9 @@ export default function AdminBookingPage() {
         return;
       }
 
-      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
       if (!session) {
         router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_BOOKING(bookingId)));
         return;
@@ -98,7 +102,7 @@ export default function AdminBookingPage() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
@@ -160,10 +164,19 @@ export default function AdminBookingPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Customer Information</h2>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {booking.customer_name || 'N/A'}</p>
-                    <p><span className="font-medium">Phone:</span> {booking.customer_phone || 'N/A'}</p>
+                    <p>
+                      <span className="font-medium">Name:</span> {booking.customer_name || 'N/A'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Phone:</span> {booking.customer_phone || 'N/A'}
+                    </p>
                     {booking.customer_user_id && (
-                      <p><span className="font-medium">User ID:</span> <span className="text-xs font-mono">{booking.customer_user_id.substring(0, 8)}...</span></p>
+                      <p>
+                        <span className="font-medium">User ID:</span>{' '}
+                        <span className="text-xs font-mono">
+                          {booking.customer_user_id.substring(0, 8)}...
+                        </span>
+                      </p>
                     )}
                   </div>
                 </div>
@@ -171,34 +184,64 @@ export default function AdminBookingPage() {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Information</h2>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Business:</span> {booking.business?.salon_name || booking.business?.name || 'N/A'}</p>
-                    <p><span className="font-medium">Location:</span> {booking.business?.location || 'N/A'}</p>
-                    <p><span className="font-medium">Phone:</span> {booking.business?.whatsapp_number || 'N/A'}</p>
+                    <p>
+                      <span className="font-medium">Business:</span>{' '}
+                      {booking.business?.salon_name || booking.business?.name || 'N/A'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Location:</span>{' '}
+                      {booking.business?.location || 'N/A'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Phone:</span>{' '}
+                      {booking.business?.whatsapp_number || 'N/A'}
+                    </p>
                   </div>
                 </div>
 
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Booking Details</h2>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Booking ID:</span> <span className="text-xs font-mono">{booking.booking_id || booking.id.substring(0, 8)}</span></p>
-                    <p><span className="font-medium">Status:</span> 
-                      <span className={`ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                        booking.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        booking.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                    <p>
+                      <span className="font-medium">Booking ID:</span>{' '}
+                      <span className="text-xs font-mono">
+                        {booking.booking_id || booking.id.substring(0, 8)}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-medium">Status:</span>
+                      <span
+                        className={`ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          booking.status === 'confirmed'
+                            ? 'bg-green-100 text-green-800'
+                            : booking.status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : booking.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : booking.status === 'cancelled'
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {booking.status}
                       </span>
                     </p>
                     {booking.slot && (
                       <>
-                        <p><span className="font-medium">Date:</span> {new Date(booking.slot.date).toLocaleDateString()}</p>
-                        <p><span className="font-medium">Time:</span> {booking.slot.start_time} - {booking.slot.end_time}</p>
+                        <p>
+                          <span className="font-medium">Date:</span>{' '}
+                          {new Date(booking.slot.date).toLocaleDateString()}
+                        </p>
+                        <p>
+                          <span className="font-medium">Time:</span> {booking.slot.start_time} -{' '}
+                          {booking.slot.end_time}
+                        </p>
                       </>
                     )}
-                    <p><span className="font-medium">Created:</span> {new Date(booking.created_at).toLocaleString()}</p>
+                    <p>
+                      <span className="font-medium">Created:</span>{' '}
+                      {new Date(booking.created_at).toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
@@ -245,7 +288,8 @@ export default function AdminBookingPage() {
               {booking.cancellation_reason && (
                 <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-800">
-                    <span className="font-medium">Cancellation Reason:</span> {booking.cancellation_reason}
+                    <span className="font-medium">Cancellation Reason:</span>{' '}
+                    {booking.cancellation_reason}
                   </p>
                   {booking.cancelled_at && (
                     <p className="text-xs text-red-600 mt-1">

@@ -23,7 +23,11 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [success, setSuccess] = useState<{ bookingId: string; whatsappUrl: string; bookingStatusUrl?: string } | null>(null);
+  const [success, setSuccess] = useState<{
+    bookingId: string;
+    whatsappUrl: string;
+    bookingStatusUrl?: string;
+  } | null>(null);
   const [validatingSlot, setValidatingSlot] = useState(false);
   const [slotValidationError, setSlotValidationError] = useState<string | null>(null);
 
@@ -40,7 +44,7 @@ export default function BookingPage() {
         // Extract token from URL if present (for secure access)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        
+
         // Build URL with token if available
         let url = `${API_ROUTES.SALONS}/${bookingLink}`;
         if (token) {
@@ -52,7 +56,11 @@ export default function BookingPage() {
 
         if (!response.ok) {
           // If token is missing and it's a UUID, try to generate secure URL
-          if (response.status === 403 && !token && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingLink)) {
+          if (
+            response.status === 403 &&
+            !token &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingLink)
+          ) {
             try {
               const { getSecureSalonUrlClient } = await import('@/lib/utils/navigation');
               const secureUrl = await getSecureSalonUrlClient(bookingLink);
@@ -98,7 +106,9 @@ export default function BookingPage() {
             if (!updatedSlot || updatedSlot.status !== 'available') {
               setSelectedSlot(null);
               if (updatedSlot && updatedSlot.status !== 'available') {
-                setSlotValidationError('Your selected slot is no longer available. Please select another.');
+                setSlotValidationError(
+                  'Your selected slot is no longer available. Please select another.'
+                );
               }
             }
           }
@@ -109,7 +119,8 @@ export default function BookingPage() {
     };
 
     fetchSlots();
-  }, [salon, selectedDate]);
+    // selectedSlot omitted: we only refetch when salon/date changes; selectedSlot is used to clear if no longer available
+  }, [salon, selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -119,9 +130,7 @@ export default function BookingPage() {
   const fetchSlots = async () => {
     if (!salon || !selectedDate) return;
     try {
-      const response = await fetch(
-        `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
-      );
+      const response = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`);
       const result = await response.json();
 
       if (result.success && result.data) {
@@ -131,7 +140,9 @@ export default function BookingPage() {
           if (!updatedSlot || updatedSlot.status !== 'available') {
             setSelectedSlot(null);
             if (updatedSlot && updatedSlot.status !== 'available') {
-              setSlotValidationError('Your selected slot is no longer available. Please select another.');
+              setSlotValidationError(
+                'Your selected slot is no longer available. Please select another.'
+              );
             }
           }
         }
@@ -160,7 +171,9 @@ export default function BookingPage() {
           setSlotValidationError('This slot was just booked. Please select another.');
           setSelectedSlot(null);
           if (!salon) return;
-          const refreshResponse = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`);
+          const refreshResponse = await fetch(
+            `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
+          );
           const refreshResult = await refreshResponse.json();
           if (refreshResult.success) setSlots(refreshResult.data);
         }
@@ -207,7 +220,9 @@ export default function BookingPage() {
       const verifyResult = await verifyResponse.json();
       if (!verifyResult.success || verifyResult.data.status !== 'available') {
         setSelectedSlot(null);
-        const refreshResponse = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`);
+        const refreshResponse = await fetch(
+          `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
+        );
         const refreshResult = await refreshResponse.json();
         if (refreshResult.success) setSlots(refreshResult.data);
         throw new Error('This slot is no longer available. Please select another.');
@@ -238,7 +253,9 @@ export default function BookingPage() {
       if (!response.ok) {
         if (response.status === 409) {
           setSelectedSlot(null);
-          const refreshResponse = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`);
+          const refreshResponse = await fetch(
+            `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
+          );
           const refreshResult = await refreshResponse.json();
           if (refreshResult.success) setSlots(refreshResult.data);
         }
@@ -257,7 +274,9 @@ export default function BookingPage() {
       setError(errorMessage);
       if (errorMessage.includes('no longer available')) {
         setSelectedSlot(null);
-        const refreshResponse = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`);
+        const refreshResponse = await fetch(
+          `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
+        );
         const refreshResult = await refreshResponse.json();
         if (refreshResult.success) setSlots(refreshResult.data);
       }
@@ -292,8 +311,18 @@ export default function BookingPage() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Sent!</h2>
@@ -374,42 +403,41 @@ export default function BookingPage() {
                     No slots available for this date
                   </p>
                 ) : (
-                  slots
-                    .map((slot) => {
-                      const isSelected = selectedSlot?.id === slot.id;
-                      const isBooked = slot.status === 'booked';
-                      // Backend already filters past slots, so we just need to check booked status
-                      const isDisabled = isBooked;
+                  slots.map((slot) => {
+                    const isSelected = selectedSlot?.id === slot.id;
+                    const isBooked = slot.status === 'booked';
+                    // Backend already filters past slots, so we just need to check booked status
+                    const isDisabled = isBooked;
 
-                      return (
-                        <button
-                          key={slot.id}
-                          onClick={() => handleSlotSelect(slot)}
-                          disabled={isDisabled || validatingSlot || submitting}
-                          className={`px-4 py-2 rounded-lg border-2 transition-colors ${
-                            isDisabled
-                              ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : validatingSlot && isSelected
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => handleSlotSelect(slot)}
+                        disabled={isDisabled || validatingSlot || submitting}
+                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                          isDisabled
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : validatingSlot && isSelected
                               ? 'border-yellow-400 bg-yellow-50 text-yellow-800'
                               : isSelected
-                              ? 'border-black bg-gray-100 text-black'
-                              : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                          }`}
-                        >
-                          {validatingSlot && isSelected ? (
-                            <span className="flex items-center gap-2">
-                              <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></span>
-                              Verifying...
-                            </span>
-                          ) : (
-                            <>
-                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                              {isBooked && ' (Full)'}
-                            </>
-                          )}
-                        </button>
-                      );
-                    })
+                                ? 'border-black bg-gray-100 text-black'
+                                : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        {validatingSlot && isSelected ? (
+                          <span className="flex items-center gap-2">
+                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></span>
+                            Verifying...
+                          </span>
+                        ) : (
+                          <>
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                            {isBooked && ' (Full)'}
+                          </>
+                        )}
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -417,7 +445,10 @@ export default function BookingPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="customer_name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Your Name <span className="text-black">*</span>
               </label>
               <input
@@ -432,7 +463,10 @@ export default function BookingPage() {
             </div>
 
             <div>
-              <label htmlFor="customer_phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="customer_phone"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Phone Number <span className="text-black">*</span>
               </label>
               <input
@@ -472,4 +506,3 @@ export default function BookingPage() {
     </div>
   );
 }
-

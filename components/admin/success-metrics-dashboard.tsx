@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SuccessMetricsDashboardSkeleton from '@/components/admin/success-metrics-dashboard.skeleton';
 
 interface TechnicalMetrics {
@@ -36,11 +36,7 @@ export default function SuccessMetricsDashboard() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  useEffect(() => {
-    fetchMetrics();
-  }, [startDate, endDate]);
-
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     setLoading(true);
     try {
       // Get session token for authentication
@@ -84,7 +80,11 @@ export default function SuccessMetricsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics]);
 
   if (loading) {
     return <SuccessMetricsDashboardSkeleton />;
