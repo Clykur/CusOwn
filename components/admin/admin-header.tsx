@@ -13,6 +13,7 @@ export default function AdminHeader({ title, subtitle }: { title?: string; subti
     } catch (err) {
       console.error('Logout failed:', err);
       alert('Failed to logout. Please try again.');
+      console.error('Logout failed:', err);
     }
   };
 

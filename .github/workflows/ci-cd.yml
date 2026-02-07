@@ -1,8 +1,16 @@
 name: CI/CD Pipeline
 
+# Supports both: (1) direct push to main, (2) PR workflow. See docs/BRANCH_AND_PR_WORKFLOW.md
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'fix/**'
+      - 'chore/**'
+      - 'docs/**'
+      - 'release/**'
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -245,6 +253,7 @@ jobs:
 
   # ============================================================================
   # DEPLOYMENT: Production (after lint-and-test + build succeed)
+  # Only on push to main (not on pull_request). See docs/BRANCH_AND_PR_WORKFLOW.md
   # Skipped if Vercel secrets are missing. Add in repo: Settings → Secrets → Actions:
   #   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID (from Vercel dashboard / .vercel)
   # ============================================================================
@@ -273,9 +282,11 @@ jobs:
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
             echo "skip_deploy=true" >> $GITHUB_OUTPUT
-            echo "⚠️  Vercel secrets missing; skipping deploy."
+            echo "⚠️  Vercel secrets missing; deploy will be SKIPPED."
+            echo "Add VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID in repo: Settings → Secrets and variables → Actions"
           else
             echo "skip_deploy=false" >> $GITHUB_OUTPUT
+            echo "✅ Vercel secrets present; deploy will run."
           fi
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -314,6 +325,16 @@ jobs:
           echo "✅ Production deployment completed"
           echo "Production URL: https://cusown.clykur.com"
           echo "⚠️  IMPORTANT: Monitor application health after deployment"
+
+      - name: Deploy skipped (no Vercel secrets)
+        if: steps.vercel-check.outputs.skip_deploy == 'true'
+        run: |
+          echo "## ⚠️ Deployment was SKIPPED" >> $GITHUB_STEP_SUMMARY
+          echo "Vercel secrets are not configured. Code was not deployed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To enable deployment, add these in **Settings → Secrets and variables → Actions**:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`VERCEL_TOKEN\` (from Vercel: Account Settings → Tokens)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`VERCEL_ORG_ID\` and \`VERCEL_PROJECT_ID\` (from Vercel project settings or \`.vercel/project.json\`)" >> $GITHUB_STEP_SUMMARY
 
       - name: Create deployment audit log
         run: |

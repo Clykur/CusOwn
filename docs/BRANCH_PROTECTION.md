@@ -16,6 +16,8 @@ This document provides step-by-step instructions for configuring branch protecti
 
 **Branch name pattern:** `main`
 
+**See also:** [BRANCH_AND_PR_WORKFLOW.md](./BRANCH_AND_PR_WORKFLOW.md) for branch naming and PR rules.
+
 **Enable the following settings:**
 
 #### ✅ Protect matching branches
@@ -28,10 +30,10 @@ This document provides step-by-step instructions for configuring branch protecti
 - [x] **Require status checks to pass before merging**
   - [x] Require branches to be up to date before merging
   - [x] Status checks that are required:
-    - `security-scan / security-scan`
-    - `lint-and-test / lint-and-test`
-    - `build / build`
-    - `deploy-staging / deploy-staging`
+    - `security-scan / Security Scan`
+    - `lint-and-test / Lint and Test`
+    - `build / Build`
+  - **Note:** `Deploy to Production` runs only after merge (on push to main). Do not add it as a required status check for merging PRs.
 
 - [x] **Require conversation resolution before merging**
 
@@ -66,9 +68,9 @@ This document provides step-by-step instructions for configuring branch protecti
 - [x] **Require a pull request before merging** (optional)
 - [x] **Require status checks to pass before merging**
   - Required checks:
-    - `security-scan / security-scan`
-    - `lint-and-test / lint-and-test`
-    - `build / build`
+    - `security-scan / Security Scan`
+    - `lint-and-test / Lint and Test`
+    - `build / Build`
 - [ ] **Require signed commits** (optional)
 - [x] **Include administrators**
 

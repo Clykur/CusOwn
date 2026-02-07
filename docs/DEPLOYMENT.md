@@ -1,43 +1,63 @@
 # Deployment Documentation
 
 ## Overview
+
 This document outlines deployment procedures, strategies, and operational runbooks for CusOwn.
 
 ## Deployment Strategy
 
-### Blue-Green Deployment
-- **Staging Environment**: `develop` branch → Vercel preview
-- **Production Environment**: `main` branch → Vercel production
-- **Zero Downtime**: Vercel handles blue-green deployments automatically
-- **Rollback**: Instant rollback via Vercel dashboard
+### Deploy only via CI/CD (main → CI/CD → Vercel)
+
+We do **not** let Vercel deploy directly on Git push. Flow:
+
+1. **Code lands on `main`** (push or merge from PR).
+2. **GitHub Actions** runs: Security Scan → Lint & Test → Build.
+3. **If CI passes**, the workflow runs **Deploy to Production**, which deploys to Vercel via the API.
+4. **Vercel** receives the deploy only from CI/CD, not from its own Git integration.
+
+So production always reflects code that passed CI.
+
+### How to enforce “no direct Vercel deploy”
+
+In **Vercel Dashboard** → your project → **Settings** → **Git**:
+
+1. Find **Ignore Build Step**.
+2. Set the command to:
+   ```bash
+   bash scripts/vercel-ignore-build.sh
+   ```
+   (Or use the script path relative to repo root.)
+
+That script exits with code `1`, so Vercel **skips** every build triggered by Git (push to `main`, etc.). Builds triggered by the **Vercel API** (our GitHub Actions deploy step) are not affected and still deploy.
+
+**Optional:** If you prefer not to use the script, you can **disconnect the Git repository** in Vercel. Then Vercel will not react to pushes; only our workflow (using `VERCEL_TOKEN`) will deploy.
 
 ### CI/CD Pipeline
 
-**Triggers:**
-- Push to `develop` → Deploy to staging
-- Push to `main` → Deploy to production
-- Pull requests → Build and test only
+**Triggers:** See [BRANCH_AND_PR_WORKFLOW.md](./BRANCH_AND_PR_WORKFLOW.md).
 
-**Pipeline Steps:**
-1. Lint and type check
-2. Build application
-3. Security audit
-4. Deploy to environment
+- Push to `main` → Full CI + **Deploy to Production** (Vercel).
+- Push to `develop` or feature branches, or any **Pull Request** → CI only (lint, test, build). **No deploy.**
+
+**Pipeline steps:** Security Scan → Lint & Test → Build → (on `main` only) Deploy to Production.
 
 ## Environment Setup
 
 ### Required Environment Variables
 
 **Supabase:**
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 **Application:**
+
 - `NEXT_PUBLIC_APP_URL`
 - `CRON_SECRET`
 
 **Optional:**
+
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `EMAIL_SERVICE_URL`
 - `EMAIL_API_KEY`
@@ -47,15 +67,16 @@ This document outlines deployment procedures, strategies, and operational runboo
 
 ### Vercel Configuration
 
-1. Connect GitHub repository
-2. Configure environment variables in Vercel dashboard
-3. Set build command: `npm run build`
-4. Set output directory: `.next`
-5. Enable automatic deployments
+1. Connect GitHub repository (so Vercel has the code; deploys are controlled by **Ignore Build Step** above).
+2. Configure environment variables in Vercel dashboard.
+3. Set build command: `npm run build`.
+4. Set output directory: `.next`.
+5. Set **Ignore Build Step** to `bash scripts/vercel-ignore-build.sh` so only CI/CD deploys (see above).
 
 ## Database Migrations
 
 ### Migration Strategy
+
 1. **Test Locally**: Run migrations in local Supabase instance
 2. **Staging**: Apply to staging database first
 3. **Production**: Apply to production after staging verification
@@ -64,18 +85,21 @@ This document outlines deployment procedures, strategies, and operational runboo
 ### Running Migrations
 
 **Via Supabase Dashboard:**
+
 1. Go to SQL Editor
 2. Copy migration SQL
 3. Execute in order
 4. Verify results
 
 **Migration Order:**
+
 1. `schema.sql` (base schema)
 2. `migration_*.sql` (in chronological order)
 
 ## Backup and Recovery
 
 ### Database Backups
+
 - **Automatic**: Supabase provides daily backups
 - **Manual**: Export via Supabase dashboard
 - **Retention**: 7 days (Supabase free tier)
@@ -83,12 +107,14 @@ This document outlines deployment procedures, strategies, and operational runboo
 ### Recovery Procedures
 
 **Database Restore:**
+
 1. Access Supabase dashboard
 2. Go to Database → Backups
 3. Select backup point
 4. Restore to new database or overwrite
 
 **Application Rollback:**
+
 1. Access Vercel dashboard
 2. Go to Deployments
 3. Select previous deployment
@@ -97,11 +123,13 @@ This document outlines deployment procedures, strategies, and operational runboo
 ## Monitoring
 
 ### Health Checks
+
 - **Endpoint**: `/api/health`
 - **Frequency**: Every 5 minutes
 - **Alerts**: Configure in monitoring service
 
 ### Metrics
+
 - **Endpoint**: `/api/metrics` (admin only)
 - **Metrics**: Request counts, timings, errors
 - **Storage**: PostgreSQL metrics tables
@@ -111,6 +139,7 @@ This document outlines deployment procedures, strategies, and operational runboo
 ### Common Issues
 
 **Issue: High Error Rate**
+
 1. Check `/api/health` endpoint
 2. Review error logs in Vercel
 3. Check Supabase status
@@ -118,18 +147,21 @@ This document outlines deployment procedures, strategies, and operational runboo
 5. Rollback if needed
 
 **Issue: Database Connection Errors**
+
 1. Verify Supabase credentials
 2. Check Supabase status page
 3. Verify network connectivity
 4. Check rate limits
 
 **Issue: Slow Response Times**
+
 1. Check database query performance
 2. Review API metrics
 3. Check for N+1 queries
 4. Review caching strategy
 
 **Issue: Authentication Failures**
+
 1. Verify Supabase auth configuration
 2. Check JWT token expiration
 3. Review auth callback URLs
@@ -138,28 +170,33 @@ This document outlines deployment procedures, strategies, and operational runboo
 ## Disaster Recovery
 
 ### Recovery Time Objective (RTO)
+
 - **Target**: 1 hour
 - **Maximum**: 4 hours
 
 ### Recovery Point Objective (RPO)
+
 - **Target**: 1 hour
 - **Maximum**: 24 hours
 
 ### Recovery Procedures
 
 **Complete System Failure:**
+
 1. Restore database from backup
 2. Redeploy application from last known good version
 3. Verify all services operational
 4. Notify stakeholders
 
 **Data Corruption:**
+
 1. Identify corruption point
 2. Restore from backup before corruption
 3. Replay transactions if possible
 4. Verify data integrity
 
 **Security Breach:**
+
 1. Isolate affected systems
 2. Assess breach scope
 3. Rotate all secrets
