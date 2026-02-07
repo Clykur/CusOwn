@@ -150,7 +150,7 @@ jobs:
 
       - name: Type check
         run: |
-          npx tsc --noEmit || {
+          npm run typecheck || {
             echo "❌ ERROR: Type checking failed"
             exit 1
           }
@@ -218,14 +218,15 @@ jobs:
           echo "Building application..."
           npm run build || {
             echo "❌ ERROR: Build failed"
-            echo "ℹ️  Note: If build failed due to missing env vars, set them in GitHub Secrets"
+            echo "ℹ️  Set NEXT_PUBLIC_SUPABASE_*, SUPABASE_SERVICE_ROLE_KEY in repo Secrets if needed."
             exit 1
           }
           echo "✅ Build successful"
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Use secrets when set; otherwise placeholders so build can complete (real values in Vercel)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://cusown.clykur.com' }}
 
       - name: Check for secrets in build output
