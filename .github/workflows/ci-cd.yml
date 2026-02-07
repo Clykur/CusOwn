@@ -12,8 +12,8 @@ on:
         required: true
         type: choice
         options:
-          - staging
           - production
+        default: production
 
 # Prevent concurrent runs on the same branch
 concurrency:
@@ -244,62 +244,17 @@ jobs:
         continue-on-error: true
 
   # ============================================================================
-  # DEPLOYMENT: Staging (only after lint-and-test + build succeed)
+  # DEPLOYMENT: Production (after lint-and-test + build succeed)
   # Skipped if Vercel secrets are missing. Add in repo: Settings → Secrets → Actions:
   #   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID (from Vercel dashboard / .vercel)
-  # ============================================================================
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, build]
-    if: |
-      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main') &&
-      github.event_name != 'pull_request' &&
-      secrets.VERCEL_TOKEN != '' &&
-      secrets.VERCEL_ORG_ID != '' &&
-      secrets.VERCEL_PROJECT_ID != ''
-    environment:
-      name: staging
-      url: https://cusown-staging.vercel.app
-    permissions:
-      contents: read
-      deployments: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Deploy to Vercel (Staging)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod=false'
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-          github-comment: true
-          github-deployment: true
-
-      - name: Deployment verification
-        run: |
-          echo "✅ Staging deployment completed"
-          echo "Deployment URL: https://cusown-staging.vercel.app"
-
-  # ============================================================================
-  # DEPLOYMENT: Production (Manual approval required)
   # ============================================================================
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [lint-and-test, build, deploy-staging]
+    needs: [lint-and-test, build]
     if: |
       github.ref == 'refs/heads/main' &&
-      github.event_name != 'pull_request' &&
-      secrets.VERCEL_TOKEN != '' &&
-      secrets.VERCEL_ORG_ID != '' &&
-      secrets.VERCEL_PROJECT_ID != ''
+      github.event_name != 'pull_request'
     environment:
       name: production
       url: https://cusown.clykur.com
@@ -313,6 +268,20 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Check Vercel secrets
+        id: vercel-check
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "skip_deploy=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Vercel secrets missing; skipping deploy."
+          else
+            echo "skip_deploy=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
       - name: Verify production deployment conditions
         run: |
           if [ "${{ github.ref }}" != "refs/heads/main" ]; then
@@ -320,26 +289,15 @@ jobs:
             echo "⚠️  For production safety, deploy only from main branch"
           fi
           if [ "${{ needs.lint-and-test.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.deploy-staging.result }}" != "success" ]; then
+             [ "${{ needs.build.result }}" != "success" ]; then
             echo "⚠️  WARNING: Some prerequisite checks did not pass"
             echo "⚠️  For production safety, all checks should pass"
           fi
           echo "✅ Production deployment conditions checked"
         continue-on-error: true
 
-      - name: Verify Vercel production secrets
-        run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ] || \
-             [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || \
-             [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "❌ ERROR: Missing required Vercel production secrets"
-            exit 1
-          fi
-          echo "✅ Vercel production secrets verified"
-          echo "ℹ️  Production environment variables should be configured in Vercel dashboard"
-
       - name: Deploy to Vercel (Production)
+        if: steps.vercel-check.outputs.skip_deploy != 'true'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -351,6 +309,7 @@ jobs:
           github-deployment: true
 
       - name: Production deployment verification
+        if: steps.vercel-check.outputs.skip_deploy != 'true'
         run: |
           echo "✅ Production deployment completed"
           echo "Production URL: https://cusown.clykur.com"
