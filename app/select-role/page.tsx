@@ -17,6 +17,7 @@ function SelectRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlRole = searchParams.get('role') as 'owner' | 'customer' | null;
+  const [currentStep, setCurrentStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<'owner' | 'customer' | null>(urlRole);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -44,82 +45,58 @@ function SelectRoleContent() {
         data: { session },
       } = await supabaseAuth.auth.getSession();
 
-      if (session?.user) {
-        setUser(session.user);
+      // Not logged in → stay on role selection
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
 
-        // Check if user is admin - redirect directly to admin dashboard
-        const adminCheck = await isAdmin(session.user.id);
-        if (adminCheck) {
-          router.push(ROUTES.ADMIN_DASHBOARD);
+      setUser(session.user);
+
+      // Admin → admin dashboard
+      const adminCheck = await isAdmin(session.user.id);
+      if (adminCheck) {
+        router.replace(ROUTES.ADMIN_DASHBOARD);
+        return;
+      }
+
+      try {
+        const { getUserState } = await import('@/lib/utils/user-state');
+        const state = await getUserState(session.user.id);
+
+        const isOwner = state.businessCount >= 1;
+
+        /**
+         * 🔴 Existing owner (has at least 1 business)
+         * → go straight to owner dashboard
+         */
+        if (!urlRole && isOwner) {
+          router.replace(ROUTES.OWNER_DASHBOARD_BASE);
           return;
         }
 
-        // If user has a profile and role, check if they're trying to switch roles
-        try {
-          const { getUserProfile } = await import('@/lib/supabase/auth');
-          const profile = await getUserProfile(session.user.id);
-          if (profile) {
-            const userType = (profile as any).user_type;
-
-            // If user already has 'both' role, always allow role selection
-            if (userType === 'both') {
-              if (urlRole) setSelectedRole(urlRole);
-              setLoading(false);
-              return;
-            }
-
-            // If user is trying to switch roles (has one role, wants the other), allow it
-            if (urlRole === 'owner' && userType === 'customer') {
-              setSelectedRole('owner');
-              setLoading(false);
-              return;
-            }
-
-            if (urlRole === 'customer' && userType === 'owner') {
-              setSelectedRole('customer');
-              setLoading(false);
-              return;
-            }
-
-            // If no role in URL and user already has a single role, redirect them
-            if (!urlRole) {
-              const { getUserState } = await import('@/lib/utils/user-state');
-              const stateResult = await getUserState(session.user.id);
-
-              if (
-                stateResult.redirectUrl &&
-                stateResult.state !== 'S5' &&
-                stateResult.state !== 'S6'
-              ) {
-                router.push(stateResult.redirectUrl);
-                return;
-              }
-
-              if (userType === 'owner') {
-                router.push(
-                  stateResult.businessCount >= 1 ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.SETUP
-                );
-                return;
-              }
-
-              // Customer stays and can switch roles
-              setLoading(false);
-              return;
-            }
-
-            // URL has a role parameter - allow selection even if user has a different role
-            setSelectedRole(urlRole);
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // Continue to role selection if profile check fails
+        /**
+         * 🟢 Logged-in user with NO business
+         * → treat as customer
+         */
+        if (!urlRole && !isOwner) {
+          router.replace(ROUTES.CUSTOMER_DASHBOARD);
+          return;
         }
+
+        /**
+         * 🔁 Role switch via URL (?role=owner|customer)
+         */
+        if (urlRole) {
+          setSelectedRole(urlRole);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('User state check failed:', err);
+        setLoading(false);
       }
-
-      setLoading(false);
     };
-
     run().catch(() => setLoading(false));
   }, [router, urlRole]);
 
@@ -127,84 +104,86 @@ function SelectRoleContent() {
     if (!selectedRole || processing) return;
 
     setProcessing(true);
+    setCurrentStep(2);
 
-    if (user) {
-      try {
-        const {
-          data: { session },
-        } = await supabaseAuth!.auth.getSession();
-        if (!session) {
-          router.push(ROUTES.AUTH_LOGIN('/auth/callback') + `&role=${selectedRole}`);
-          return;
-        }
-
-        const csrfToken = await getCSRFToken();
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        };
-        if (csrfToken) {
-          headers['x-csrf-token'] = csrfToken;
-        }
-        const response = await fetch('/api/user/update-role', {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify({ role: selectedRole }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          // Role update successful - use canonical user state to determine redirect
-          const { getUserState } = await import('@/lib/utils/user-state');
-          const stateResult = await getUserState(user.id);
-
-          if (stateResult.redirectUrl) {
-            router.push(stateResult.redirectUrl);
-          } else {
-            // Fallback based on selected role
-            if (selectedRole === 'owner') {
-              router.push(ROUTES.SETUP); // Will redirect if business exists
-            } else {
-              router.push(ROUTES.CUSTOMER_DASHBOARD);
-            }
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Role update failed:', errorData);
-
-          // Even if API fails, check current state and redirect
-          const { getUserState } = await import('@/lib/utils/user-state');
-          const stateResult = await getUserState(user.id);
-
-          if (stateResult.redirectUrl) {
-            router.push(stateResult.redirectUrl);
-          } else {
-            // Fallback
-            if (selectedRole === 'owner') {
-              router.push(ROUTES.SETUP);
-            } else {
-              router.push(ROUTES.CUSTOMER_DASHBOARD);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Role update error:', error);
-        if (selectedRole === 'owner') {
-          router.push(ROUTES.SETUP);
-        } else {
-          router.push(ROUTES.CUSTOMER_DASHBOARD);
-        }
-      } finally {
-        setProcessing(false);
-      }
-    } else {
+    // Not logged in → login first
+    if (!user) {
       router.push(ROUTES.AUTH_LOGIN('/auth/callback') + `&role=${selectedRole}`);
+      return;
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabaseAuth!.auth.getSession();
+
+      if (!session) return;
+
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      };
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+
+      // Update role (non-blocking for redirect logic)
+      await fetch('/api/user/update-role', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ role: selectedRole }),
+      });
+
+      // 🔥 USE BUSINESS COUNT — NOT user_type
+      const { getUserState } = await import('@/lib/utils/user-state');
+      const state = await getUserState(user.id, { skipCache: true });
+
+      const hasBusiness = state.businessCount >= 1;
+
+      // ✅ CUSTOMER
+      if (selectedRole === 'customer') {
+        router.replace(ROUTES.CUSTOMER_DASHBOARD);
+        return;
+      }
+
+      // ✅ OWNER
+      if (selectedRole === 'owner') {
+        if (hasBusiness) {
+          // Existing owner → dashboard
+          router.replace(ROUTES.OWNER_DASHBOARD_BASE);
+        } else {
+          // First-time owner → setup
+          router.replace(ROUTES.SETUP);
+        }
+        return;
+      }
+    } catch (error) {
+      console.error('Role update error:', error);
+
+      // Fallback using same rules
+      try {
+        const { getUserState } = await import('@/lib/utils/user-state');
+        const state = await getUserState(user.id, { skipCache: true });
+
+        router.replace(
+          selectedRole === 'customer'
+            ? ROUTES.CUSTOMER_DASHBOARD
+            : state.businessCount >= 1
+              ? ROUTES.OWNER_DASHBOARD_BASE
+              : ROUTES.SETUP
+        );
+      } catch {
+        router.replace(ROUTES.HOME);
+      }
+    } finally {
+      setProcessing(false);
     }
   };
 
   const steps = ['Choose Role', user ? 'Complete Setup' : 'Sign In', 'Get Started'];
-  const currentStep = user ? (selectedRole ? 2 : 1) : selectedRole ? 2 : 1;
+  //const currentStep = user ? (selectedRole ? 2 : 1) : selectedRole ? 2 : 1;
 
   const handleRoleSelect = (role: 'owner' | 'customer') => {
     // Always allow role selection - update state immediately
@@ -282,7 +261,7 @@ function SelectRoleContent() {
               'Book appointments instantly',
               'Get WhatsApp confirmations',
               'View all your bookings',
-              'Reschedule or cancel easily',
+              'Reschedule or fcancel easily',
             ]}
             selected={selectedRole === 'customer'}
             onClick={() => handleRoleSelect('customer')}

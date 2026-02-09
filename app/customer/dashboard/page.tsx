@@ -18,7 +18,6 @@ export default function CustomerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [slotsMap, setSlotsMap] = useState<Record<string, any[]>>({});
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [showDebug, setShowDebug] = useState(false);
   const [secureBookingUrls, setSecureBookingUrls] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
@@ -220,13 +219,6 @@ export default function CustomerDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto px-4 py-6 sm:py-8 sm:px-6 lg:px-8 max-w-6xl">
-        <Breadcrumb
-          items={[
-            { label: 'Home', href: ROUTES.HOME },
-            { label: 'My Bookings', href: ROUTES.CUSTOMER_DASHBOARD },
-          ]}
-        />
-
         {loading ? (
           <div aria-busy="true">
             {/* Header Skeleton */}
@@ -262,20 +254,13 @@ export default function CustomerDashboardPage() {
             <div className="mb-6 sm:mb-8">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
                 <div>
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2">
-                    My Bookings
-                  </h1>
-                  <p className="text-gray-600 text-base sm:text-lg">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">My Bookings</h1>
+
+                  <p className="text-gray-600 text-sm sm:text-base">
                     View and manage your appointments
                   </p>
                 </div>
                 <div className="flex gap-2 sm:gap-3">
-                  <button
-                    onClick={() => setShowDebug(!showDebug)}
-                    className="hidden sm:inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-all text-sm"
-                  >
-                    {showDebug ? 'Hide' : 'Show'} Debug
-                  </button>
                   <Link
                     href={ROUTES.CATEGORIES}
                     className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-black text-white font-semibold rounded-xl hover:bg-gray-900 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base"
@@ -295,34 +280,8 @@ export default function CustomerDashboardPage() {
               </div>
             </div>
 
-            {/* Debug Panel */}
-            {showDebug && debugInfo && (
-              <div className="mb-8 bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-yellow-900 mb-4">Debug Information</h3>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <strong>Bookings Count:</strong> {debugInfo.count}
-                  </div>
-                  <div>
-                    <strong>User ID:</strong> {user?.id?.substring(0, 20) + '...'}
-                  </div>
-                  <div>
-                    <strong>User Email:</strong> {user?.email || 'N/A'}
-                  </div>
-                  <details className="mt-4">
-                    <summary className="cursor-pointer font-semibold text-yellow-900">
-                      View Booking Details
-                    </summary>
-                    <pre className="mt-2 p-4 bg-white rounded border overflow-auto max-h-96 text-xs">
-                      {JSON.stringify(debugInfo, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              </div>
-            )}
-
             {/* Become Owner CTA */}
-            <div className="mb-6 sm:mb-8 bg-gradient-to-r from-black to-gray-800 rounded-2xl p-5 sm:p-6 md:p-8 shadow-lg">
+            <div className="mb-6 bg-gradient-to-r from-black to-gray-800 rounded-xl p-4 sm:p-5 shadow-lg">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3 sm:gap-4">
                   <div className="bg-white/10 rounded-full p-2.5 sm:p-3 flex-shrink-0">
@@ -341,11 +300,12 @@ export default function CustomerDashboardPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1 sm:mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
                       Own a Business?
                     </h3>
-                    <p className="text-gray-200 text-xs sm:text-sm md:text-base">
-                      Create your booking page and start accepting appointments from customers.
+
+                    <p className="text-gray-300 text-xs sm:text-sm">
+                      Create a booking page and accept appointments.
                     </p>
                   </div>
                 </div>
@@ -451,7 +411,7 @@ export default function CustomerDashboardPage() {
             )}
 
             {bookings.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-xl p-12 md:p-16 text-center">
+              <div className="bg-white rounded-2xl shadow-xl px-6 py-10 sm:px-8 sm:py-12 md:px-12 md:py-16 text-center">
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
                     className="w-12 h-12 text-gray-400"
@@ -467,16 +427,18 @@ export default function CustomerDashboardPage() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">No Bookings Yet</h2>
-                <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                  No Bookings Yet
+                </h2>
+                <p className="text-gray-600 text-sm sm:text-base">
                   Start booking appointments to see them here. Find your favorite business and book
                   a slot!
                 </p>
                 <Link
                   href={ROUTES.CATEGORIES}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-900 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-4 px-5 py-2.5 bg-black text-white font-medium rounded-lg hover:bg-gray-900 transition-all shadow-md hover:shadow-lg"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
