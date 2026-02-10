@@ -13,6 +13,8 @@ import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import { SetupSkeleton } from '@/components/ui/skeleton';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 
+import { useSearchParams } from 'next/navigation';
+
 export default function SetupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -35,11 +37,14 @@ export default function SetupPage() {
     qrCode?: string;
   } | null>(null);
 
+  const searchParams = useSearchParams();
+  const fromOnboarding = searchParams.get('from') === 'onboarding';
+  const [showOnboardingProgress, setShowOnboardingProgress] = useState(false);
+
   useEffect(() => {
     // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
   }, []);
-
   const checkAuthAndState = useCallback(async () => {
     if (!supabaseAuth) {
       setCheckingAuth(false);
@@ -49,43 +54,54 @@ export default function SetupPage() {
     const {
       data: { session },
     } = await supabaseAuth.auth.getSession();
+
     setUser(session?.user ?? null);
 
-    // If user is logged in, check if they already have a business
-    if (session?.user) {
-      const { getUserState } = await import('@/lib/utils/user-state');
-      const stateResult = await getUserState(session.user.id);
-
-      // CRITICAL: If user has business, redirect to owner dashboard
-      // Setup page should only be accessible if user has no business
-      if (stateResult.businessCount >= 1) {
-        // User already has business - redirect to dashboard
-        router.replace(ROUTES.OWNER_DASHBOARD_BASE);
-        return;
-      }
-
-      // If user cannot access setup (e.g., customer-only), allow them to stay
-      // They might want to create a business to become an owner
-      if (!stateResult.canAccessSetup && stateResult.userType === 'customer') {
-        // Customer can access setup to create business (will become 'both')
-        // Allow them to continue - no action needed
-      } else if (
-        !stateResult.canAccessSetup &&
-        stateResult.redirectUrl &&
-        stateResult.redirectUrl !== ROUTES.SETUP
-      ) {
-        // For other cases, redirect only if not already on setup page
-        // This prevents redirect loops when already on setup
-        router.replace(stateResult.redirectUrl);
-        return;
-      }
-
-      // If redirectUrl is setup and we're already on setup, do nothing
-      // This is the correct state for owners with no business - stay on setup page
+    // 🔹 Not logged in → onboarding flow
+    if (!session?.user) {
+      setShowOnboardingProgress(true);
+      setCheckingAuth(false);
+      return;
     }
 
+    const { getUserState } = await import('@/lib/utils/user-state');
+    const stateResult = await getUserState(session.user.id);
+
+    const isOwner = stateResult.businessCount >= 1;
+
+    /**
+     * RULES:
+     * - Owners ARE allowed to access /setup to add more businesses
+     * - Onboarding progress bar is shown ONLY for first-time flow
+     */
+
+    if (stateResult.businessCount === 0 && fromOnboarding) {
+      // First business via onboarding
+      setShowOnboardingProgress(true);
+      setCheckingAuth(false);
+      return;
+    }
+
+    // Logged-in owner adding another business
+    setShowOnboardingProgress(false);
     setCheckingAuth(false);
-  }, [router]);
+    return;
+
+    /**
+     * ✅ First-time business creation via onboarding
+     */
+    if (stateResult.businessCount === 0 && fromOnboarding) {
+      setShowOnboardingProgress(true);
+      setCheckingAuth(false);
+      return;
+    }
+
+    /**
+     * ✅ Adding business from dashboard (no onboarding)
+     */
+    setShowOnboardingProgress(false);
+    setCheckingAuth(false);
+  }, [fromOnboarding]);
 
   useEffect(() => {
     checkAuthAndState();
@@ -297,11 +313,13 @@ export default function SetupPage() {
       <div className="min-h-screen bg-white flex">
         <div className="flex-1 lg:ml-64">
           <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-            <OnboardingProgress
-              currentStep={3}
-              totalSteps={3}
-              steps={['Choose Role', 'Sign In', 'Create Business']}
-            />
+            {showOnboardingProgress && (
+              <OnboardingProgress
+                currentStep={3}
+                totalSteps={3}
+                steps={['Choose Role', 'Sign In', 'Create Business']}
+              />
+            )}
             <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mt-4">
               <div className="text-center mb-6 md:mb-8">
                 <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
@@ -524,11 +542,14 @@ export default function SetupPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
         <div className="max-w-2xl mx-auto">
-          <OnboardingProgress
-            currentStep={2}
-            totalSteps={3}
-            steps={['Choose Role', 'Sign In', 'Create Business']}
-          />
+          {showOnboardingProgress && (
+            <OnboardingProgress
+              currentStep={3}
+              totalSteps={3}
+              steps={['Choose Role', 'Sign In', 'Create Business']}
+            />
+          )}
+
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 mt-6 text-center">
             <div className="mb-8 flex justify-center">
               <div className="bg-black rounded-full p-6">
@@ -679,11 +700,13 @@ export default function SetupPage() {
               <div className="h-1 w-12 bg-black rounded-full"></div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create Business</h1>
             </div>
-            <OnboardingProgress
-              currentStep={3}
-              totalSteps={3}
-              steps={['Choose Role', 'Sign In', 'Create Business']}
-            />
+            {showOnboardingProgress && (
+              <OnboardingProgress
+                currentStep={3}
+                totalSteps={3}
+                steps={['Choose Role', 'Sign In', 'Create Business']}
+              />
+            )}
           </div>
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
             <div className="mb-6 text-center">

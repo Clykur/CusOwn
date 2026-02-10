@@ -43,7 +43,11 @@ export default function UniversalSidebar() {
       // For other pages (profile, setup, categories, salon, booking, etc.), determine based on user role
       if (!supabaseAuth) {
         // For public browsing pages, show customer sidebar
-        if (pathname?.startsWith('/categories') || pathname?.startsWith('/salon/') || pathname?.startsWith('/booking/')) {
+        if (
+          pathname?.startsWith('/categories') ||
+          pathname?.startsWith('/salon/') ||
+          pathname?.startsWith('/booking/')
+        ) {
           setSidebarType('customer');
         } else {
           setSidebarType(null);
@@ -53,10 +57,16 @@ export default function UniversalSidebar() {
       }
 
       try {
-        const { data: { session } } = await supabaseAuth.auth.getSession();
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
         if (!session?.user) {
           // For public browsing pages, show customer sidebar
-          if (pathname?.startsWith('/categories') || pathname?.startsWith('/salon/') || pathname?.startsWith('/booking/')) {
+          if (
+            pathname?.startsWith('/categories') ||
+            pathname?.startsWith('/salon/') ||
+            pathname?.startsWith('/booking/')
+          ) {
             setSidebarType('customer');
           } else {
             setSidebarType(null);
@@ -66,7 +76,7 @@ export default function UniversalSidebar() {
         }
 
         const stateResult = await getUserState(session.user.id);
-        
+
         // Determine sidebar based on user type and page
         if (stateResult.userType === 'admin') {
           setSidebarType('admin');
@@ -82,7 +92,11 @@ export default function UniversalSidebar() {
           setSidebarType('customer');
         } else {
           // No profile yet - show customer sidebar for browsing
-          if (pathname?.startsWith('/categories') || pathname?.startsWith('/salon/') || pathname?.startsWith('/booking/')) {
+          if (
+            pathname?.startsWith('/categories') ||
+            pathname?.startsWith('/salon/') ||
+            pathname?.startsWith('/booking/')
+          ) {
             setSidebarType('customer');
           } else {
             setSidebarType(null);
@@ -91,7 +105,11 @@ export default function UniversalSidebar() {
       } catch (err) {
         console.error('[UniversalSidebar] Error determining sidebar:', err);
         // Fallback: show customer sidebar for browsing pages
-        if (pathname?.startsWith('/categories') || pathname?.startsWith('/salon/') || pathname?.startsWith('/booking/')) {
+        if (
+          pathname?.startsWith('/categories') ||
+          pathname?.startsWith('/salon/') ||
+          pathname?.startsWith('/booking/')
+        ) {
           setSidebarType('customer');
         } else {
           setSidebarType(null);
@@ -120,7 +138,7 @@ export default function UniversalSidebar() {
     case 'admin':
       return <AdminSidebar />;
     case 'owner':
-      return <OwnerSidebar bookingLink={bookingLink} />;
+      return <OwnerSidebar />;
     case 'customer':
       return <CustomerSidebar />;
     default:
