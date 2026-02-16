@@ -257,10 +257,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex">
-      <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
+    <div className="min-h-screen bg-white flex overflow-x-hidden">
+      <div className="flex-1 w-full lg:ml-64">
+        <div className="w-full max-w-full lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="mb-8 hidden md:block">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
             <p className="text-gray-600">Manage your account information and preferences</p>
           </div>
@@ -421,7 +421,7 @@ export default function ProfilePage() {
                   + Add Business
                 </Link>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -442,19 +442,19 @@ export default function ProfilePage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {profileData.businesses.map((business) => (
                       <tr key={business.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
                             {business.salon_name}
                           </div>
                           <div className="text-sm text-gray-500">{business.booking_link}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm text-gray-500">
                           {business.location || 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm text-gray-500">
                           {formatDate(business.created_at)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm font-medium">
                           <Link
                             href={
                               secureBusinessUrls.get(business.booking_link) ||

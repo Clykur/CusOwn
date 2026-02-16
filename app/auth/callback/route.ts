@@ -101,7 +101,15 @@ export async function GET(request: NextRequest) {
     // ignore
   }
 
-  // Fallback redirects
+  // Fallback redirects based on canonical profile user_type
+  if (profile?.user_type === 'owner' || profile?.user_type === 'both') {
+    return NextResponse.redirect(new URL(ROUTES.OWNER_DASHBOARD_BASE, baseUrl));
+  }
+
+  if (profile?.user_type === 'admin') {
+    return NextResponse.redirect(new URL(ROUTES.ADMIN_DASHBOARD, baseUrl));
+  }
+
   if (selectedRole === 'owner') return NextResponse.redirect(new URL(ROUTES.SETUP, baseUrl));
   return NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, baseUrl));
 }

@@ -384,15 +384,24 @@ export default function OwnerDashboardPage() {
 
   const handleAccept = async (bookingId: string) => {
     if (processingBookingId) return;
+    if (!confirm('Are you sure you want to accept this booking?')) return;
     setProcessingBookingId(bookingId);
     setActionError(null);
     setActionSuccess(null);
     try {
       const csrfToken = await getCSRFToken();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
       const headers: Record<string, string> = {};
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/bookings/${bookingId}/accept`, {
         method: 'POST',
         headers,
@@ -404,15 +413,21 @@ export default function OwnerDashboardPage() {
           prev.map((b) => (b.id === bookingId ? { ...b, status: 'confirmed' } : b))
         );
         setActionSuccess('Booking accepted successfully');
-        setTimeout(() => setActionSuccess(null), 3000);
+        setTimeout(() => {
+          setActionSuccess(null);
+          setProcessingBookingId(null);
+        }, 2000);
       } else {
-        setActionError(result.error || 'Failed to accept booking');
+        const errorMsg = result.error || result.message || 'Failed to accept booking';
+        setActionError(errorMsg);
         clearCSRFToken();
+        setProcessingBookingId(null);
       }
     } catch (err) {
-      setActionError('Failed to accept booking. Please try again.');
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to accept booking. Please try again.';
+      setActionError(errorMsg);
       clearCSRFToken();
-    } finally {
       setProcessingBookingId(null);
     }
   };
@@ -425,10 +440,18 @@ export default function OwnerDashboardPage() {
     setActionSuccess(null);
     try {
       const csrfToken = await getCSRFToken();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
       const headers: Record<string, string> = {};
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/bookings/${bookingId}/reject`, {
         method: 'POST',
         headers,
@@ -440,15 +463,21 @@ export default function OwnerDashboardPage() {
           prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b))
         );
         setActionSuccess('Booking rejected');
-        setTimeout(() => setActionSuccess(null), 3000);
+        setTimeout(() => {
+          setActionSuccess(null);
+          setProcessingBookingId(null);
+        }, 2000);
       } else {
-        setActionError(result.error || 'Failed to reject booking');
+        const errorMsg = result.error || result.message || 'Failed to reject booking';
+        setActionError(errorMsg);
         clearCSRFToken();
+        setProcessingBookingId(null);
       }
     } catch (err) {
-      setActionError('Failed to reject booking. Please try again.');
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to reject booking. Please try again.';
+      setActionError(errorMsg);
       clearCSRFToken();
-    } finally {
       setProcessingBookingId(null);
     }
   };
@@ -461,12 +490,20 @@ export default function OwnerDashboardPage() {
     setActionSuccess(null);
     try {
       const csrfToken = await getCSRFToken();
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
         method: 'POST',
         headers,
@@ -479,15 +516,21 @@ export default function OwnerDashboardPage() {
           prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b))
         );
         setActionSuccess('Booking cancelled');
-        setTimeout(() => setActionSuccess(null), 3000);
+        setTimeout(() => {
+          setActionSuccess(null);
+          setProcessingBookingId(null);
+        }, 2000);
       } else {
-        setActionError(result.error || 'Failed to cancel booking');
+        const errorMsg = result.error || result.message || 'Failed to cancel booking';
+        setActionError(errorMsg);
         clearCSRFToken();
+        setProcessingBookingId(null);
       }
     } catch (err) {
-      setActionError('Failed to cancel booking. Please try again.');
+      const errorMsg =
+        err instanceof Error ? err.message : 'Failed to cancel booking. Please try again.';
+      setActionError(errorMsg);
       clearCSRFToken();
-    } finally {
       setProcessingBookingId(null);
     }
   };
@@ -880,10 +923,7 @@ export default function OwnerDashboardPage() {
                                     <>
                                       <button
                                         onClick={() => handleAccept(booking.id)}
-                                        disabled={
-                                          processingBookingId === booking.id ||
-                                          processingBookingId !== null
-                                        }
+                                        disabled={processingBookingId === booking.id}
                                         className="h-9 px-4 bg-black text-white text-xs font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         {processingBookingId === booking.id
@@ -892,10 +932,7 @@ export default function OwnerDashboardPage() {
                                       </button>
                                       <button
                                         onClick={() => handleReject(booking.id)}
-                                        disabled={
-                                          processingBookingId === booking.id ||
-                                          processingBookingId !== null
-                                        }
+                                        disabled={processingBookingId === booking.id}
                                         className="h-9 px-4 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         {processingBookingId === booking.id
@@ -909,10 +946,7 @@ export default function OwnerDashboardPage() {
                                     <>
                                       <button
                                         onClick={() => handleCancel(booking.id)}
-                                        disabled={
-                                          processingBookingId === booking.id ||
-                                          processingBookingId !== null
-                                        }
+                                        disabled={processingBookingId === booking.id}
                                         className="h-9 px-4 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         {processingBookingId === booking.id

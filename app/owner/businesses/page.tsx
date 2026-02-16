@@ -40,7 +40,7 @@ export default function OwnerBusinessesPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Header */}
-      <h1 className="text-2xl font-bold mb-8">My Businesses</h1>
+      <h1 className="text-2xl font-bold mb-8 hidden md:block">My Businesses</h1>
 
       {/* Business Cards */}
       <div className="grid gap-6">
@@ -92,10 +92,10 @@ export default function OwnerBusinessesPage() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="flex gap-4 mt-10">
+      <div className="flex flex-col sm:flex-row gap-4 mt-10">
         <Link
           href="/setup"
-          className="flex items-center gap-2 bg-black text-white px-6 h-11 rounded-lg font-semibold hover:bg-gray-900"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 h-10 sm:h-11 rounded-lg font-semibold hover:bg-gray-900"
         >
           <span className="text-lg">＋</span>
           Add New Business
@@ -103,7 +103,7 @@ export default function OwnerBusinessesPage() {
 
         <Link
           href="/categories/salon"
-          className="flex items-center gap-2 bg-gray-200 text-gray-800 px-6 h-11 rounded-lg font-semibold hover:bg-gray-300"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-200 text-gray-800 px-4 sm:px-6 h-10 sm:h-11 rounded-lg font-semibold hover:bg-gray-300"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

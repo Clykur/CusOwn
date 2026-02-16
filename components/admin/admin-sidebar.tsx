@@ -21,7 +21,12 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl(),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
       </svg>
     ),
   },
@@ -30,7 +35,12 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl('businesses'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+        />
       </svg>
     ),
   },
@@ -39,7 +49,12 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl('users'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+        />
       </svg>
     ),
   },
@@ -48,7 +63,12 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl('bookings'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+        />
       </svg>
     ),
   },
@@ -57,7 +77,12 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl('audit'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
       </svg>
     ),
   },
@@ -66,7 +91,12 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl('success-metrics'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+        />
       </svg>
     ),
   },
@@ -75,7 +105,12 @@ const navigation: NavItem[] = [
     href: '/profile',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
       </svg>
     ),
   },
@@ -86,8 +121,13 @@ function AdminSidebarContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navigating, setNavigating] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
+
+  useEffect(() => {
+    setNavigating(null);
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -102,12 +142,14 @@ function AdminSidebarContent() {
   useEffect(() => {
     const loadUserInfo = async () => {
       if (!supabaseAuth) return;
-      
+
       try {
-        const { data: { session } } = await supabaseAuth.auth.getSession();
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
         if (session?.user) {
           setUserEmail(session.user.email || '');
-          
+
           // Get user profile for full name
           try {
             const profile = await getUserProfile(session.user.id);
@@ -138,20 +180,31 @@ function AdminSidebarContent() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 bg-white border border-gray-300 rounded-lg shadow-md"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {sidebarOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
+      {/* Mobile menu button (non-floating) - shown only when sidebar is closed */}
+      <div className="lg:hidden block">
+        {!sidebarOpen && (
+          <div className="px-4 pt-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2.5 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow transition-all"
+              aria-label="Open menu"
+            >
+              <svg
+                className="w-6 h-6 text-gray-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sidebar overlay for mobile */}
@@ -164,34 +217,70 @@ function AdminSidebarContent() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r border-gray-200 transition-transform ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-gray-200 transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col">
           {/* Logo/Header */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">{UI_CONTEXT.ADMIN_CONSOLE}</h2>
-            <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.YOU_ARE_IN_ADMIN_MODE}</p>
+          <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{UI_CONTEXT.ADMIN_CONSOLE}</h2>
+              <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.YOU_ARE_IN_ADMIN_MODE}</p>
+            </div>
+            {/* Close button shown inside sidebar on mobile to avoid overlap */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
+                aria-label="Close menu"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const active = isActive(item.href);
+              const isNavigating = navigating === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  onClick={(e) => {
+                    if (item.href !== pathname) {
+                      setNavigating(item.href);
+                      setSidebarOpen(false);
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     active
-                      ? 'bg-black text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-black text-white shadow-md'
+                      : isNavigating
+                        ? 'bg-gray-100 text-gray-700'
+                        : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
                   }`}
                 >
-                  {item.icon}
-                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
+                  <span className={isNavigating ? 'animate-spin' : ''}>{item.icon}</span>
+                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}
@@ -203,19 +292,28 @@ function AdminSidebarContent() {
               <Link
                 href="/profile"
                 className="flex-1 min-w-0 flex items-center gap-3"
+                onClick={() => setSidebarOpen(false)}
               >
                 <div className="flex-shrink-0">
-                  <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-8 h-8 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-sm font-semibold text-gray-900 truncate">
                     {userName || 'User'}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">
-                    {userEmail || ''}
-                  </span>
+                  <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
                 </div>
               </Link>
               <button
@@ -224,7 +322,12 @@ function AdminSidebarContent() {
                 title="Sign Out"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
                 </svg>
               </button>
             </div>

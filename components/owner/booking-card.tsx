@@ -80,7 +80,10 @@ export default function BookingCard({
   return (
     <div className="relative overflow-hidden">
       {/* Swipe Actions Background */}
-      <div className="absolute inset-y-0 right-0 flex items-center bg-gray-100 z-10" style={{ width: '120px', transform: `translateX(${swipeOffset}px)` }}>
+      <div
+        className="absolute inset-y-0 right-0 flex items-center bg-gray-100 z-10"
+        style={{ width: '120px', transform: `translateX(${swipeOffset}px)` }}
+      >
         <div className="flex flex-col gap-2 px-4">
           {booking.status === 'pending' && (
             <>
@@ -90,12 +93,21 @@ export default function BookingCard({
                   setSwipeOffset(0);
                 }}
                 disabled={isProcessing}
-                className="w-12 h-12 bg-black text-white rounded-lg flex items-center justify-center disabled:opacity-50"
+                className="w-12 h-12 bg-black text-white rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-900 transition-colors"
                 title="Accept"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                {isProcessing ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
               </button>
               <button
                 onClick={() => {
@@ -103,12 +115,21 @@ export default function BookingCard({
                   setSwipeOffset(0);
                 }}
                 disabled={isProcessing}
-                className="w-12 h-12 bg-gray-300 text-gray-800 rounded-lg flex items-center justify-center disabled:opacity-50"
+                className="w-12 h-12 bg-gray-300 text-gray-800 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 transition-colors"
                 title="Reject"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                {isProcessing ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-800 border-t-transparent"></div>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                )}
               </button>
             </>
           )}
@@ -124,14 +145,44 @@ export default function BookingCard({
         onTouchEnd={handleTouchEnd}
       >
         {/* Status Messages */}
-        {actionSuccess && isProcessing && (
-          <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-800">
-            {actionSuccess}
-          </div>
-        )}
-        {actionError && isProcessing && (
-          <div className="mb-3 p-2 bg-gray-100 border border-gray-300 rounded text-xs text-gray-900">
-            {actionError}
+        {(actionSuccess || actionError) && (
+          <div className="mb-3">
+            {actionSuccess && (
+              <div className="p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                {actionSuccess}
+              </div>
+            )}
+            {actionError && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                {actionError}
+              </div>
+            )}
           </div>
         )}
 
@@ -143,7 +194,9 @@ export default function BookingCard({
             </h3>
             <p className="text-sm text-gray-500">{booking.customer_phone || 'No phone'}</p>
           </div>
-          <span className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(booking.status)}`}>
+          <span
+            className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(booking.status)}`}
+          >
             {booking.status}
           </span>
         </div>
@@ -152,14 +205,36 @@ export default function BookingCard({
         {booking.slot && (
           <div className="mb-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-4 h-4 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
-              <span className="text-sm font-medium text-gray-900">{formatDate(booking.slot.date)}</span>
+              <span className="text-sm font-medium text-gray-900">
+                {formatDate(booking.slot.date)}
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-4 h-4 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <span className="text-sm text-gray-600">
                 {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
@@ -191,7 +266,12 @@ export default function BookingCard({
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     <span>Accept</span>
                   </>
@@ -210,7 +290,12 @@ export default function BookingCard({
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                     <span>Reject</span>
                   </>
@@ -232,7 +317,12 @@ export default function BookingCard({
               ) : (
                 <>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                   <span>Cancel</span>
                 </>

@@ -50,8 +50,8 @@ export default function OwnerDashboardPage() {
   if (loading) return <OwnerDashboardSkeleton />;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-8">Owner Dashboard</h1>
+    <div className="mx-auto max-w-7xl px-4 pt-2 pb-20 sm:p-6 lg:pt-6">
+      {/* <h1 className="text-2xl font-bold mb-8">Owner Dashboard</h1> */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         <Stat label="Total Businesses" value={stats!.totalBusinesses} />

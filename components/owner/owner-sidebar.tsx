@@ -16,17 +16,30 @@ interface NavItem {
   requiresBusiness?: boolean;
 }
 
-export default function OwnerSidebar() {
+export default function OwnerSidebar({
+  sidebarOpen: propSidebarOpen,
+  setSidebarOpen: propSetSidebarOpen,
+}: {
+  sidebarOpen?: boolean;
+  setSidebarOpen?: (v: boolean) => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const cleanPath = pathname.split('?')[0];
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Support lifted state from parent (OwnerLayout) or fallback to internal state
+  const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
+  const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
+  const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
   const [navigating, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    setNavigating(null);
+  }, [pathname]);
 
   // ===============================
   // Load user + business state
@@ -146,37 +159,96 @@ export default function OwnerSidebar() {
   // ===============================
   return (
     <>
-      {/* Mobile toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 bg-white border rounded-lg shadow"
-        >
-          ☰
-        </button>
+      {/* Mobile menu button (non-floating) - shown when sidebar is closed */}
+      <div className="lg:hidden block">
+        {!sidebarOpen && (
+          <div className="px-4 pt-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2.5 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow transition-all"
+                aria-label="Open menu"
+              >
+                <svg
+                  className="w-6 h-6 text-gray-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+              {/* Mobile page title aligned with hamburger */}
+              <div>
+                <h1 className="text-2xl font-semibold">
+                  {cleanPath === ROUTES.SETUP
+                    ? 'Create Business'
+                    : cleanPath === ROUTES.PROFILE
+                      ? 'Profile'
+                      : pathname?.startsWith('/owner/dashboard')
+                        ? 'Owner Dashboard'
+                        : pathname?.startsWith('/owner/businesses')
+                          ? 'My Businesses'
+                          : 'Owner'}
+                </h1>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/40 z-40"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
+      {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r transition-transform ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-gray-200 transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-bold">Business Owner</h2>
-            <p className="text-sm text-gray-500">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
+          {/* Logo/Header */}
+          <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Business Owner</h2>
+              <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
+            </div>
+            {/* Close button shown inside sidebar on mobile to avoid overlap */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
+                aria-label="Close menu"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
             {loading ? (
               <div className="flex justify-center py-10">
                 <div className="animate-spin h-5 w-5 border-b-2 border-gray-400" />
@@ -189,44 +261,79 @@ export default function OwnerSidebar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    onClick={() => {
-                      setNavigating(item.href);
-                      setSidebarOpen(false);
+                    onClick={(e) => {
+                      if (item.href !== pathname) {
+                        setNavigating(item.href);
+                        setSidebarOpen(false);
+                      } else {
+                        e.preventDefault();
+                      }
                     }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-                      active ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100'
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      active
+                        ? 'bg-black text-white shadow-md'
+                        : navigating === item.href
+                          ? 'bg-gray-100 text-gray-700'
+                          : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
                     }`}
                   >
-                    {item.icon}
-                    <span>{item.name}</span>
+                    <span className={navigating === item.href ? 'animate-spin' : ''}>
+                      {item.icon}
+                    </span>
+                    <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                      {item.name}
+                    </span>
                   </Link>
                 );
               })
             )}
           </nav>
 
-          {/* Profile */}
-          <div className="p-4 border-t flex items-center justify-between">
-            <Link href={ROUTES.PROFILE} className="min-w-0">
-              <div className="text-sm font-semibold truncate">{userName}</div>
-              <div className="text-xs text-gray-500 truncate">{userEmail}</div>
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Sign Out"
-            >
-              {' '}
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {' '}
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />{' '}
-              </svg>{' '}
-            </button>
+          {/* Profile Section */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href={ROUTES.PROFILE}
+                className="flex-1 min-w-0 flex items-center gap-3"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-8 h-8 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm font-semibold text-gray-900 truncate">
+                    {userName || 'User'}
+                  </span>
+                  <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
+                </div>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Sign Out"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
