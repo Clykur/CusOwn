@@ -5,3 +5,6 @@ out
 build
 *.config.js
 *.config.ts
+
+# Removed feature – ignore so CI does not fail if this path exists on any branch
+app/dashboard/weather/
