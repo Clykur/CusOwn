@@ -8,28 +8,28 @@ import { slotService } from '@/services/slot.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES, BOOKING_STATUS } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
+import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
 
 const ROUTE_GET = 'GET /api/admin/bookings/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/bookings/[id]';
 const ROUTE_POST = 'POST /api/admin/bookings/[id]';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await requireAdmin(request, ROUTE_GET);
     if (auth instanceof Response) return auth;
 
     const supabase = requireSupabaseAdmin();
-    
+
     const { data: booking, error } = await supabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         *,
         business:business_id (*),
         slot:slot_id (*)
-      `)
+      `
+      )
       .eq('id', params.id)
       .single();
 
@@ -51,10 +51,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await requireAdmin(request, ROUTE_PATCH);
     if (auth instanceof Response) return auth;
@@ -63,7 +60,8 @@ export async function PATCH(
     const body = await request.json();
 
     // SECURITY: Filter input to prevent mass assignment
-    const { filterBookingUpdateFields, validateStringLength, validateEnum } = await import('@/lib/security/input-filter');
+    const { filterBookingUpdateFields, validateStringLength, validateEnum } =
+      await import('@/lib/security/input-filter');
     const filteredBody = filterBookingUpdateFields(body);
 
     // SECURITY: Validate enum values
@@ -81,18 +79,23 @@ export async function PATCH(
     if (filteredBody.customer_phone && !validateStringLength(filteredBody.customer_phone, 20)) {
       return errorResponse('Customer phone is too long', 400);
     }
-    if (filteredBody.cancellation_reason && !validateStringLength(filteredBody.cancellation_reason, 500)) {
+    if (
+      filteredBody.cancellation_reason &&
+      !validateStringLength(filteredBody.cancellation_reason, 500)
+    ) {
       return errorResponse('Cancellation reason is too long', 400);
     }
 
     // Get old booking data
     const { data: oldBooking } = await supabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         *,
         business:business_id (*),
         slot:slot_id (*)
-      `)
+      `
+      )
       .eq('id', params.id)
       .single();
 
@@ -105,7 +108,8 @@ export async function PATCH(
     if (filteredBody.status !== undefined) {
       updateData.status = filteredBody.status;
     }
-    if (filteredBody.customer_name !== undefined) updateData.customer_name = filteredBody.customer_name;
+    if (filteredBody.customer_name !== undefined)
+      updateData.customer_name = filteredBody.customer_name;
     if (filteredBody.customer_phone !== undefined) {
       const { formatPhoneNumber } = await import('@/lib/utils/string');
       updateData.customer_phone = formatPhoneNumber(filteredBody.customer_phone);
@@ -115,11 +119,13 @@ export async function PATCH(
       .from('bookings')
       .update(updateData)
       .eq('id', params.id)
-      .select(`
+      .select(
+        `
         *,
         business:business_id (*),
         slot:slot_id (*)
-      `)
+      `
+      )
       .single();
 
     if (error) {
@@ -128,10 +134,16 @@ export async function PATCH(
 
     // Handle slot status if booking status changed
     if (body.status && body.status !== oldBooking.status) {
-      if (body.status === BOOKING_STATUS.CONFIRMED && oldBooking.status === BOOKING_STATUS.PENDING) {
+      if (
+        body.status === BOOKING_STATUS.CONFIRMED &&
+        oldBooking.status === BOOKING_STATUS.PENDING
+      ) {
         // Mark slot as booked
         await slotService.updateSlotStatus(oldBooking.slot_id, 'booked');
-      } else if (body.status === BOOKING_STATUS.REJECTED || body.status === BOOKING_STATUS.CANCELLED) {
+      } else if (
+        body.status === BOOKING_STATUS.REJECTED ||
+        body.status === BOOKING_STATUS.CANCELLED
+      ) {
         // Release slot if rejected or cancelled
         await slotService.updateSlotStatus(oldBooking.slot_id, 'available');
       }
@@ -139,31 +151,31 @@ export async function PATCH(
 
     // Create audit log
     const changes: string[] = [];
-    Object.keys(updateData).forEach(key => {
+    Object.keys(updateData).forEach((key) => {
       if (oldBooking[key] !== updateData[key]) {
         changes.push(`${key}: ${oldBooking[key]} → ${updateData[key]}`);
       }
     });
 
-    await auditService.createAuditLog(
-      auth.user.id,
-      'booking_updated',
-      'booking',
-      {
-        entityId: params.id,
-        oldData: oldBooking,
-        newData: updatedBooking,
-        description: `Booking updated: ${changes.join(', ')}`,
-        request,
-      }
-    );
+    await auditService.createAuditLog(auth.user.id, 'booking_updated', 'booking', {
+      entityId: params.id,
+      oldData: oldBooking,
+      newData: updatedBooking,
+      description: `Booking updated: ${changes.join(', ')}`,
+      request,
+    });
 
     // Send notification to customer if status changed
-    if (body.status && body.status !== oldBooking.status && updatedBooking.slot && updatedBooking.business) {
+    if (
+      body.status &&
+      body.status !== oldBooking.status &&
+      updatedBooking.slot &&
+      updatedBooking.business
+    ) {
       try {
         const date = formatDate(updatedBooking.slot.date);
         const time = `${formatTime(updatedBooking.slot.start_time)} - ${formatTime(updatedBooking.slot.end_time)}`;
-        
+
         const message = adminNotificationService.generateBookingUpdateMessage(
           updatedBooking.customer_name,
           updatedBooking.business.salon_name,
@@ -175,13 +187,19 @@ export async function PATCH(
         );
 
         const whatsappUrl = adminNotificationService.notifyCustomer(params.id, message, request);
-        // Return WhatsApp URL in response so admin can send it
-        return successResponse({ ...updatedBooking, whatsapp_url: await whatsappUrl }, 'Booking updated and notification prepared');
+        invalidateApiCacheByPrefix('GET|/api/admin/bookings');
+        invalidateApiCacheByPrefix('GET|/api/admin/metrics');
+        return successResponse(
+          { ...updatedBooking, whatsapp_url: await whatsappUrl },
+          'Booking updated and notification prepared'
+        );
       } catch {
         // Continue even if notification fails
       }
     }
 
+    invalidateApiCacheByPrefix('GET|/api/admin/bookings');
+    invalidateApiCacheByPrefix('GET|/api/admin/metrics');
     return successResponse(updatedBooking, 'Booking updated successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
@@ -189,10 +207,7 @@ export async function PATCH(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await requireAdmin(request, ROUTE_POST);
     if (auth instanceof Response) return auth;
@@ -202,14 +217,16 @@ export async function POST(
 
     if (action === 'resend_notification') {
       const supabase = requireSupabaseAdmin();
-      
+
       const { data: booking } = await supabase
         .from('bookings')
-        .select(`
+        .select(
+          `
           *,
           business:business_id (*),
           slot:slot_id (*)
-        `)
+        `
+        )
         .eq('id', params.id)
         .single();
 
@@ -218,9 +235,13 @@ export async function POST(
       }
 
       let whatsappUrl: string;
-      
+
       if (booking.status === BOOKING_STATUS.CONFIRMED) {
-        whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(booking, booking.business, request);
+        whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
+          booking,
+          booking.business,
+          request
+        );
       } else if (booking.status === BOOKING_STATUS.REJECTED) {
         whatsappUrl = whatsappService.getRejectionWhatsAppUrl(booking, booking.business, request);
       } else {
@@ -228,16 +249,11 @@ export async function POST(
       }
 
       // Create audit log
-      await auditService.createAuditLog(
-        auth.user.id,
-        'notification_sent',
-        'booking',
-        {
-          entityId: params.id,
-          description: `Notification resent for booking ${params.id}`,
-          request,
-        }
-      );
+      await auditService.createAuditLog(auth.user.id, 'notification_sent', 'booking', {
+        entityId: params.id,
+        description: `Notification resent for booking ${params.id}`,
+        request,
+      });
 
       return successResponse({ whatsapp_url: whatsappUrl }, 'Notification prepared');
     }
@@ -248,4 +264,3 @@ export async function POST(
     return errorResponse(message, 500);
   }
 }
-

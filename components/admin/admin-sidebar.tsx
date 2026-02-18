@@ -14,6 +14,7 @@ interface NavItem {
 
 import { getAdminDashboardUrl } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
+import { useAdminPrefetch } from '@/components/admin/admin-prefetch-context';
 
 const navigation: NavItem[] = [
   {
@@ -165,6 +166,10 @@ function AdminSidebarContent() {
     loadUserInfo();
   }, []);
 
+  const { prefetchTab } = useAdminPrefetch();
+  const getTabFromHref = (href: string) =>
+    href.includes('?tab=') ? (href.split('tab=')[1]?.split('&')[0] ?? null) : null;
+
   const isActive = (href: string) => {
     // Links outside dashboard (e.g. Profile): active only when pathname matches
     if (!href.startsWith('/admin/dashboard')) {
@@ -255,11 +260,15 @@ function AdminSidebarContent() {
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const active = isActive(item.href);
+              const tab = getTabFromHref(item.href);
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
+                  onMouseEnter={() => {
+                    if (tab) prefetchTab(tab);
+                  }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     active
                       ? 'bg-black text-white shadow-md'

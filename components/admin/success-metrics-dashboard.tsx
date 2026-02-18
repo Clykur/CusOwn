@@ -2,6 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import SuccessMetricsDashboardSkeleton from '@/components/admin/success-metrics-dashboard.skeleton';
+import { useAdminSession } from '@/components/admin/admin-session-context';
+import { adminFetch } from '@/lib/utils/admin-fetch.client';
+import {
+  getSuccessMetricsCacheKey,
+  getAdminCached,
+  getAdminCachedStale,
+  setAdminCache,
+} from '@/components/admin/admin-cache';
 
 interface TechnicalMetrics {
   apiResponseTimeP95: number;
@@ -22,6 +30,7 @@ interface Threshold {
   status: 'pass' | 'fail';
   value: number;
   threshold: number;
+  reason?: string;
 }
 
 function MetricCard({
@@ -58,7 +67,14 @@ function MetricCard({
   );
 }
 
+type CachedMetrics = {
+  technical: TechnicalMetrics;
+  business: BusinessMetrics;
+  thresholds: Threshold[];
+};
+
 export default function SuccessMetricsDashboard() {
+  const { token } = useAdminSession();
   const [loading, setLoading] = useState(true);
   const [technical, setTechnical] = useState<TechnicalMetrics | null>(null);
   const [business, setBusiness] = useState<BusinessMetrics | null>(null);
@@ -70,45 +86,75 @@ export default function SuccessMetricsDashboard() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  const fetchMetrics = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { supabaseAuth } = await import('@/lib/supabase/auth');
-      if (!supabaseAuth) {
+  const applyResult = useCallback(
+    (result: {
+      metrics?: { technical?: TechnicalMetrics; business?: BusinessMetrics };
+      thresholds?: Threshold[];
+    }) => {
+      if (result.metrics?.technical) setTechnical(result.metrics.technical);
+      if (result.metrics?.business) setBusiness(result.metrics.business);
+      if (Array.isArray(result.thresholds)) setThresholds(result.thresholds);
+    },
+    []
+  );
+
+  const fetchMetrics = useCallback(
+    async (backgroundRevalidate = false) => {
+      if (!token && !backgroundRevalidate) {
         setLoading(false);
         return;
       }
-      const {
-        data: { session },
-      } = await supabaseAuth.auth.getSession();
-      if (!session) {
-        setLoading(false);
-        return;
-      }
-      const response = await fetch(
-        `/api/metrics/success?start_date=${startDate}&end_date=${endDate}&include_alerts=true`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } }
-      );
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setTechnical(result.data.metrics.technical);
-          setBusiness(result.data.metrics.business);
-          setThresholds(result.data.thresholds || []);
+      if (!backgroundRevalidate) setLoading(true);
+      try {
+        const url = `/api/metrics/success?start_date=${startDate}&end_date=${endDate}&include_alerts=true`;
+        const response = token
+          ? await adminFetch(url, { token, credentials: 'include' })
+          : await fetch(url, { credentials: 'include' });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            applyResult(result.data);
+            const key = getSuccessMetricsCacheKey(startDate, endDate);
+            setAdminCache(key, {
+              technical: result.data.metrics?.technical,
+              business: result.data.metrics?.business,
+              thresholds: result.data.thresholds || [],
+            });
+          }
         }
+      } catch (error) {
+        if (!backgroundRevalidate) console.error('Failed to fetch metrics:', error);
+      } finally {
+        if (!backgroundRevalidate) setLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch metrics:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [startDate, endDate]);
+    },
+    [startDate, endDate, token, applyResult]
+  );
 
   useEffect(() => {
-    fetchMetrics();
-  }, [fetchMetrics]);
+    const key = getSuccessMetricsCacheKey(startDate, endDate);
+    const cached = getAdminCached<CachedMetrics>(key);
+    if (cached?.technical && cached?.business) {
+      setTechnical(cached.technical);
+      setBusiness(cached.business);
+      setThresholds(cached.thresholds || []);
+      setLoading(false);
+      if (token) fetchMetrics(true);
+      return;
+    }
+    const stale = getAdminCachedStale<CachedMetrics>(key);
+    if (stale?.data?.technical && stale?.data?.business) {
+      setTechnical(stale.data.technical);
+      setBusiness(stale.data.business);
+      setThresholds(stale.data.thresholds || []);
+      setLoading(false);
+      if (token) fetchMetrics(true);
+      return;
+    }
+    fetchMetrics(false);
+  }, [startDate, endDate, token, fetchMetrics]);
 
-  if (loading) {
+  if (loading && !technical && !business) {
     return <SuccessMetricsDashboardSkeleton />;
   }
 
@@ -143,7 +189,7 @@ export default function SuccessMetricsDashboard() {
           </div>
           <button
             type="button"
-            onClick={fetchMetrics}
+            onClick={() => fetchMetrics(false)}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
           >
             Apply
@@ -237,14 +283,23 @@ export default function SuccessMetricsDashboard() {
             {thresholds.map((t) => (
               <div
                 key={t.metric}
-                className={`flex justify-between items-center rounded-xl px-4 py-3 ${
+                className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 rounded-xl px-4 py-3 ${
                   t.status === 'pass'
                     ? 'bg-emerald-50 border border-emerald-200'
                     : 'bg-red-50 border border-red-200'
                 }`}
               >
-                <span className="font-medium text-slate-900">{t.metric}</span>
-                <div className="flex items-center gap-4">
+                <div className="min-w-0">
+                  <span className="font-medium text-slate-900">{t.metric}</span>
+                  {t.reason && (
+                    <p
+                      className={`mt-0.5 text-sm ${t.status === 'pass' ? 'text-emerald-700' : 'text-red-700'}`}
+                    >
+                      {t.reason}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 flex-shrink-0">
                   <span className={t.status === 'pass' ? 'text-emerald-700' : 'text-red-700'}>
                     {t.value} / {t.threshold}
                   </span>

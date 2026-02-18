@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const range = parseAdminDateRange(searchParams);
     const businessId = searchParams.get('business_id')?.trim() || undefined;
-    const limit = Math.min(ADMIN_EXPORT_BOOKINGS_MAX_ROWS, 10_000);
+    const limit = ADMIN_EXPORT_BOOKINGS_MAX_ROWS;
 
     await auditService.createAuditLog(auth.user.id, 'admin_revenue_export', 'system', {
       description: `Bookings export: ${range.startDate.toISOString()} to ${range.endDate.toISOString()}${businessId ? ` business=${businessId}` : ''}`,

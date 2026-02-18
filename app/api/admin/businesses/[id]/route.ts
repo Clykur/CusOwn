@@ -6,15 +6,13 @@ import { adminNotificationService } from '@/services/admin-notification.service'
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
+import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
 
 const ROUTE_GET = 'GET /api/admin/businesses/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/businesses/[id]';
 const ROUTE_DELETE = 'DELETE /api/admin/businesses/[id]';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await requireAdmin(request, ROUTE_GET);
     if (auth instanceof Response) return auth;
@@ -37,10 +35,7 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await requireAdmin(request, ROUTE_PATCH);
     if (auth instanceof Response) return auth;
@@ -49,7 +44,8 @@ export async function PATCH(
     const body = await request.json();
 
     // SECURITY: Filter input to prevent mass assignment
-    const { filterBusinessUpdateFields, validateStringLength } = await import('@/lib/security/input-filter');
+    const { filterBusinessUpdateFields, validateStringLength } =
+      await import('@/lib/security/input-filter');
     const filteredBody = filterBusinessUpdateFields(body);
 
     // SECURITY: Validate string lengths
@@ -65,7 +61,10 @@ export async function PATCH(
     if (filteredBody.location && !validateStringLength(filteredBody.location, 200)) {
       return errorResponse('Location is too long', 400);
     }
-    if (filteredBody.suspended_reason && !validateStringLength(filteredBody.suspended_reason, 500)) {
+    if (
+      filteredBody.suspended_reason &&
+      !validateStringLength(filteredBody.suspended_reason, 500)
+    ) {
       return errorResponse('Suspension reason is too long', 400);
     }
 
@@ -84,9 +83,12 @@ export async function PATCH(
     const updateData: any = {};
     if (filteredBody.salon_name !== undefined) updateData.salon_name = filteredBody.salon_name;
     if (filteredBody.owner_name !== undefined) updateData.owner_name = filteredBody.owner_name;
-    if (filteredBody.whatsapp_number !== undefined) updateData.whatsapp_number = formatPhoneNumber(filteredBody.whatsapp_number);
-    if (filteredBody.opening_time !== undefined) updateData.opening_time = filteredBody.opening_time;
-    if (filteredBody.closing_time !== undefined) updateData.closing_time = filteredBody.closing_time;
+    if (filteredBody.whatsapp_number !== undefined)
+      updateData.whatsapp_number = formatPhoneNumber(filteredBody.whatsapp_number);
+    if (filteredBody.opening_time !== undefined)
+      updateData.opening_time = filteredBody.opening_time;
+    if (filteredBody.closing_time !== undefined)
+      updateData.closing_time = filteredBody.closing_time;
     if (filteredBody.slot_duration !== undefined) {
       const duration = Number(filteredBody.slot_duration);
       if (isNaN(duration) || duration <= 0 || duration > 1440) {
@@ -115,24 +117,19 @@ export async function PATCH(
 
     // Create audit log
     const changes: string[] = [];
-    Object.keys(updateData).forEach(key => {
+    Object.keys(updateData).forEach((key) => {
       if (oldBusiness[key] !== updateData[key]) {
         changes.push(`${key}: ${oldBusiness[key]} → ${updateData[key]}`);
       }
     });
 
-    await auditService.createAuditLog(
-      auth.user.id,
-      'business_updated',
-      'business',
-      {
-        entityId: params.id,
-        oldData: oldBusiness,
-        newData: updatedBusiness,
-        description: `Business updated: ${changes.join(', ')}`,
-        request,
-      }
-    );
+    await auditService.createAuditLog(auth.user.id, 'business_updated', 'business', {
+      entityId: params.id,
+      oldData: oldBusiness,
+      newData: updatedBusiness,
+      description: `Business updated: ${changes.join(', ')}`,
+      request,
+    });
 
     // Send notification to owner if business was updated
     if (updatedBusiness.owner_user_id && changes.length > 0) {
@@ -148,6 +145,8 @@ export async function PATCH(
       }
     }
 
+    invalidateApiCacheByPrefix('GET|/api/admin/businesses');
+    invalidateApiCacheByPrefix('GET|/api/admin/metrics');
     return successResponse(updatedBusiness, 'Business updated successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
@@ -155,10 +154,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const auth = await requireAdmin(request, ROUTE_DELETE);
     if (auth instanceof Response) return auth;
@@ -177,32 +173,25 @@ export async function DELETE(
     }
 
     // Delete business (cascade will handle related records)
-    const { error } = await supabase
-      .from('businesses')
-      .delete()
-      .eq('id', params.id);
+    const { error } = await supabase.from('businesses').delete().eq('id', params.id);
 
     if (error) {
       return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
     // Create audit log
-    await auditService.createAuditLog(
-      auth.user.id,
-      'business_deleted',
-      'business',
-      {
-        entityId: params.id,
-        oldData: business,
-        description: `Business deleted: ${business.salon_name}`,
-        request,
-      }
-    );
+    await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
+      entityId: params.id,
+      oldData: business,
+      description: `Business deleted: ${business.salon_name}`,
+      request,
+    });
 
+    invalidateApiCacheByPrefix('GET|/api/admin/businesses');
+    invalidateApiCacheByPrefix('GET|/api/admin/metrics');
     return successResponse(null, 'Business deleted successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }
-

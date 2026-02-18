@@ -136,6 +136,7 @@ export const ERROR_MESSAGES = {
   DOWNTIME_DATE_INVALID: 'Invalid date range for closure',
   REMINDER_NOT_FOUND: 'Reminder not found',
   REMINDER_ALREADY_SENT: 'Reminder already sent',
+  RATE_LIMIT_EXCEEDED: 'Too many requests. Please try again later.',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -238,3 +239,41 @@ export const ADMIN_ANALYTICS_MAX_DAYS = 365;
 export const ADMIN_EXPORT_BOOKINGS_MAX_ROWS = 10_000;
 export const ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT = 20;
 export const ADMIN_DEFAULT_ANALYTICS_DAYS = 30;
+
+/** Backend performance: cache TTL and API cache size. */
+export const CACHE_TTL_AUTH_MS = 5 * 60 * 1000; // 5 min auth verification cache
+export const CACHE_TTL_API_DEFAULT_MS = 60 * 1000; // 1 min for mutable GETs
+export const CACHE_TTL_API_LONG_MS = 300 * 1000; // 5 min for stable GETs
+export const CACHE_STALE_GRACE_MS = 30 * 1000; // Serve stale up to 30s while revalidating (API)
+export const API_CACHE_MAX_KEYS = 500;
+export const SLOW_REQUEST_MS = 200; // Log and flag requests above this
+export const API_PAGINATION_DEFAULT_LIMIT = 25;
+export const API_PAGINATION_MAX_LIMIT = 100;
+
+/** Client admin cache: TTL, stale grace, max entries (no hardcoded values in components). */
+export const ADMIN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+export const ADMIN_CACHE_STALE_GRACE_MS = 10 * 60 * 1000; // 10 min serve stale
+export const ADMIN_CACHE_MAX_ENTRIES = 10;
+
+/** Token bucket rate limit: capacity and refill per second. */
+export const TOKEN_BUCKET_CAPACITY = 100;
+export const TOKEN_BUCKET_REFILL_PER_SEC = 20;
+export const TOKEN_BUCKET_ADMIN_CAPACITY = 80;
+export const TOKEN_BUCKET_ADMIN_REFILL_PER_SEC = 15;
+export const TOKEN_BUCKET_EXPORT_CAPACITY = 10;
+export const TOKEN_BUCKET_EXPORT_REFILL_PER_SEC = 1;
+
+/** Export: rate limit tier (max date range uses ADMIN_ANALYTICS_MAX_DAYS). */
+export const EXPORT_RATE_LIMIT_REQUESTS_PER_MIN = 5;
+
+/** Idempotency: header name and feature flag. */
+export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
+export const IDEMPOTENCY_ENABLED = true;
+
+/** Client retry: single retry with backoff (ms). */
+export const CLIENT_RETRY_BACKOFF_MS = 500;
+
+/** Admin session: proactive refresh interval so token stays valid. */
+export const ADMIN_SESSION_REFRESH_INTERVAL_MS = 55 * 60 * 1000; // 55 min (before default 1h JWT expiry)
+/** Auth cookie max-age (seconds) so admin can stay logged in 24h. Set JWT expiry to 86400 in Supabase Dashboard for 24h. */
+export const AUTH_COOKIE_MAX_AGE_SECONDS = 86400; // 24 hours

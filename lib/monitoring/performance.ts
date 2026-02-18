@@ -5,6 +5,21 @@ export class PerformanceMonitor {
     await metricsService.recordTiming(`api.${endpoint}`, durationMs);
   }
 
+  async recordSlowRequest(
+    endpoint: string,
+    durationMs: number,
+    meta?: { query?: string; route?: string }
+  ): Promise<void> {
+    await metricsService.increment('api.slow_requests');
+    await metricsService.recordTiming('api.slow_request_ms', durationMs);
+    if (process.env.NODE_ENV === 'development') {
+      const route = meta?.route ?? endpoint;
+      const parts = [`[perf] Slow API: ${route} ${durationMs}ms`];
+      if (meta?.query) parts.push(`query=${meta.query}`);
+      console.warn(parts.join(' '));
+    }
+  }
+
   async recordDBTiming(query: string, durationMs: number): Promise<void> {
     await metricsService.recordTiming(`db.${query}`, durationMs);
   }

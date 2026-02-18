@@ -29,10 +29,12 @@ export async function GET(request: NextRequest) {
     const fromStr = formatAuditDate(range.startDate);
     const toStr = formatAuditDate(range.endDate);
     const limitStr = limit === 1 ? '1 business' : `${limit} businesses`;
-    await auditService.createAuditLog(auth.user.id, 'admin_health_score_view', 'system', {
-      description: `Business health score viewed for ${limitStr} (${fromStr} to ${toStr}).`,
-      request,
-    });
+    void auditService
+      .createAuditLog(auth.user.id, 'admin_health_score_view', 'system', {
+        description: `Business health score viewed for ${limitStr} (${fromStr} to ${toStr}).`,
+        request,
+      })
+      .catch(() => {});
     return successResponse(data);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseAuth, getUserProfile, isAdmin } from '@/lib/supabase/auth';
+import { supabaseAuth } from '@/lib/supabase/auth';
 import SuccessMetricsDashboard from '@/components/admin/success-metrics-dashboard';
 import AdminAnalyticsTab from '@/components/admin/admin-analytics-tab';
 import AdminSidebar from '@/components/admin/admin-sidebar';
 import { DashboardErrorBoundary } from '@/components/admin/dashboard-error-boundary';
+import { AdminSessionProvider, useAdminSession } from '@/components/admin/admin-session-context';
+import { AdminPrefetchProvider, useAdminPrefetch } from '@/components/admin/admin-prefetch-context';
+import {
+  getAdminCached,
+  getAdminCachedStale,
+  setAdminCache,
+  ADMIN_CACHE_KEYS,
+} from '@/components/admin/admin-cache';
+import { adminFetch } from '@/lib/utils/admin-fetch.client';
 import {
   AdminDashboardSkeleton,
   AdminAnalyticsSkeleton,
@@ -15,9 +24,10 @@ import {
   BusinessesSkeleton,
   OverviewSkeleton,
   UsersSkeleton,
+  UsersTableBodySkeleton,
 } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
-import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -42,6 +52,14 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+
+function PrefetchAnalyticsWhenReady({ adminConfirmed }: { adminConfirmed: boolean }) {
+  const { prefetchTab } = useAdminPrefetch();
+  useEffect(() => {
+    if (adminConfirmed) prefetchTab('analytics');
+  }, [adminConfirmed, prefetchTab]);
+  return null;
+}
 
 interface PlatformMetrics {
   totalBusinesses: number;
@@ -71,12 +89,17 @@ interface BookingTrend {
   rejected: number;
 }
 
-function AdminDashboardContent() {
+const OVERVIEW_DAYS = 30;
+const LIST_LIMIT = 25;
+const TABLE_PAGE_SIZE = 10;
+
+function AdminDashboardContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { session, token, ready } = useAdminSession();
+  const user = session?.user ?? null;
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [adminConfirmed, setAdminConfirmed] = useState(false);
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [trends, setTrends] = useState<BookingTrend[]>([]);
   const [revenueSnapshot, setRevenueSnapshot] = useState<{
@@ -111,64 +134,133 @@ function AdminDashboardContent() {
     }
   }, [searchParams]);
 
+  // Non-blocking admin check in background
   useEffect(() => {
-    const checkAuth = async () => {
-      if (!supabaseAuth) {
-        setError('Supabase is not configured');
-        setLoading(false);
-        return;
-      }
-      const {
-        data: { session },
-      } = await supabaseAuth.auth.getSession();
-      if (!session?.user) {
-        router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD));
-        return;
-      }
-
-      setUser(session.user);
-      const token = session.access_token;
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const [statusRes, metricsRes, trendsRes, revenueRes] = await Promise.all([
-        fetch('/api/admin/check-status', { headers }),
-        fetch('/api/admin/metrics', { headers }),
-        fetch('/api/admin/trends?days=30', { headers }),
-        fetch('/api/admin/revenue-metrics?days=30', { headers }),
-      ]);
-
-      const [statusData, metricsData, trendsData, revenueData] = await Promise.all([
-        statusRes.json(),
-        metricsRes.json(),
-        trendsRes.json(),
-        revenueRes.ok ? revenueRes.json() : Promise.resolve(null),
-      ]);
-
-      if (!statusData.success) {
-        setError(statusData.error || 'Failed to check admin status');
-        setLoading(false);
-        return;
-      }
-
-      const { is_admin, user_type, profile_exists } = statusData.data;
-      if (!is_admin) {
-        if (!profile_exists) {
-          setError(
-            `Your profile doesn't exist yet. User type: ${user_type || 'none'}. Please contact support or use the migration query to set admin status.`
-          );
-        } else {
-          setError(
-            `You don't have admin access. Current user type: ${user_type}. Please run the migration query to set your account as admin.`
-          );
+    const authToken = typeof token === 'string' && token.length > 0 ? token : null;
+    if (!ready || !authToken || !supabaseAuth) return;
+    const headers = { Authorization: `Bearer ${authToken}` };
+    fetch('/api/admin/check-status', { headers, credentials: 'include' })
+      .then((res) => res.json())
+      .then(
+        (statusData: {
+          success?: boolean;
+          data?: { is_admin?: boolean; user_type?: string; profile_exists?: boolean };
+          error?: string;
+        }) => {
+          if (!statusData.success) {
+            setAuthError(statusData.error || 'Failed to check admin status');
+            return;
+          }
+          const { is_admin, user_type, profile_exists } = statusData.data ?? {};
+          if (is_admin) {
+            setAdminConfirmed(true);
+            return;
+          }
+          if (!profile_exists) {
+            setAuthError(
+              `Your profile doesn't exist yet. User type: ${user_type || 'none'}. Please contact support or use the migration query to set admin status.`
+            );
+          } else {
+            setAuthError(
+              `You don't have admin access. Current user type: ${user_type}. Please run the migration query to set your account as admin.`
+            );
+          }
         }
-        setLoading(false);
-        return;
-      }
+      )
+      .catch(() => setAuthError('Failed to check admin status'));
+  }, [ready, token]);
 
-      if (metricsRes.ok && metricsData?.success) setMetrics(metricsData.data);
-      if (trendsRes.ok && trendsData?.success) setTrends(trendsData.data);
-      if (revenueData?.success && revenueData.data) {
-        const r = revenueData.data;
+  // Prefetch only list endpoints that are not already cached. Analytics loaded on demand (tab open/hover).
+  const prefetchListData = useCallback(() => {
+    const authToken = typeof token === 'string' && token.length > 0 ? token : null;
+    if (!authToken || !adminConfirmed) return;
+    const opts: RequestInit = { credentials: 'include' };
+    const urls = [
+      `/api/admin/users?limit=${LIST_LIMIT}`,
+      '/api/admin/businesses',
+      `/api/admin/bookings?limit=${LIST_LIMIT}`,
+      `/api/admin/audit-logs?limit=${LIST_LIMIT}`,
+    ];
+    const keys = [
+      ADMIN_CACHE_KEYS.USERS,
+      ADMIN_CACHE_KEYS.BUSINESSES,
+      ADMIN_CACHE_KEYS.BOOKINGS,
+      ADMIN_CACHE_KEYS.AUDIT,
+    ];
+    keys.forEach((key, i) => {
+      if (getAdminCached(key)) return;
+      adminFetch(urls[i], { ...opts, token: authToken })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.success !== false) setAdminCache(key, data?.data ?? data);
+        })
+        .catch(() => {});
+    });
+  }, [token, adminConfirmed]);
+
+  // Overview: only after admin confirmed. Skip API calls when we have fresh cache; otherwise stale-while-revalidate.
+  useEffect(() => {
+    const authToken = typeof token === 'string' && token.length > 0 ? token : null;
+    if (!ready || !authToken || !adminConfirmed) return;
+    const opts: RequestInit = { credentials: 'include' };
+
+    const freshOverview = getAdminCached<{
+      metrics: PlatformMetrics;
+      trends: BookingTrend[];
+      revenueSnapshot: {
+        totalRevenue: number;
+        revenueToday: number;
+        revenueWeek: number;
+        revenueMonth: number;
+        paymentSuccessRate: number;
+        failedPayments: number;
+      } | null;
+    }>(ADMIN_CACHE_KEYS.OVERVIEW);
+    if (freshOverview?.metrics) {
+      setMetrics(freshOverview.metrics);
+      if (freshOverview.trends?.length) setTrends(freshOverview.trends);
+      if (freshOverview.revenueSnapshot) setRevenueSnapshot(freshOverview.revenueSnapshot);
+      prefetchListData();
+      return;
+    }
+
+    prefetchListData();
+    const staleEntry = getAdminCachedStale<{
+      metrics: PlatformMetrics;
+      trends: BookingTrend[];
+      revenueSnapshot: {
+        totalRevenue: number;
+        revenueToday: number;
+        revenueWeek: number;
+        revenueMonth: number;
+        paymentSuccessRate: number;
+        failedPayments: number;
+      } | null;
+    }>(ADMIN_CACHE_KEYS.OVERVIEW);
+    if (staleEntry?.data) {
+      if (staleEntry.data.metrics) setMetrics(staleEntry.data.metrics);
+      if (staleEntry.data.trends?.length) setTrends(staleEntry.data.trends);
+      if (staleEntry.data.revenueSnapshot) setRevenueSnapshot(staleEntry.data.revenueSnapshot);
+    }
+
+    Promise.allSettled([
+      adminFetch('/api/admin/metrics', { ...opts, token: authToken }).then((r) => r.json()),
+      adminFetch(`/api/admin/trends?days=${OVERVIEW_DAYS}`, { ...opts, token: authToken }).then(
+        (r) => r.json()
+      ),
+      adminFetch(`/api/admin/revenue-metrics?days=${OVERVIEW_DAYS}`, {
+        ...opts,
+        token: authToken,
+      }).then((r) => (r.ok ? r.json() : null)),
+    ]).then(([metricsResult, trendsResult, revenueResult]) => {
+      if (metricsResult.status === 'fulfilled' && metricsResult.value?.success) {
+        setMetrics(metricsResult.value.data);
+      }
+      if (trendsResult.status === 'fulfilled' && trendsResult.value?.success) {
+        setTrends(trendsResult.value.data ?? []);
+      }
+      if (revenueResult.status === 'fulfilled' && revenueResult.value?.data) {
+        const r = revenueResult.value.data;
         setRevenueSnapshot({
           totalRevenue: r.totalRevenue ?? 0,
           revenueToday: r.revenueToday ?? 0,
@@ -178,13 +270,36 @@ function AdminDashboardContent() {
           failedPayments: r.failedPayments ?? 0,
         });
       }
-      setLoading(false);
-    };
+      const storedMetrics =
+        metricsResult.status === 'fulfilled' && metricsResult.value?.success
+          ? metricsResult.value.data
+          : null;
+      const storedTrends =
+        trendsResult.status === 'fulfilled' && trendsResult.value?.success
+          ? (trendsResult.value.data ?? [])
+          : [];
+      const revData =
+        revenueResult.status === 'fulfilled' && revenueResult.value?.data
+          ? revenueResult.value.data
+          : null;
+      setAdminCache(ADMIN_CACHE_KEYS.OVERVIEW, {
+        metrics: storedMetrics,
+        trends: storedTrends,
+        revenueSnapshot: revData
+          ? {
+              totalRevenue: revData.totalRevenue ?? 0,
+              revenueToday: revData.revenueToday ?? 0,
+              revenueWeek: revData.revenueWeek ?? 0,
+              revenueMonth: revData.revenueMonth ?? 0,
+              paymentSuccessRate: revData.paymentSuccessRate ?? 0,
+              failedPayments: revData.failedPayments ?? 0,
+            }
+          : null,
+      });
+    });
+  }, [ready, token, adminConfirmed, prefetchListData]);
 
-    checkAuth();
-  }, [router]);
-
-  if (loading) {
+  if (!ready) {
     const tabFromUrl = searchParams?.get('tab');
     const isAnalyticsTab = tabFromUrl === 'analytics';
     return (
@@ -192,23 +307,35 @@ function AdminDashboardContent() {
         <AdminSidebar />
         <div className="flex-1 lg:ml-64 flex flex-col min-h-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 flex flex-col min-h-0 w-full">
-            {isAnalyticsTab ? <AdminAnalyticsSkeleton /> : <AdminDashboardSkeleton />}
+            {isAnalyticsTab ? <AdminAnalyticsSkeleton /> : <OverviewSkeleton />}
           </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!session) {
+    router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD));
+    return (
+      <div className="min-h-screen bg-white flex">
+        <AdminSidebar />
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <OverviewSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (authError) {
     return (
       <div className="min-h-screen bg-white flex">
         <AdminSidebar />
         <div className="flex-1 lg:ml-64 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-gray-600 mb-4">{authError}</p>
 
-            {error.includes('migration') && (
+            {authError.includes('migration') && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left">
                 <p className="text-sm text-yellow-800 mb-2">
                   <strong>To fix this:</strong>
@@ -281,6 +408,17 @@ function AdminDashboardContent() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (ready && session && token && !adminConfirmed && !authError) {
+    return (
+      <div className="min-h-screen bg-white flex">
+        <AdminSidebar />
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <OverviewSkeleton />
         </div>
       </div>
     );
@@ -374,192 +512,250 @@ function AdminDashboardContent() {
     : null;
 
   return (
-    <div className="min-h-screen bg-white flex">
-      <AdminSidebar />
-      <div className="flex-1 lg:ml-64">
-        <DashboardErrorBoundary>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {activeTab === 'overview' && !metrics && <OverviewSkeleton />}
-            {activeTab === 'overview' && metrics && (
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Overview</h2>
-                  <p className="text-sm text-slate-500 mt-0.5">Platform-wide metrics at a glance</p>
-                </div>
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-slate-900">Core metrics</h3>
-                    <p className="text-sm text-slate-500 mt-0.5">Businesses, bookings and owners</p>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Total businesses
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.totalBusinesses}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {metrics.growthRate.businesses > 0 ? '+' : ''}
-                        {metrics.growthRate.businesses.toFixed(1)}% growth
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Active businesses
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.activeBusinesses}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {metrics.suspendedBusinesses} suspended
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Total bookings
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.totalBookings}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {metrics.growthRate.bookings > 0 ? '+' : ''}
-                        {metrics.growthRate.bookings.toFixed(1)}% growth
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Total owners
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.totalOwners}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {metrics.growthRate.owners > 0 ? '+' : ''}
-                        {metrics.growthRate.owners.toFixed(1)}% growth
-                      </p>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-slate-900">Booking volume</h3>
+    <AdminPrefetchProvider token={token}>
+      <PrefetchAnalyticsWhenReady adminConfirmed={adminConfirmed} />
+      <div className="min-h-screen bg-white flex">
+        <AdminSidebar />
+        <div className="flex-1 lg:ml-64">
+          <DashboardErrorBoundary>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {activeTab === 'overview' && !metrics && <OverviewSkeleton />}
+              {activeTab === 'overview' && metrics && (
+                <div className="space-y-8">
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+                      Overview
+                    </h2>
                     <p className="text-sm text-slate-500 mt-0.5">
-                      Today, this week, this month and customers
+                      Platform-wide metrics at a glance
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Bookings today
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.bookingsToday}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        This week
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.bookingsThisWeek}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        This month
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.bookingsThisMonth}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-                      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Total customers
-                      </p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {metrics.totalCustomers}
-                      </p>
-                    </div>
-                  </div>
-                </section>
 
-                {revenueSnapshot && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        Revenue (last 30 days)
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-0.5">Totals and payment success</p>
+                      <h3 className="text-lg font-semibold text-slate-900">Core metrics</h3>
+                      <p className="text-sm text-slate-500 mt-0.5">
+                        Businesses, bookings and owners
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                      <div className="rounded-xl border border-slate-200 p-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
                         <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                          Total revenue
+                          Total businesses
                         </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          ₹{revenueSnapshot.totalRevenue.toFixed(2)}
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.totalBusinesses}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {metrics.growthRate.businesses > 0 ? '+' : ''}
+                          {metrics.growthRate.businesses.toFixed(1)}% growth
                         </p>
                       </div>
-                      <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
                         <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                          Today
+                          Active businesses
                         </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          ₹{revenueSnapshot.revenueToday.toFixed(2)}
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.activeBusinesses}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {metrics.suspendedBusinesses} suspended
                         </p>
                       </div>
-                      <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
                         <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                          This week
+                          Total bookings
                         </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          ₹{revenueSnapshot.revenueWeek.toFixed(2)}
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.totalBookings}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {metrics.growthRate.bookings > 0 ? '+' : ''}
+                          {metrics.growthRate.bookings.toFixed(1)}% growth
                         </p>
                       </div>
-                      <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
                         <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                          This month
+                          Total owners
                         </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          ₹{revenueSnapshot.revenueMonth.toFixed(2)}
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.totalOwners}
                         </p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 p-4">
-                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                          Payment success %
-                        </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          {revenueSnapshot.paymentSuccessRate.toFixed(2)}%
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 p-4">
-                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                          Failed payments
-                        </p>
-                        <p className="mt-1 text-lg font-bold text-slate-900">
-                          {revenueSnapshot.failedPayments}
+                        <p className="mt-1 text-xs text-slate-500">
+                          {metrics.growthRate.owners > 0 ? '+' : ''}
+                          {metrics.growthRate.owners.toFixed(1)}% growth
                         </p>
                       </div>
                     </div>
                   </section>
-                )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        Booking trends (30 days)
-                      </h3>
+                      <h3 className="text-lg font-semibold text-slate-900">Booking volume</h3>
                       <p className="text-sm text-slate-500 mt-0.5">
-                        Daily totals and status breakdown
+                        Today, this week, this month and customers
                       </p>
                     </div>
-                    {trends.length > 0 ? (
-                      <Bar
-                        data={bookingTrendsChart}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Bookings today
+                        </p>
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.bookingsToday}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          This week
+                        </p>
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.bookingsThisWeek}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          This month
+                        </p>
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.bookingsThisMonth}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                          Total customers
+                        </p>
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                          {metrics.totalCustomers}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {revenueSnapshot && (
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          Revenue (last 30 days)
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-0.5">Totals and payment success</p>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            Total revenue
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            ₹{revenueSnapshot.totalRevenue.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            Today
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            ₹{revenueSnapshot.revenueToday.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            This week
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            ₹{revenueSnapshot.revenueWeek.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            This month
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            ₹{revenueSnapshot.revenueMonth.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            Payment success %
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            {revenueSnapshot.paymentSuccessRate.toFixed(2)}%
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            Failed payments
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">
+                            {revenueSnapshot.failedPayments}
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          Booking trends (30 days)
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          Daily totals and status breakdown
+                        </p>
+                      </div>
+                      {trends.length > 0 ? (
+                        <Bar
+                          data={bookingTrendsChart}
+                          options={{
+                            responsive: true,
+                            plugins: {
+                              legend: { position: 'top' as const },
+                              title: { display: false },
+                            },
+                            scales: { y: { beginAtZero: true } },
+                          }}
+                        />
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
+                          <p className="text-sm font-medium text-slate-500">No data available</p>
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          Booking status distribution
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          Confirmed, pending, rejected, cancelled
+                        </p>
+                      </div>
+                      {bookingStatusChart ? (
+                        <Bar
+                          data={bookingStatusChart}
+                          options={{
+                            responsive: true,
+                            plugins: { legend: { position: 'top' as const } },
+                            scales: { y: { beginAtZero: true } },
+                          }}
+                        />
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
+                          <p className="text-sm font-medium text-slate-500">No data available</p>
+                        </div>
+                      )}
+                    </section>
+                  </div>
+
+                  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-slate-900">Growth trends</h3>
+                      <p className="text-sm text-slate-500 mt-0.5">Growth rate by category</p>
+                    </div>
+                    {growthChart ? (
+                      <Line
+                        data={growthChart}
                         options={{
                           responsive: true,
                           plugins: {
@@ -575,134 +771,104 @@ function AdminDashboardContent() {
                       </div>
                     )}
                   </section>
-
-                  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        Booking status distribution
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-0.5">
-                        Confirmed, pending, rejected, cancelled
-                      </p>
-                    </div>
-                    {bookingStatusChart ? (
-                      <Bar
-                        data={bookingStatusChart}
-                        options={{
-                          responsive: true,
-                          plugins: { legend: { position: 'top' as const } },
-                          scales: { y: { beginAtZero: true } },
-                        }}
-                      />
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                        <p className="text-sm font-medium text-slate-500">No data available</p>
-                      </div>
-                    )}
-                  </section>
                 </div>
+              )}
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-slate-900">Growth trends</h3>
-                    <p className="text-sm text-slate-500 mt-0.5">Growth rate by category</p>
-                  </div>
-                  {growthChart ? (
-                    <Line
-                      data={growthChart}
-                      options={{
-                        responsive: true,
-                        plugins: {
-                          legend: { position: 'top' as const },
-                          title: { display: false },
-                        },
-                        scales: { y: { beginAtZero: true } },
-                      }}
-                    />
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                      <p className="text-sm font-medium text-slate-500">No data available</p>
-                    </div>
-                  )}
-                </section>
-              </div>
-            )}
+              {activeTab === 'businesses' && <BusinessesTab />}
 
-            {activeTab === 'businesses' && <BusinessesTab />}
+              {activeTab === 'users' && <UsersTab />}
 
-            {activeTab === 'users' && <UsersTab />}
+              {activeTab === 'bookings' && <BookingsTab />}
 
-            {activeTab === 'bookings' && <BookingsTab />}
+              {activeTab === 'audit' && <AuditLogsTab />}
 
-            {activeTab === 'audit' && <AuditLogsTab />}
+              {activeTab === 'success-metrics' && <SuccessMetricsDashboard />}
 
-            {activeTab === 'success-metrics' && <SuccessMetricsDashboard />}
-
-            {activeTab === 'analytics' && <AdminAnalyticsTab />}
-          </div>
-        </DashboardErrorBoundary>
+              {activeTab === 'analytics' && <AdminAnalyticsTab />}
+            </div>
+          </DashboardErrorBoundary>
+        </div>
       </div>
-    </div>
+    </AdminPrefetchProvider>
   );
 }
 
 export default function AdminDashboardPage() {
   return (
-    <Suspense fallback={<AdminDashboardSkeleton />}>
-      <AdminDashboardContent />
-    </Suspense>
+    <AdminSessionProvider>
+      <Suspense fallback={<AdminDashboardSkeleton />}>
+        <AdminDashboardContentInner />
+      </Suspense>
+    </AdminSessionProvider>
   );
 }
 
 function BusinessesTab() {
   const router = useRouter();
+  const { token } = useAdminSession();
   const [businesses, setBusinesses] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setError(null);
+    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.BUSINESSES);
+    if (cached && Array.isArray(cached)) {
+      setBusinesses(cached);
+      setLoading(false);
+      return;
+    }
+    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.BUSINESSES);
+    if (stale?.data && Array.isArray(stale.data)) {
+      setBusinesses(stale.data);
+      setLoading(false);
+      if (!token) return;
+      adminFetch('/api/admin/businesses', { token, credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            const list = Array.isArray(data.data) ? data.data : [];
+            setBusinesses(list);
+            setAdminCache(ADMIN_CACHE_KEYS.BUSINESSES, list);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+    if (!token) {
+      setError('Session expired. Please log in again.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const ac = new AbortController();
-    (async () => {
-      try {
-        if (!supabaseAuth) {
-          setError('Supabase is not configured');
-          setLoading(false);
-          return;
-        }
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-        if (ac.signal.aborted) return;
-        if (!session) {
-          setError('Session expired. Please log in again.');
-          setLoading(false);
-          return;
-        }
-        const res = await fetch('/api/admin/businesses', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: ac.signal,
-        });
-        const data = await res.json();
+    adminFetch('/api/admin/businesses', { token, credentials: 'include', signal: ac.signal })
+      .then((r) => r.json())
+      .then((data) => {
         if (ac.signal.aborted) return;
         if (data.success) {
-          setBusinesses(Array.isArray(data.data) ? data.data : []);
+          const list = Array.isArray(data.data) ? data.data : [];
+          setBusinesses(list);
+          setAdminCache(ADMIN_CACHE_KEYS.BUSINESSES, list);
         } else {
           setError(data.error || 'Failed to load businesses');
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to load businesses');
-      } finally {
+      })
+      .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
-      }
-    })();
+      });
     return () => ac.abort();
-  }, []);
-
-  if (loading) {
-    return <BusinessesSkeleton />;
-  }
+  }, [token]);
 
   if (error) {
     return (
@@ -728,13 +894,22 @@ function BusinessesTab() {
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">Business list</h3>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Name, owner, location, bookings and status
-          </p>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Business list</h3>
+          </div>
+          {businesses.length > 0 && (
+            <input
+              type="search"
+              placeholder="Search businesses..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Search businesses"
+            />
+          )}
         </div>
-        {businesses.length > 0 ? (
+        {businesses.length > 0 || loading ? (
           <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
@@ -761,67 +936,141 @@ function BusinessesTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {businesses.map((business) => (
-                    <tr key={business.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-5 py-4 align-top">
-                        <div className="text-sm font-semibold text-slate-900">
-                          {business.salon_name || business.name || 'N/A'}
-                        </div>
-                        <div
-                          className="mt-0.5 text-xs text-slate-500 font-mono truncate max-w-[200px]"
-                          title={business.booking_link}
-                        >
-                          {business.booking_link || '—'}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 align-top min-w-0">
-                        <div className="text-sm font-medium text-slate-900">
-                          {business.owner?.full_name || business.owner_name || '—'}
-                        </div>
-                        <div
-                          className="mt-0.5 text-xs text-slate-500 truncate max-w-[180px]"
-                          title={business.owner?.email}
-                        >
-                          {business.owner?.email || '—'}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-slate-600 align-top max-w-[200px]">
-                        <span
-                          className="block break-words line-clamp-2"
-                          title={business.location || undefined}
-                        >
-                          {business.location || '—'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right align-top">
-                        <span className="text-sm font-medium tabular-nums text-slate-900">
-                          {business.bookingCount ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 align-top">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            business.suspended
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}
-                        >
-                          {business.suspended ? 'Suspended' : 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right align-top">
-                        <button
-                          onClick={() => router.push(ROUTES.ADMIN_BUSINESS(business.id))}
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                        >
-                          Edit
-                        </button>
+                  {loading && businesses.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
+                        Loading businesses...
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    (() => {
+                      const q = searchQuery.trim().toLowerCase();
+                      const filtered = q
+                        ? businesses.filter(
+                            (b) =>
+                              (b.salon_name || b.name || '').toLowerCase().includes(q) ||
+                              (b.booking_link || '').toLowerCase().includes(q) ||
+                              (b.owner?.full_name || b.owner_name || '')
+                                .toLowerCase()
+                                .includes(q) ||
+                              (b.owner?.email || '').toLowerCase().includes(q) ||
+                              (b.location || '').toLowerCase().includes(q)
+                          )
+                        : businesses;
+                      const totalItems = filtered.length;
+                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                      const start = (page - 1) * TABLE_PAGE_SIZE;
+                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
+                      return paginated.map((business) => (
+                        <tr key={business.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="px-5 py-4 align-top">
+                            <div className="text-sm font-semibold text-slate-900">
+                              {business.salon_name || business.name || 'N/A'}
+                            </div>
+                            <div
+                              className="mt-0.5 text-xs text-slate-500 font-mono truncate max-w-[200px]"
+                              title={business.booking_link}
+                            >
+                              {business.booking_link || '—'}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 align-top min-w-0">
+                            <div className="text-sm font-medium text-slate-900">
+                              {business.owner?.full_name || business.owner_name || '—'}
+                            </div>
+                            <div
+                              className="mt-0.5 text-xs text-slate-500 truncate max-w-[180px]"
+                              title={business.owner?.email}
+                            >
+                              {business.owner?.email || '—'}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-600 align-top max-w-[200px]">
+                            <span
+                              className="block break-words line-clamp-2"
+                              title={business.location || undefined}
+                            >
+                              {business.location || '—'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right align-top">
+                            <span className="text-sm font-medium tabular-nums text-slate-900">
+                              {business.bookingCount ?? 0}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 align-top">
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                business.suspended
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}
+                            >
+                              {business.suspended ? 'Suspended' : 'Active'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right align-top">
+                            <button
+                              onClick={() => router.push(ROUTES.ADMIN_BUSINESS(business.id))}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ));
+                    })()
+                  )}
                 </tbody>
               </table>
             </div>
+            {!loading &&
+              (() => {
+                const q = searchQuery.trim().toLowerCase();
+                const filtered = q
+                  ? businesses.filter(
+                      (b) =>
+                        (b.salon_name || b.name || '').toLowerCase().includes(q) ||
+                        (b.booking_link || '').toLowerCase().includes(q) ||
+                        (b.owner?.full_name || b.owner_name || '').toLowerCase().includes(q) ||
+                        (b.owner?.email || '').toLowerCase().includes(q) ||
+                        (b.location || '').toLowerCase().includes(q)
+                    )
+                  : businesses;
+                const totalItems = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                const start = (page - 1) * TABLE_PAGE_SIZE;
+                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
+                if (totalItems === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
+                    <p className="text-sm text-slate-600">
+                      Showing {start + 1}–{end} of {totalItems}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-slate-600">
+                        Page {page} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
@@ -837,53 +1086,74 @@ function BusinessesTab() {
 }
 
 function UsersTab() {
+  const { token } = useAdminSession();
   const [users, setUsers] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setError(null);
+    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.USERS);
+    if (cached && Array.isArray(cached)) {
+      setUsers(cached);
+      setLoading(false);
+      return;
+    }
+    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.USERS);
+    if (stale?.data && Array.isArray(stale.data)) {
+      setUsers(stale.data);
+      setLoading(false);
+      if (!token) return;
+      adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, { token, credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            const list = Array.isArray(data.data) ? data.data : [];
+            setUsers(list);
+            setAdminCache(ADMIN_CACHE_KEYS.USERS, list);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+    if (!token) {
+      setError('Session expired. Please log in again.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const ac = new AbortController();
-    (async () => {
-      try {
-        if (!supabaseAuth) {
-          setError('Supabase is not configured');
-          setLoading(false);
-          return;
-        }
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-        if (ac.signal.aborted) return;
-        if (!session) {
-          setError('Session expired. Please log in again.');
-          setLoading(false);
-          return;
-        }
-        const res = await fetch('/api/admin/users', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: ac.signal,
-        });
-        const data = await res.json();
+    adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
+      token,
+      credentials: 'include',
+      signal: ac.signal,
+    })
+      .then((r) => r.json())
+      .then((data) => {
         if (ac.signal.aborted) return;
         if (data.success) {
-          setUsers(Array.isArray(data.data) ? data.data : []);
+          const list = Array.isArray(data.data) ? data.data : [];
+          setUsers(list);
+          setAdminCache(ADMIN_CACHE_KEYS.USERS, list);
         } else {
           setError(data.error || 'Failed to load users');
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to load users');
-      } finally {
+      })
+      .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
-      }
-    })();
+      });
     return () => ac.abort();
-  }, []);
-
-  if (loading) {
-    return <UsersSkeleton />;
-  }
+  }, [token]);
 
   if (error) {
     return (
@@ -909,13 +1179,22 @@ function UsersTab() {
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">User list</h3>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Name, email, type, businesses and bookings
-          </p>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">User list</h3>
+          </div>
+          {users.length > 0 && (
+            <input
+              type="search"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Search users"
+            />
+          )}
         </div>
-        {users.length > 0 ? (
+        {users.length > 0 || loading ? (
           <div className="overflow-hidden rounded-xl border border-slate-200">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
@@ -939,30 +1218,94 @@ function UsersTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                        {user.full_name || 'N/A'}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {user.email}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
-                          {user.user_type}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {user.businesses?.length || 0}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {user.bookingCount || 0}
-                      </td>
-                    </tr>
-                  ))}
+                  {loading && users.length === 0 ? (
+                    <UsersTableBodySkeleton />
+                  ) : (
+                    (() => {
+                      const q = searchQuery.trim().toLowerCase();
+                      const filtered = q
+                        ? users.filter(
+                            (u) =>
+                              (u.full_name || '').toLowerCase().includes(q) ||
+                              (u.email || '').toLowerCase().includes(q) ||
+                              (u.user_type || '').toLowerCase().includes(q)
+                          )
+                        : users;
+                      const totalItems = filtered.length;
+                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                      const start = (page - 1) * TABLE_PAGE_SIZE;
+                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
+                      return paginated.map((user) => (
+                        <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                            {user.full_name || 'N/A'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
+                            {user.email}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
+                              {user.user_type}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {user.businesses?.length || 0}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {user.bookingCount || 0}
+                          </td>
+                        </tr>
+                      ));
+                    })()
+                  )}
                 </tbody>
               </table>
             </div>
+            {!loading &&
+              (() => {
+                const q = searchQuery.trim().toLowerCase();
+                const filtered = q
+                  ? users.filter(
+                      (u) =>
+                        (u.full_name || '').toLowerCase().includes(q) ||
+                        (u.email || '').toLowerCase().includes(q) ||
+                        (u.user_type || '').toLowerCase().includes(q)
+                    )
+                  : users;
+                const totalItems = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                const start = (page - 1) * TABLE_PAGE_SIZE;
+                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
+                if (totalItems === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
+                    <p className="text-sm text-slate-600">
+                      Showing {start + 1}–{end} of {totalItems}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-slate-600">
+                        Page {page} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
@@ -977,53 +1320,74 @@ function UsersTab() {
 
 function BookingsTab() {
   const router = useRouter();
+  const { token } = useAdminSession();
   const [bookings, setBookings] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setError(null);
+    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.BOOKINGS);
+    if (cached && Array.isArray(cached)) {
+      setBookings(cached);
+      setLoading(false);
+      return;
+    }
+    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.BOOKINGS);
+    if (stale?.data && Array.isArray(stale.data)) {
+      setBookings(stale.data);
+      setLoading(false);
+      if (!token) return;
+      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, { token, credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            const list = Array.isArray(data.data) ? data.data : [];
+            setBookings(list);
+            setAdminCache(ADMIN_CACHE_KEYS.BOOKINGS, list);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+    if (!token) {
+      setError('Session expired. Please log in again.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const ac = new AbortController();
-    (async () => {
-      try {
-        if (!supabaseAuth) {
-          setError('Supabase is not configured');
-          setLoading(false);
-          return;
-        }
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-        if (ac.signal.aborted) return;
-        if (!session) {
-          setError('Session expired. Please log in again.');
-          setLoading(false);
-          return;
-        }
-        const res = await fetch('/api/admin/bookings?limit=50', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: ac.signal,
-        });
-        const data = await res.json();
+    adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
+      token,
+      credentials: 'include',
+      signal: ac.signal,
+    })
+      .then((r) => r.json())
+      .then((data) => {
         if (ac.signal.aborted) return;
         if (data.success) {
-          setBookings(Array.isArray(data.data) ? data.data : []);
+          const list = Array.isArray(data.data) ? data.data : [];
+          setBookings(list);
+          setAdminCache(ADMIN_CACHE_KEYS.BOOKINGS, list);
         } else {
           setError(data.error || 'Failed to load bookings');
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to load bookings');
-      } finally {
+      })
+      .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
-      }
-    })();
+      });
     return () => ac.abort();
-  }, []);
-
-  if (loading) {
-    return <BookingsSkeleton />;
-  }
+  }, [token]);
 
   if (error) {
     return (
@@ -1049,13 +1413,22 @@ function BookingsTab() {
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">Booking list</h3>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Customer name, phone, business, slot and status
-          </p>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Booking list</h3>
+          </div>
+          {(bookings.length > 0 || loading) && (
+            <input
+              type="search"
+              placeholder="Search bookings..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Search bookings"
+            />
+          )}
         </div>
-        {bookings.length > 0 ? (
+        {bookings.length > 0 || loading ? (
           <div className="overflow-hidden rounded-xl border border-slate-200">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
@@ -1082,58 +1455,141 @@ function BookingsTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {bookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                        {booking.customer_name || '—'}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-                        {booking.business?.salon_name || booking.business?.name || 'N/A'}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {booking.customer_phone || '—'}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {booking.slot ? (
-                          <>
-                            {new Date(booking.slot.date).toLocaleDateString()}
-                            <br />
-                            <span className="text-slate-500">
-                              {booking.slot.start_time} – {booking.slot.end_time}
-                            </span>
-                          </>
-                        ) : (
-                          'N/A'
-                        )}
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            booking.status === 'confirmed'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : booking.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : booking.status === 'pending'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-slate-100 text-slate-800'
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-right">
-                        <button
-                          onClick={() => router.push(ROUTES.ADMIN_BOOKING(booking.id))}
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
-                        >
-                          Manage
-                        </button>
+                  {loading && bookings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
+                        Loading bookings...
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    (() => {
+                      const q = searchQuery.trim().toLowerCase();
+                      const filtered = q
+                        ? bookings.filter(
+                            (b) =>
+                              (b.customer_name || '').toLowerCase().includes(q) ||
+                              (b.business?.salon_name || b.business?.name || '')
+                                .toLowerCase()
+                                .includes(q) ||
+                              (b.customer_phone || '').toLowerCase().includes(q) ||
+                              (b.status || '').toLowerCase().includes(q) ||
+                              (b.slot?.date
+                                ? new Date(b.slot.date)
+                                    .toLocaleDateString()
+                                    .toLowerCase()
+                                    .includes(q)
+                                : false)
+                          )
+                        : bookings;
+                      const totalItems = filtered.length;
+                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                      const start = (page - 1) * TABLE_PAGE_SIZE;
+                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
+                      return paginated.map((booking) => (
+                        <tr key={booking.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                            {booking.customer_name || '—'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {booking.business?.salon_name || booking.business?.name || 'N/A'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
+                            {booking.customer_phone || '—'}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
+                            {booking.slot ? (
+                              <>
+                                {new Date(booking.slot.date).toLocaleDateString()}
+                                <br />
+                                <span className="text-slate-500">
+                                  {booking.slot.start_time} – {booking.slot.end_time}
+                                </span>
+                              </>
+                            ) : (
+                              'N/A'
+                            )}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                booking.status === 'confirmed'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : booking.status === 'rejected'
+                                    ? 'bg-red-100 text-red-800'
+                                    : booking.status === 'pending'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-slate-100 text-slate-800'
+                              }`}
+                            >
+                              {booking.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-right">
+                            <button
+                              onClick={() => router.push(ROUTES.ADMIN_BOOKING(booking.id))}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+                            >
+                              Manage
+                            </button>
+                          </td>
+                        </tr>
+                      ));
+                    })()
+                  )}
                 </tbody>
               </table>
             </div>
+            {!loading &&
+              (() => {
+                const q = searchQuery.trim().toLowerCase();
+                const filtered = q
+                  ? bookings.filter(
+                      (b) =>
+                        (b.customer_name || '').toLowerCase().includes(q) ||
+                        (b.business?.salon_name || b.business?.name || '')
+                          .toLowerCase()
+                          .includes(q) ||
+                        (b.customer_phone || '').toLowerCase().includes(q) ||
+                        (b.status || '').toLowerCase().includes(q) ||
+                        (b.slot?.date
+                          ? new Date(b.slot.date).toLocaleDateString().toLowerCase().includes(q)
+                          : false)
+                    )
+                  : bookings;
+                const totalItems = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                const start = (page - 1) * TABLE_PAGE_SIZE;
+                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
+                if (totalItems === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
+                    <p className="text-sm text-slate-600">
+                      Showing {start + 1}–{end} of {totalItems}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-slate-600">
+                        Page {page} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
@@ -1147,51 +1603,76 @@ function BookingsTab() {
 }
 
 function AuditLogsTab() {
+  const { token } = useAdminSession();
   const [logs, setLogs] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const isDev = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setError(null);
+    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.AUDIT);
+    if (cached && Array.isArray(cached)) {
+      setLogs(cached);
+      setLoading(false);
+      return;
+    }
+    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.AUDIT);
+    if (stale?.data && Array.isArray(stale.data)) {
+      setLogs(stale.data);
+      setLoading(false);
+      if (!token) return;
+      adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, { token, credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            const list = Array.isArray(data.data) ? data.data : [];
+            setLogs(list);
+            setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+    if (!token) {
+      setError('Session expired. Please log in again.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     const ac = new AbortController();
-    (async () => {
-      try {
-        if (!supabaseAuth) {
-          setError('Supabase is not configured');
-          setLoading(false);
-          return;
-        }
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-        if (ac.signal.aborted) return;
-        if (!session) {
-          setError('Session expired. Please log in again.');
-          setLoading(false);
-          return;
-        }
-        const res = await fetch('/api/admin/audit-logs?limit=100', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          signal: ac.signal,
-        });
-        const data = await res.json();
+    adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, {
+      token,
+      credentials: 'include',
+      signal: ac.signal,
+    })
+      .then((r) => r.json())
+      .then((data) => {
         if (ac.signal.aborted) return;
         if (data.success) {
-          setLogs(Array.isArray(data.data) ? data.data : []);
+          const list = Array.isArray(data.data) ? data.data : [];
+          setLogs(list);
+          setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
         } else {
           setError(data.error || 'Failed to load audit logs');
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to load audit logs');
-      } finally {
+      })
+      .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
-      }
-    })();
+      });
     return () => ac.abort();
-  }, []);
+  }, [token]);
 
   const sentenceCase = (s: string) => (s.length ? s[0].toUpperCase() + s.slice(1) : s);
   const humanAction = (action: string) =>
@@ -1311,10 +1792,6 @@ function AuditLogsTab() {
     return humanAction(actionType) + ' performed.';
   };
 
-  if (loading) {
-    return <AuditLogsSkeleton />;
-  }
-
   if (error) {
     return (
       <div className="space-y-8">
@@ -1374,11 +1851,22 @@ function AuditLogsTab() {
       )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">Activity log</h3>
-          <p className="text-sm text-slate-500 mt-0.5">Timestamp, action, entity and description</p>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Activity log</h3>
+          </div>
+          {(logs.length > 0 || loading) && (
+            <input
+              type="search"
+              placeholder="Search audit logs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Search audit logs"
+            />
+          )}
         </div>
-        {logs.length > 0 ? (
+        {logs.length > 0 || loading ? (
           <div className="overflow-hidden rounded-xl border border-slate-200">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
@@ -1404,40 +1892,119 @@ function AuditLogsTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {new Date(log.created_at).toLocaleString()}
+                  {loading && logs.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={isDev ? 5 : 4}
+                        className="px-5 py-12 text-center text-sm text-slate-500"
+                      >
+                        Loading audit logs...
                       </td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
-                          {log.action_type?.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                        {log.entity_type}{' '}
-                        {log.entity_id ? `(${log.entity_id.substring(0, 8)}…)` : ''}
-                      </td>
-                      <td className="px-5 py-4 text-sm text-slate-600 max-w-md align-top">
-                        <span className="block break-words whitespace-pre-wrap">
-                          {formatAuditDescription(log)}
-                        </span>
-                      </td>
-                      {isDev && (
-                        <td className="px-5 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
-                            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800 hover:bg-amber-100 text-xs font-medium transition-colors"
-                          >
-                            {selectedLog?.id === log.id ? 'Hide' : 'View'}
-                          </button>
-                        </td>
-                      )}
                     </tr>
-                  ))}
+                  ) : (
+                    (() => {
+                      const q = searchQuery.trim().toLowerCase();
+                      const filtered = q
+                        ? logs.filter((log) => {
+                            const desc = formatAuditDescription(log);
+                            return (
+                              (log.action_type || '').toLowerCase().includes(q) ||
+                              (log.entity_type || '').toLowerCase().includes(q) ||
+                              (log.entity_id || '').toLowerCase().includes(q) ||
+                              desc.toLowerCase().includes(q)
+                            );
+                          })
+                        : logs;
+                      const totalItems = filtered.length;
+                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                      const start = (page - 1) * TABLE_PAGE_SIZE;
+                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
+                      return paginated.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500">
+                            {new Date(log.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
+                              {log.action_type?.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                            {log.entity_type}{' '}
+                            {log.entity_id ? `(${log.entity_id.substring(0, 8)}…)` : ''}
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-600 max-w-md align-top">
+                            <span className="block break-words whitespace-pre-wrap">
+                              {formatAuditDescription(log)}
+                            </span>
+                          </td>
+                          {isDev && (
+                            <td className="px-5 py-4 whitespace-nowrap text-sm">
+                              <button
+                                onClick={() =>
+                                  setSelectedLog(selectedLog?.id === log.id ? null : log)
+                                }
+                                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800 hover:bg-amber-100 text-xs font-medium transition-colors"
+                              >
+                                {selectedLog?.id === log.id ? 'Hide' : 'View'}
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ));
+                    })()
+                  )}
                 </tbody>
               </table>
             </div>
+            {!loading &&
+              (() => {
+                const q = searchQuery.trim().toLowerCase();
+                const filtered = q
+                  ? logs.filter((log) => {
+                      const desc = formatAuditDescription(log);
+                      return (
+                        (log.action_type || '').toLowerCase().includes(q) ||
+                        (log.entity_type || '').toLowerCase().includes(q) ||
+                        (log.entity_id || '').toLowerCase().includes(q) ||
+                        desc.toLowerCase().includes(q)
+                      );
+                    })
+                  : logs;
+                const totalItems = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                const start = (page - 1) * TABLE_PAGE_SIZE;
+                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
+                if (totalItems === 0) return null;
+                return (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
+                    <p className="text-sm text-slate-600">
+                      Showing {start + 1}–{end} of {totalItems}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-slate-600">
+                        Page {page} of {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">

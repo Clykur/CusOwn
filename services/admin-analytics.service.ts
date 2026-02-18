@@ -163,7 +163,7 @@ export class AdminAnalyticsService {
         .select('duration_ms')
         .like('metric', 'api.%')
         .order('recorded_at', { ascending: false })
-        .limit(2000),
+        .limit(500),
       supabase
         .from('metrics')
         .select('value, updated_at')

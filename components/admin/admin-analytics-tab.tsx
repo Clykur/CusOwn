@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabaseAuth } from '@/lib/supabase/auth';
+import { useAdminSession } from '@/components/admin/admin-session-context';
+import {
+  getAdminCached,
+  getAdminCachedStale,
+  setAdminCache,
+  getAdminAnalyticsCacheKey,
+} from '@/components/admin/admin-cache';
+import { adminFetch } from '@/lib/utils/admin-fetch.client';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -84,7 +91,15 @@ const chartDefaults = {
   },
 };
 
+type AnalyticsCachePayload = {
+  revenue: AdminRevenueMetrics | null;
+  funnel: AdminBookingFunnel | null;
+  health: AdminBusinessHealthItem[] | null;
+  system: AdminSystemMetrics | null;
+};
+
 export default function AdminAnalyticsTab() {
+  const { token } = useAdminSession();
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - DEFAULT_DAYS);
@@ -98,72 +113,99 @@ export default function AdminAnalyticsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAll = useCallback(async () => {
-    if (!supabaseAuth) return;
-    const {
-      data: { session },
-    } = await supabaseAuth.auth.getSession();
-    if (!session) return;
-
-    setLoading(true);
+  const fetchAll = useCallback(() => {
+    if (!token) return;
     setError(null);
+    setLoading(true);
     const params = new URLSearchParams({
       startDate: `${startDate}T00:00:00.000Z`,
       endDate: `${endDate}T23:59:59.999Z`,
     });
+    const opts = { token, credentials: 'include' as RequestCredentials };
+    const cacheKey = getAdminAnalyticsCacheKey(startDate, endDate);
 
-    try {
-      const headers = { Authorization: `Bearer ${session.access_token}` };
-      const [revRes, funRes, healthRes, sysRes] = await Promise.all([
-        fetch(`/api/admin/revenue-metrics?${params}`, { headers }),
-        fetch(`/api/admin/booking-funnel?${params}`, { headers }),
-        fetch(`/api/admin/business-health?${params}&limit=20`, { headers }),
-        fetch('/api/admin/system-metrics', { headers }),
-      ]);
+    const revP = adminFetch(`/api/admin/revenue-metrics?${params}`, opts)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success) setRevenue(data.data);
+        else setRevenue(null);
+        return data;
+      });
+    const funP = adminFetch(`/api/admin/booking-funnel?${params}`, opts)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success) setFunnel(data.data);
+        else setFunnel(null);
+        return data;
+      });
+    const healthP = adminFetch(`/api/admin/business-health?${params}&limit=20`, opts)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success) setHealth(data.data);
+        else setHealth([]);
+        return data;
+      });
+    const sysP = adminFetch('/api/admin/system-metrics', opts)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success) setSystem(data.data);
+        else setSystem(null);
+        return data;
+      });
 
-      if (!revRes.ok) throw new Error('Failed to load revenue metrics');
-      if (!funRes.ok) throw new Error('Failed to load booking funnel');
-      if (!healthRes.ok) throw new Error('Failed to load business health');
-      if (!sysRes.ok) throw new Error('Failed to load system metrics');
-
-      const [revData, funData, healthData, sysData] = await Promise.all([
-        revRes.json(),
-        funRes.json(),
-        healthRes.json(),
-        sysRes.json(),
-      ]);
-
-      if (revData.success) setRevenue(revData.data);
-      else setRevenue(null);
-      if (funData.success) setFunnel(funData.data);
-      else setFunnel(null);
-      if (healthData.success) setHealth(healthData.data);
-      else setHealth([]);
-      if (sysData.success) setSystem(sysData.data);
-      else setSystem(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analytics');
-    } finally {
-      setLoading(false);
-    }
-  }, [startDate, endDate]);
+    Promise.allSettled([revP, funP, healthP, sysP])
+      .then(([rev, fun, healthRes, sys]) => {
+        const payload: AnalyticsCachePayload = {
+          revenue: rev.status === 'fulfilled' && rev.value?.success ? rev.value.data : null,
+          funnel: fun.status === 'fulfilled' && fun.value?.success ? fun.value.data : null,
+          health:
+            healthRes.status === 'fulfilled' && healthRes.value?.success
+              ? healthRes.value.data
+              : null,
+          system: sys.status === 'fulfilled' && sys.value?.success ? sys.value.data : null,
+        };
+        setAdminCache(cacheKey, payload);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load analytics');
+        setLoading(false);
+      });
+  }, [startDate, endDate, token]);
 
   useEffect(() => {
+    const cacheKey = getAdminAnalyticsCacheKey(startDate, endDate);
+    const cached = getAdminCached<AnalyticsCachePayload>(cacheKey);
+    if (cached) {
+      setRevenue(cached.revenue ?? null);
+      setFunnel(cached.funnel ?? null);
+      setHealth(cached.health ?? null);
+      setSystem(cached.system ?? null);
+      setLoading(false);
+      return;
+    }
+    const stale = getAdminCachedStale<AnalyticsCachePayload>(cacheKey);
+    if (stale?.data) {
+      setRevenue(stale.data.revenue ?? null);
+      setFunnel(stale.data.funnel ?? null);
+      setHealth(stale.data.health ?? null);
+      setSystem(stale.data.system ?? null);
+      setLoading(false);
+      if (stale.stale && token) fetchAll();
+      return;
+    }
+    setLoading(true);
     fetchAll();
-  }, [fetchAll]);
+  }, [startDate, endDate, token, fetchAll]);
 
   const handleExport = async () => {
-    if (!supabaseAuth) return;
-    const {
-      data: { session },
-    } = await supabaseAuth.auth.getSession();
-    if (!session) return;
+    if (!token) return;
     const params = new URLSearchParams({
       startDate: `${startDate}T00:00:00.000Z`,
       endDate: `${endDate}T23:59:59.999Z`,
     });
     const res = await fetch(`/api/admin/export/bookings?${params}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return;
     const blob = await res.blob();
