@@ -1,4 +1,2 @@
 #!/bin/sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 npx ts-node --project scripts/tsconfig.json scripts/local-ci.ts
