@@ -19,50 +19,77 @@ export default function UniversalSidebar() {
 
   useEffect(() => {
     const determineSidebar = async () => {
-      // Pages that manage their own layout (including /customer/dashboard via CustomerLayout)
-      if (
-        pathname?.startsWith('/admin') ||
-        pathname?.startsWith('/owner') ||
-        pathname?.startsWith('/customer') ||
-        pathname === '/' ||
-        pathname?.startsWith('/auth') ||
-        pathname === '/select-role'
-      ) {
-        setSidebarType(null);
-        setLoading(false);
-        return;
-      }
-
       try {
+        const cleanPath = pathname?.split('?')[0] || '';
+
+        // Public pages with no sidebar
+        if (cleanPath === '/' || cleanPath.startsWith('/auth') || cleanPath === '/select-role') {
+          setSidebarType(null);
+          return;
+        }
+
+        // Admin routes
+        if (cleanPath.startsWith('/admin')) {
+          setSidebarType('admin');
+          return;
+        }
+
+        // Owner explicit routes
+        if (cleanPath.startsWith('/owner')) {
+          sessionStorage.setItem('ui-context', 'owner');
+          setSidebarType('owner');
+          return;
+        }
+
+        // Setup page → treat as owner
+        if (cleanPath === ROUTES.SETUP) {
+          sessionStorage.setItem('ui-context', 'owner');
+          setSidebarType('owner');
+          return;
+        }
+
+        // Customer flow routes
+        if (
+          cleanPath.startsWith('/categories') ||
+          cleanPath.startsWith('/salon') ||
+          cleanPath.startsWith('/booking') ||
+          cleanPath.startsWith('/customer')
+        ) {
+          sessionStorage.setItem('ui-context', 'customer');
+          setSidebarType('customer');
+          return;
+        }
+
+        // Handle common profile page using stored context
+        if (cleanPath === ROUTES.PROFILE) {
+          const context = sessionStorage.getItem('ui-context');
+          if (context === 'owner') {
+            setSidebarType('owner');
+            return;
+          }
+          if (context === 'customer') {
+            setSidebarType('customer');
+            return;
+          }
+        }
+
+        // Fallback based on logged-in role
         const {
           data: { session },
         } = await supabaseAuth.auth.getSession();
 
-        // CUSTOMER FLOW ROUTES ALWAYS USE CUSTOMER SIDEBAR
-        if (
-          pathname?.startsWith('/categories') ||
-          pathname?.startsWith('/salon') ||
-          pathname?.startsWith('/booking')
-        ) {
-          setSidebarType('customer');
-          setLoading(false);
-          return;
-        }
-
-        // Not logged in
         if (!session?.user) {
           setSidebarType(null);
-          setLoading(false);
           return;
         }
 
-        // Role-based fallback for public customer routes (categories, salon, booking)
         const state = await getUserState(session.user.id);
 
         if (state.userType === 'admin') {
           setSidebarType('admin');
+        } else if (state.userType === 'owner') {
+          setSidebarType('owner');
         } else {
-          // All non-admin public routes default to customer sidebar
           setSidebarType('customer');
         }
       } catch {
@@ -78,62 +105,52 @@ export default function UniversalSidebar() {
   if (loading || !sidebarType) return null;
 
   const cleanPath = pathname?.split('?')[0] || '';
-  const allowMobileHeader =
-    (sidebarType === 'owner' && (cleanPath === ROUTES.SETUP || cleanPath === ROUTES.PROFILE)) ||
-    (sidebarType === 'customer' && cleanPath === ROUTES.CUSTOMER_DASHBOARD);
 
-  const isStaticSidebarPage = cleanPath === '/setup' || cleanPath === '/profile';
-
-  // Get correct title for pages
   const getMobileHeaderTitle = () => {
+    // Owner base dashboard
+    if (cleanPath === ROUTES.OWNER_DASHBOARD_BASE) {
+      return 'Owner Dashboard';
+    }
+
+    // Owner dynamic business dashboard (/owner/{bookingLink})
+    if (cleanPath.startsWith('/owner/') && cleanPath !== '/owner/businesses') {
+      return 'Owner Dashboard';
+    }
+
+    // Owner businesses list
+    if (cleanPath === '/owner/businesses') {
+      return 'My Businesses';
+    }
+
     if (cleanPath === ROUTES.SETUP) return 'Create Business';
     if (cleanPath === ROUTES.PROFILE) return 'Profile';
-    if (cleanPath === ROUTES.CUSTOMER_DASHBOARD) return 'My Bookings';
+
+    // Customer
+    if (cleanPath === ROUTES.CUSTOMER_DASHBOARD) {
+      return 'My Bookings';
+    }
+
     if (cleanPath === ROUTES.CATEGORIES) return 'Book Appointment';
     if (cleanPath === ROUTES.SALON_LIST) return 'Browse Salons';
-    if (cleanPath?.startsWith('/salon/')) return 'Salon Details';
-    if (cleanPath?.startsWith('/booking/')) return 'Booking Details';
-    return 'Menu';
+    if (cleanPath.startsWith('/salon/')) return 'Salon Details';
+    if (cleanPath.startsWith('/booking/')) return 'Booking Details';
+
+    return null;
   };
 
   return (
     <>
-      {/* Mobile Header (shown on non-static pages for Owner and Customer) */}
-      {!isStaticSidebarPage && (sidebarType === 'owner' || sidebarType === 'customer') && (
-        <div className="lg:hidden block">
-          {mobileOpen === false && (
-            <div className="px-4 pt-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setMobileOpen(true)}
-                  className="p-2.5 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow transition-all"
-                  aria-label="Open menu"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-700"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                </button>
-                {/* Mobile page title aligned with hamburger */}
-                <div>
-                  <h1 className="text-2xl font-semibold">{getMobileHeaderTitle()}</h1>
-                </div>
-              </div>
-            </div>
-          )}
+      {(sidebarType === 'owner' || sidebarType === 'customer') && (
+        <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b">
+          {/* Centered app title for mobile (no hamburger, no per-role title) */}
+          <div className="h-14 flex items-center justify-center px-4">
+            <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+              CUSOWN
+            </h1>
+          </div>
         </div>
       )}
 
-      {/* Mobile Overlay (shown for non-static pages) */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -141,7 +158,6 @@ export default function UniversalSidebar() {
         />
       )}
 
-      {/* Sidebar: always fixed so it does not scroll with page content (profile, setup, etc.) */}
       <aside
         className={`
     fixed top-0 left-0 z-50 h-screen w-64 bg-white
@@ -159,15 +175,14 @@ export default function UniversalSidebar() {
         )}
       </aside>
 
-      {/* Mobile footers for Owner and Customer */}
       {!mobileOpen && sidebarType === 'owner' && (
-        <div className="lg:hidden">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t">
           <MobileBottomNav />
         </div>
       )}
 
       {!mobileOpen && sidebarType === 'customer' && (
-        <div className="lg:hidden">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t">
           <CustomerMobileBottomNav />
         </div>
       )}

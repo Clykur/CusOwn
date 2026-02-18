@@ -8,7 +8,6 @@ import Pagination from '@/components/ui/pagination';
 import { Salon } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import SalonCard from '@/components/salon/salon-card';
-import Breadcrumb from '@/components/ui/breadcrumb';
 import { SalonCardSkeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
 
@@ -118,8 +117,8 @@ export default function SalonListPage() {
   return (
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
+        <div className="max-w-7xl mx-auto px-4 pt-10 sm:px-6 lg:px-8 py-8">
+          <div className="hidden lg:block mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-3">Find Your Perfect Salon</h1>
             <p className="text-lg text-gray-600">Browse and book appointments at salons near you</p>
           </div>
@@ -231,7 +230,7 @@ export default function SalonListPage() {
 
           {loading ? (
             <div
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
               aria-busy="true"
             >
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -283,7 +282,7 @@ export default function SalonListPage() {
             </div>
           ) : (
             <>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                 {paginatedSalons.map((salon, index) => (
                   <SalonCard key={salon.booking_link || `salon-${index}`} salon={salon} />
                 ))}

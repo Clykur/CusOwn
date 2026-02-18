@@ -258,11 +258,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-white flex overflow-x-hidden">
-      <div className="flex-1 w-full lg:ml-64">
-        <div className="w-full max-w-full lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Profile</h2>
-            <p className="text-sm text-slate-500 mt-0.5">Manage your account and preferences</p>
+      <div className="flex-1 w-full">
+        <div className="w-full max-w-full lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="mb-8 hidden md:block">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
+            <p className="text-gray-600">Manage your account information and preferences</p>
           </div>
 
           <div className="space-y-8">

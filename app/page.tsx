@@ -61,7 +61,7 @@ export default function Home() {
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gray-100 rounded-full opacity-20 blur-3xl"></div>
         </div>
 
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
+        <div className="w-full px-6 sm:px-8 lg:px-16 xl:px-24 2xl:px-32 relative z-10">
           <div className="mx-auto max-w-4xl text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 border border-gray-200 text-sm text-gray-700 mb-8">
@@ -197,7 +197,7 @@ export default function Home() {
 
       {/* Who It's For Section */}
       <section className="py-24 sm:py-32 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="w-full px-6 sm:px-8 lg:px-16 xl:px-24 2xl:px-32">
           <div className="mx-auto max-w-2xl text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
               Built for both sides of the booking
@@ -728,7 +728,7 @@ export default function Home() {
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl"></div>
         </div>
 
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
+        <div className="w-full px-6 sm:px-10 lg:px-20 xl:px-32 2xl:px-40 relative z-10">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Ready to get started?
