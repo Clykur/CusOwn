@@ -157,9 +157,12 @@ jobs:
             echo "ERROR: Could not generate license report. Fix license-checker or allowlist."
             exit 1
           fi
+          PROJECT_NAME=$(jq -r '.name // "cusown"' package.json)
           DISALLOWED=""
           while IFS= read -r pkg; do
             [ -z "$pkg" ] && continue
+            # Skip the project's own package (e.g. cusown@0.1.0 with UNLICENSED)
+            case "$pkg" in "$PROJECT_NAME"@*) continue ;; esac
             lic=$(jq -r ".\"$pkg\".licenses // \"UNKNOWN\"" licenses.json 2>/dev/null | tr -d '"' | head -1)
             [ -z "$lic" ] || [ "$lic" = "undefined" ] && lic="UNKNOWN"
             # Normalize: strip * suffix (e.g. MIT* -> MIT), take first token if "X AND Y"
