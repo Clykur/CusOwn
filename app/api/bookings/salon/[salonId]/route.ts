@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { getServerUser } from '@/lib/supabase/server-auth';
@@ -9,14 +9,14 @@ import { userService } from '@/services/user.service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { salonId: string } }
+  { params }: { params: Promise<{ salonId: string }> }
 ) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+  const clientIP = getClientIp(request);
+
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { salonId } = params;
+    const { salonId } = await params;
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || undefined;
 
@@ -29,20 +29,24 @@ export async function GET(
     const user = await getServerUser(request);
     if (user) {
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(b => b.id === salonId);
-      
+      const hasAccess = userBusinesses.some((b) => b.id === salonId);
+
       if (!hasAccess) {
         // Check if user is admin
         const profile = await userService.getUserProfile(user.id);
         const isAdmin = profile?.user_type === 'admin';
-        
+
         if (!isAdmin) {
-          console.warn(`[SECURITY] Unauthorized salon bookings access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salonId.substring(0, 8)}...`);
+          console.warn(
+            `[SECURITY] Unauthorized salon bookings access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salonId.substring(0, 8)}...`
+          );
           return errorResponse('Access denied', 403);
         }
       }
     } else {
-      console.warn(`[SECURITY] Unauthenticated salon bookings access from IP: ${clientIP}, Salon: ${salonId.substring(0, 8)}...`);
+      console.warn(
+        `[SECURITY] Unauthenticated salon bookings access from IP: ${clientIP}, Salon: ${salonId.substring(0, 8)}...`
+      );
       return errorResponse('Authentication required', 401);
     }
 
@@ -57,4 +61,3 @@ export async function GET(
     return errorResponse(message, 500);
   }
 }
-

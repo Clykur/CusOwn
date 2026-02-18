@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp } from '@/lib/utils/security';
 
 interface RateLimitEntry {
   key: string;
@@ -35,7 +36,7 @@ export const enhancedRateLimit = (options: EnhancedRateLimitOptions) => {
     const prefix = options.keyPrefix || 'rate_limit';
 
     if (options.perIP) {
-      keys.push(`${prefix}:ip:${request.ip || 'unknown'}`);
+      keys.push(`${prefix}:ip:${getClientIp(request)}`);
     }
 
     if (options.perUser) {
@@ -46,12 +47,11 @@ export const enhancedRateLimit = (options: EnhancedRateLimitOptions) => {
         if (user) {
           keys.push(`${prefix}:user:${user.id}`);
         }
-      } catch {
-      }
+      } catch {}
     }
 
     if (keys.length === 0) {
-      keys.push(`${prefix}:ip:${request.ip || 'unknown'}`);
+      keys.push(`${prefix}:ip:${getClientIp(request)}`);
     }
 
     const windowKey = `${keys.join(':')}:${Math.floor(Date.now() / options.windowMs)}`;

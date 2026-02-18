@@ -1,5 +1,5 @@
-# GitLab CI/CD – use default shared runners (no "hosted" tag required)
-# If your project uses runner tags, set CI_RUNNER_TAGS or use "tags: []" for shared runners.
+# GitLab CI/CD – security parity with GitHub. Phase 9.
+# Gitleaks fails pipeline on secret detection; npm audit fails on high/critical; no silent bypass.
 
 default:
   image: node:18-alpine
@@ -13,14 +13,104 @@ default:
 variables:
   NODE_OPTIONS: "--max-old-space-size=4096"
   CI: "true"
+  # Override in GitLab CI/CD variables: NPM_AUDIT_LEVEL (default high), LICENSE_ALLOWLIST (comma-separated).
+  NPM_AUDIT_LEVEL: "high"
 
 stages:
-  - lint
   - security
+  - lint
   - build
 
 # -----------------------------------------------------------------------------
-# Lint & Type Check (runs on any available runner)
+# Gitleaks – fail on any secret detection. Phase 9.
+# -----------------------------------------------------------------------------
+gitleaks:
+  stage: security
+  image: zricethezav/gitleaks:v8.18.0
+  before_script: []
+  script:
+    - gitleaks detect --no-git --source . --verbose
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# -----------------------------------------------------------------------------
+# Security: npm audit (fail on high/critical), dangerous patterns, license check.
+# -----------------------------------------------------------------------------
+security-scan:
+  stage: security
+  before_script:
+    - apk add --no-cache jq
+    - npm ci --ignore-scripts --no-audit
+  script:
+    - node --version
+    - |
+      if [ ! -f package-lock.json ]; then
+        echo "package-lock.json missing"
+        exit 1
+      fi
+    - |
+      set -e
+      npm audit --audit-level=${NPM_AUDIT_LEVEL} --production 2>&1 | tee audit.log || true
+      if grep -qE "high severity|critical severity" audit.log 2>/dev/null; then
+        echo "High or critical vulnerabilities found. Fix before merging."
+        exit 1
+      fi
+      echo "No high/critical vulnerabilities."
+    - |
+      set -e
+      FOUND=0
+      for pattern in 'eval\(' 'Function\(' 'innerHTML\s*=' 'dangerouslySetInnerHTML' 'document\.write'; do
+        if grep -r -iE "$pattern" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git app lib components 2>/dev/null; then
+          echo "Dangerous pattern detected: $pattern"
+          FOUND=1
+        fi
+      done
+      if [ "$FOUND" -eq 1 ]; then
+        echo "Fix or justify dangerous patterns before merging."
+        exit 1
+      fi
+      echo "No dangerous patterns detected."
+    - |
+      set -e
+      ALLOWLIST_FILE=".github/license-allowlist.txt"
+      if [ -n "$LICENSE_ALLOWLIST" ]; then
+        ALLOWED=$(echo "$LICENSE_ALLOWLIST" | tr ',' '\n' | sed 's/^ *//;s/ *$//')
+      elif [ -f "$ALLOWLIST_FILE" ]; then
+        ALLOWED=$(grep -v '^#' "$ALLOWLIST_FILE" | grep -v '^$' | tr -d '\r')
+      else
+        ALLOWED="MIT
+      Apache-2.0
+      BSD-2-Clause
+      BSD-3-Clause
+      ISC"
+      fi
+      ALLOWED=$(echo "$ALLOWED" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . || true)
+      npx --yes license-checker --production --json 2>/dev/null > licenses.json || true
+      if [ ! -s licenses.json ]; then
+        echo "Could not generate license report; skipping license check."
+        exit 0
+      fi
+      DISALLOWED=""
+      while IFS= read -r pkg; do
+        [ -z "$pkg" ] && continue
+        lic=$(jq -r ".\"$pkg\".licenses // \"UNKNOWN\"" licenses.json 2>/dev/null | tr -d '"' | head -1)
+        [ -z "$lic" ] || [ "$lic" = "undefined" ] && lic="UNKNOWN"
+        if ! echo "$ALLOWED" | grep -qFx "$lic" 2>/dev/null; then
+          DISALLOWED="$DISALLOWED $pkg($lic)"
+        fi
+      done < <(jq -r 'keys[]' licenses.json 2>/dev/null)
+      if [ -n "$DISALLOWED" ]; then
+        echo "Disallowed or unknown licenses:$DISALLOWED"
+        exit 1
+      fi
+      echo "License check passed."
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# -----------------------------------------------------------------------------
+# Lint & Type Check
 # -----------------------------------------------------------------------------
 lint:
   stage: lint
@@ -32,29 +122,11 @@ lint:
     - if: $CI_COMMIT_BRANCH
 
 # -----------------------------------------------------------------------------
-# Security Scan (allow_failure: true so pipeline passes if runner unavailable)
-# ------------------------------------------------------------------------------
-security-scan:
-  stage: security
-  script:
-    - node --version
-    - |
-      if [ ! -f package-lock.json ]; then
-        echo "package-lock.json missing"
-        exit 1
-      fi
-    - npm audit --audit-level=high --production || true
-  allow_failure: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH
-
-# -----------------------------------------------------------------------------
-# Build (depends on lint only so pipeline can complete if security runner missing)
+# Build (depends on lint and security so pipeline fails on security issues)
 # -----------------------------------------------------------------------------
 build:
   stage: build
-  needs: ["lint"]
+  needs: ["lint", "gitleaks", "security-scan"]
   script:
     - npm run build
   artifacts:

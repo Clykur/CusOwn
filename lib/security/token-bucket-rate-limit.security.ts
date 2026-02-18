@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp } from '@/lib/utils/security';
 import {
   TOKEN_BUCKET_CAPACITY,
   TOKEN_BUCKET_REFILL_PER_SEC,
@@ -75,11 +76,9 @@ export async function tokenBucketRateLimit(request: NextRequest): Promise<NextRe
   try {
     const { getServerUser } = await import('@/lib/supabase/server-auth');
     const user = await getServerUser(request);
-    identifier = user
-      ? `user:${user.id}`
-      : `ip:${request.ip || request.headers.get('x-forwarded-for') || 'unknown'}`;
+    identifier = user ? `user:${user.id}` : `ip:${getClientIp(request)}`;
   } catch {
-    identifier = `ip:${request.ip || request.headers.get('x-forwarded-for') || 'unknown'}`;
+    identifier = `ip:${getClientIp(request)}`;
   }
 
   const key = `tb:${tier}:${identifier}`;

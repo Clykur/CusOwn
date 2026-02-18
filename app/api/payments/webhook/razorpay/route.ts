@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getClientIp } from '@/lib/utils/security';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { paymentService } from '@/services/payment.service';
 import { verifyRazorpayWebhook, getWebhookSecret } from '@/lib/security/webhook-verification';
@@ -7,7 +8,7 @@ import { createHash } from 'crypto';
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = getClientIp(request);
 
   try {
     const signature = request.headers.get('x-razorpay-signature');
@@ -63,20 +64,22 @@ export async function POST(request: NextRequest) {
     }
 
     const razorpayPayment = payload.payload?.payment?.entity || payload;
-    const paymentStatus = razorpayPayment.status === 'captured' ? 'completed' : 
-                         razorpayPayment.status === 'failed' ? 'failed' : 'processing';
+    const paymentStatus =
+      razorpayPayment.status === 'captured'
+        ? 'completed'
+        : razorpayPayment.status === 'failed'
+          ? 'failed'
+          : 'processing';
 
     if (razorpayPayment.amount !== payment.amount_cents) {
       console.error(`[SECURITY] Amount mismatch for payment ${payment.id}`);
       return errorResponse('Amount verification failed', 400);
     }
 
-    await paymentService.updatePaymentStatus(
-      payment.id,
-      paymentStatus,
-      providerPaymentId,
-      { signature, payloadHash }
-    );
+    await paymentService.updatePaymentStatus(payment.id, paymentStatus, providerPaymentId, {
+      signature,
+      payloadHash,
+    });
 
     return successResponse({ success: true });
   } catch (error) {

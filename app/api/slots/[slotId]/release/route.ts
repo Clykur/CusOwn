@@ -2,24 +2,29 @@ import { NextRequest } from 'next/server';
 import { slotService } from '@/services/slot.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 
-const releaseRateLimit = enhancedRateLimit({ maxRequests: 20, windowMs: 60000, perIP: true, keyPrefix: 'slot_release' });
+const releaseRateLimit = enhancedRateLimit({
+  maxRequests: 20,
+  windowMs: 60000,
+  perIP: true,
+  keyPrefix: 'slot_release',
+});
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slotId: string } }
+  { params }: { params: Promise<{ slotId: string }> }
 ) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+  const clientIP = getClientIp(request);
+
   try {
     const rateLimitResponse = await releaseRateLimit(request);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
 
-    const slotId = params.slotId;
+    const { slotId } = await params;
 
     if (!isValidUUID(slotId)) {
       console.warn(`[SECURITY] Invalid slot ID format from IP: ${clientIP}`);
@@ -40,4 +45,3 @@ export async function POST(
     return errorResponse(message, 500);
   }
 }
-

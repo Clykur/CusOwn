@@ -10,25 +10,23 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { auditService } from '@/services/audit.service';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
     const body = await request.json();
-    
+
     // SECURITY: Filter input to prevent mass assignment
-    const { filterFields, validateStringLength, validateEnum } = await import('@/lib/security/input-filter');
+    const { filterFields, validateStringLength, validateEnum } =
+      await import('@/lib/security/input-filter');
     const allowedFields: (keyof typeof body)[] = ['new_slot_id', 'reason', 'rescheduled_by'];
     const filteredBody = filterFields(body, allowedFields);
-    
+
     const { new_slot_id, reason, rescheduled_by } = filteredBody;
 
     if (!new_slot_id || !isValidUUID(new_slot_id)) {
@@ -39,7 +37,7 @@ export async function POST(
     if (!rescheduled_by || !validateEnum(rescheduled_by, ['customer', 'owner'] as const)) {
       return errorResponse('rescheduled_by must be customer or owner', 400);
     }
-    
+
     // SECURITY: Validate reason length
     if (reason !== undefined && !validateStringLength(reason, 500)) {
       return errorResponse('Reschedule reason is too long', 400);
@@ -58,7 +56,7 @@ export async function POST(
 
     if (rescheduled_by === 'owner' && user) {
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(b => b.id === booking.business_id);
+      const hasAccess = userBusinesses.some((b) => b.id === booking.business_id);
       if (!hasAccess) {
         return errorResponse('Access denied', 403);
       }
@@ -74,16 +72,11 @@ export async function POST(
     // SECURITY: Log mutation for audit
     if (user) {
       try {
-        await auditService.createAuditLog(
-          user.id,
-          'booking_rescheduled',
-          'booking',
-          {
-            entityId: id,
-            description: `Booking rescheduled by ${rescheduled_by}${reason ? `: ${reason}` : ''}`,
-            request,
-          }
-        );
+        await auditService.createAuditLog(user.id, 'booking_rescheduled', 'booking', {
+          entityId: id,
+          description: `Booking rescheduled by ${rescheduled_by}${reason ? `: ${reason}` : ''}`,
+          request,
+        });
       } catch (auditError) {
         console.error('[SECURITY] Failed to create audit log:', auditError);
       }
@@ -100,8 +93,7 @@ export async function POST(
           message,
           booking.customer_phone
         );
-      } catch {
-      }
+      } catch {}
     }
 
     const response = successResponse(rescheduledBooking);
@@ -113,12 +105,9 @@ export async function POST(
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }

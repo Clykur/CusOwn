@@ -14,11 +14,12 @@ const ROUTE_GET = 'GET /api/admin/bookings/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/bookings/[id]';
 const ROUTE_POST = 'POST /api/admin/bookings/[id]';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_GET);
     if (auth instanceof Response) return auth;
 
+    const { id } = await params;
     const supabase = requireSupabaseAdmin();
 
     const { data: booking, error } = await supabase
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         slot:slot_id (*)
       `
       )
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error) {
@@ -51,11 +52,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_PATCH);
     if (auth instanceof Response) return auth;
 
+    const { id } = await params;
     const supabase = requireSupabaseAdmin();
     const body = await request.json();
 
@@ -96,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         slot:slot_id (*)
       `
       )
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!oldBooking) {
@@ -118,7 +120,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data: updatedBooking, error } = await supabase
       .from('bookings')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(
         `
         *,
@@ -158,7 +160,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
 
     await auditService.createAuditLog(auth.user.id, 'booking_updated', 'booking', {
-      entityId: params.id,
+      entityId: id,
       oldData: oldBooking,
       newData: updatedBooking,
       description: `Booking updated: ${changes.join(', ')}`,
@@ -186,7 +188,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
           request
         );
 
-        const whatsappUrl = adminNotificationService.notifyCustomer(params.id, message, request);
+        const whatsappUrl = adminNotificationService.notifyCustomer(id, message, request);
         invalidateApiCacheByPrefix('GET|/api/admin/bookings');
         invalidateApiCacheByPrefix('GET|/api/admin/metrics');
         return successResponse(
@@ -207,11 +209,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_POST);
     if (auth instanceof Response) return auth;
 
+    const { id } = await params;
     const body = await request.json();
     const action = body.action; // 'resend_notification'
 
@@ -227,7 +230,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           slot:slot_id (*)
         `
         )
-        .eq('id', params.id)
+        .eq('id', id)
         .single();
 
       if (!booking || !booking.slot || !booking.business) {
@@ -250,8 +253,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
       // Create audit log
       await auditService.createAuditLog(auth.user.id, 'notification_sent', 'booking', {
-        entityId: params.id,
-        description: `Notification resent for booking ${params.id}`,
+        entityId: id,
+        description: `Notification resent for booking ${id}`,
         request,
       });
 

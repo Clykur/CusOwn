@@ -11,17 +11,14 @@ const servicesRateLimit = enhancedRateLimit({
   keyPrefix: 'services',
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const rateLimitResponse = await servicesRateLimit(request);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
 
-    const businessId = params.id;
+    const { id: businessId } = await params;
     if (!isValidUUID(businessId)) {
       return errorResponse('Invalid business ID', 400);
     }

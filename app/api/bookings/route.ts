@@ -6,7 +6,7 @@ import { slotService } from '@/services/slot.service';
 import { reminderService } from '@/services/reminder.service';
 import { validateCreateBooking } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { getBookingStatusUrl } from '@/lib/utils/url';
 import { bookingRateLimitEnhanced } from '@/lib/security/rate-limit-api.security';
@@ -18,8 +18,8 @@ import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+  const clientIP = getClientIp(request);
+
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -44,17 +44,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    
+
     const { filterFields, validateStringLength } = await import('@/lib/security/input-filter');
-    const allowedFields: string[] = ['salon_id', 'slot_id', 'customer_name', 'customer_phone', 'service_ids'];
+    const allowedFields: string[] = [
+      'salon_id',
+      'slot_id',
+      'customer_name',
+      'customer_phone',
+      'service_ids',
+    ];
     const filteredBody = filterFields(body, allowedFields as (keyof typeof body)[]);
-    
+
     const validatedData = validateCreateBooking(filteredBody);
 
     if (!isValidUUID(validatedData.salon_id) || !isValidUUID(validatedData.slot_id)) {
       return errorResponse('Invalid salon or slot ID', 400);
     }
-    
+
     // Additional length validation (defense in depth)
     if (!validateStringLength(validatedData.customer_name, 200)) {
       return errorResponse('Customer name is too long', 400);
@@ -72,12 +78,16 @@ export async function POST(request: NextRequest) {
       'booking'
     );
     if (abuseCheck.blocked) {
-      console.warn(`[ABUSE] Blocked booking attempt: ${abuseCheck.reason}, IP: ${clientIP}, User: ${customerUserId?.substring(0, 8) || 'anonymous'}...`);
+      console.warn(
+        `[ABUSE] Blocked booking attempt: ${abuseCheck.reason}, IP: ${clientIP}, User: ${customerUserId?.substring(0, 8) || 'anonymous'}...`
+      );
       return errorResponse(abuseCheck.reason || 'Action blocked due to abuse detection', 429);
     }
 
-    const serviceIds = Array.isArray(filteredBody.service_ids) ? filteredBody.service_ids : undefined;
-    
+    const serviceIds = Array.isArray(filteredBody.service_ids)
+      ? filteredBody.service_ids
+      : undefined;
+
     if (serviceIds) {
       if (serviceIds.length > 10) {
         return errorResponse('Too many services', 400);
@@ -138,16 +148,11 @@ export async function POST(request: NextRequest) {
     // SECURITY: Log mutation for audit (if user is authenticated)
     if (user) {
       try {
-        await auditService.createAuditLog(
-          user.id,
-          'booking_created',
-          'booking',
-          {
-            entityId: booking.id,
-            description: `Booking created for ${validatedData.customer_name}`,
-            request,
-          }
-        );
+        await auditService.createAuditLog(user.id, 'booking_created', 'booking', {
+          entityId: booking.id,
+          description: `Booking created for ${validatedData.customer_name}`,
+          request,
+        });
       } catch (auditError) {
         console.error('[SECURITY] Failed to create audit log:', auditError);
       }
@@ -171,4 +176,3 @@ export async function POST(request: NextRequest) {
     return errorResponse(message, 400);
   }
 }
-

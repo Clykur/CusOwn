@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
@@ -13,32 +13,29 @@ import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
 const ROUTE = 'POST /api/bookings/[id]/cancel';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-    
+    const clientIP = getClientIp(request);
+
     const body = await request.json().catch(() => ({}));
-    
+
     const { filterFields, validateStringLength } = await import('@/lib/security/input-filter');
     const allowedFields: (keyof typeof body)[] = ['reason', 'cancelled_by'];
     const filteredBody = filterFields(body, allowedFields);
-    
+
     const { reason, cancelled_by } = filteredBody;
-    
+
     if (cancelled_by !== undefined && cancelled_by !== 'customer' && cancelled_by !== 'owner') {
       return errorResponse('Invalid cancellation type', 400);
     }
-    
+
     if (reason !== undefined && !validateStringLength(reason, 500)) {
       return errorResponse('Cancellation reason is too long', 400);
     }
@@ -50,17 +47,17 @@ export async function POST(
 
     const ctx = await getAuthContext(request);
     const user = ctx?.user ?? null;
-    
+
     let isAuthorized = false;
     let cancelMethod: 'customer' | 'owner' = 'customer';
-    
+
     if (cancelled_by === 'owner') {
       if (!user) {
         logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
         return errorResponse('Authentication required', 401);
       }
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(b => b.id === booking.business_id);
+      const hasAccess = userBusinesses.some((b) => b.id === booking.business_id);
       if (!hasAccess && !isAdminProfile(ctx!.profile)) {
         logAuthDeny({
           user_id: user.id,
@@ -116,27 +113,24 @@ export async function POST(
     } else {
       cancelledBooking = await bookingService.cancelBookingByCustomer(id, reason);
     }
-    
+
     // SECURITY: Log mutation for audit
     if (user) {
       try {
-        await auditService.createAuditLog(
-          user.id,
-          'booking_cancelled',
-          'booking',
-          {
-            entityId: id,
-            description: `Booking cancelled by ${cancelMethod}${reason ? `: ${reason}` : ''}`,
-            request,
-          }
-        );
+        await auditService.createAuditLog(user.id, 'booking_cancelled', 'booking', {
+          entityId: id,
+          description: `Booking cancelled by ${cancelMethod}${reason ? `: ${reason}` : ''}`,
+          request,
+        });
       } catch (auditError) {
         // Log audit error but don't fail the request
         console.error('[SECURITY] Failed to create audit log:', auditError);
       }
     }
-    
-    console.log(`[SECURITY] Booking cancelled: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., Method: ${cancelMethod}, User: ${user?.id.substring(0, 8) || 'unauthenticated'}...`);
+
+    console.log(
+      `[SECURITY] Booking cancelled: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., Method: ${cancelMethod}, User: ${user?.id.substring(0, 8) || 'unauthenticated'}...`
+    );
 
     const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
     if (!bookingWithDetails || !bookingWithDetails.salon) {
