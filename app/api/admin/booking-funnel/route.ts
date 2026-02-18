@@ -15,10 +15,12 @@ export async function GET(request: NextRequest) {
 
     const range = parseAdminDateRange(request.nextUrl.searchParams);
     const data = await adminAnalyticsService.getBookingFunnel(range);
-    await auditService.createAuditLog(auth.user.id, 'admin_funnel_analytics_view', 'system', {
-      description: `Funnel analytics viewed: ${range.startDate.toISOString()} to ${range.endDate.toISOString()}`,
-      request,
-    });
+    void auditService
+      .createAuditLog(auth.user.id, 'admin_funnel_analytics_view', 'system', {
+        description: `Funnel analytics viewed: ${range.startDate.toISOString()} to ${range.endDate.toISOString()}`,
+        request,
+      })
+      .catch(() => {});
     return successResponse(data);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

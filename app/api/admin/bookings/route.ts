@@ -3,6 +3,7 @@ import { adminService } from '@/services/admin.service';
 import { requireAdmin } from '@/lib/utils/api-auth-pipeline';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
+import { parseLimitOffset } from '@/lib/utils/pagination';
 
 const ROUTE = 'GET /api/admin/bookings';
 
@@ -12,10 +13,9 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const searchParams = request.nextUrl.searchParams;
+    const { limit, offset } = parseLimitOffset(searchParams);
     const businessId = searchParams.get('business_id') || undefined;
     const status = searchParams.get('status') || undefined;
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
-    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined;
 
     const bookings = await adminService.getAllBookings({
       businessId,
@@ -30,4 +30,3 @@ export async function GET(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

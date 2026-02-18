@@ -387,6 +387,33 @@ export function BusinessesSkeleton() {
   );
 }
 
+/** Inline skeleton rows for users table body (5 cols: Name, Email, Type, Businesses, Bookings). */
+export function UsersTableBodySkeleton() {
+  return (
+    <>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <tr key={i} className="animate-pulse">
+          <td className="px-5 py-4">
+            <div className={`h-4 ${skeletonBase} w-28 rounded`} />
+          </td>
+          <td className="px-5 py-4">
+            <div className={`h-4 ${skeletonBase} w-40 rounded`} />
+          </td>
+          <td className="px-5 py-4">
+            <div className={`h-5 ${skeletonBase} w-16 rounded`} />
+          </td>
+          <td className="px-5 py-4">
+            <div className={`h-4 ${skeletonBase} w-8 rounded`} />
+          </td>
+          <td className="px-5 py-4">
+            <div className={`h-4 ${skeletonBase} w-8 rounded`} />
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
 /** Users tab: header + section with table (no Actions column). Fills viewport. */
 export function UsersSkeleton() {
   return (

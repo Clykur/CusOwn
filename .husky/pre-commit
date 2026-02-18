@@ -1,4 +1,2 @@
 #!/bin/sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 npx lint-staged --config config/quality/lint-staged.config.js
