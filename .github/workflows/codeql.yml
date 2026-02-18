@@ -1,4 +1,4 @@
-# CodeQL SAST – JavaScript/TypeScript. Phase 3. Fail on HIGH/CRITICAL.
+# CodeQL SAST – JavaScript/TypeScript. Phase 3. Fail on HIGH/CRITICAL. CodeQL Action v4.
 # Triggers: PR and push to main. All actions pinned by SHA.
 
 name: CodeQL
@@ -27,17 +27,17 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@f5c2471be782132e47a6e6f9c725e56730d6e9a3
+        uses: github/codeql-action/init@9e907b5e64f6b83e7804b09294d44122997950d6
         with:
           languages: javascript-typescript
           queries: security-extended
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@f5c2471be782132e47a6e6f9c725e56730d6e9a3
+        uses: github/codeql-action/autobuild@9e907b5e64f6b83e7804b09294d44122997950d6
 
       - name: Perform CodeQL analysis
         id: codeql-analysis
-        uses: github/codeql-action/analyze@f5c2471be782132e47a6e6f9c725e56730d6e9a3
+        uses: github/codeql-action/analyze@9e907b5e64f6b83e7804b09294d44122997950d6
         with:
           category: /language:javascript-typescript
 

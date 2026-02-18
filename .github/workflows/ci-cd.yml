@@ -32,12 +32,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Minimal default permissions; override per job. Supply-chain: all actions pinned by SHA.
-default:
-  run:
-    permissions:
-      contents: read
-      actions: read
+# Minimal permissions; jobs override when they need more (e.g. security-events: write).
+permissions:
+  contents: read
+  actions: read
 
 env:
   NODE_VERSION: '18.x'
