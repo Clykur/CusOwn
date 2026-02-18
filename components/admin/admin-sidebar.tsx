@@ -101,15 +101,15 @@ const navigation: NavItem[] = [
     ),
   },
   {
-    name: 'Profile',
-    href: '/profile',
+    name: 'Analytics',
+    href: getAdminDashboardUrl('analytics'),
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={2}
-          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          d="M16 8v8m-4-4v4m-4-4v4M4 4v16"
         />
       </svg>
     ),
@@ -121,13 +121,8 @@ function AdminSidebarContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [navigating, setNavigating] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
-
-  useEffect(() => {
-    setNavigating(null);
-  }, [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -171,7 +166,11 @@ function AdminSidebarContent() {
   }, []);
 
   const isActive = (href: string) => {
-    // Other admin routes
+    // Links outside dashboard (e.g. Profile): active only when pathname matches
+    if (!href.startsWith('/admin/dashboard')) {
+      return pathname === href;
+    }
+    // Dashboard tabs: active only when on dashboard and tab matches
     if (pathname !== '/admin/dashboard') return false;
     const currentTab = searchParams?.get('tab') || 'overview';
     const hrefTab = href.includes('?tab=') ? href.split('tab=')[1] : 'overview';
@@ -256,28 +255,18 @@ function AdminSidebarContent() {
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const active = isActive(item.href);
-              const isNavigating = navigating === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={(e) => {
-                    if (item.href !== pathname) {
-                      setNavigating(item.href);
-                      setSidebarOpen(false);
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     active
                       ? 'bg-black text-white shadow-md'
-                      : isNavigating
-                        ? 'bg-gray-100 text-gray-700'
-                        : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
                   }`}
                 >
-                  <span className={isNavigating ? 'animate-spin' : ''}>{item.icon}</span>
+                  <span className="flex-shrink-0">{item.icon}</span>
                   <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                     {item.name}
                   </span>
