@@ -213,7 +213,9 @@ export class AdminService {
             .single();
 
           if (ownerData) {
-            const { data: authUser } = await supabase.auth.admin.getUserById(business.owner_user_id);
+            const { data: authUser } = await supabase.auth.admin.getUserById(
+              business.owner_user_id
+            );
             owner = {
               id: ownerData.id,
               email: authUser?.user?.email || '',
@@ -300,7 +302,8 @@ export class AdminService {
 
     let query = supabase
       .from('bookings')
-      .select(`
+      .select(
+        `
         *,
         business:business_id (
           id,
@@ -318,7 +321,8 @@ export class AdminService {
           end_time,
           status
         )
-      `)
+      `
+      )
       .order('created_at', { ascending: false });
 
     if (filters?.businessId) {
@@ -363,7 +367,9 @@ export class AdminService {
     if (!bookings) return [];
 
     // Group by date
-    const trends: { [key: string]: { date: string; total: number; confirmed: number; rejected: number } } = {};
+    const trends: {
+      [key: string]: { date: string; total: number; confirmed: number; rejected: number };
+    } = {};
 
     bookings.forEach((booking) => {
       const date = booking.created_at.split('T')[0];
@@ -377,7 +383,84 @@ export class AdminService {
 
     return Object.values(trends).sort((a, b) => a.date.localeCompare(b.date));
   }
+
+  /**
+   * Paginated bookings for export: id, booking_id, status, created_at, business_id, business name.
+   * Date range and optional business_id filter; index-friendly.
+   */
+  async getBookingsForExport(filters: {
+    startDate: string;
+    endDate: string;
+    businessId?: string;
+    limit: number;
+    offset: number;
+  }): Promise<
+    {
+      id: string;
+      booking_id: string;
+      status: string;
+      created_at: string;
+      business_id: string;
+      business_name: string;
+    }[]
+  > {
+    const supabase = requireSupabaseAdmin();
+    let query = supabase
+      .from('bookings')
+      .select('id, booking_id, status, created_at, business_id')
+      .gte('created_at', filters.startDate)
+      .lte('created_at', filters.endDate)
+      .order('created_at', { ascending: true })
+      .range(filters.offset, filters.offset + filters.limit - 1);
+
+    if (filters.businessId) {
+      query = query.eq('business_id', filters.businessId);
+    }
+
+    const { data: rows, error } = await query;
+    if (error) throw new Error(`Failed to fetch bookings: ${error.message}`);
+    if (!rows?.length) return [];
+
+    const businessIds = [...new Set(rows.map((r) => r.business_id))];
+    const { data: businesses } = await supabase
+      .from('businesses')
+      .select('id, salon_name')
+      .in('id', businessIds);
+    const nameMap = new Map((businesses || []).map((b) => [b.id, b.salon_name ?? '']));
+
+    return rows.map((r) => ({
+      id: r.id,
+      booking_id: r.booking_id,
+      status: r.status,
+      created_at: r.created_at,
+      business_id: r.business_id,
+      business_name: nameMap.get(r.business_id) ?? '',
+    }));
+  }
+
+  /**
+   * Get latest payment (by created_at) per booking for given ids. Returns map booking_id -> { amount_cents, status }.
+   */
+  async getPaymentsByBookingIds(
+    bookingIds: string[]
+  ): Promise<Map<string, { amount_cents: number; status: string }>> {
+    if (bookingIds.length === 0) return new Map();
+    const supabase = requireSupabaseAdmin();
+    const { data: payments, error } = await supabase
+      .from('payments')
+      .select('booking_id, amount_cents, status, created_at')
+      .in('booking_id', bookingIds)
+      .order('created_at', { ascending: false });
+
+    if (error) return new Map();
+    const map = new Map<string, { amount_cents: number; status: string }>();
+    for (const p of payments || []) {
+      if (!map.has(p.booking_id)) {
+        map.set(p.booking_id, { amount_cents: p.amount_cents ?? 0, status: p.status ?? 'unknown' });
+      }
+    }
+    return map;
+  }
 }
 
 export const adminService = new AdminService();
-

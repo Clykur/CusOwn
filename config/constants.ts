@@ -52,7 +52,14 @@ export const WHATSAPP_MESSAGE_TEMPLATES = {
     `📆 Date: *${date}*\n` +
     `🕐 Time: *${time}*\n\n` +
     `Booking ID: \`${bookingId}\``,
-  CONFIRMATION: (customerName: string, date: string, time: string, salonName: string, address: string, mapsLink: string) =>
+  CONFIRMATION: (
+    customerName: string,
+    date: string,
+    time: string,
+    salonName: string,
+    address: string,
+    mapsLink: string
+  ) =>
     `✅ *APPOINTMENT CONFIRMED*\n\n` +
     `Dear *${customerName}*,\n\n` +
     `Your appointment has been confirmed!\n\n` +
@@ -113,9 +120,12 @@ export const ERROR_MESSAGES = {
   CUSTOMER_PHONE_INVALID: 'Invalid phone number format',
   BOOKING_ID_REQUIRED: 'Booking ID is required',
   WHATSAPP_SEND_FAILED: 'Failed to send WhatsApp message',
-  WHATSAPP_NUMBER_EXISTS: 'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.',
-  QR_CODE_GENERATION_FAILED: 'Unable to generate QR code. You can access it later from your dashboard.',
-  NETWORK_ERROR: 'Unable to connect to the server. Please check your internet connection and try again.',
+  WHATSAPP_NUMBER_EXISTS:
+    'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.',
+  QR_CODE_GENERATION_FAILED:
+    'Unable to generate QR code. You can access it later from your dashboard.',
+  NETWORK_ERROR:
+    'Unable to connect to the server. Please check your internet connection and try again.',
   UNEXPECTED_ERROR: 'An unexpected error occurred. Please try again.',
   LOADING_ERROR: 'Failed to load data. Please refresh the page and try again.',
   BOOKING_CANNOT_BE_CANCELLED: 'This booking cannot be cancelled',
@@ -183,9 +193,15 @@ export const UI_ERROR_CONTEXT = {
 } as const;
 
 export const BOOKING_EXPIRY_HOURS = parseInt(process.env.BOOKING_EXPIRY_HOURS || '24', 10);
-export const REMINDER_24H_BEFORE_HOURS = parseInt(process.env.REMINDER_24H_BEFORE_HOURS || '24', 10);
+export const REMINDER_24H_BEFORE_HOURS = parseInt(
+  process.env.REMINDER_24H_BEFORE_HOURS || '24',
+  10
+);
 export const REMINDER_2H_BEFORE_HOURS = parseInt(process.env.REMINDER_2H_BEFORE_HOURS || '2', 10);
-export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(process.env.CANCELLATION_MIN_HOURS_BEFORE || '2', 10);
+export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(
+  process.env.CANCELLATION_MIN_HOURS_BEFORE || '2',
+  10
+);
 
 /** Phase 3: Metric names for SRE. Alert if GET /api/health checks.cron_expire_bookings_last_run_ts is older than X minutes. */
 export const METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN = 'cron.expire_bookings.last_run_ts';
@@ -217,3 +233,8 @@ export const METRICS_AUTH_MISSING = 'auth_missing';
 export const METRICS_AUTH_DENIED = 'auth_denied';
 export const METRICS_AUTH_INVALID_TOKEN = 'auth_invalid_token';
 
+/** Admin analytics: max date range (days) and export row limit. */
+export const ADMIN_ANALYTICS_MAX_DAYS = 365;
+export const ADMIN_EXPORT_BOOKINGS_MAX_ROWS = 10_000;
+export const ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT = 20;
+export const ADMIN_DEFAULT_ANALYTICS_DAYS = 30;

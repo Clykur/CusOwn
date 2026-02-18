@@ -141,14 +141,13 @@ export default function UniversalSidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar: always fixed so it does not scroll with page content (profile, setup, etc.) */}
       <aside
         className={`
-    ${isStaticSidebarPage ? 'static' : 'fixed'}
-    top-0 left-0 z-50 h-full w-64 bg-white
-    ${isStaticSidebarPage ? '' : 'transition-transform duration-300'}
-    ${isStaticSidebarPage ? '' : mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-    lg:static lg:translate-x-0
+    fixed top-0 left-0 z-50 h-screen w-64 bg-white
+    transition-transform duration-300
+    ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+    lg:translate-x-0
   `}
       >
         {sidebarType === 'customer' ? (

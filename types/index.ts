@@ -17,11 +17,21 @@ export const createSalonSchema = z.object({
     .min(10, 'WhatsApp number must be at least 10 digits')
     .max(15, 'WhatsApp number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid WhatsApp number format'),
-  opening_time: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
-  closing_time: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
+  opening_time: z
+    .string()
+    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
+  closing_time: z
+    .string()
+    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
   slot_duration: slotDurationSchema,
-  address: z.string().min(5, 'Address must be at least 5 characters').max(500, 'Address must be at most 500 characters'),
-  location: z.string().min(2, 'Location must be at least 2 characters').max(100, 'Location must be at most 100 characters'),
+  address: z
+    .string()
+    .min(5, 'Address must be at least 5 characters')
+    .max(500, 'Address must be at most 500 characters'),
+  location: z
+    .string()
+    .min(2, 'Location must be at least 2 characters')
+    .max(100, 'Location must be at most 100 characters'),
   city: z.string().max(100, 'City must be at most 100 characters').optional(),
   area: z.string().max(100, 'Area must be at most 100 characters').optional(),
   pincode: z.string().max(10, 'Pincode must be at most 10 characters').optional(),
@@ -61,7 +71,7 @@ export type Slot = {
   date: string;
   start_time: string;
   end_time: string;
-  status: typeof SLOT_STATUS[keyof typeof SLOT_STATUS];
+  status: (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS];
   reserved_until?: string | null;
   created_at: string;
 };
@@ -87,7 +97,7 @@ export type Booking = {
   customer_name: string;
   customer_phone: string;
   booking_id: string;
-  status: typeof BOOKING_STATUS[keyof typeof BOOKING_STATUS];
+  status: (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS];
   customer_user_id?: string | null;
   total_duration_minutes?: number | null;
   total_price_cents?: number | null;
@@ -118,3 +128,51 @@ export type ApiResponse<T = unknown> = {
   message?: string;
 };
 
+/** Admin analytics: revenue metrics response */
+export type AdminRevenueMetrics = {
+  totalRevenue: number;
+  revenueToday: number;
+  revenueWeek: number;
+  revenueMonth: number;
+  avgBookingValue: number;
+  paymentSuccessRate: number;
+  failedPayments: number;
+  failedPaymentsPct: number;
+  revenueTrend: { date: string; revenue: number }[];
+  paymentStatusDistribution: { status: string; count: number }[];
+  revenueByBusiness: { business_id: string; name: string; revenue: number }[];
+};
+
+/** Admin analytics: booking funnel response */
+export type AdminBookingFunnel = {
+  attempts: number;
+  confirmed: number;
+  rejected: number;
+  cancelled: number;
+  expired: number;
+  conversionRate: number;
+  avgTimeToAcceptMinutes: number;
+  autoExpiredPct: number;
+};
+
+/** Admin analytics: business health item */
+export type AdminBusinessHealthItem = {
+  business_id: string;
+  name: string;
+  healthScore: number;
+  acceptanceRate: number;
+  cancellationRate: number;
+  paymentSuccessRate: number;
+  avgResponseTimeMinutes: number;
+  revenue: number;
+};
+
+/** Admin analytics: system metrics response */
+export type AdminSystemMetrics = {
+  avgResponseTimeMs: number;
+  p95LatencyMs: number;
+  rateLimitHits429: number;
+  failedCalls5xx: number;
+  cronExpireBookingsLastRun: string | null;
+  cronExpireBookingsOk: boolean;
+};
