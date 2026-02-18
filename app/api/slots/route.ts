@@ -3,11 +3,12 @@ import { slotService } from '@/services/slot.service';
 import { salonService } from '@/services/salon.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 
 export async function GET(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+  const clientIP = getClientIp(request);
+
   try {
     const { searchParams } = new URL(request.url);
     const salonId = searchParams.get('salon_id');
@@ -18,14 +19,14 @@ export async function GET(request: NextRequest) {
       console.warn(`[SECURITY] Missing salon_id from IP: ${clientIP}`);
       return errorResponse('Salon ID is required', 400);
     }
-    
+
     // SECURITY: Validate UUID format
     const { isValidUUID } = await import('@/lib/utils/security');
     if (!isValidUUID(salonId)) {
       console.warn(`[SECURITY] Invalid salon_id format from IP: ${clientIP}`);
       return errorResponse('Invalid salon ID', 400);
     }
-    
+
     // SECURITY: Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
@@ -47,17 +48,24 @@ export async function GET(request: NextRequest) {
         closing_time: salon.closing_time,
         slot_duration: salon.slot_duration,
       });
-      return errorResponse('Salon time configuration is incomplete. Please update salon settings.', 400);
+      return errorResponse(
+        'Salon time configuration is incomplete. Please update salon settings.',
+        400
+      );
     }
 
     // Get slots with lazy generation (will generate if missing)
     try {
-      console.log('Fetching slots for:', { salonId, date, config: {
-        opening_time: salon.opening_time,
-        closing_time: salon.closing_time,
-        slot_duration: salon.slot_duration,
-      }});
-      
+      console.log('Fetching slots for:', {
+        salonId,
+        date,
+        config: {
+          opening_time: salon.opening_time,
+          closing_time: salon.closing_time,
+          slot_duration: salon.slot_duration,
+        },
+      });
+
       const slots = await slotService.getAvailableSlots(salonId, date, {
         opening_time: salon.opening_time,
         closing_time: salon.closing_time,
@@ -96,8 +104,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+  const clientIP = getClientIp(request);
+
   try {
     const body = await request.json();
     const { salon_id, date } = body;
@@ -124,7 +132,9 @@ export async function POST(request: NextRequest) {
     const salon = await salonService.getSalonById(salon_id);
 
     if (!salon) {
-      console.warn(`[SECURITY] Salon not found for slot generation from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`);
+      console.warn(
+        `[SECURITY] Salon not found for slot generation from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`
+      );
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
@@ -132,21 +142,25 @@ export async function POST(request: NextRequest) {
     const { getServerUser } = await import('@/lib/supabase/server-auth');
     const { userService } = await import('@/services/user.service');
     const user = await getServerUser(request);
-    
+
     if (user) {
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(b => b.id === salon_id);
-      
+      const hasAccess = userBusinesses.some((b) => b.id === salon_id);
+
       if (!hasAccess) {
         const profile = await userService.getUserProfile(user.id);
         const isAdmin = profile?.user_type === 'admin';
         if (!isAdmin) {
-          console.warn(`[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salon_id.substring(0, 8)}...`);
+          console.warn(
+            `[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salon_id.substring(0, 8)}...`
+          );
           return errorResponse('Access denied', 403);
         }
       }
     } else {
-      console.warn(`[SECURITY] Unauthenticated slot generation attempt from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`);
+      console.warn(
+        `[SECURITY] Unauthenticated slot generation attempt from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`
+      );
       return errorResponse('Authentication required', 401);
     }
 
@@ -156,7 +170,9 @@ export async function POST(request: NextRequest) {
       slot_duration: salon.slot_duration,
     });
 
-    console.log(`[SECURITY] Slots generated: IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}..., Date: ${date}, User: ${user.id.substring(0, 8)}...`);
+    console.log(
+      `[SECURITY] Slots generated: IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}..., Date: ${date}, User: ${user.id.substring(0, 8)}...`
+    );
     return successResponse(null, SUCCESS_MESSAGES.SLOTS_GENERATED);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
@@ -164,4 +180,3 @@ export async function POST(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

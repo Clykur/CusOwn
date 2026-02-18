@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { NextRequest } from 'next/server';
 import { redactPiiForAudit } from '@/lib/security/audit-pii-redact.security';
+import { getClientIp } from '@/lib/utils/security';
 
 export type AuditActionType =
   | 'business_created'
@@ -65,11 +66,8 @@ export class AuditService {
       return null;
     }
 
-    const ipAddress =
-      data.request?.ip ||
-      data.request?.headers.get('x-forwarded-for') ||
-      data.request?.headers.get('x-real-ip') ||
-      null;
+    const rawIp = data.request ? getClientIp(data.request) : null;
+    const ipAddress = rawIp && rawIp !== 'unknown' ? rawIp : null;
     const userAgent = data.request?.headers.get('user-agent') || null;
 
     try {

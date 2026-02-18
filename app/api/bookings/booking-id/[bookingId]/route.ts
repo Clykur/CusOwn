@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
+import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders, setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { bookingId: string } }
-) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+export async function GET(request: NextRequest, { params }: { params: { bookingId: string } }) {
+  const clientIP = getClientIp(request);
+
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -23,7 +21,9 @@ export async function GET(
 
     const booking = await bookingService.getBookingById(bookingId);
     if (!booking) {
-      console.warn(`[SECURITY] Booking not found from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`);
+      console.warn(
+        `[SECURITY] Booking not found from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`
+      );
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
@@ -32,27 +32,31 @@ export async function GET(
     if (user) {
       // Check if user is the customer
       const isCustomer = booking.customer_user_id === user.id;
-      
+
       // Check if user owns the business
       let isOwner = false;
       if (booking.business_id) {
         const userBusinesses = await userService.getUserBusinesses(user.id);
-        isOwner = userBusinesses.some(b => b.id === booking.business_id);
+        isOwner = userBusinesses.some((b) => b.id === booking.business_id);
       }
-      
+
       // Check if user is admin
       const profile = await userService.getUserProfile(user.id);
       const isAdmin = profile?.user_type === 'admin';
-      
+
       if (!isCustomer && !isOwner && !isAdmin) {
-        console.warn(`[SECURITY] Unauthorized booking access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., BookingId: ${bookingId.substring(0, 8)}...`);
+        console.warn(
+          `[SECURITY] Unauthorized booking access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., BookingId: ${bookingId.substring(0, 8)}...`
+        );
         return errorResponse('Access denied', 403);
       }
     } else {
       // For public bookingId access, only allow if customer_user_id is null (legacy bookings)
       // This maintains backward compatibility but logs the access
       if (booking.customer_user_id) {
-        console.warn(`[SECURITY] Unauthenticated access to authenticated booking from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`);
+        console.warn(
+          `[SECURITY] Unauthenticated access to authenticated booking from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`
+        );
         return errorResponse('Authentication required', 401);
       }
     }

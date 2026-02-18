@@ -3,16 +3,13 @@ import { slotService } from '@/services/slot.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { ERROR_MESSAGES } from '@/config/constants';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slotId: string } }
-) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+export async function GET(request: NextRequest, { params }: { params: { slotId: string } }) {
+  const clientIP = getClientIp(request);
+
   try {
     const { slotId } = params;
 
@@ -24,27 +21,31 @@ export async function GET(
     const slot = await slotService.getSlotById(slotId);
 
     if (!slot) {
-      console.warn(`[SECURITY] Slot not found from IP: ${clientIP}, Slot: ${slotId.substring(0, 8)}...`);
+      console.warn(
+        `[SECURITY] Slot not found from IP: ${clientIP}, Slot: ${slotId.substring(0, 8)}...`
+      );
       return errorResponse(ERROR_MESSAGES.SLOT_NOT_FOUND, 404);
     }
 
     // Authorization: Public can view available/reserved slots, owners can view all slots for their businesses
     // This matches RLS policy behavior
     const user = await getServerUser(request);
-    
+
     if (user && slot.business_id) {
       // Check if user owns the business
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(b => b.id === slot.business_id);
-      
+      const hasAccess = userBusinesses.some((b) => b.id === slot.business_id);
+
       if (!hasAccess) {
         // Check if user is admin
         const profile = await userService.getUserProfile(user.id);
         const isAdmin = profile?.user_type === 'admin';
-        
+
         // If not owner/admin and slot is booked, deny access
         if (!isAdmin && slot.status === 'booked') {
-          console.warn(`[SECURITY] Unauthorized booked slot access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Slot: ${slotId.substring(0, 8)}...`);
+          console.warn(
+            `[SECURITY] Unauthorized booked slot access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Slot: ${slotId.substring(0, 8)}...`
+          );
           return errorResponse('Access denied', 403);
         }
       }

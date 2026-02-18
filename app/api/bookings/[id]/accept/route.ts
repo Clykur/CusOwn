@@ -3,7 +3,7 @@ import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { reminderService } from '@/services/reminder.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID, validateResourceToken } from '@/lib/utils/security';
+import { getClientIp, isValidUUID, validateResourceToken } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline';
@@ -13,15 +13,17 @@ import { auditService } from '@/services/audit.service';
 import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
-const acceptRateLimit = enhancedRateLimit({ maxRequests: 10, windowMs: 60000, perIP: true, keyPrefix: 'booking_accept' });
+const acceptRateLimit = enhancedRateLimit({
+  maxRequests: 10,
+  windowMs: 60000,
+  perIP: true,
+  keyPrefix: 'booking_accept',
+});
 const ROUTE = 'POST /api/bookings/[id]/accept';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const clientIP = getClientIp(request);
+
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -35,7 +37,13 @@ export async function POST(
 
     const token = request.nextUrl.searchParams.get('token');
     if (token) {
-      const decodedToken = (() => { try { return decodeURIComponent(token); } catch { return token; } })();
+      const decodedToken = (() => {
+        try {
+          return decodeURIComponent(token);
+        } catch {
+          return token;
+        }
+      })();
       if (!validateResourceToken('accept', id, decodedToken)) {
         return denyInvalidToken(request, ROUTE, id);
       }
@@ -49,7 +57,7 @@ export async function POST(
     const ctx = await getAuthContext(request);
     if (ctx) {
       const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-      const ownsBusiness = userBusinesses.some(b => b.id === booking.business_id);
+      const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
       if (!ownsBusiness && !isAdminProfile(ctx.profile)) {
         logAuthDeny({
           user_id: ctx.user.id,
@@ -71,8 +79,15 @@ export async function POST(
     if (booking.status === 'confirmed') {
       const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
       if (bookingWithDetails?.salon?.address?.trim()) {
-        const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(bookingWithDetails, bookingWithDetails.salon, request);
-        const response = successResponse({ ...booking, whatsapp_url: whatsappUrl }, SUCCESS_MESSAGES.BOOKING_CONFIRMED);
+        const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
+          bookingWithDetails,
+          bookingWithDetails.salon,
+          request
+        );
+        const response = successResponse(
+          { ...booking, whatsapp_url: whatsappUrl },
+          SUCCESS_MESSAGES.BOOKING_CONFIRMED
+        );
         setNoCacheHeaders(response);
         return response;
       }
@@ -89,14 +104,16 @@ export async function POST(
 
     const confirmedBooking = await bookingService.confirmBooking(id, user?.id);
     const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
-    
+
     if (!bookingWithDetails || !bookingWithDetails.salon || !bookingWithDetails.slot) {
       throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
     }
 
     // Check if salon has address (required for confirmation message)
     if (!bookingWithDetails.salon.address || bookingWithDetails.salon.address.trim() === '') {
-      throw new Error('Salon address is required to send confirmation. Please update the salon address first.');
+      throw new Error(
+        'Salon address is required to send confirmation. Please update the salon address first.'
+      );
     }
 
     const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
@@ -110,22 +127,19 @@ export async function POST(
     // SECURITY: Log mutation for audit
     if (user) {
       try {
-        await auditService.createAuditLog(
-          user.id,
-          'booking_confirmed',
-          'booking',
-          {
-            entityId: id,
-            description: 'Booking confirmed by owner',
-            request,
-          }
-        );
+        await auditService.createAuditLog(user.id, 'booking_confirmed', 'booking', {
+          entityId: id,
+          description: 'Booking confirmed by owner',
+          request,
+        });
       } catch (auditError) {
         console.error('[SECURITY] Failed to create audit log:', auditError);
       }
     }
-    
-    console.log(`[SECURITY] Booking accepted: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${user?.id.substring(0, 8) || 'token-based'}...`);
+
+    console.log(
+      `[SECURITY] Booking accepted: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${user?.id.substring(0, 8) || 'token-based'}...`
+    );
 
     const response = successResponse(
       {
@@ -142,4 +156,3 @@ export async function POST(
     return errorResponse(message, 400);
   }
 }
-

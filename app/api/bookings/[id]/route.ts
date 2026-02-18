@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID, validateResourceToken } from '@/lib/utils/security';
+import { getClientIp, isValidUUID, validateResourceToken } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline';
 import { userService } from '@/services/user.service';
@@ -10,12 +10,9 @@ import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
 const ROUTE = 'GET /api/bookings/[id]';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const clientIP = getClientIp(request);
+
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -26,7 +23,13 @@ export async function GET(
 
     const token = request.nextUrl.searchParams.get('token');
     if (token) {
-      const decodedToken = (() => { try { return decodeURIComponent(token); } catch { return token; } })();
+      const decodedToken = (() => {
+        try {
+          return decodeURIComponent(token);
+        } catch {
+          return token;
+        }
+      })();
       if (!validateResourceToken('booking-status', id, decodedToken)) {
         return denyInvalidToken(request, ROUTE, id);
       }
@@ -43,7 +46,7 @@ export async function GET(
       let isOwner = false;
       if (booking.business_id) {
         const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-        isOwner = userBusinesses.some(b => b.id === booking.business_id);
+        isOwner = userBusinesses.some((b) => b.id === booking.business_id);
       }
       const isAdmin = isAdminProfile(ctx.profile);
       if (!isCustomer && !isOwner && !isAdmin && !token) {
@@ -67,4 +70,3 @@ export async function GET(
     return errorResponse(message, 500);
   }
 }
-

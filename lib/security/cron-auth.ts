@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
+import { getClientIp } from '@/lib/utils/security';
 import { errorResponse } from '@/lib/utils/response';
 
 export const validateCronSecret = (request: NextRequest): NextResponse | null => {
@@ -23,7 +24,7 @@ export const validateCronSecret = (request: NextRequest): NextResponse | null =>
 
   // Validate Bearer token
   if (!authHeader || authHeader !== `Bearer ${expectedSecret}`) {
-    const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const clientIP = getClientIp(request);
     console.warn(`[SECURITY] Invalid cron secret from IP: ${clientIP}`);
     return errorResponse('Unauthorized', 401);
   }

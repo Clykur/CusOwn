@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { bookingService } from '@/services/booking.service';
 import { slotService } from '@/services/slot.service';
@@ -18,7 +18,7 @@ const initiateRateLimit = enhancedRateLimit({
 });
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = getClientIp(request);
 
   try {
     const rateLimitResponse = await initiateRateLimit(request);
@@ -117,7 +117,9 @@ export async function POST(request: NextRequest) {
       idempotencyKey
     );
 
-    const supabaseAdmin = await import('@/lib/supabase/server').then(m => m.requireSupabaseAdmin());
+    const supabaseAdmin = await import('@/lib/supabase/server').then((m) =>
+      m.requireSupabaseAdmin()
+    );
     await supabaseAdmin
       .from('bookings')
       .update({

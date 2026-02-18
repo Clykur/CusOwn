@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getClientIp } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('Authentication required', 401);
     }
 
-    const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const clientIP = getClientIp(request);
 
     const body = await request.json();
     const { role } = body;

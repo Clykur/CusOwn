@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
+import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 
 export async function GET(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  
+  const clientIP = getClientIp(request);
+
   try {
     const { searchParams } = new URL(request.url);
     const location = searchParams.get('location');
@@ -32,7 +33,9 @@ export async function GET(request: NextRequest) {
     // Exclude: id (internal UUID), owner_name (PII), created_at (enumeration aid), owner_user_id
     let query = supabaseAdmin
       .from('businesses')
-      .select('salon_name, booking_link, address, location, category, opening_time, closing_time, slot_duration')
+      .select(
+        'salon_name, booking_link, address, location, category, opening_time, closing_time, slot_duration'
+      )
       .eq('suspended', false) // Only show active businesses
       .order('salon_name', { ascending: true });
 
@@ -54,4 +57,3 @@ export async function GET(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

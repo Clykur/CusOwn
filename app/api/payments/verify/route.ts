@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { paymentService } from '@/services/payment.service';
 import { bookingService } from '@/services/booking.service';
@@ -17,7 +17,7 @@ const verifyRateLimit = enhancedRateLimit({
 });
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = getClientIp(request);
 
   try {
     const rateLimitResponse = await verifyRateLimit(request);
@@ -98,11 +98,7 @@ export async function POST(request: NextRequest) {
 
         if (!result || !result.success) {
           const errorMsg = result?.error || 'Booking confirmation failed';
-          await paymentService.markPaymentFailed(
-            payment.id,
-            errorMsg,
-            user.id
-          );
+          await paymentService.markPaymentFailed(payment.id, errorMsg, user.id);
           return errorResponse(errorMsg, 409);
         }
 
@@ -114,11 +110,7 @@ export async function POST(request: NextRequest) {
           await metricsService.increment('bookings.confirmed');
         }
       } catch (confirmError) {
-        await paymentService.markPaymentFailed(
-          payment.id,
-          'Booking confirmation failed',
-          user.id
-        );
+        await paymentService.markPaymentFailed(payment.id, 'Booking confirmation failed', user.id);
         throw confirmError;
       }
     }

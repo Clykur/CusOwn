@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp } from '@/lib/utils/security';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
 interface RateLimitEntry {
@@ -32,7 +33,7 @@ export const rateLimit = (options: RateLimitOptions) => {
 
     const key = options.keyGenerator
       ? options.keyGenerator(request)
-      : `rate_limit:${request.ip || 'unknown'}`;
+      : `rate_limit:${getClientIp(request)}`;
 
     const windowKey = `${key}:${Math.floor(Date.now() / options.windowMs)}`;
     const now = Date.now();
@@ -58,11 +59,11 @@ export const rateLimit = (options: RateLimitOptions) => {
 export const apiRateLimit = rateLimit({
   windowMs: 60000,
   maxRequests: 100,
-  keyGenerator: (req) => `api:${req.ip || 'unknown'}`,
+  keyGenerator: (req) => `api:${getClientIp(req)}`,
 });
 
 export const bookingRateLimit = rateLimit({
   windowMs: 60000,
   maxRequests: 10,
-  keyGenerator: (req) => `booking:${req.ip || 'unknown'}`,
+  keyGenerator: (req) => `booking:${getClientIp(req)}`,
 });

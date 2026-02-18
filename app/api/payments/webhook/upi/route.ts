@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getClientIp } from '@/lib/utils/security';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { paymentService } from '@/services/payment.service';
 import { verifyUPIWebhookSignature, parseUPIWebhookPayload } from '@/lib/utils/upi-payment';
@@ -10,10 +11,11 @@ import { requireSupabaseAdmin } from '@/lib/supabase/server';
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = getClientIp(request);
 
   try {
-    const signature = request.headers.get('x-upi-signature') || request.headers.get('x-webhook-signature');
+    const signature =
+      request.headers.get('x-upi-signature') || request.headers.get('x-webhook-signature');
     if (!signature) {
       console.warn(`[WEBHOOK] Missing signature from IP: ${clientIP}`);
       return errorResponse('Missing signature', 401);
@@ -59,11 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (status === 'failed') {
-      await paymentService.markPaymentFailed(
-        payment.id,
-        'Payment failed via webhook',
-        undefined
-      );
+      await paymentService.markPaymentFailed(payment.id, 'Payment failed via webhook', undefined);
       return successResponse({ success: true, message: 'Payment marked as failed' });
     }
 
@@ -80,16 +78,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      await paymentService.verifyUPIPayment(
-        payment.id,
-        transactionId,
-        'system',
-        'webhook',
-        {
-          upiAppUsed,
-          paymentReference,
-        }
-      );
+      await paymentService.verifyUPIPayment(payment.id, transactionId, 'system', 'webhook', {
+        upiAppUsed,
+        paymentReference,
+      });
 
       await supabaseAdmin
         .from('payments')

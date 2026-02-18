@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
@@ -18,7 +18,7 @@ const searchRateLimit = enhancedRateLimit({
 const ALLOWED_CATEGORIES = ['salon', 'clinic', 'gym', 'tutor', 'repair', 'consultant'];
 
 export async function POST(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = getClientIp(request);
 
   try {
     const rateLimitResponse = await searchRateLimit(request);
@@ -121,10 +121,22 @@ export async function POST(request: NextRequest) {
     }
 
     if (!businesses) {
-      return successResponse({ businesses: [], pagination: { page, limit, total: 0, has_more: false } });
+      return successResponse({
+        businesses: [],
+        pagination: { page, limit, total: 0, has_more: false },
+      });
     }
 
-    let results: Array<{ id: any; salon_name: any; location: any; category: any; latitude: any; longitude: any; area?: any; distance_km?: number }> = businesses;
+    let results: Array<{
+      id: any;
+      salon_name: any;
+      location: any;
+      category: any;
+      latitude: any;
+      longitude: any;
+      area?: any;
+      distance_km?: number;
+    }> = businesses;
     const hasMore = results.length > limit;
     if (hasMore) {
       results = results.slice(0, limit);
