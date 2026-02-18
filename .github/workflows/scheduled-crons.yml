@@ -1,12 +1,11 @@
-# Scheduled cron jobs – replaces Vercel crons.
-# Requires: CRON_SECRET and CRON_APP_URL in GitHub repo Secrets.
+# Scheduled cron jobs – replaces Vercel crons. Phase 8: CRON_SECRET never logged; workflow_dispatch from main only.
+# Requires: CRON_SECRET and CRON_APP_URL in GitHub repo Secrets. CRON_SECRET is validated server-side; never echo it.
 # CRON_APP_URL = your app root (e.g. https://cusown.clykur.com or https://your-app.vercel.app).
 
 name: Scheduled Crons
 
 on:
   schedule:
-    # Every 15 minutes (trim-metric-timings); also used to run daily jobs at fixed hours
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
@@ -18,8 +17,12 @@ jobs:
     name: Run scheduled tasks
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Phase 8: workflow_dispatch allowed only from main branch.
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    permissions:
+      contents: read
     steps:
-      - name: Set app URL and secret
+      - name: Set app URL and secret (do not log CRON_SECRET)
         id: env
         run: |
           echo "app_url=${CRON_APP_URL}" >> $GITHUB_OUTPUT

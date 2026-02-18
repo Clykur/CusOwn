@@ -8,27 +8,27 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 
 ### Before Hardening
 
-| Risk Category | Risk Level | Issues |
-|--------------|------------|--------|
-| **Unauthorized Deployments** | 🔴 High | Direct pushes to main allowed, no branch protection |
-| **Secret Leakage** | 🔴 High | No secret scanning, secrets could be committed |
-| **Supply Chain Attacks** | 🟡 Medium | No dependency scanning, post-install scripts enabled |
-| **Accidental Production Deploys** | 🔴 High | No manual approval, automatic production deploys |
-| **Missing Security Checks** | 🟡 Medium | Basic linting only, no security scanning |
-| **Environment Isolation** | 🟡 Medium | Same secrets for all environments |
-| **Deployment Audit** | 🔴 High | No audit logging, no deployment tracking |
+| Risk Category                     | Risk Level | Issues                                               |
+| --------------------------------- | ---------- | ---------------------------------------------------- |
+| **Unauthorized Deployments**      | 🔴 High    | Direct pushes to main allowed, no branch protection  |
+| **Secret Leakage**                | 🔴 High    | No secret scanning, secrets could be committed       |
+| **Supply Chain Attacks**          | 🟡 Medium  | No dependency scanning, post-install scripts enabled |
+| **Accidental Production Deploys** | 🔴 High    | No manual approval, automatic production deploys     |
+| **Missing Security Checks**       | 🟡 Medium  | Basic linting only, no security scanning             |
+| **Environment Isolation**         | 🟡 Medium  | Same secrets for all environments                    |
+| **Deployment Audit**              | 🔴 High    | No audit logging, no deployment tracking             |
 
 ### After Hardening
 
-| Risk Category | Risk Level | Improvements |
-|--------------|------------|--------------|
-| **Unauthorized Deployments** | 🟢 Low | Branch protection enforced, PRs required, manual approval |
-| **Secret Leakage** | 🟢 Low | Automated secret scanning, no secrets in code/build |
-| **Supply Chain Attacks** | 🟢 Low | Dependency scanning, lockfile enforcement, script prevention |
-| **Accidental Production Deploys** | 🟢 Low | Manual approval gates, environment isolation |
-| **Missing Security Checks** | 🟢 Low | Comprehensive security scanning, SAST, dependency checks |
-| **Environment Isolation** | 🟢 Low | Environment-specific secrets, proper scoping |
-| **Deployment Audit** | 🟢 Low | Full audit logging, deployment tracking |
+| Risk Category                     | Risk Level | Improvements                                                 |
+| --------------------------------- | ---------- | ------------------------------------------------------------ |
+| **Unauthorized Deployments**      | 🟢 Low     | Branch protection enforced, PRs required, manual approval    |
+| **Secret Leakage**                | 🟢 Low     | Automated secret scanning, no secrets in code/build          |
+| **Supply Chain Attacks**          | 🟢 Low     | Dependency scanning, lockfile enforcement, script prevention |
+| **Accidental Production Deploys** | 🟢 Low     | Manual approval gates, environment isolation                 |
+| **Missing Security Checks**       | 🟢 Low     | Comprehensive security scanning, SAST, dependency checks     |
+| **Environment Isolation**         | 🟢 Low     | Environment-specific secrets, proper scoping                 |
+| **Deployment Audit**              | 🟢 Low     | Full audit logging, deployment tracking                      |
 
 ## Implementation Checklist
 
@@ -97,6 +97,7 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 ### 1. Code Security
 
 **Implemented:**
+
 - ✅ Secret scanning with Gitleaks
 - ✅ Static Application Security Testing (SAST)
 - ✅ Dangerous pattern detection
@@ -107,6 +108,7 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 ### 2. Dependency Security
 
 **Implemented:**
+
 - ✅ Lockfile enforcement (`package-lock.json` required)
 - ✅ Vulnerability scanning (npm audit)
 - ✅ Post-install script prevention
@@ -117,6 +119,7 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 ### 3. Build Security
 
 **Implemented:**
+
 - ✅ Environment variable validation
 - ✅ Build output secret scanning
 - ✅ Production build verification
@@ -127,6 +130,7 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 ### 4. Deployment Security
 
 **Implemented:**
+
 - ✅ Branch protection enforcement
 - ✅ Required status checks
 - ✅ Manual approval gates (production)
@@ -221,15 +225,19 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 ### Common Issues
 
 **Issue**: Status checks not appearing
+
 - **Solution**: Ensure workflow files are in `.github/workflows/` and named correctly
 
 **Issue**: Production deployment blocked
+
 - **Solution**: Verify manual approval is configured in GitHub Environments
 
 **Issue**: Secrets not found
+
 - **Solution**: Verify secrets are set in GitHub repository settings
 
 **Issue**: Build fails with missing env vars
+
 - **Solution**: Ensure all required secrets are set in GitHub and Vercel
 
 ## Support & Documentation
@@ -238,6 +246,23 @@ This document summarizes the security hardening implemented for the CusOwn CI/CD
 - **Branch Protection**: `.github/BRANCH_PROTECTION.md`
 - **Deployment Safeguards**: `.github/DEPLOYMENT_SAFEGUARDS.md`
 - **Environment Validation**: `scripts/validate-env.sh`
+
+## Enterprise hardening (Phases 1–10)
+
+Additional hardening applied to both GitHub Actions and GitLab CI:
+
+- **Secret scanning**: Gitleaks fails the pipeline on any confirmed secret (no `continue-on-error`).
+- **Dependency security**: npm audit fails on HIGH/CRITICAL; level configurable via `NPM_AUDIT_LEVEL`. Dependency review on PRs blocks new high/critical vulnerabilities and disallowed licenses.
+- **SAST**: CodeQL workflow runs on PR and push to main; fails on HIGH/CRITICAL findings. Dangerous-pattern grep scan retained; no PII in scan output.
+- **License compliance**: Allowlist in `.github/license-allowlist.txt` (or `vars.LICENSE_ALLOWLIST`); fails on GPL/AGPL (if not allowed), unknown, or disallowed licenses.
+- **Supply chain**: All third-party GitHub Actions pinned by full commit SHA; `persist-credentials: false` on checkout; minimal permissions per job.
+- **SBOM**: CycloneDX SBOM generated on main and release branches; uploaded as workflow artifact (no sensitive env in logs).
+- **Production deploy**: Uses `environment: production`; required reviewers via GitHub Environment; does not run on PR or schedule; only from main.
+- **Cron security**: `workflow_dispatch` for scheduled crons allowed only from main; CRON_SECRET never logged; validated server-side.
+- **GitLab parity**: Gitleaks (fail on detection), npm audit fail on high/critical, dangerous-pattern scan, license check; no `|| true` or `allow_failure` on security.
+- **Observability**: Audit trail logs actor, SHA, branch, workflow, timestamp (no secrets); failed security jobs visible in summary.
+
+See `.github/workflows/ci-cd.yml`, `.github/workflows/codeql.yml`, `.github/workflows/scheduled-crons.yml`, and `.gitlab-ci.yml`.
 
 ## Conclusion
 

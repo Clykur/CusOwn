@@ -30,7 +30,9 @@ This document provides step-by-step instructions for configuring branch protecti
 - [x] **Require status checks to pass before merging**
   - [x] Require branches to be up to date before merging
   - [x] Status checks that are required:
+    - `dependency-review / Dependency review` (PR only; blocks new high/critical deps and disallowed licenses)
     - `security-scan / Security Scan`
+    - `analyze / CodeQL analysis` (from CodeQL workflow)
     - `lint-and-test / Lint and Test`
     - `build / Build`
   - **Note:** `Deploy to Production` runs only after merge (on push to main). Do not add it as a required status check for merging PRs.
@@ -50,14 +52,15 @@ This document provides step-by-step instructions for configuring branch protecti
 - [ ] Allow force pushes: **DISABLED**
 - [ ] Allow deletions: **DISABLED**
 
-### Step 3: Configure Deployment Protection
+### Step 3: Configure Deployment Protection (Production)
 
 1. Go to **Settings** → **Environments**
-2. Create or edit **production** environment
+2. Create or edit the **production** environment (workflow uses `environment: production`)
 3. Enable:
-   - [x] **Required reviewers**: Add authorized team members
+   - [x] **Required reviewers**: Add authorized team members (deploy is gated by approval)
    - [x] **Wait timer**: 0 minutes (or as needed)
    - [x] **Deployment branches**: Only allow `main` branch
+4. Production deploy runs only on **push to main** (not on pull_request or schedule). Manual runs (workflow_dispatch) should be from main.
 
 ## Develop Branch Protection (Recommended)
 

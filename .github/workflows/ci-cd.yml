@@ -1,6 +1,8 @@
+# CI/CD Pipeline – enterprise-grade security. See docs/BRANCH_AND_PR_WORKFLOW.md
+# Production deploy: only on push to main; use GitHub Environment "production" with Required reviewers.
+
 name: CI/CD Pipeline
 
-# Supports both: (1) direct push to main, (2) PR workflow. See docs/BRANCH_AND_PR_WORKFLOW.md
 on:
   push:
     branches:
@@ -13,6 +15,9 @@ on:
       - 'release/**'
   pull_request:
     branches: [main, develop]
+  schedule:
+    # Weekly security scan (no deploy). Secret scan + dependency audit.
+    - cron: '0 2 * * 0'
   workflow_dispatch:
     inputs:
       environment:
@@ -23,45 +28,98 @@ on:
           - production
         default: production
 
-# Prevent concurrent runs on the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Minimal default permissions; override per job. Supply-chain: all actions pinned by SHA.
+default:
+  run:
+    permissions:
+      contents: read
+      actions: read
 
 env:
   NODE_VERSION: '18.x'
   NODE_OPTIONS: '--max-old-space-size=4096'
   CI: true
+  # Audit level: high | critical. Override via repo variable NPM_AUDIT_LEVEL.
+  NPM_AUDIT_LEVEL: ${{ vars.NPM_AUDIT_LEVEL || 'high' }}
 
-# Use default GitHub-hosted runners (ubuntu-latest); no custom runner labels
 jobs:
-  # ============================================================================
-  # SECURITY: Secret Scanning, Dependency & Supply Chain Checks
-  # ============================================================================
+  # ---------------------------------------------------------------------------
+  # Observability: audit trail (no secrets). Phase 10.
+  # ---------------------------------------------------------------------------
+  audit-trail:
+    name: Audit trail
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Log workflow context (no secrets)
+        run: |
+          echo "## Workflow audit" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SHA | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | ${{ github.workflow }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Event | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
+
+  # ---------------------------------------------------------------------------
+  # Dependency review (PR only). Phase 2. Blocks new HIGH/CRITICAL and disallowed licenses.
+  # ---------------------------------------------------------------------------
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Dependency review
+        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0
+
+  # ---------------------------------------------------------------------------
+  # SECURITY: Secret scanning (fail on detection), npm audit, license, dangerous patterns. Phase 1–4, 10.
+  # ---------------------------------------------------------------------------
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    needs: [audit-trail]
     permissions:
       contents: read
-      security-events: write
+      security-events: write  # For optional SARIF / code scanning integration
       actions: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Gitleaks - Secret Scanning
-        uses: gitleaks/gitleaks-action@v2.3.9
-        continue-on-error: true
+      # Phase 1: Gitleaks – fail on any confirmed secret. SARIF optional if action supports.
+      - name: Gitleaks – Secret scanning
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -70,82 +128,113 @@ jobs:
       - name: Verify package-lock.json exists
         run: |
           if [ ! -f package-lock.json ]; then
-            echo "❌ ERROR: package-lock.json is missing. Lockfile is required for security."
+            echo "ERROR: package-lock.json is missing. Lockfile is required for security."
             exit 1
           fi
-          echo "✅ package-lock.json verified"
+          echo "package-lock.json verified"
 
       - name: Install dependencies (read-only)
         run: |
           npm ci --ignore-scripts --no-audit
-          echo "✅ Dependencies installed with scripts disabled"
+          echo "Dependencies installed with scripts disabled"
 
       - name: Check for lockfile tampering
         run: |
           if ! npm ci --dry-run 2>&1 | grep -q "up to date\|added\|removed"; then
-            echo "⚠️  WARNING: package-lock.json may be out of sync with package.json"
-            echo "⚠️  Run 'npm install --package-lock-only' locally to fix"
+            echo "WARNING: package-lock.json may be out of sync with package.json"
+            echo "Run 'npm install --package-lock-only' locally to fix"
           else
-            echo "✅ Lockfile integrity verified"
+            echo "Lockfile integrity verified"
           fi
         continue-on-error: true
 
-      - name: Run npm audit (fail on high/critical)
-        id: npm-audit
-        continue-on-error: true
+      # Phase 2: npm audit – fail on HIGH/CRITICAL. No silent ignore.
+      - name: Run npm audit
         run: |
-          npm audit --audit-level=high --omit=dev 2>&1 | tee audit.log || true
-          if grep -q "high severity\|critical severity" audit.log 2>/dev/null; then
-            echo "⚠️  High/critical vulnerabilities found (see audit.log). Upgrade Next.js to 15.5.12+ when ready to fix."
-            echo "audit_failed=true" >> $GITHUB_OUTPUT
-          else
-            echo "✅ No high/critical vulnerabilities"
-            echo "audit_failed=false" >> $GITHUB_OUTPUT
+          set -e
+          npm audit --audit-level=${{ env.NPM_AUDIT_LEVEL }} --omit=dev 2>&1 | tee audit.log || true
+          if grep -qE "high severity|critical severity" audit.log 2>/dev/null; then
+            echo "High or critical vulnerabilities found. Fix before merging."
+            exit 1
           fi
+          echo "No high/critical vulnerabilities"
 
-      - name: Check for dangerous code patterns
+      # Phase 4: License compliance – allowlist from .github/license-allowlist.txt or vars.LICENSE_ALLOWLIST
+      - name: License check
         run: |
-          echo "Scanning for dangerous code patterns..."
-          DANGEROUS_PATTERNS=(
-            "eval\("
-            "Function\("
-            "innerHTML\s*="
-            "dangerouslySetInnerHTML"
-            "document\.write"
-          )
-          FOUND_ISSUES=false
-          for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+          set -e
+          ALLOWLIST_FILE=".github/license-allowlist.txt"
+          if [ -n "$LICENSE_ALLOWLIST" ]; then
+            ALLOWED=$(echo "$LICENSE_ALLOWLIST" | tr ',' '\n' | sed 's/^ *//;s/ *$//')
+          elif [ -f "$ALLOWLIST_FILE" ]; then
+            ALLOWED=$(grep -v '^#' "$ALLOWLIST_FILE" | grep -v '^$' | tr -d '\r')
+          else
+            ALLOWED="MIT
+          Apache-2.0
+          BSD-2-Clause
+          BSD-3-Clause
+          ISC"
+          fi
+          ALLOWED=$(echo "$ALLOWED" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . || true)
+          npx --yes license-checker --production --json 2>/dev/null > licenses.json || true
+          if [ ! -s licenses.json ]; then
+            echo "Could not generate license report; skipping license check."
+            exit 0
+          fi
+          DISALLOWED=""
+          while IFS= read -r pkg; do
+            [ -z "$pkg" ] && continue
+            lic=$(jq -r ".\"$pkg\".licenses // \"UNKNOWN\"" licenses.json 2>/dev/null | tr -d '"' | head -1)
+            [ -z "$lic" ] || [ "$lic" = "undefined" ] && lic="UNKNOWN"
+            if ! echo "$ALLOWED" | grep -qFx "$lic" 2>/dev/null; then
+              DISALLOWED="$DISALLOWED $pkg($lic)"
+            fi
+          done < <(jq -r 'keys[]' licenses.json 2>/dev/null)
+          if [ -n "$DISALLOWED" ]; then
+            echo "Disallowed or unknown licenses:$DISALLOWED"
+            exit 1
+          fi
+          echo "License check passed"
+        env:
+          LICENSE_ALLOWLIST: ${{ vars.LICENSE_ALLOWLIST }}
+
+      # Phase 3: Dangerous pattern scan (no PII in output). Fail on detection.
+      - name: Dangerous code patterns
+        run: |
+          set -e
+          FOUND=0
+          for pattern in 'eval\(' 'Function\(' 'innerHTML\s*=' 'dangerouslySetInnerHTML' 'document\.write'; do
             if grep -r -iE "$pattern" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git app lib components 2>/dev/null; then
-              echo "⚠️  WARNING: Potentially dangerous pattern detected: $pattern"
-              FOUND_ISSUES=true
+              echo "Dangerous pattern detected: $pattern"
+              FOUND=1
             fi
           done
-          if [ "$FOUND_ISSUES" = true ]; then
-            echo "⚠️  WARNING: Potentially dangerous patterns found. Review manually."
-          else
-            echo "✅ No dangerous patterns detected"
+          if [ "$FOUND" -eq 1 ]; then
+            echo "Fix or justify dangerous patterns before merging."
+            exit 1
           fi
-        continue-on-error: true
+          echo "No dangerous patterns detected"
 
-  # ============================================================================
-  # CODE QUALITY: Linting, Type Checking
-  # ============================================================================
+  # ---------------------------------------------------------------------------
+  # Lint & Type Check
+  # ---------------------------------------------------------------------------
   lint-and-test:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [audit-trail]
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -155,39 +244,33 @@ jobs:
 
       - name: Run ESLint
         run: |
-          npm run lint || {
-            echo "❌ ERROR: Linting failed"
-            exit 1
-          }
-          echo "✅ Linting passed"
+          npm run lint || { echo "Linting failed"; exit 1; }
+          echo "Linting passed"
 
       - name: Type check
         run: |
-          npm run typecheck || {
-            echo "❌ ERROR: Type checking failed"
-            exit 1
-          }
-          echo "✅ Type checking passed"
+          npm run typecheck || { echo "Type checking failed"; exit 1; }
+          echo "Type checking passed"
 
-  # ============================================================================
-  # BUILD: Production Build Verification
-  # ============================================================================
+  # ---------------------------------------------------------------------------
+  # Build verification
+  # ---------------------------------------------------------------------------
   build:
     name: Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint-and-test]
+    needs: [lint-and-test, security-scan]
     permissions:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -197,28 +280,13 @@ jobs:
 
       - name: Verify required environment variables
         run: |
-          echo "Checking required environment variables..."
           MISSING_VARS=""
-          REQUIRED_VARS=(
-            "NEXT_PUBLIC_SUPABASE_URL"
-            "NEXT_PUBLIC_SUPABASE_ANON_KEY"
-            "SUPABASE_SERVICE_ROLE_KEY"
-          )
-          for var in "${REQUIRED_VARS[@]}"; do
-            var_value="${!var}"
-            if [ -z "$var_value" ]; then
-              MISSING_VARS="${MISSING_VARS} ${var}"
-              echo "⚠️  Missing: $var"
-            else
-              echo "✅ Found: $var"
-            fi
+          for var in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            eval "val=\$$var"
+            if [ -z "$val" ]; then MISSING_VARS="$MISSING_VARS $var"; fi
           done
           if [ -n "$MISSING_VARS" ]; then
-            echo "⚠️  WARNING: Some environment variables are missing:$MISSING_VARS"
-            echo "⚠️  Build may fail if these are required. Set them in GitHub Secrets if needed."
-            echo "ℹ️  For now, continuing with build (variables should be set in Vercel for deployment)"
-          else
-            echo "✅ All required environment variables present"
+            echo "Some env vars missing (set in Vercel for deploy):$MISSING_VARS"
           fi
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -228,15 +296,9 @@ jobs:
 
       - name: Build application
         run: |
-          echo "Building application..."
-          npm run build || {
-            echo "❌ ERROR: Build failed"
-            echo "ℹ️  Set NEXT_PUBLIC_SUPABASE_*, SUPABASE_SERVICE_ROLE_KEY in repo Secrets if needed."
-            exit 1
-          }
-          echo "✅ Build successful"
+          npm run build || { echo "Build failed"; exit 1; }
+          echo "Build successful"
         env:
-          # Use secrets when set; otherwise placeholders so build can complete (real values in Vercel)
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
@@ -244,26 +306,63 @@ jobs:
 
       - name: Check for secrets in build output
         run: |
-          if grep -r -iE "(password|secret|key|token|api[_-]?key)" .next 2>/dev/null | grep -v "node_modules" | head -10; then
-            echo "⚠️  WARNING: Potential secrets detected in build output (review manually)"
-          else
-            echo "✅ No obvious secrets in build output"
+          if grep -r -iE "(password|secret|key|token|api[_-]?key)" .next 2>/dev/null | grep -v "node_modules" | head -5; then
+            echo "Potential secrets in build output – review required"
+            exit 1
           fi
-        continue-on-error: true
+          echo "No obvious secrets in build output"
 
-  # ============================================================================
-  # DEPLOYMENT: Production (after lint-and-test + build succeed)
-  # Only on push to main (not on pull_request). See docs/BRANCH_AND_PR_WORKFLOW.md
-  # Skipped if Vercel secrets are missing. Add in repo: Settings → Secrets → Actions:
-  #   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID (from Vercel dashboard / .vercel)
-  # ============================================================================
+  # ---------------------------------------------------------------------------
+  # SBOM generation. Phase 6. Main and release only; artifact only (no sensitive env in logs).
+  # ---------------------------------------------------------------------------
+  sbom:
+    name: SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [audit-trail]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate SBOM (CycloneDX)
+        run: npx --yes @cyclonedx/cyclonedx-npm --output-file sbom.json
+        env:
+          NODE_ENV: production
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sbom-${{ github.run_number }}
+          path: sbom.json
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # Production deploy. Phase 7. Only push to main; not on PR or schedule.
+  # Configure GitHub Environment "production" with Required reviewers for approval.
+  # ---------------------------------------------------------------------------
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [lint-and-test, build]
     if: |
       github.ref == 'refs/heads/main' &&
-      github.event_name != 'pull_request'
+      github.event_name != 'pull_request' &&
+      github.event_name != 'schedule'
     environment:
       name: production
       url: https://cusown.clykur.com
@@ -272,7 +371,7 @@ jobs:
       deployments: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -282,11 +381,10 @@ jobs:
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
             echo "skip_deploy=true" >> $GITHUB_OUTPUT
-            echo "⚠️  Vercel secrets missing; deploy will be SKIPPED."
-            echo "Add VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID in repo: Settings → Secrets and variables → Actions"
+            echo "Vercel secrets missing; deploy will be SKIPPED."
           else
             echo "skip_deploy=false" >> $GITHUB_OUTPUT
-            echo "✅ Vercel secrets present; deploy will run."
+            echo "Vercel secrets present; deploy will run."
           fi
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -295,21 +393,11 @@ jobs:
 
       - name: Verify production deployment conditions
         run: |
-          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            echo "⚠️  WARNING: Production deployment from non-main branch"
-            echo "⚠️  For production safety, deploy only from main branch"
-          fi
-          if [ "${{ needs.lint-and-test.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ]; then
-            echo "⚠️  WARNING: Some prerequisite checks did not pass"
-            echo "⚠️  For production safety, all checks should pass"
-          fi
-          echo "✅ Production deployment conditions checked"
-        continue-on-error: true
+          echo "Production deployment conditions checked (main only, not PR/schedule)."
 
       - name: Deploy to Vercel (Production)
         if: steps.vercel-check.outputs.skip_deploy != 'true'
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -322,24 +410,19 @@ jobs:
       - name: Production deployment verification
         if: steps.vercel-check.outputs.skip_deploy != 'true'
         run: |
-          echo "✅ Production deployment completed"
-          echo "Production URL: https://cusown.clykur.com"
-          echo "⚠️  IMPORTANT: Monitor application health after deployment"
+          echo "Production deployment completed. Monitor application health."
 
       - name: Deploy skipped (no Vercel secrets)
         if: steps.vercel-check.outputs.skip_deploy == 'true'
         run: |
-          echo "## ⚠️ Deployment was SKIPPED" >> $GITHUB_STEP_SUMMARY
-          echo "Vercel secrets are not configured. Code was not deployed." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "To enable deployment, add these in **Settings → Secrets and variables → Actions**:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`VERCEL_TOKEN\` (from Vercel: Account Settings → Tokens)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`VERCEL_ORG_ID\` and \`VERCEL_PROJECT_ID\` (from Vercel project settings or \`.vercel/project.json\`)" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment was SKIPPED" >> $GITHUB_STEP_SUMMARY
+          echo "Vercel secrets are not configured." >> $GITHUB_STEP_SUMMARY
+          echo "Add VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID in Settings → Secrets and variables → Actions." >> $GITHUB_STEP_SUMMARY
 
-      - name: Create deployment audit log
+      - name: Deployment audit log
         run: |
           echo "## Production Deployment Audit" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY

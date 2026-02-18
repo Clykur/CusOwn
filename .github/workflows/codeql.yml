@@ -1,0 +1,57 @@
+# CodeQL SAST – JavaScript/TypeScript. Phase 3. Fail on HIGH/CRITICAL.
+# Triggers: PR and push to main. All actions pinned by SHA.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@f5c2471be782132e47a6e6f9c725e56730d6e9a3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@f5c2471be782132e47a6e6f9c725e56730d6e9a3
+
+      - name: Perform CodeQL analysis
+        id: codeql-analysis
+        uses: github/codeql-action/analyze@f5c2471be782132e47a6e6f9c725e56730d6e9a3
+        with:
+          category: /language:javascript-typescript
+
+      - name: Fail on HIGH/CRITICAL findings
+        run: |
+          SARIF_DIR="${{ steps.codeql-analysis.outputs.sarif-output }}"
+          if [ -n "$SARIF_DIR" ] && [ -d "$SARIF_DIR" ]; then
+            for f in "$SARIF_DIR"/*.sarif; do
+              [ -f "$f" ] || continue
+              COUNT=$(jq -r '[.runs[].results[]? | select(.level == "error" or .level == "warning")] | length' "$f" 2>/dev/null || echo 0)
+              if [ "${COUNT:-0}" -gt 0 ]; then
+                echo "CodeQL found HIGH/CRITICAL (error/warning) findings. Fix or accept risk."
+                exit 1
+              fi
+            done
+          fi
+          echo "CodeQL check passed."

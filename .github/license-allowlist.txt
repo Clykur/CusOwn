@@ -1,0 +1,13 @@
+# Allowed dependency licenses (one SPDX id per line). Pipeline fails on any other license.
+# Override via env: LICENSE_ALLOWLIST in workflow (comma-separated).
+# GPL, AGPL, and unknown are disallowed by default.
+MIT
+Apache-2.0
+BSD-2-Clause
+BSD-3-Clause
+ISC
+CC0-1.0
+CC-BY-4.0
+BlueOak-1.0.0
+MPL-2.0
+Python-2.0
