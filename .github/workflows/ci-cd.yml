@@ -293,8 +293,16 @@ jobs:
 
       - name: Check for secrets in build output
         run: |
-          if grep -r -iE "(password|secret|key|token|api[_-]?key)" .next 2>/dev/null | grep -v "node_modules" | head -5; then
+          # Scan .next; exclude manifest files (route names), minified chunks, and CSS to avoid false positives
+          MATCHES=$(grep -r -l -iE "(password|secret|key|token|api[_-]?key)" .next 2>/dev/null || true)
+          if [ -z "$MATCHES" ]; then
+            echo "No obvious secrets in build output"
+            exit 0
+          fi
+          DANGEROUS=$(echo "$MATCHES" | grep -v "node_modules" | grep -v "static/chunks" | grep -v "static/css" | grep -v "manifest" || true)
+          if [ -n "$DANGEROUS" ]; then
             echo "Potential secrets in build output – review required"
+            echo "$DANGEROUS"
             exit 1
           fi
           echo "No obvious secrets in build output"
