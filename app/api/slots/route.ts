@@ -122,6 +122,9 @@ export async function POST(request: NextRequest) {
 
     // Validate UUID format
     const { isValidUUID } = await import('@/lib/utils/security');
+    // Create a sanitized, truncated salon ID for safe logging
+    const safeSalonId = String(salon_id).replace(/[\r\n]/g, '').substring(0, 8);
+
     if (!isValidUUID(salon_id)) {
       console.warn(
         `[SECURITY] Invalid salon ID format from IP: ${sanitizeForLog(clientIP)}`
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
       console.warn(
-        `[SECURITY] Invalid date format from IP: ${sanitizeForLog(clientIP)}`
+        `[SECURITY] Salon not found for slot generation from IP: ${clientIP}, Salon: ${safeSalonId}...`
       );
       return errorResponse('Invalid date format', 400);
     }
@@ -152,14 +155,14 @@ export async function POST(request: NextRequest) {
     const { userService } = await import('@/services/user.service');
     const user = await getServerUser(request);
 
-    if (user) {
+            `[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${safeSalonId}...`
       const userBusinesses = await userService.getUserBusinesses(user.id);
       const hasAccess = userBusinesses.some((b) => b.id === salon_id);
 
       if (!hasAccess) {
         const profile = await userService.getUserProfile(user.id);
         const isAdmin = profile?.user_type === 'admin';
-        if (!isAdmin) {
+        `[SECURITY] Unauthenticated slot generation attempt from IP: ${clientIP}, Salon: ${safeSalonId}...`
           console.warn(
             `[SECURITY] Unauthorized slot generation attempt from IP: ${sanitizeForLog(clientIP)}, User: ${sanitizeForLog(user.id).substring(0, 8)}..., Salon: ${sanitizeForLog(salon_id).substring(0, 8)}...`
           );
@@ -171,7 +174,7 @@ export async function POST(request: NextRequest) {
         `[SECURITY] Unauthenticated slot generation attempt from IP: ${sanitizeForLog(clientIP)}, Salon: ${sanitizeForLog(salon_id).substring(0, 8)}...`
       );
       return errorResponse('Authentication required', 401);
-    }
+      `[SECURITY] Slots generated: IP: ${clientIP}, Salon: ${safeSalonId}..., Date: ${date}, User: ${user.id.substring(0, 8)}...`
 
     await slotService.generateSlotsForDate(salon_id, date, {
       opening_time: salon.opening_time,
