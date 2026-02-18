@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
+import { Header } from '@/components/layout/header';
 import UniversalSidebar from '@/components/layout/universal-sidebar';
 import '@/lib/init/events';
 
