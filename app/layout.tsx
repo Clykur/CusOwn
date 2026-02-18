@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
+import { Header } from '@/components/layout/header';
 import UniversalSidebar from '@/components/layout/universal-sidebar';
 import '@/lib/init/events';
 
@@ -19,8 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <UniversalSidebar />
-        {/* <Header /> */}
-        <main className="min-h-screen pt-10 pb-20 lg:pt-0 lg:pb-0">{children}</main>
+        <Header />
+        {children}
+        <Analytics />
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AuthButton from '@/components/auth/auth-button';
 
-export default function Header() {
+function Header() {
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
   const [userState, setUserState] = useState<any>(null);
@@ -186,3 +186,6 @@ export default function Header() {
     </>
   );
 }
+
+export default Header;
+export { Header };
