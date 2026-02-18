@@ -43,55 +43,106 @@ export default function Header() {
     };
   }, [pathname, onOwnerRoute, onCustomerRoute]);
 
-  // If on owner route, render Owner header on large screens only
+  // If on owner route, render Owner header: mobile (below md) + desktop (md and above)
   if (onOwnerRoute) {
-    if (checking) return null;
-    if (!userState?.canAccessOwnerDashboard) return null;
+    // Desktop header requires permission; mobile header is lightweight and shown regardless
+    if (checking) {
+      // still render mobile header while checking permissions
+      return (
+        <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+          <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+            CUSOWN
+          </h1>
+        </header>
+      );
+    }
+    if (!userState?.canAccessOwnerDashboard)
+      return (
+        <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+          <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+            CUSOWN
+          </h1>
+        </header>
+      );
+
+    const ownerTitleMap: Record<string, string> = {
+      '/owner/dashboard': 'Dashboard',
+      '/owner/businesses': 'My Businesses',
+      '/owner/create-business': 'Create Business',
+      '/owner/profile': 'Profile',
+    };
+
+    const pageTitle = ownerTitleMap[pathname] || 'Dashboard';
 
     return (
-      <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/owner/dashboard" className="text-lg font-semibold">
-                Owner Dashboard
-              </Link>
-              <Link href="/owner/businesses" className="text-sm text-gray-600 hover:text-black">
-                My Businesses
-              </Link>
+      <>
+        <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+          <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+            CUSOWN
+          </h1>
+        </header>
+
+        <header className="hidden md:block border-b border-gray-200 bg-white sticky top-0 z-40">
+          <div className="w-full px-6">
+            <div className="flex items-center justify-between h-16">
+              <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
+
+              <div className="flex items-center gap-6">
+                <AuthButton />
+              </div>
             </div>
-            <nav className="flex items-center gap-4">
-              <AuthButton />
-            </nav>
           </div>
-        </div>
-      </header>
+        </header>
+      </>
     );
   }
 
-  // If on customer route, render Customer header on large screens only
+  // If on customer route, render Customer header: mobile (below md) + desktop (md and above)
   if (onCustomerRoute) {
-    if (checking) return null;
-    if (!userState?.canAccessCustomerDashboard) return null;
+    if (checking) {
+      return (
+        <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+          <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+            CUSOWN
+          </h1>
+        </header>
+      );
+    }
+    if (!userState?.canAccessCustomerDashboard)
+      return (
+        <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+          <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+            CUSOWN
+          </h1>
+        </header>
+      );
 
     return (
-      <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/customer/dashboard" className="text-lg font-semibold">
-                My Bookings
-              </Link>
-              <Link href="/categories" className="text-sm text-gray-600 hover:text-black">
-                Book a Service
-              </Link>
+      <>
+        <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+          <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+            CUSOWN
+          </h1>
+        </header>
+
+        <header className="hidden md:block border-b border-gray-200 bg-white sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center gap-4">
+                <Link href="/customer/dashboard" className="text-lg font-semibold">
+                  My Bookings
+                </Link>
+                <Link href="/categories" className="text-sm text-gray-600 hover:text-black">
+                  Book a Service
+                </Link>
+              </div>
+              <nav className="flex items-center gap-4">
+                <AuthButton />
+              </nav>
             </div>
-            <nav className="flex items-center gap-4">
-              <AuthButton />
-            </nav>
           </div>
-        </div>
-      </header>
+        </header>
+      </>
     );
   }
 
@@ -110,18 +161,28 @@ export default function Header() {
   }
 
   return (
-    <header className="hidden lg:block border-b border-gray-200 bg-white sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-            <span className="text-2xl font-bold text-black">CusOwn</span>
-          </Link>
+    <>
+      <header className="h-14 flex items-center justify-center md:justify-between px-4 border-b bg-white md:hidden">
+        <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+          CUSOWN
+        </h1>
+      </header>
 
-          <nav className="flex items-center gap-4">
-            <AuthButton />
-          </nav>
+      <header className="hidden md:block border-b border-gray-200 bg-white sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <span className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+                CusOwn
+              </span>
+            </Link>
+
+            <nav className="flex items-center gap-4">
+              <AuthButton />
+            </nav>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

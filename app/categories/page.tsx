@@ -1,22 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/utils/navigation';
-import Breadcrumb from '@/components/ui/breadcrumb';
 
 export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center mb-12">
+        <div className="max-w-7xl mx-auto px-4 pt-10 sm:px-6 lg:px-8 py-8">
+          <div className="hidden lg:block text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Choose a Category</h1>
             <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
               Select the type of service you&apos;re looking for
             </p>
           </div>
-
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
             <Link href={ROUTES.SALON_LIST}>
               <div className="group relative overflow-hidden rounded-2xl bg-white p-8 shadow-lg transition-all hover:shadow-2xl cursor-pointer border-2 border-gray-200 hover:border-black transform hover:-translate-y-1">

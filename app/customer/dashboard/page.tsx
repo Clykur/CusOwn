@@ -140,7 +140,7 @@ export default function CustomerDashboardPage() {
      UI
   ---------------------------------- */
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-2 pb-20 sm:p-6 lg:pt-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 lg:py-8">
       {loading ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -155,15 +155,9 @@ export default function CustomerDashboardPage() {
         </>
       ) : (
         <>
-          {/* Page Header */}
-          <div className="mb-4 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Bookings</h1>
-            <p className="text-sm sm:text-base text-gray-500">View and manage your appointments</p>
-          </div>
-
           {/* Empty State */}
           {bookings.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 px-6 py-8 text-center space-y-4">
+            <div className="bg-white rounded-xl border border-gray-200 px-6 pb-8 text-center space-y-4">
               <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                 <svg
                   className="w-8 h-8 text-gray-400"

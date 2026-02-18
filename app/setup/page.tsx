@@ -311,8 +311,8 @@ export default function SetupPage() {
   if (success) {
     return (
       <div className="min-h-screen bg-white flex">
-        <div className="flex-1 lg:ml-64">
-          <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex-1">
+          <div className="mx-auto max-w-4xl px-2 py-6 sm:px-6 lg:px-8">
             {showOnboardingProgress && (
               <OnboardingProgress
                 currentStep={3}
@@ -320,7 +320,7 @@ export default function SetupPage() {
                 steps={['Choose Role', 'Sign In', 'Create Business']}
               />
             )}
-            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mt-4">
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-2 mt-4">
               <div className="text-center mb-6 md:mb-8">
                 <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
                   <svg
@@ -693,13 +693,9 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen bg-white flex">
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
-            <div className="hidden md:flex items-center gap-3 mb-4">
-              <div className="h-1 w-12 bg-black rounded-full"></div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create Business</h1>
-            </div>
             {showOnboardingProgress && (
               <OnboardingProgress
                 currentStep={3}
