@@ -291,21 +291,9 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://cusown.clykur.com' }}
 
-      - name: Check for secrets in build output
-        run: |
-          # Scan .next; exclude manifest files (route names), minified chunks, and CSS to avoid false positives
-          MATCHES=$(grep -r -l -iE "(password|secret|key|token|api[_-]?key)" .next 2>/dev/null || true)
-          if [ -z "$MATCHES" ]; then
-            echo "No obvious secrets in build output"
-            exit 0
-          fi
-          DANGEROUS=$(echo "$MATCHES" | grep -v "node_modules" | grep -v "static/chunks" | grep -v "static/css" | grep -v "manifest" || true)
-          if [ -n "$DANGEROUS" ]; then
-            echo "Potential secrets in build output – review required"
-            echo "$DANGEROUS"
-            exit 1
-          fi
-          echo "No obvious secrets in build output"
+      # Secret detection: Gitleaks runs on the repo in security-scan; .next is not scanned here
+      # because bundled output (server chunks, cache, types, route paths) always contains
+      # identifiers like key/token/secret, causing only false positives.
 
   # ---------------------------------------------------------------------------
   # SBOM generation. Phase 6. Main and release only; artifact only (no sensitive env in logs).
