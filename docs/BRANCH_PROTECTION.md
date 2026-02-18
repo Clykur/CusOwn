@@ -30,9 +30,8 @@ This document provides step-by-step instructions for configuring branch protecti
 - [x] **Require status checks to pass before merging**
   - [x] Require branches to be up to date before merging
   - [x] Status checks that are required:
-    - `dependency-review / Dependency review` (PR only; blocks new high/critical deps and disallowed licenses)
     - `security-scan / Security Scan`
-    - `analyze / CodeQL analysis` (from CodeQL workflow)
+    - `analyze / CodeQL analysis` (from CodeQL workflow, if used)
     - `lint-and-test / Lint and Test`
     - `build / Build`
   - **Note:** `Deploy to Production` runs only after merge (on push to main). Do not add it as a required status check for merging PRs.

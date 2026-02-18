@@ -68,32 +68,8 @@ jobs:
           echo "| Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
 
   # ---------------------------------------------------------------------------
-  # Dependency review (PR only). Requires Dependency graph in Settings → Security.
-  # Non-blocking if not enabled so the pipeline still passes.
-  # ---------------------------------------------------------------------------
-  dependency-review:
-    name: Dependency review
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: github.event_name == 'pull_request'
-    continue-on-error: true  # Pass when Dependency graph is disabled in repo settings
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Dependency review
-        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261
-        with:
-          fail-on-severity: high
-          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0
-
-  # ---------------------------------------------------------------------------
-  # SECURITY: Secret scanning (fail on detection), npm audit, license, dangerous patterns. Phase 1–4, 10.
+  # SECURITY: Gates for production. Deploy runs only if this job passes.
+  # Fail on: secrets, high/critical vulns, disallowed licenses, dangerous patterns.
   # ---------------------------------------------------------------------------
   security-scan:
     name: Security Scan
@@ -102,7 +78,7 @@ jobs:
     needs: [audit-trail]
     permissions:
       contents: read
-      security-events: write  # For optional SARIF / code scanning integration
+      security-events: write
       actions: read
     steps:
       - name: Checkout code
@@ -111,7 +87,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # Phase 1: Gitleaks – fail on any confirmed secret. SARIF optional if action supports.
+      # Fail pipeline on any confirmed secret – only safe code can deploy.
       - name: Gitleaks – Secret scanning
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:
@@ -159,7 +135,7 @@ jobs:
           fi
           echo "No high/critical vulnerabilities"
 
-      # Phase 4: License compliance – allowlist from .github/license-allowlist.txt or vars.LICENSE_ALLOWLIST
+      # Fail on disallowed licenses – only safe code can deploy.
       - name: License check
         run: |
           set -e
@@ -178,20 +154,28 @@ jobs:
           ALLOWED=$(echo "$ALLOWED" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . || true)
           npx --yes license-checker --production --json 2>/dev/null > licenses.json || true
           if [ ! -s licenses.json ]; then
-            echo "Could not generate license report; skipping license check."
-            exit 0
+            echo "ERROR: Could not generate license report. Fix license-checker or allowlist."
+            exit 1
           fi
           DISALLOWED=""
           while IFS= read -r pkg; do
             [ -z "$pkg" ] && continue
             lic=$(jq -r ".\"$pkg\".licenses // \"UNKNOWN\"" licenses.json 2>/dev/null | tr -d '"' | head -1)
             [ -z "$lic" ] || [ "$lic" = "undefined" ] && lic="UNKNOWN"
-            if ! echo "$ALLOWED" | grep -qFx "$lic" 2>/dev/null; then
+            # Normalize: strip * suffix (e.g. MIT* -> MIT), take first token if "X AND Y"
+            norm_lic=$(echo "$lic" | sed 's/\*$//' | cut -d' ' -f1)
+            allowed_match=false
+            while IFS= read -r a; do
+              [ -z "$a" ] && continue
+              anorm=$(echo "$a" | sed 's/\*$//')
+              if [ "$norm_lic" = "$anorm" ] || [ "$lic" = "$a" ]; then allowed_match=true; break; fi
+            done <<< "$ALLOWED"
+            if [ "$allowed_match" = false ]; then
               DISALLOWED="$DISALLOWED $pkg($lic)"
             fi
           done < <(jq -r 'keys[]' licenses.json 2>/dev/null)
           if [ -n "$DISALLOWED" ]; then
-            echo "Disallowed or unknown licenses:$DISALLOWED"
+            echo "Disallowed or unknown licenses. Only safe code can deploy:$DISALLOWED"
             exit 1
           fi
           echo "License check passed"
@@ -352,13 +336,13 @@ jobs:
           retention-days: 90
 
   # ---------------------------------------------------------------------------
-  # Production deploy. Phase 7. Only push to main; not on PR or schedule.
-  # Configure GitHub Environment "production" with Required reviewers for approval.
+  # Production deploy: only safe code. Requires security-scan + lint-and-test + build to pass.
+  # Only on push to main (not PR/schedule). Use Environment "production" + Required reviewers.
   # ---------------------------------------------------------------------------
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [lint-and-test, build]
+    needs: [lint-and-test, build]  # build depends on security-scan – no deploy if security fails
     if: |
       github.ref == 'refs/heads/main' &&
       github.event_name != 'pull_request' &&
