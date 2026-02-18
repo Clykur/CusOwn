@@ -6,6 +6,9 @@ import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 
+const sanitizeForLog = (value: unknown): string =>
+  String(value).replace(/[\r\n]/g, '');
+
 export async function GET(request: NextRequest) {
   const clientIP = getClientIp(request);
 
@@ -111,21 +114,27 @@ export async function POST(request: NextRequest) {
     const { salon_id, date } = body;
 
     if (!salon_id || !date) {
-      console.warn(`[SECURITY] Invalid slot generation request from IP: ${clientIP}`);
+      console.warn(
+        `[SECURITY] Invalid slot generation request from IP: ${sanitizeForLog(clientIP)}`
+      );
       return errorResponse('Salon ID and date are required', 400);
     }
 
     // Validate UUID format
     const { isValidUUID } = await import('@/lib/utils/security');
     if (!isValidUUID(salon_id)) {
-      console.warn(`[SECURITY] Invalid salon ID format from IP: ${clientIP}`);
+      console.warn(
+        `[SECURITY] Invalid salon ID format from IP: ${sanitizeForLog(clientIP)}`
+      );
       return errorResponse('Invalid salon ID', 400);
     }
 
     // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
-      console.warn(`[SECURITY] Invalid date format from IP: ${clientIP}`);
+      console.warn(
+        `[SECURITY] Invalid date format from IP: ${sanitizeForLog(clientIP)}`
+      );
       return errorResponse('Invalid date format', 400);
     }
 
@@ -133,7 +142,7 @@ export async function POST(request: NextRequest) {
 
     if (!salon) {
       console.warn(
-        `[SECURITY] Salon not found for slot generation from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`
+        `[SECURITY] Salon not found for slot generation from IP: ${sanitizeForLog(clientIP)}, Salon: ${sanitizeForLog(salon_id).substring(0, 8)}...`
       );
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
@@ -152,14 +161,14 @@ export async function POST(request: NextRequest) {
         const isAdmin = profile?.user_type === 'admin';
         if (!isAdmin) {
           console.warn(
-            `[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salon_id.substring(0, 8)}...`
+            `[SECURITY] Unauthorized slot generation attempt from IP: ${sanitizeForLog(clientIP)}, User: ${sanitizeForLog(user.id).substring(0, 8)}..., Salon: ${sanitizeForLog(salon_id).substring(0, 8)}...`
           );
           return errorResponse('Access denied', 403);
         }
       }
     } else {
       console.warn(
-        `[SECURITY] Unauthenticated slot generation attempt from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`
+        `[SECURITY] Unauthenticated slot generation attempt from IP: ${sanitizeForLog(clientIP)}, Salon: ${sanitizeForLog(salon_id).substring(0, 8)}...`
       );
       return errorResponse('Authentication required', 401);
     }
@@ -171,12 +180,14 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(
-      `[SECURITY] Slots generated: IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}..., Date: ${date}, User: ${user.id.substring(0, 8)}...`
+      `[SECURITY] Slots generated: IP: ${sanitizeForLog(clientIP)}, Salon: ${sanitizeForLog(salon_id).substring(0, 8)}..., Date: ${sanitizeForLog(date)}, User: ${sanitizeForLog(user.id).substring(0, 8)}...`
     );
     return successResponse(null, SUCCESS_MESSAGES.SLOTS_GENERATED);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
-    console.error(`[SECURITY] Slot generation error: IP: ${clientIP}, Error: ${message}`);
+    console.error(
+      `[SECURITY] Slot generation error: IP: ${sanitizeForLog(clientIP)}, Error: ${sanitizeForLog(message)}`
+    );
     return errorResponse(message, 500);
   }
 }
