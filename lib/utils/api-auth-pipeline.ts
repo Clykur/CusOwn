@@ -13,7 +13,6 @@ import {
   hasCustomerProfile,
   type ProfileLike,
 } from '@/lib/utils/role-verification';
-import { adminRateLimit } from '@/lib/security/rate-limit-api.security';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 import { errorResponse } from '@/lib/utils/response';
 
@@ -48,16 +47,13 @@ export async function requireAuth(
 }
 
 /**
- * Require admin: adminRateLimit → getServerUser → checkIsAdmin.
+ * Require admin: getServerUser → checkIsAdmin. Rate limit via token bucket in security middleware.
  * Returns 401 if no user, 403 if not admin. All /api/admin/* must use this.
  */
 export async function requireAdmin(
   request: NextRequest,
   route: string
 ): Promise<NextResponse | AuthContext> {
-  const rateLimitResponse = await adminRateLimit(request);
-  if (rateLimitResponse) return rateLimitResponse;
-
   const ctx = await getAuthContext(request);
   if (!ctx) {
     logAuthDeny({ route, reason: 'auth_missing' });
@@ -127,7 +123,11 @@ export async function requireCustomer(
 /**
  * Log invalid signed URL and return 403. Use when validateResourceToken fails.
  */
-export function denyInvalidToken(request: NextRequest, route: string, resource?: string): NextResponse {
+export function denyInvalidToken(
+  request: NextRequest,
+  route: string,
+  resource?: string
+): NextResponse {
   logAuthDeny({
     route,
     reason: 'auth_invalid_token',

@@ -117,7 +117,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email } = body;
 
-    if (!email || email !== 'chinnuk0521@gmail.com' || email !== 'karthiknaramala9949@gmail.com') {
+    const allowedEmails = ['chinnuk0521@gmail.com', 'karthiknaramala9949@gmail.com'];
+    if (!email || !allowedEmails.includes(email)) {
       return errorResponse('Unauthorized: Only specific admin email can set admin status', 403);
     }
 

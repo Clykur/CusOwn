@@ -26,7 +26,10 @@ export type AuditActionType =
   | 'payment_created'
   | 'payment_succeeded'
   | 'payment_failed'
-  | 'payment_refunded';
+  | 'payment_refunded'
+  | 'admin_revenue_export'
+  | 'admin_health_score_view'
+  | 'admin_funnel_analytics_view';
 
 export type AuditEntityType = 'business' | 'user' | 'booking' | 'system' | 'slot' | 'payment';
 
@@ -62,16 +65,19 @@ export class AuditService {
       return null;
     }
 
-    const ipAddress = data.request?.ip || 
-                      data.request?.headers.get('x-forwarded-for') || 
-                      data.request?.headers.get('x-real-ip') || 
-                      null;
+    const ipAddress =
+      data.request?.ip ||
+      data.request?.headers.get('x-forwarded-for') ||
+      data.request?.headers.get('x-real-ip') ||
+      null;
     const userAgent = data.request?.headers.get('user-agent') || null;
 
     try {
       // Phase 5: PII minimization — redact before storing
-      const oldData = data.oldData != null ? redactPiiForAudit(data.oldData as Record<string, unknown>) : null;
-      const newData = data.newData != null ? redactPiiForAudit(data.newData as Record<string, unknown>) : null;
+      const oldData =
+        data.oldData != null ? redactPiiForAudit(data.oldData as Record<string, unknown>) : null;
+      const newData =
+        data.newData != null ? redactPiiForAudit(data.newData as Record<string, unknown>) : null;
       // Use NULL for system actions instead of fake UUID
       const { data: auditLog, error } = await supabaseAdmin
         .from('audit_logs')
@@ -148,4 +154,3 @@ export class AuditService {
 }
 
 export const auditService = new AuditService();
-

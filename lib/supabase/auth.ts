@@ -1,5 +1,6 @@
 import { env } from '@/config/env';
 import { createBrowserClient } from '@supabase/ssr';
+import { AUTH_COOKIE_MAX_AGE_SECONDS } from '@/config/constants';
 
 /**
  * Client-side Supabase client for authentication
@@ -27,9 +28,13 @@ if (supabaseUrl && supabaseAnonKey) {
         set(name, value, options) {
           if (typeof document === 'undefined') return;
           const opts = options ?? {};
+          let maxAge = opts.maxAge;
+          if (maxAge == null && name.includes('auth')) {
+            maxAge = AUTH_COOKIE_MAX_AGE_SECONDS;
+          }
           const parts = [`${name}=${encodeURIComponent(value)}`];
           parts.push(`Path=${opts.path ?? '/'}`);
-          if (opts.maxAge != null) parts.push(`Max-Age=${opts.maxAge}`);
+          if (maxAge != null) parts.push(`Max-Age=${maxAge}`);
           if (opts.expires) parts.push(`Expires=${opts.expires.toUTCString()}`);
           if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`);
           if (opts.secure) parts.push('Secure');

@@ -211,15 +211,15 @@ export default function ProfilePage() {
   const getUserTypeColor = (type: string) => {
     switch (type) {
       case 'owner':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
       case 'customer':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
       case 'both':
-        return 'bg-gray-200 text-gray-900';
+        return 'bg-slate-200 text-slate-900';
       case 'admin':
-        return 'bg-black text-white';
+        return 'bg-slate-900 text-white';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-800';
     }
   };
 
@@ -230,19 +230,19 @@ export default function ProfilePage() {
   if (error && !profileData) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <div className="space-y-3">
+        <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Error</h2>
+          <p className="text-sm text-slate-500 mb-6">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="w-full px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
             >
               Retry
             </button>
             <button
               onClick={() => router.push(ROUTES.HOME)}
-              className="w-full px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
             >
               Go to Home
             </button>
@@ -265,341 +265,369 @@ export default function ProfilePage() {
             <p className="text-gray-600">Manage your account information and preferences</p>
           </div>
 
-          {/* Account Information */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <div className="flex justify-between items-start mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Account Information</h2>
-              {!editMode && (
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Edit Profile
-                </button>
-              )}
-            </div>
-
-            {saveMessage && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 text-gray-800 rounded text-sm">
-                {saveMessage}
-              </div>
-            )}
-
-            {error && (
-              <div className="mb-4 p-3 bg-gray-100 border border-gray-300 text-gray-900 rounded text-sm">
-                {error}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="Enter your full name"
-                  />
-                ) : (
-                  <p className="text-gray-900">{profileData.profile?.full_name || 'Not set'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <p className="text-gray-900">{profileData.email || 'N/A'}</p>
-                {profileData.email && profileData.email_confirmed ? (
-                  <span className="text-xs text-gray-500 mt-1">✓ Verified</span>
-                ) : profileData.email ? (
-                  <span className="text-xs text-gray-500 mt-1">⚠ Not verified</span>
-                ) : null}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                {editMode ? (
-                  <input
-                    type="tel"
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="+1234567890"
-                  />
-                ) : (
-                  <p className="text-gray-900">{profileData.profile?.phone_number || 'Not set'}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
-                {profileData.profile ? (
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getUserTypeColor(profileData.profile.user_type)}`}
+          <div className="space-y-8">
+            {/* Account Information */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Account information</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Your profile and sign-in details</p>
+                </div>
+                {!editMode && (
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
                   >
-                    {getUserTypeLabel(profileData.profile.user_type)}
-                  </span>
-                ) : (
-                  <p className="text-gray-500">No profile created yet</p>
+                    Edit profile
+                  </button>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Created
-                </label>
-                <p className="text-gray-900">
-                  {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Last Sign In</label>
-                <p className="text-gray-900">
-                  {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
-                </p>
-              </div>
-            </div>
-
-            {editMode && (
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button
-                  onClick={() => {
-                    setEditMode(false);
-                    setFormData({
-                      full_name: profileData.profile?.full_name || '',
-                      phone_number: profileData.profile?.phone_number || '',
-                    });
-                    setError(null);
-                  }}
-                  disabled={saving}
-                  className="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {profileData.statistics.businessCount > 0 && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Businesses</div>
-                <div className="text-3xl font-bold text-gray-900">
-                  {profileData.statistics.businessCount}
+              {saveMessage && (
+                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  {saveMessage}
                 </div>
-              </div>
-            )}
-            {profileData.statistics.bookingCount > 0 && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Bookings</div>
-                <div className="text-3xl font-bold text-gray-900">
-                  {profileData.statistics.bookingCount}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Businesses Section (if owner) */}
-          {profileData.businesses.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">My Businesses</h2>
-                <Link
-                  href={ROUTES.SETUP}
-                  className="px-4 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors text-sm"
-                >
-                  + Add Business
-                </Link>
-              </div>
-              <div className="overflow-x-auto -mx-4 sm:mx-0">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Business Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {profileData.businesses.map((business) => (
-                      <tr key={business.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {business.salon_name}
-                          </div>
-                          <div className="text-sm text-gray-500">{business.booking_link}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm text-gray-500">
-                          {business.location || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(business.created_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm font-medium">
-                          <Link
-                            href={
-                              secureBusinessUrls.get(business.booking_link) ||
-                              getOwnerDashboardUrl(business.booking_link)
-                            }
-                            className="text-black hover:text-gray-700"
-                          >
-                            Manage →
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Recent Bookings (if customer) */}
-          {profileData.recentBookings.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Recent Bookings</h2>
-                <Link
-                  href={ROUTES.CUSTOMER_DASHBOARD}
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
-                  View All →
-                </Link>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Booking ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Business
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date & Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {profileData.recentBookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-mono text-gray-900">
-                            {booking.booking_id}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {booking.business_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {booking.slot_date ? (
-                            <div>
-                              <div>{formatDate(booking.slot_date)}</div>
-                              {booking.slot_time && (
-                                <div className="text-xs">{booking.slot_time}</div>
-                              )}
-                            </div>
-                          ) : (
-                            'N/A'
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              booking.status === 'confirmed'
-                                ? 'bg-black text-white'
-                                : booking.status === 'pending'
-                                  ? 'bg-gray-200 text-black'
-                                  : booking.status === 'rejected'
-                                    ? 'bg-gray-300 text-black'
-                                    : 'bg-gray-100 text-black'
-                            }`}
-                          >
-                            {booking.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {profileData.profile?.user_type === 'owner' ||
-              profileData.profile?.user_type === 'both' ? (
-                <Link
-                  href={ROUTES.OWNER_DASHBOARD_BASE}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-black transition-colors"
-                >
-                  <div className="font-semibold text-gray-900 mb-1">Owner Dashboard</div>
-                  <div className="text-sm text-gray-600">Manage your businesses</div>
-                </Link>
-              ) : null}
-              {profileData.profile?.user_type === 'customer' ||
-              profileData.profile?.user_type === 'both' ? (
-                <Link
-                  href={ROUTES.CUSTOMER_DASHBOARD}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-black transition-colors"
-                >
-                  <div className="font-semibold text-gray-900 mb-1">Customer Dashboard</div>
-                  <div className="text-sm text-gray-600">View your bookings</div>
-                </Link>
-              ) : null}
-              {profileData.profile?.user_type === 'owner' ||
-              profileData.profile?.user_type === 'both' ? (
-                <Link
-                  href={ROUTES.SETUP}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-black transition-colors"
-                >
-                  <div className="font-semibold text-gray-900 mb-1">Create Business</div>
-                  <div className="text-sm text-gray-600">Add a new business</div>
-                </Link>
-              ) : null}
-              {profileData.profile?.user_type === 'admin' && (
-                <Link
-                  href={ROUTES.ADMIN_DASHBOARD}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-black transition-colors"
-                >
-                  <div className="font-semibold text-gray-900 mb-1">Admin Dashboard</div>
-                  <div className="text-sm text-gray-600">Platform management</div>
-                </Link>
               )}
-              <Link
-                href={ROUTES.CATEGORIES}
-                className="p-4 border border-gray-200 rounded-lg hover:border-black transition-colors"
-              >
-                <div className="font-semibold text-gray-900 mb-1">Book a Service</div>
-                <div className="text-sm text-gray-600">Find and book services</div>
-              </Link>
-            </div>
+
+              {error && (
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
+                    Full name
+                  </label>
+                  {editMode ? (
+                    <input
+                      type="text"
+                      value={formData.full_name}
+                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                      placeholder="Enter your full name"
+                    />
+                  ) : (
+                    <p className="text-slate-900">{profileData.profile?.full_name || 'Not set'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
+                    Email
+                  </label>
+                  <p className="text-slate-900">{profileData.email || 'N/A'}</p>
+                  {profileData.email && profileData.email_confirmed ? (
+                    <span className="text-xs text-slate-500 mt-1">Verified</span>
+                  ) : profileData.email ? (
+                    <span className="text-xs text-amber-600 mt-1">Not verified</span>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
+                    Phone
+                  </label>
+                  {editMode ? (
+                    <input
+                      type="tel"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                      placeholder="+1234567890"
+                    />
+                  ) : (
+                    <p className="text-slate-900">
+                      {profileData.profile?.phone_number || 'Not set'}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
+                    Account type
+                  </label>
+                  {profileData.profile ? (
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getUserTypeColor(profileData.profile.user_type)}`}
+                    >
+                      {getUserTypeLabel(profileData.profile.user_type)}
+                    </span>
+                  ) : (
+                    <p className="text-slate-500">No profile created yet</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
+                    Account created
+                  </label>
+                  <p className="text-slate-900">
+                    {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
+                    Last sign-in
+                  </label>
+                  <p className="text-slate-900">
+                    {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
+                  </p>
+                </div>
+              </div>
+
+              {editMode && (
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Saving...' : 'Save changes'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditMode(false);
+                      setFormData({
+                        full_name: profileData.profile?.full_name || '',
+                        phone_number: profileData.profile?.phone_number || '',
+                      });
+                      setError(null);
+                    }}
+                    disabled={saving}
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </section>
+
+            {/* Statistics */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">Overview</h3>
+              <p className="text-sm text-slate-500 mt-0.5 mb-6">Your businesses and bookings</p>
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Total businesses
+                  </p>
+                  <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                    {profileData.statistics.businessCount}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    Total bookings
+                  </p>
+                  <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                    {profileData.statistics.bookingCount}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Businesses (if owner) */}
+            {profileData.businesses.length > 0 && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">My businesses</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">Manage and view your businesses</p>
+                  </div>
+                  <Link
+                    href={ROUTES.SETUP}
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
+                  >
+                    + Add business
+                  </Link>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Business name
+                        </th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Location
+                        </th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Created
+                        </th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {profileData.businesses.map((business) => (
+                        <tr key={business.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="text-sm font-medium text-slate-900">
+                              {business.salon_name}
+                            </div>
+                            <div className="text-xs text-slate-500">{business.booking_link}</div>
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-600">
+                            {business.location || 'N/A'}
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-600">
+                            {formatDate(business.created_at)}
+                          </td>
+                          <td className="px-5 py-4 text-sm font-medium">
+                            <Link
+                              href={
+                                secureBusinessUrls.get(business.booking_link) ||
+                                getOwnerDashboardUrl(business.booking_link)
+                              }
+                              className="text-slate-900 hover:text-slate-700"
+                            >
+                              Manage →
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* Recent Bookings */}
+            {profileData.recentBookings.length > 0 && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Recent bookings</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">Your latest appointments</p>
+                  </div>
+                  <Link
+                    href={ROUTES.CUSTOMER_DASHBOARD}
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    View all →
+                  </Link>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Booking ID
+                        </th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Business
+                        </th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Date & time
+                        </th>
+                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {profileData.recentBookings.map((booking) => (
+                        <tr key={booking.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-5 py-4 text-sm font-mono text-slate-900">
+                            {booking.booking_id}
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-900">
+                            {booking.business_name}
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-600">
+                            {booking.slot_date ? (
+                              <>
+                                <div>{formatDate(booking.slot_date)}</div>
+                                {booking.slot_time && (
+                                  <div className="text-xs">{booking.slot_time}</div>
+                                )}
+                              </>
+                            ) : (
+                              'N/A'
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${
+                                booking.status === 'confirmed'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : booking.status === 'pending'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : booking.status === 'rejected'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-slate-100 text-slate-800'
+                              }`}
+                            >
+                              {booking.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* Quick Actions */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">Quick actions</h3>
+              <p className="text-sm text-slate-500 mt-0.5 mb-6">
+                Shortcuts to dashboards and booking
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(profileData.profile?.user_type === 'owner' ||
+                  profileData.profile?.user_type === 'both') && (
+                  <Link
+                    href={ROUTES.OWNER_DASHBOARD_BASE}
+                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  >
+                    <div className="font-semibold text-slate-900">Owner dashboard</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Manage your businesses</div>
+                  </Link>
+                )}
+                {(profileData.profile?.user_type === 'customer' ||
+                  profileData.profile?.user_type === 'both') && (
+                  <Link
+                    href={ROUTES.CUSTOMER_DASHBOARD}
+                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  >
+                    <div className="font-semibold text-slate-900">Customer dashboard</div>
+                    <div className="text-sm text-slate-500 mt-0.5">View your bookings</div>
+                  </Link>
+                )}
+                {(profileData.profile?.user_type === 'owner' ||
+                  profileData.profile?.user_type === 'both') && (
+                  <Link
+                    href={ROUTES.SETUP}
+                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  >
+                    <div className="font-semibold text-slate-900">Create business</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Add a new business</div>
+                  </Link>
+                )}
+                {profileData.profile?.user_type === 'admin' && (
+                  <Link
+                    href={ROUTES.ADMIN_DASHBOARD}
+                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  >
+                    <div className="font-semibold text-slate-900">Admin dashboard</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Platform management</div>
+                  </Link>
+                )}
+                <Link
+                  href={ROUTES.CATEGORIES}
+                  className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                >
+                  <div className="font-semibold text-slate-900">Book a service</div>
+                  <div className="text-sm text-slate-500 mt-0.5">Find and book services</div>
+                </Link>
+              </div>
+            </section>
           </div>
         </div>
       </div>

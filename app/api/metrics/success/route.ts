@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('start_date') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate =
+      searchParams.get('start_date') ||
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
     const includeAlerts = searchParams.get('include_alerts') === 'true';
 
@@ -30,9 +32,7 @@ export async function GET(request: NextRequest) {
     let alerts: any[] = [];
     if (includeAlerts) {
       alerts = await alertingService.checkAlerts(metrics);
-      for (const alert of alerts) {
-        await alertingService.recordAlert(alert);
-      }
+      void Promise.all(alerts.map((a) => alertingService.recordAlert(a))).catch(() => {});
     }
 
     const response = successResponse({
