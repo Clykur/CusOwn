@@ -14,7 +14,10 @@ const reserveRateLimit = enhancedRateLimit({
   keyPrefix: 'slot_reserve',
 });
 
-export async function POST(request: NextRequest, { params }: { params: { slotId: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slotId: string }> }
+) {
   const clientIP = getClientIp(request);
 
   try {
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: { slotId:
       return rateLimitResponse;
     }
 
-    const slotId = params.slotId;
+    const { slotId } = await params;
 
     if (!isValidUUID(slotId)) {
       console.warn(`[SECURITY] Invalid slot ID format from IP: ${clientIP}`);

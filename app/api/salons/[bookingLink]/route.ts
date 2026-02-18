@@ -15,7 +15,10 @@ const salonAccessRateLimit = enhancedRateLimit({
   keyPrefix: 'salon_access',
 });
 
-export async function GET(request: NextRequest, { params }: { params: { bookingLink: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ bookingLink: string }> }
+) {
   try {
     // Apply rate limiting
     const rateLimitResponse = await salonAccessRateLimit(request);
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { bookingL
       return rateLimitResponse;
     }
 
-    const { bookingLink } = params;
+    const { bookingLink } = await params;
     const clientIP = getClientIp(request);
 
     if (!bookingLink) {

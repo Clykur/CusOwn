@@ -13,10 +13,10 @@ import { setCacheHeaders } from '@/lib/cache/next-cache';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { bookingLink: string } }
+  { params }: { params: Promise<{ bookingLink: string }> }
 ) {
   try {
-    const { bookingLink } = params;
+    const { bookingLink } = await params;
 
     if (!bookingLink) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
@@ -41,7 +41,7 @@ export async function GET(
     // Generate QR code if it doesn't exist
     try {
       const qrCode = await generateQRCodeForBookingLink(salon.booking_link, request);
-      
+
       // Update salon with QR code
       if (!supabaseAdmin) {
         throw new Error('Supabase admin client not configured');
@@ -50,7 +50,7 @@ export async function GET(
         .from('businesses')
         .update({ qr_code: qrCode })
         .eq('id', salon.id);
-      
+
       if (updateError) {
         throw new Error('Failed to save QR code');
       }
@@ -66,4 +66,3 @@ export async function GET(
     return errorResponse(message, 500);
   }
 }
-

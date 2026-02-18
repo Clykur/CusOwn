@@ -10,14 +10,11 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { auditService } from '@/services/audit.service';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
@@ -33,7 +30,7 @@ export async function POST(
     }
 
     const userBusinesses = await userService.getUserBusinesses(user.id);
-    const hasAccess = userBusinesses.some(b => b.id === booking.business_id);
+    const hasAccess = userBusinesses.some((b) => b.id === booking.business_id);
 
     if (!hasAccess) {
       return errorResponse('Access denied', 403);
@@ -46,16 +43,11 @@ export async function POST(
 
     // SECURITY: Log mutation for audit
     try {
-      await auditService.createAuditLog(
-        user.id,
-        'booking_no_show',
-        'booking',
-        {
-          entityId: id,
-          description: 'Booking marked as no-show by owner',
-          request,
-        }
-      );
+      await auditService.createAuditLog(user.id, 'booking_no_show', 'booking', {
+        entityId: id,
+        description: 'Booking marked as no-show by owner',
+        request,
+      });
     } catch (auditError) {
       console.error('[SECURITY] Failed to create audit log:', auditError);
     }
@@ -69,8 +61,7 @@ export async function POST(
           message,
           booking.customer_phone
         );
-      } catch {
-      }
+      } catch {}
     }
 
     const response = successResponse(updatedBooking);

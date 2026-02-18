@@ -7,11 +7,14 @@ import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 
-export async function GET(request: NextRequest, { params }: { params: { slotId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slotId: string }> }
+) {
   const clientIP = getClientIp(request);
 
   try {
-    const { slotId } = params;
+    const { slotId } = await params;
 
     if (!slotId || !isValidUUID(slotId)) {
       console.warn(`[SECURITY] Invalid slot ID format from IP: ${clientIP}`);

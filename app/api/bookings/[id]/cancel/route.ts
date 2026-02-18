@@ -13,11 +13,11 @@ import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
 const ROUTE = 'POST /api/bookings/[id]/cancel';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }

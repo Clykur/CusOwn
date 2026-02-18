@@ -7,13 +7,16 @@ import { ERROR_MESSAGES } from '@/config/constants';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 
-export async function GET(request: NextRequest, { params }: { params: { salonId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ salonId: string }> }
+) {
   const clientIP = getClientIp(request);
 
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { salonId } = params;
+    const { salonId } = await params;
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date') || undefined;
 

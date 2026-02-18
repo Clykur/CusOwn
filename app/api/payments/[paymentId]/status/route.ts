@@ -14,7 +14,7 @@ const statusRateLimit = enhancedRateLimit({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { paymentId: string } }
+  { params }: { params: Promise<{ paymentId: string }> }
 ) {
   try {
     const rateLimitResponse = await statusRateLimit(request);
@@ -27,7 +27,7 @@ export async function GET(
       return errorResponse('Authentication required', 401);
     }
 
-    const { paymentId } = params;
+    const { paymentId } = await params;
     if (!paymentId) {
       return errorResponse('Payment ID required', 400);
     }

@@ -10,13 +10,13 @@ import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
 const ROUTE = 'GET /api/bookings/[id]';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const clientIP = getClientIp(request);
 
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }

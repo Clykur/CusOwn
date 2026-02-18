@@ -12,16 +12,17 @@ const ROUTE_GET = 'GET /api/admin/businesses/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/businesses/[id]';
 const ROUTE_DELETE = 'DELETE /api/admin/businesses/[id]';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_GET);
     if (auth instanceof Response) return auth;
 
+    const { id } = await params;
     const supabase = requireSupabaseAdmin();
     const { data: business, error } = await supabase
       .from('businesses')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error || !business) {
@@ -35,11 +36,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_PATCH);
     if (auth instanceof Response) return auth;
 
+    const { id } = await params;
     const supabase = requireSupabaseAdmin();
     const body = await request.json();
 
@@ -72,7 +74,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data: oldBusiness } = await supabase
       .from('businesses')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!oldBusiness) {
@@ -107,7 +109,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { data: updatedBusiness, error } = await supabase
       .from('businesses')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -124,7 +126,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
 
     await auditService.createAuditLog(auth.user.id, 'business_updated', 'business', {
-      entityId: params.id,
+      entityId: id,
       oldData: oldBusiness,
       newData: updatedBusiness,
       description: `Business updated: ${changes.join(', ')}`,
@@ -154,26 +156,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const auth = await requireAdmin(request, ROUTE_DELETE);
     if (auth instanceof Response) return auth;
 
+    const { id } = await params;
     const supabase = requireSupabaseAdmin();
 
     // Get business data for audit
-    const { data: business } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('id', params.id)
-      .single();
+    const { data: business } = await supabase.from('businesses').select('*').eq('id', id).single();
 
     if (!business) {
       return errorResponse('Business not found', 404);
     }
 
     // Delete business (cascade will handle related records)
-    const { error } = await supabase.from('businesses').delete().eq('id', params.id);
+    const { error } = await supabase.from('businesses').delete().eq('id', id);
 
     if (error) {
       return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
@@ -181,7 +183,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Create audit log
     await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
-      entityId: params.id,
+      entityId: id,
       oldData: business,
       description: `Business deleted: ${business.salon_name}`,
       request,

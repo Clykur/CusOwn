@@ -6,12 +6,9 @@ import { ERROR_MESSAGES } from '@/config/constants';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { salonService } from '@/services/salon.service';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
@@ -24,12 +21,9 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }

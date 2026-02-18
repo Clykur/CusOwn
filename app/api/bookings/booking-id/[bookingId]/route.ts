@@ -7,13 +7,16 @@ import { setCacheHeaders, setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 
-export async function GET(request: NextRequest, { params }: { params: { bookingId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ bookingId: string }> }
+) {
   const clientIP = getClientIp(request);
 
   try {
     await bookingService.runLazyExpireIfNeeded();
 
-    const { bookingId } = params;
+    const { bookingId } = await params;
     if (!bookingId) {
       console.warn(`[SECURITY] Missing bookingId from IP: ${clientIP}`);
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);

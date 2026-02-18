@@ -20,7 +20,7 @@ const rejectRateLimit = enhancedRateLimit({
 });
 const ROUTE = 'POST /api/bookings/[id]/reject';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const clientIP = getClientIp(request);
 
   try {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const rateLimitResponse = await rejectRateLimit(request);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }

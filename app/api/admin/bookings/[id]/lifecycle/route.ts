@@ -11,15 +11,12 @@ import { isValidUUID } from '@/lib/utils/security';
 
 const ROUTE = 'GET /api/admin/bookings/[id]/lifecycle';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE);
     if (auth instanceof Response) return auth;
 
-    const { id } = params;
+    const { id } = await params;
     if (!id || !isValidUUID(id)) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
