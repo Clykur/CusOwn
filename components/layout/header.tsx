@@ -81,18 +81,6 @@ function Header() {
             CUSOWN
           </h1>
         </header>
-
-        <header className="hidden md:block border-b border-gray-200 bg-white sticky top-0 z-40">
-          <div className="w-full px-6">
-            <div className="flex items-center justify-between h-16">
-              <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
-
-              <div className="flex items-center gap-6">
-                <AuthButton />
-              </div>
-            </div>
-          </div>
-        </header>
       </>
     );
   }
@@ -123,24 +111,6 @@ function Header() {
           <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
             CUSOWN
           </h1>
-        </header>
-
-        <header className="hidden md:block border-b border-gray-200 bg-white sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-4">
-                <Link href="/customer/dashboard" className="text-lg font-semibold">
-                  My Bookings
-                </Link>
-                <Link href="/categories" className="text-sm text-gray-600 hover:text-black">
-                  Book a Service
-                </Link>
-              </div>
-              <nav className="flex items-center gap-4">
-                <AuthButton />
-              </nav>
-            </div>
-          </div>
         </header>
       </>
     );

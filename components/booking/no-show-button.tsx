@@ -45,7 +45,7 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
       <button
         onClick={handleMarkNoShow}
         disabled={loading}
-        className="w-full h-11 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full min-h-[44px] px-4 py-3 sm:py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
@@ -55,7 +55,12 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
         ) : (
           <>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
             <span>Mark No-Show</span>
           </>

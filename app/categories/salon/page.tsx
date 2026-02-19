@@ -117,7 +117,7 @@ export default function SalonListPage() {
   return (
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 pt-10 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 pt-24 sm:pt-28 lg:pt-32 pb-28 sm:pb-32 lg:pb-12 sm:px-6 lg:px-8">
           <div className="hidden lg:block mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-3">Find Your Perfect Salon</h1>
             <p className="text-lg text-gray-600">Browse and book appointments at salons near you</p>

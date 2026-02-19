@@ -60,8 +60,8 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-white flex overflow-x-hidden">
       <OwnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <main className={`flex-1 lg:ml-64 ${mainSpacing}`}>
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`flex-1 lg:ml-64 w-full ${mainSpacing}`}>
+        <div className="px-4 sm:px-6 lg:px-12 xl:px-16 py-6 lg:py-8">
           {isDashboard && (
             <OwnerHeader title="Owner Dashboard" subtitle="Manage your businesses and bookings" />
           )}

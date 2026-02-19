@@ -55,11 +55,11 @@ export default function SalonDetailPage() {
       try {
         // Check if salonId is a UUID or a booking_link
         const isUUID = isValidUUID(salonId);
-        
+
         // Get token from URL params with proper decoding
         const tokenParam = searchParams.get('token');
         let token = tokenParam ? decodeURIComponent(tokenParam) : null;
-        
+
         // Only generate secure URLs for UUIDs (not booking links)
         if (isUUID && (!token || token === 'pending')) {
           // Try to generate a new secure URL for UUID
@@ -91,11 +91,11 @@ export default function SalonDetailPage() {
           const encodedToken = encodeURIComponent(token);
           apiUrl += `?token=${encodedToken}`;
         }
-        
+
         const response = await fetch(apiUrl, {
           credentials: 'include',
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 403) {
@@ -164,9 +164,11 @@ export default function SalonDetailPage() {
         const response = await fetch(
           `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
         );
-        
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: `HTTP ${response.status}` }));
           const errorMessage = errorData.error || `Failed to load slots (${response.status})`;
           console.error('Slots API HTTP error:', {
             status: response.status,
@@ -257,7 +259,7 @@ export default function SalonDetailPage() {
   const handlePhoneChange = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
     let formatted = cleaned;
-    
+
     if (cleaned.length > 0 && !cleaned.startsWith('+')) {
       if (cleaned.length <= 10) {
         formatted = cleaned;
@@ -267,7 +269,7 @@ export default function SalonDetailPage() {
         formatted = `+91${cleaned.slice(-10)}`;
       }
     }
-    
+
     setCustomerPhone(formatted);
     setError(null);
     if (touchedPhone) {
@@ -283,13 +285,13 @@ export default function SalonDetailPage() {
 
     setTouchedName(true);
     setTouchedPhone(true);
-    
+
     const nameErr = validateName(customerName);
     const phoneErr = validatePhone(customerPhone);
-    
+
     setNameError(nameErr);
     setPhoneError(phoneErr);
-    
+
     if (nameErr || phoneErr) {
       setError(nameErr || phoneErr || 'Please fill in all required fields');
       return;
@@ -304,7 +306,7 @@ export default function SalonDetailPage() {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-      
+
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }
@@ -347,7 +349,9 @@ export default function SalonDetailPage() {
           }, 500);
         } else {
           console.warn('No WhatsApp URL in response:', result.data);
-          setError('Booking created but WhatsApp URL is missing. Please contact the salon directly.');
+          setError(
+            'Booking created but WhatsApp URL is missing. Please contact the salon directly.'
+          );
         }
       } else {
         const errorMessage = result.error || 'Failed to create booking';
@@ -383,7 +387,7 @@ export default function SalonDetailPage() {
   const availableDates = useMemo(() => {
     const dates = [];
     const today = new Date();
-    
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
@@ -428,7 +432,9 @@ export default function SalonDetailPage() {
     return (
       <>
         <RedirectSkeleton />
-        <p className="sr-only" aria-live="polite">Redirecting to booking page…</p>
+        <p className="sr-only" aria-live="polite">
+          Redirecting to booking page…
+        </p>
       </>
     );
   }
@@ -436,21 +442,32 @@ export default function SalonDetailPage() {
   if (success) {
     return (
       <div className="min-h-screen bg-white flex">
-      <div className="flex-1 lg:ml-64 flex items-center justify-center p-4">
+        <div className="flex-1 lg:ml-64 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center border-2 border-gray-200">
             <div className="mb-6">
               <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-4 animate-pulse">
-              <svg className="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Booking Request Sent!</h2>
-            <p className="text-gray-600 mb-1">
-              Your booking request has been sent to <span className="font-semibold">{salon.salon_name}</span>.
-            </p>
-            <p className="text-sm text-gray-500">
-              Check WhatsApp for confirmation from the salon owner.
-            </p>
+                <svg
+                  className="h-10 w-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Booking Request Sent!</h2>
+              <p className="text-gray-600 mb-1">
+                Your booking request has been sent to{' '}
+                <span className="font-semibold">{salon.salon_name}</span>.
+              </p>
+              <p className="text-sm text-gray-500">
+                Check WhatsApp for confirmation from the salon owner.
+              </p>
             </div>
             <div className="space-y-3">
               {success.whatsappUrl && (
@@ -461,7 +478,7 @@ export default function SalonDetailPage() {
                 >
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.867-.272 0-.372.149-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zm-4.5-2.67c-.297-.15-1.758-.867-2.03-.867-.272 0-.372.15-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 17.308c-.149.297-.446.446-.744.446-.149 0-.297-.05-.446-.149l-1.758-1.008c-.297-.149-.446-.446-.446-.744v-2.67c0-.297.149-.594.446-.744l1.758-1.008c.149-.1.297-.149.446-.149.297 0 .594.149.744.446.149.297.149.594 0 .892l-1.758 1.008v1.116l1.758 1.008c.149.297.149.594 0 .892z"/>
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.867-.272 0-.372.149-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zm-4.5-2.67c-.297-.15-1.758-.867-2.03-.867-.272 0-.372.15-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 17.308c-.149.297-.446.446-.744.446-.149 0-.297-.05-.446-.149l-1.758-1.008c-.297-.149-.446-.446-.446-.744v-2.67c0-.297.149-.594.446-.744l1.758-1.008c.149-.1.297-.149.446-.149.297 0 .594.149.744.446.149.297.149.594 0 .892l-1.758 1.008v1.116l1.758 1.008c.149.297.149.594 0 .892z" />
                     </svg>
                     Open WhatsApp
                   </span>
@@ -490,348 +507,533 @@ export default function SalonDetailPage() {
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Breadcrumb items={[
-            { label: 'Home', href: ROUTES.HOME },
-          { label: 'Categories', href: ROUTES.CATEGORIES },
-          { label: 'Salons', href: ROUTES.SALON_LIST },
-          { label: salon?.salon_name || 'Salon', href: salon ? `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}` : '#' },
-        ]} />
-        <div className="mb-6">
-          <Link 
-            href={ROUTES.SALON_LIST} 
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-black transition-colors font-medium"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Salons
-          </Link>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-6 border border-gray-200">
           <div className="mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-              <div className="flex-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{salon.salon_name}</h1>
-                {salon.location && (
-                  <div className="flex items-center gap-2 text-gray-600 mb-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <Link
+              href={ROUTES.SALON_LIST}
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-black transition-colors font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+              Back to Salons
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-6 border border-gray-200">
+            <div className="mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                    {salon.salon_name}
+                  </h1>
+                  {salon.location && (
+                    <div className="flex items-center gap-2 text-gray-600 mb-2">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">{salon.location}</span>
+                    </div>
+                  )}
+                  {salon.owner_name && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                      <span className="text-sm">Owner: {salon.owner_name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {salon.address && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
-                    <span className="text-sm font-medium">{salon.location}</span>
+                    <div>
+                      <p className="text-gray-900 font-semibold text-sm mb-1">Address</p>
+                      <p className="text-sm text-gray-600">{salon.address}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200">
+                {salon.opening_time && salon.closing_time && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <svg
+                      className="w-4 h-4 text-gray-500 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span className="text-gray-700">
+                      <span className="font-medium">Hours:</span>{' '}
+                      {salon.opening_time.substring(0, 5)} - {salon.closing_time.substring(0, 5)}
+                    </span>
                   </div>
                 )}
-                {salon.owner_name && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                {salon.slot_duration && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <svg
+                      className="w-4 h-4 text-gray-500 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
                     </svg>
-                    <span className="text-sm">Owner: {salon.owner_name}</span>
+                    <span className="text-gray-700">
+                      <span className="font-medium">Duration:</span> {salon.slot_duration} min
+                    </span>
                   </div>
                 )}
               </div>
             </div>
-            
-            {salon.address && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <div>
-                    <p className="text-gray-900 font-semibold text-sm mb-1">Address</p>
-                    <p className="text-sm text-gray-600">{salon.address}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 border border-gray-200">
+            <div className="mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                Book Your Appointment
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Select a date and time slot to book your appointment
+              </p>
+            </div>
+
+            <div className="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
+                <svg
+                  className="w-4 h-4 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                Select Date
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                {availableDates.map((date) => {
+                  const dateObj = new Date(date + 'T00:00:00');
+                  const isToday = date === getTodayDateString();
+                  const isSelected = selectedDate === date;
+                  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                  const dayNum = dateObj.getDate();
+                  const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
+
+                  return (
+                    <button
+                      key={date}
+                      onClick={() => setSelectedDate(date)}
+                      className={`px-3 py-2.5 rounded-lg border-2 transition-all text-center ${
+                        isSelected
+                          ? 'border-black bg-black text-white shadow-md'
+                          : isToday
+                            ? 'border-gray-400 bg-white text-gray-900 hover:border-gray-500'
+                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-xs font-medium mb-1">{dayName}</div>
+                      <div
+                        className={`text-base font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {dayNum}
+                      </div>
+                      <div className="text-xs">{month}</div>
+                      {isToday && !isSelected && (
+                        <div className="text-xs mt-1 font-medium text-gray-500">Today</div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {selectedDate && selectedSlot && (
+              <div className="mb-6 p-4 bg-black rounded-lg border border-gray-200 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white/10 rounded-lg p-2">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-300 mb-1 uppercase tracking-wide">
+                        Selected Appointment
+                      </p>
+                      <p className="text-base font-bold text-white">
+                        {formatDate(selectedDate)} • {formatTime(selectedSlot.start_time)} -{' '}
+                        {formatTime(selectedSlot.end_time)}
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setSelectedSlot(null)}
+                    className="text-white/80 hover:text-white transition-colors p-1.5 hover:bg-white/10 rounded"
+                    aria-label="Clear selection"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             )}
-            
-            <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200">
-              {salon.opening_time && salon.closing_time && (
-                <div className="flex items-center gap-2 text-sm">
-                  <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-gray-700">
-                    <span className="font-medium">Hours:</span> {salon.opening_time.substring(0, 5)} - {salon.closing_time.substring(0, 5)}
-                  </span>
-                </div>
-              )}
-              {salon.slot_duration && (
-                <div className="flex items-center gap-2 text-sm">
-                  <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <span className="text-gray-700">
-                    <span className="font-medium">Duration:</span> {salon.slot_duration} min
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 border border-gray-200">
-          <div className="mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Book Your Appointment</h2>
-            <p className="text-gray-600 text-sm">Select a date and time slot to book your appointment</p>
-          </div>
-
-          <div className="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Select Date
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
-              {availableDates.map((date) => {
-                const dateObj = new Date(date + 'T00:00:00');
-                const isToday = date === getTodayDateString();
-                const isSelected = selectedDate === date;
-                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                const dayNum = dateObj.getDate();
-                const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
-
-                return (
-                  <button
-                    key={date}
-                    onClick={() => setSelectedDate(date)}
-                    className={`px-3 py-2.5 rounded-lg border-2 transition-all text-center ${
-                      isSelected
-                        ? 'border-black bg-black text-white shadow-md'
-                        : isToday
-                        ? 'border-gray-400 bg-white text-gray-900 hover:border-gray-500'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="text-xs font-medium mb-1">{dayName}</div>
-                    <div className={`text-base font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                      {dayNum}
-                    </div>
-                    <div className="text-xs">{month}</div>
-                    {isToday && !isSelected && (
-                      <div className="text-xs mt-1 font-medium text-gray-500">Today</div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {selectedDate && selectedSlot && (
-            <div className="mb-6 p-4 bg-black rounded-lg border border-gray-200 shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/10 rounded-lg p-2">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            {selectedDate && (
+              <div className="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <svg
+                      className="w-4 h-4 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-300 mb-1 uppercase tracking-wide">Selected Appointment</p>
-                    <p className="text-base font-bold text-white">
-                      {formatDate(selectedDate)} • {formatTime(selectedSlot.start_time)} - {formatTime(selectedSlot.end_time)}
-                    </p>
-                  </div>
+                    Select Time
+                  </label>
+                  {loadingSlots ? (
+                    <span
+                      className="text-xs text-gray-500 flex items-center gap-2"
+                      aria-busy="true"
+                    >
+                      <div className="animate-pulse h-3 w-3 rounded bg-gray-200"></div>
+                      Updating slots…
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium text-gray-600 bg-white px-2.5 py-1 rounded-full border border-gray-300">
+                      {availableSlots.length} available{' '}
+                      {bookedSlots.length > 0 && `• ${bookedSlots.length} booked`}
+                    </span>
+                  )}
                 </div>
-                <button
-                  onClick={() => setSelectedSlot(null)}
-                  className="text-white/80 hover:text-white transition-colors p-1.5 hover:bg-white/10 rounded"
-                  aria-label="Clear selection"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
 
-          {selectedDate && (
-            <div className="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Select Time
-                </label>
                 {loadingSlots ? (
-                  <span className="text-xs text-gray-500 flex items-center gap-2" aria-busy="true">
-                    <div className="animate-pulse h-3 w-3 rounded bg-gray-200"></div>
-                    Updating slots…
-                  </span>
+                  <div
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 py-4"
+                    aria-busy="true"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                      <div key={i} className="h-10 bg-gray-200 rounded-lg animate-pulse" />
+                    ))}
+                  </div>
                 ) : (
-                  <span className="text-xs font-medium text-gray-600 bg-white px-2.5 py-1 rounded-full border border-gray-300">
-                    {availableSlots.length} available {bookedSlots.length > 0 && `• ${bookedSlots.length} booked`}
-                  </span>
-                )}
-              </div>
-              
-              {loadingSlots ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 py-4" aria-busy="true">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-                    <div key={i} className="h-10 bg-gray-200 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {slots.length === 0 ? (
-                    <div className="col-span-full text-center py-6">
-                      <svg className="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-gray-500 font-medium text-sm">No slots available for this date</p>
-                      <p className="text-xs text-gray-400 mt-1">Try selecting another date</p>
-                    </div>
-                  ) : (
-                    slots
-                      .filter((slot) => {
-                        if (!salon) return true;
-                        return isTimeInRange(slot.start_time, salon.opening_time, salon.closing_time);
-                      })
-                      .map((slot) => {
-                        const isSelected = selectedSlot?.id === slot.id;
-                        const isBooked = slot.status === 'booked';
-
-                        return (
-                          <button
-                            key={slot.id}
-                            onClick={() => handleSlotSelect(slot)}
-                            disabled={isBooked}
-                            className={`px-3 py-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
-                              isBooked
-                                ? 'border-gray-200 bg-white text-gray-400 cursor-not-allowed'
-                                : isSelected
-                                ? 'border-black bg-black text-white shadow-md'
-                                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500 hover:bg-gray-50'
-                            }`}
-                          >
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                          </button>
-                        );
-                      })
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {selectedSlot && (
-            <div className="space-y-4 pt-6 border-t border-gray-200">
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Your Details</h3>
-                <div>
-                  <label htmlFor="customer_name" className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Your Name <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="text"
-                    id="customer_name"
-                    value={customerName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    onBlur={() => {
-                      setTouchedName(true);
-                      setNameError(validateName(customerName));
-                    }}
-                    placeholder="Enter your full name"
-                    className={`w-full ${nameError && touchedName ? 'border-red-300 focus:ring-red-500' : ''}`}
-                  />
-                  {nameError && touchedName && (
-                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {nameError}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-4">
-                  <label htmlFor="customer_phone" className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
-                    <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                    </svg>
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="tel"
-                      id="customer_phone"
-                      value={customerPhone}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      onBlur={() => {
-                        setTouchedPhone(true);
-                        setPhoneError(validatePhone(customerPhone));
-                      }}
-                      placeholder="+91 9876543210"
-                      className={`w-full ${phoneError && touchedPhone ? 'border-red-300 focus:ring-red-500' : ''}`}
-                    />
-                    {customerPhone && !phoneError && touchedPhone && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {slots.length === 0 ? (
+                      <div className="col-span-full text-center py-6">
+                        <svg
+                          className="mx-auto h-10 w-10 text-gray-400 mb-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
+                        <p className="text-gray-500 font-medium text-sm">
+                          No slots available for this date
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">Try selecting another date</p>
                       </div>
+                    ) : (
+                      slots
+                        .filter((slot) => {
+                          if (!salon) return true;
+                          return isTimeInRange(
+                            slot.start_time,
+                            salon.opening_time,
+                            salon.closing_time
+                          );
+                        })
+                        .map((slot) => {
+                          const isSelected = selectedSlot?.id === slot.id;
+                          const isBooked = slot.status === 'booked';
+
+                          return (
+                            <button
+                              key={slot.id}
+                              onClick={() => handleSlotSelect(slot)}
+                              disabled={isBooked}
+                              className={`px-3 py-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
+                                isBooked
+                                  ? 'border-gray-200 bg-white text-gray-400 cursor-not-allowed'
+                                  : isSelected
+                                    ? 'border-black bg-black text-white shadow-md'
+                                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500 hover:bg-gray-50'
+                              }`}
+                            >
+                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                            </button>
+                          );
+                        })
                     )}
                   </div>
-                  {phoneError && touchedPhone && (
-                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {phoneError}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">We&apos;ll send booking confirmation via WhatsApp</p>
-                </div>
-
-                {error && (
-                  <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start gap-2">
-                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{error}</span>
-                  </div>
                 )}
-
-                <Button
-                  onClick={handleBookSlot}
-                  disabled={!selectedSlot || submitting || !!nameError || !!phoneError || !customerName.trim() || !customerPhone.trim()}
-                  size="lg"
-                  className="w-full mt-4 bg-gradient-to-r from-black to-gray-800 hover:from-gray-900 hover:to-black text-white font-bold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                >
-                  {submitting ? (
-                    <span className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Processing...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.867-.272 0-.372.149-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zm-4.5-2.67c-.297-.15-1.758-.867-2.03-.867-.272 0-.372.15-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 17.308c-.149.297-.446.446-.744.446-.149 0-.297-.05-.446-.149l-1.758-1.008c-.297-.149-.446-.446-.446-.744v-2.67c0-.297.149-.594.446-.744l1.758-1.008c.149-.1.297-.149.446-.149.297 0 .594.149.744.446.149.297.149.594 0 .892l-1.758 1.008v1.116l1.758 1.008c.149.297.149.594 0 .892z"/>
-                      </svg>
-                      Book via WhatsApp
-                    </span>
-                  )}
-                </Button>
-                
-                <p className="text-xs text-center text-gray-500 mt-4">
-                  By booking, you agree to receive confirmation messages via WhatsApp
-                </p>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+
+            {selectedSlot && (
+              <div className="space-y-4 pt-6 border-t border-gray-200">
+                <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                  <h3 className="text-base font-semibold text-gray-900 mb-4">Your Details</h3>
+                  <div>
+                    <label
+                      htmlFor="customer_name"
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                      Your Name <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      id="customer_name"
+                      value={customerName}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      onBlur={() => {
+                        setTouchedName(true);
+                        setNameError(validateName(customerName));
+                      }}
+                      placeholder="Enter your full name"
+                      className={`w-full ${nameError && touchedName ? 'border-red-300 focus:ring-red-500' : ''}`}
+                    />
+                    {nameError && touchedName && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {nameError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-4">
+                    <label
+                      htmlFor="customer_phone"
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2"
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                      </svg>
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="tel"
+                        id="customer_phone"
+                        value={customerPhone}
+                        onChange={(e) => handlePhoneChange(e.target.value)}
+                        onBlur={() => {
+                          setTouchedPhone(true);
+                          setPhoneError(validatePhone(customerPhone));
+                        }}
+                        placeholder="+91 9876543210"
+                        className={`w-full ${phoneError && touchedPhone ? 'border-red-300 focus:ring-red-500' : ''}`}
+                      />
+                      {customerPhone && !phoneError && touchedPhone && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg
+                            className="w-5 h-5 text-green-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    {phoneError && touchedPhone && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {phoneError}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      We&apos;ll send booking confirmation via WhatsApp
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start gap-2">
+                      <svg
+                        className="w-5 h-5 flex-shrink-0 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleBookSlot}
+                    disabled={
+                      !selectedSlot ||
+                      submitting ||
+                      !!nameError ||
+                      !!phoneError ||
+                      !customerName.trim() ||
+                      !customerPhone.trim()
+                    }
+                    size="lg"
+                    className="w-full mt-4 bg-gradient-to-r from-black to-gray-800 hover:from-gray-900 hover:to-black text-white font-bold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    {submitting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Processing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.867-.272 0-.372.149-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zm-4.5-2.67c-.297-.15-1.758-.867-2.03-.867-.272 0-.372.15-.372.297 0 .343.396.416.785.57.39.153 1.562.724 1.808.867.247.144.38.223.38.446 0 .223-.297.372-.594.521-.297.15-1.758.867-2.03.867-.272 0-.372-.15-.372-.297 0-.343.396-.416.785-.57.39-.153 1.562-.724 1.808-.867.247-.144.38-.223.38-.446 0-.223-.297-.372-.594-.521zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.568 17.308c-.149.297-.446.446-.744.446-.149 0-.297-.05-.446-.149l-1.758-1.008c-.297-.149-.446-.446-.446-.744v-2.67c0-.297.149-.594.446-.744l1.758-1.008c.149-.1.297-.149.446-.149.297 0 .594.149.744.446.149.297.149.594 0 .892l-1.758 1.008v1.116l1.758 1.008c.149.297.149.594 0 .892z" />
+                        </svg>
+                        Book via WhatsApp
+                      </span>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-center text-gray-500 mt-4">
+                    By booking, you agree to receive confirmation messages via WhatsApp
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

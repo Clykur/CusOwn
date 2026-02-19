@@ -394,7 +394,7 @@ export default function OwnerDashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 pt-10 sm:px-6 lg:px-8 py-6 lg:py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-24">
       {/* Mobile Header - Sticky */}
       <div className="mb-4 sm:mb-6 lg:mb-8">
         <div className="flex items-center gap-2">
@@ -505,7 +505,7 @@ export default function OwnerDashboardPage() {
           </button>
         </div>
 
-        <div className="p-4 lg:p-6">
+        <div className={`${activeTab === 'analytics' ? 'p-4 sm:p-6' : 'p-4 lg:p-6'}`}>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
             <input
@@ -753,7 +753,9 @@ export default function OwnerDashboardPage() {
               </div>
             </div>
           ) : (
-            <AnalyticsDashboard businessId={salon.id} />
+            <div className="w-full">
+              <AnalyticsDashboard businessId={salon.id} />
+            </div>
           )}
         </div>
       </div>
