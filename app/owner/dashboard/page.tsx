@@ -28,6 +28,8 @@ export default function OwnerDashboardPage() {
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -216,9 +218,21 @@ export default function OwnerDashboardPage() {
   };
 
   if (loading) return <OwnerDashboardSkeleton />;
+  const filteredBookings = bookings.filter((booking) => {
+    if (!searchTerm.trim()) return true;
+
+    const term = searchTerm.toLowerCase();
+
+    return (
+      booking.customer_name?.toLowerCase().includes(term) ||
+      booking.customer_phone?.toLowerCase().includes(term) ||
+      booking.booking_id?.toLowerCase().includes(term) ||
+      booking.salon?.salon_name?.toLowerCase().includes(term)
+    );
+  });
 
   return (
-    <div className="w-full px-4 pt-0 sm:px-6 py-6">
+    <div className="w-full px-4 pt-0 sm:px-6 py-6 pb-24">
       <div className="max-w-6xl">
         {/* <h1 className="text-2xl font-bold mb-8 md:block">Owner Dashboard</h1> */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 mb-10">
@@ -232,26 +246,61 @@ export default function OwnerDashboardPage() {
       {/* Bookings Section - aggregated across businesses */}
       <div className="max-w-6xl bg-white border border-gray-200 rounded-lg p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Bookings</h2>
-          <div className="w-50">
+          {/* Left Side */}
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">Bookings</h2>
+
+            <button
+              onClick={() => setShowSearch((prev) => !prev)}
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
+            >
+              <svg
+                className="h-4 w-4 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Right Side */}
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="h-9 px-3 text-sm border border-gray-300 rounded-lg"
+          />
+        </div>
+
+        {showSearch && (
+          <div className="mb-4">
             <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full h-10 px-3 border border-gray-300 rounded-lg"
+              type="text"
+              placeholder="Search by name, booking ID, phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-9 px-4 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+              autoFocus
             />
           </div>
-        </div>
+        )}
 
         <div className="lg:hidden">
           <PullToRefresh onRefresh={async () => fetchBookings()}>
-            <div className="space-y-3">
-              {bookings.length === 0 ? (
+            <div className="space-y-4">
+              {filteredBookings.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-gray-500">No bookings for selected date</p>
                 </div>
               ) : (
-                bookings.map((booking) => (
+                filteredBookings.map((booking) => (
                   <BookingCard
                     key={booking.id}
                     booking={booking}

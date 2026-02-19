@@ -357,12 +357,32 @@ export default function BookingPage() {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+  const getFilteredSlots = () => {
+    if (!selectedDate) return slots;
 
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Only filter if selected date is today
+    if (selectedDate !== todayStr) {
+      return slots;
+    }
+
+    const minTime = new Date(now.getTime() + 30 * 60000); // +30 minutes
+
+    return slots.filter((slot) => {
+      const [hours, minutes] = slot.start_time.split(':').map(Number);
+      const slotTime = new Date();
+      slotTime.setHours(hours, minutes, 0, 0);
+
+      return slotTime >= minTime;
+    });
+  };
   const availableSlots = slots.filter((s) => s.status === 'available');
   const bookedSlots = slots.filter((s) => s.status === 'booked');
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
+    <div className="min-h-screen bg-white px-4 pt-15 sm:pt-28 lg:pt-32 pb-12">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{salon?.salon_name}</h1>
@@ -403,7 +423,7 @@ export default function BookingPage() {
                     No slots available for this date
                   </p>
                 ) : (
-                  slots.map((slot) => {
+                  getFilteredSlots().map((slot) => {
                     const isSelected = selectedSlot?.id === slot.id;
                     const isBooked = slot.status === 'booked';
                     // Backend already filters past slots, so we just need to check booked status

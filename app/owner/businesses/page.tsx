@@ -39,7 +39,7 @@ export default function OwnerBusinessesPage() {
   return (
     <div className="w-full px-4 pt-2 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <h1 className="text-2xl font-bold mb-8 hidden md:block">My Businesses</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6">My Businesses</h1>
 
       {/* Business Cards */}
       <div className="grid gap-6">

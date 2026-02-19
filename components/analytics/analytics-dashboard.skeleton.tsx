@@ -4,10 +4,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AnalyticsDashboardSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-hidden="true">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+    <div className="w-full space-y-6 lg:max-w-6xl lg:mx-auto" aria-busy="true" aria-hidden="true">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <Skeleton className="h-8 w-32" />
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Skeleton className="h-10 w-40 rounded" />
           <Skeleton className="h-10 w-40 rounded" />
           <Skeleton className="h-10 w-24 rounded" />

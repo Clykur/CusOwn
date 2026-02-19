@@ -268,7 +268,7 @@ export default function ProfilePage() {
           <div className="space-y-8">
             {/* Account Information */}
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">Account information</h3>
                   <p className="text-sm text-slate-500 mt-0.5">Your profile and sign-in details</p>
@@ -276,7 +276,7 @@ export default function ProfilePage() {
                 {!editMode && (
                   <button
                     onClick={() => setEditMode(true)}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+                    className="shrink-0 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
                   >
                     Edit profile
                   </button>
@@ -432,143 +432,68 @@ export default function ProfilePage() {
             {/* Businesses (if owner) */}
             {profileData.businesses.length > 0 && (
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900">My businesses</h3>
                     <p className="text-sm text-slate-500 mt-0.5">Manage and view your businesses</p>
                   </div>
                   <Link
                     href={ROUTES.SETUP}
-                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
+                    className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
                   >
                     + Add business
                   </Link>
                 </div>
-                <div className="overflow-hidden rounded-xl border border-slate-200">
-                  <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Business name
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Location
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Created
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {profileData.businesses.map((business) => (
-                        <tr key={business.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-4">
-                            <div className="text-sm font-medium text-slate-900">
-                              {business.salon_name}
-                            </div>
-                            <div className="text-xs text-slate-500">{business.booking_link}</div>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600">
-                            {business.location || 'N/A'}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600">
-                            {formatDate(business.created_at)}
-                          </td>
-                          <td className="px-5 py-4 text-sm font-medium">
-                            <Link
-                              href={
-                                secureBusinessUrls.get(business.booking_link) ||
-                                getOwnerDashboardUrl(business.booking_link)
-                              }
-                              className="text-slate-900 hover:text-slate-700"
-                            >
-                              Manage →
-                            </Link>
-                          </td>
+                <div className="rounded-xl border border-slate-200">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-[700px] w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                            Business name
+                          </th>
+                          <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                            Location
+                          </th>
+                          <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                            Created
+                          </th>
+                          <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                            Actions
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            )}
-
-            {/* Recent Bookings */}
-            {profileData.recentBookings.length > 0 && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Recent bookings</h3>
-                    <p className="text-sm text-slate-500 mt-0.5">Your latest appointments</p>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {profileData.businesses.map((business) => (
+                          <tr key={business.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="px-5 py-4">
+                              <div className="text-sm font-medium text-slate-900">
+                                {business.salon_name}
+                              </div>
+                              <div className="text-xs text-slate-500">{business.booking_link}</div>
+                            </td>
+                            <td className="px-5 py-4 text-sm text-slate-600">
+                              {business.location || 'N/A'}
+                            </td>
+                            <td className="px-5 py-4 text-sm text-slate-600">
+                              {formatDate(business.created_at)}
+                            </td>
+                            <td className="px-5 py-4 text-sm font-medium">
+                              <Link
+                                href={
+                                  secureBusinessUrls.get(business.booking_link) ||
+                                  getOwnerDashboardUrl(business.booking_link)
+                                }
+                                className="text-slate-900 hover:text-slate-700"
+                              >
+                                Manage →
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <Link
-                    href={ROUTES.CUSTOMER_DASHBOARD}
-                    className="text-sm font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    View all →
-                  </Link>
-                </div>
-                <div className="overflow-hidden rounded-xl border border-slate-200">
-                  <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Booking ID
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Business
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Date & time
-                        </th>
-                        <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {profileData.recentBookings.map((booking) => (
-                        <tr key={booking.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-4 text-sm font-mono text-slate-900">
-                            {booking.booking_id}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-900">
-                            {booking.business_name}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600">
-                            {booking.slot_date ? (
-                              <>
-                                <div>{formatDate(booking.slot_date)}</div>
-                                {booking.slot_time && (
-                                  <div className="text-xs">{booking.slot_time}</div>
-                                )}
-                              </>
-                            ) : (
-                              'N/A'
-                            )}
-                          </td>
-                          <td className="px-5 py-4">
-                            <span
-                              className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${
-                                booking.status === 'confirmed'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : booking.status === 'pending'
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : booking.status === 'rejected'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-slate-100 text-slate-800'
-                              }`}
-                            >
-                              {booking.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               </section>
             )}

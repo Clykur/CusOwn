@@ -140,46 +140,54 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Analytics</h2>
-        <div className="flex gap-4">
+    <div className="w-full space-y-6 lg:max-w-6xl lg:mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-lg sm:text-xl font-bold">Analytics</h2>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="w-full sm:w-auto border rounded px-3 py-2 text-sm"
           />
+
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="w-full sm:w-auto border rounded px-3 py-2 text-sm"
           />
+
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-900 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-black text-white rounded hover:bg-gray-900 disabled:opacity-50 text-sm"
           >
             {exporting ? 'Exporting...' : 'Export CSV'}
           </button>
         </div>
       </div>
 
+      {/* Stats Cards */}
       {analytics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-sm text-gray-600">Total Bookings</p>
             <p className="text-2xl font-bold">{analytics.totalBookings}</p>
           </div>
+
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-sm text-gray-600">Confirmed</p>
             <p className="text-2xl font-bold text-green-600">{analytics.confirmedBookings}</p>
           </div>
+
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-sm text-gray-600">Conversion Rate</p>
             <p className="text-2xl font-bold">{analytics.conversionRate}%</p>
           </div>
+
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-sm text-gray-600">No Shows</p>
             <p className="text-2xl font-bold text-red-600">{analytics.noShowCount}</p>
@@ -187,33 +195,42 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
         </div>
       )}
 
+      {/* Peak Hours */}
       {peakHours.length > 0 && (
-        <div className="bg-white p-6 rounded-lg border">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border">
           <h3 className="text-lg font-semibold mb-4">Peak Hours</h3>
-          <div className="space-y-2">
+
+          <div className="space-y-3">
             {peakHours.map((item) => (
-              <div key={item.hour} className="flex items-center gap-4">
-                <span className="w-20 text-sm">{item.hour}:00</span>
-                <div className="flex-1 bg-gray-200 rounded-full h-4 relative">
+              <div key={item.hour} className="flex items-center gap-3">
+                <span className="w-16 text-sm">{item.hour}:00</span>
+
+                <div className="flex-1 bg-gray-200 rounded-full h-4">
                   <div
                     className="bg-black h-4 rounded-full"
                     style={{
-                      width: `${(item.bookingCount / Math.max(...peakHours.map((p) => p.bookingCount))) * 100}%`,
+                      width: `${
+                        (item.bookingCount / Math.max(...peakHours.map((p) => p.bookingCount))) *
+                        100
+                      }%`,
                     }}
                   />
                 </div>
-                <span className="text-sm font-medium w-12 text-right">{item.bookingCount}</span>
+
+                <span className="text-sm font-medium w-10 text-right">{item.bookingCount}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Daily Table */}
       {dailyData.length > 0 && (
-        <div className="bg-white p-6 rounded-lg border">
+        <div className="bg-white p-4 sm:p-6 rounded-lg border">
           <h3 className="text-lg font-semibold mb-4">Daily Breakdown</h3>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[650px] w-full text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-2">Date</th>
