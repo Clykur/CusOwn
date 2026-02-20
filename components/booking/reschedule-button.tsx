@@ -27,6 +27,7 @@ export default function RescheduleButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validatingSlot, setValidatingSlot] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleReschedule = async () => {
     if (!selectedSlotId) {
@@ -38,9 +39,31 @@ export default function RescheduleButton({
     setError(null);
 
     try {
+      const { supabaseAuth } = await import('@/lib/supabase/auth');
+      const { getCSRFToken } = await import('@/lib/utils/csrf-client');
+
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
+      const csrfToken = await getCSRFToken();
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+
       const response = await fetch(`/api/bookings/${bookingId}/reschedule`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({
           new_slot_id: selectedSlotId,
           reason: reason || undefined,
@@ -54,7 +77,16 @@ export default function RescheduleButton({
         throw new Error(result.error || 'Failed to reschedule');
       }
 
+      const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId);
+
+      setSuccessMessage(
+        `Rescheduled to ${formatDate(selectedSlot?.date || '')} at ${formatTime(
+          selectedSlot?.start_time || ''
+        )}`
+      );
+
       setShowModal(false);
+
       if (onRescheduled) onRescheduled();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reschedule');
@@ -69,12 +101,22 @@ export default function RescheduleButton({
 
   return (
     <>
+      {successMessage && (
+        <div className="mb-3 p-3 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
+          {successMessage}
+        </div>
+      )}
       <button
         onClick={() => setShowModal(true)}
         className="w-full h-11 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
         <span>Reschedule</span>
       </button>

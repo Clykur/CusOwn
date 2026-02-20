@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { API_ROUTES, BOOKING_LINK_PREFIX, ERROR_MESSAGES } from '@/config/constants';
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import { isTimeInRange } from '@/lib/utils/time';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingPageSkeleton } from '@/components/ui/skeleton';
@@ -382,15 +381,16 @@ export default function BookingPage() {
   const bookedSlots = slots.filter((s) => s.status === 'booked');
 
   return (
-    <div className="min-h-screen bg-white px-4 pt-15 sm:pt-28 lg:pt-32 pb-12">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen bg-white px-4 pt-4 sm:pt-6 lg:pt-2 pb-12">
+      <div className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{salon?.salon_name}</h1>
           <p className="text-gray-600 mb-8">Book your appointment</p>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {' '}
               <button
                 onClick={() => setSelectedDate(today.toISOString().split('T')[0])}
                 className={`px-4 py-2 rounded-lg border-2 transition-colors ${
@@ -417,7 +417,7 @@ export default function BookingPage() {
           {selectedDate && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Select Time</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                 {slots.length === 0 ? (
                   <p className="col-span-full text-gray-500 text-center py-4">
                     No slots available for this date
@@ -434,7 +434,7 @@ export default function BookingPage() {
                         key={slot.id}
                         onClick={() => handleSlotSelect(slot)}
                         disabled={isDisabled || validatingSlot || submitting}
-                        className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                        className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border-2 transition-colors ${
                           isDisabled
                             ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
                             : validatingSlot && isSelected
@@ -463,7 +463,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div>
               <label
                 htmlFor="customer_name"
