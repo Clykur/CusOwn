@@ -50,8 +50,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    if (rescheduled_by === 'customer' && (!user || booking.customer_user_id !== user.id)) {
-      return errorResponse('Access denied', 403);
+    if (rescheduled_by === 'customer') {
+      if (!user) {
+        return errorResponse('Access denied', 403);
+      }
+
+      // Allow if booking belongs to user OR booking has no linked user
+      if (booking.customer_user_id && booking.customer_user_id !== user.id) {
+        return errorResponse('Access denied', 403);
+      }
     }
 
     if (rescheduled_by === 'owner' && user) {

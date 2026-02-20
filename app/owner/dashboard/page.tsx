@@ -246,10 +246,11 @@ export default function OwnerDashboardPage() {
       {/* Bookings Section - aggregated across businesses */}
       <div className="max-w-6xl bg-white border border-gray-200 rounded-lg p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
-          {/* Left Side */}
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold">Bookings</h2>
+          {/* Left */}
+          <h2 className="text-lg font-semibold">Bookings</h2>
 
+          {/* Right */}
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowSearch((prev) => !prev)}
               className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
@@ -268,15 +269,14 @@ export default function OwnerDashboardPage() {
                 />
               </svg>
             </button>
-          </div>
 
-          {/* Right Side */}
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="h-9 px-3 text-sm border border-gray-300 rounded-lg"
-          />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="h-9 px-3 text-sm border border-gray-300 rounded-lg"
+            />
+          </div>
         </div>
 
         {showSearch && (

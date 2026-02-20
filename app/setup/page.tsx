@@ -694,7 +694,7 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen bg-white flex">
       <div className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-8">
           <div className="mb-6">
             {showOnboardingProgress && (
               <OnboardingProgress

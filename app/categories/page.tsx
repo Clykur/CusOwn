@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
+import { Header } from '@/components/layout/header';
 
 export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 pt-24 sm:pt-28 lg:pt-32 pb-28 sm:pb-32 lg:pb-12 sm:px-6 lg:px-8">
-          <div className="hidden lg:block text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Choose a Category</h1>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 pt-4 sm:pt-4 lg:pt-32 pb-20 sm:pb-32 lg:pb-12 sm:px-6 lg:px-8">
+          <div className="hidden md:block text-center mb-12">
+            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Choose a Category</h1>
+            <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
               Select the type of service you&apos;re looking for
             </p>
           </div>

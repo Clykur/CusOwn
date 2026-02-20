@@ -5,12 +5,12 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { UI_BOOKING_STATE, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import { handleApiError } from '@/lib/utils/error-handler';
 import RescheduleButton from '@/components/booking/reschedule-button';
 import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
-import Breadcrumb from '@/components/ui/breadcrumb';
 import { BookingStatusSkeleton } from '@/components/ui/skeleton';
+import { supabaseAuth } from '@/lib/supabase/auth'; // add this at top if not already
+import Header from '@/components/layout/header';
 
 export default function BookingStatusPage() {
   const params = useParams();
@@ -62,7 +62,19 @@ export default function BookingStatusPage() {
         }
       }
 
-      const response = await fetch(url);
+      const {
+        data: { session },
+      } = await supabaseAuth.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Unauthorized');
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
       const result = await response.json();
 
       if (!response.ok) {
@@ -201,8 +213,9 @@ export default function BookingStatusPage() {
 
   return (
     <div className="min-h-screen bg-white flex">
+      <Header />
       <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 pt-24 sm:pt-28 lg:pt-32 pb-8 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 pt-20 sm:pt-20 lg:pt-32 pb-20 sm:px-6 lg:px-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200">
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Booking Status</h1>
@@ -404,22 +417,6 @@ export default function BookingStatusPage() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
-              {booking.salon && (
-                <Link
-                  href={salonSecureUrl || ROUTES.SALON_DETAIL(booking.salon.id)}
-                  className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-900 transition-all shadow-lg hover:shadow-xl"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  Book Another Slot
-                </Link>
-              )}
               <Link
                 href={ROUTES.CUSTOMER_DASHBOARD}
                 className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-gray-100 text-gray-800 font-semibold py-3 px-6 rounded-xl hover:bg-gray-200 transition-all"
