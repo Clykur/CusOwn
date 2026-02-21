@@ -106,7 +106,7 @@ export default function CustomerDashboardPage() {
      UI
   ---------------------------------- */
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 lg:py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 lg:pt-0 lg:pb-8">
       {loading ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -153,15 +153,7 @@ export default function CustomerDashboardPage() {
           ) : (
             <div className="grid gap-4 sm:gap-6">
               {bookings.map((booking) => (
-                <CustomerBookingCard
-                  key={booking.id}
-                  booking={booking}
-                  availableSlots={slotsMap[booking.id] || []}
-                  secureUrl={
-                    secureBookingUrls.get(booking.booking_id) ||
-                    ROUTES.BOOKING_STATUS(booking.booking_id)
-                  }
-                />
+                <CustomerBookingCard key={booking.id} booking={booking} />
               ))}
             </div>
           )}

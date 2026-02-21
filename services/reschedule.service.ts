@@ -49,13 +49,20 @@ export class RescheduleService {
 
     const oldSlotId = booking.slot_id;
 
-    const originalBookingId = booking.id;
+    // 1️⃣ Reserve new slot
+    const reserved = await slotService.reserveSlot(input.newSlotId);
+    if (!reserved) {
+      throw new Error(ERROR_MESSAGES.SLOT_NOT_AVAILABLE);
+    }
+    // 2️⃣ Book new slot (RESERVED → BOOKED)
+    await slotService.markSlotAsBooked(input.newSlotId);
 
-    const { data: updatedBooking, error: updateError } = await supabaseAdmin
+    // 3️⃣ Update booking
+    const { data: updatedBooking, error } = await supabaseAdmin
       .from('bookings')
       .update({
         slot_id: input.newSlotId,
-        rescheduled_from_booking_id: originalBookingId,
+        rescheduled_from_booking_id: booking.id,
         rescheduled_at: new Date().toISOString(),
         rescheduled_by: input.rescheduledBy,
         reschedule_reason: input.reason || null,
@@ -65,18 +72,15 @@ export class RescheduleService {
       .select()
       .single();
 
-    if (updateError) {
-      throw new Error(updateError.message || ERROR_MESSAGES.DATABASE_ERROR);
+    if (error) {
+      // rollback new slot if booking update fails
+      await slotService.releaseSlot(input.newSlotId);
+      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    await slotService.markSlotAsBooked(input.newSlotId);
-
+    // 4️⃣ Release old slot
     if (oldSlotId) {
-      const oldSlot = await slotService.getSlotById(oldSlotId);
-      if (oldSlot) {
-        await slotService.updateSlotStatus(oldSlotId, SLOT_STATUS.AVAILABLE);
-        await emitSlotReleased(oldSlot);
-      }
+      await slotService.releaseSlot(oldSlotId);
     }
 
     return updatedBooking;

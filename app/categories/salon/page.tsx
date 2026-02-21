@@ -10,6 +10,7 @@ import { logError } from '@/lib/utils/error-handler';
 import SalonCard from '@/components/salon/salon-card';
 import { SalonCardSkeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
+import { Header } from '@/components/layout/header';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -32,6 +33,7 @@ export default function SalonListPage() {
         setLocations([]);
         return;
       }
+      // Removed misplaced import
       const result = await response.json();
       if (result.success && Array.isArray(result.data)) {
         setLocations(result.data);
@@ -117,8 +119,9 @@ export default function SalonListPage() {
   return (
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 pt-24 sm:pt-28 lg:pt-32 pb-28 sm:pb-32 lg:pb-12 sm:px-6 lg:px-8">
-          <div className="hidden lg:block mb-8">
+        <div className="max-w-7xl mx-auto px-4 pt-4 sm:pt-4 lg:pt-4 pb-20 sm:pb-32 lg:pb-12 sm:px-6 lg:px-8">
+          <div className="hidden md:block mb-8">
+            {' '}
             <h1 className="text-4xl font-bold text-gray-900 mb-3">Find Your Perfect Salon</h1>
             <p className="text-lg text-gray-600">Browse and book appointments at salons near you</p>
           </div>
