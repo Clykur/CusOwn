@@ -197,10 +197,10 @@ function redirectToSuccess(
   const successUrl = new URL(`/auth/success?to=${encodeURIComponent(to)}`, baseUrl).toString();
   const safeUrlAttr = successUrl.replace(/"/g, '&quot;');
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta http-equiv="Refresh" content="2;url=${safeUrlAttr}"/><script>
-(function(){
+(()=>{
   var u = ${JSON.stringify(successUrl)};
   console.log('[AUTH_FLOW] Callback: redirecting in 300ms to /auth/success then dashboard');
-  setTimeout(function(){ window.location.href = u; }, 300);
+  setTimeout(()=>{ window.location.href = u; }, 300);
 })();
 </script></head><body><p>Signing you in…</p><a href="${safeUrlAttr}">Continue</a></body></html>`;
   const res = new NextResponse(html, {

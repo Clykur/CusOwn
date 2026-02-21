@@ -1,2 +1,3 @@
 #!/bin/sh
+npm run security-check
 npx ts-node --project scripts/tsconfig.json scripts/local-ci.ts

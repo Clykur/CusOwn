@@ -1,0 +1,37 @@
+---
+description: Pre-push and CI security checks — run before pushing, avoid dangerous patterns
+globs: .github/workflows/*.yml, scripts/security-check-pre-push.js, app/**/*.tsx, app/**/*.ts, lib/**/*.ts, components/**/*.tsx
+alwaysApply: true
+---
+
+# Pre-push and CI security
+
+## Before pushing
+
+1. **Run security checks**  
+   ```bash
+   npm run security-check
+   ```  
+   Must pass (package-lock.json present, no dangerous patterns in app/lib/components).
+
+2. **Commit package-lock.json**  
+   If you added or changed dependencies, ensure `package-lock.json` is committed. CI fails if it is missing.
+
+3. **License check (CI)**  
+   `license-checker` is a devDependency. CI runs `npx --yes license-checker --production --json`; ensure production deps in package.json are valid so the step succeeds.
+
+## Dangerous patterns (CI and security-check)
+
+Do **not** use these in `app/`, `lib/`, or `components/` (CI and `npm run security-check` fail on match):
+
+- `eval(`
+- `Function(` (including lowercase `function(` in inline script strings in TS/TSX — use arrow functions or move script to `public/`)
+- `innerHTML =`
+- `dangerouslySetInnerHTML`
+- `document.write`
+
+If you need to inject a client script that uses `function(`, put it in a `.js` file under `public/` (e.g. `public/scripts/`) and load it via `<Script src="...">`; the scanner only checks app/lib/components.
+
+## After fixing
+
+Re-run `npm run security-check` and fix any remaining issues before pushing.

@@ -47,6 +47,7 @@
     "test:unit:state": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-state-machines-pure.test.ts",
     "test:unit:security": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-utils-security.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-input-sanitizer.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-input-filter.test.ts && ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-csrf.test.ts",
     "test:unit:policies": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/unit-config-policies.test.ts",
+    "security-check": "node scripts/security-check-pre-push.js",
     "test:unit:coverage": "SALON_TOKEN_SECRET=test-secret c8 --reporter=text --reporter=html --include='lib/**/*.ts' --include='config/**/*.ts' --include='types/**/*.ts' --exclude='**/*.test.ts' --exclude='**/*.security.ts' --exclude='scripts/**' ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/run-unit-tests.ts"
   },
   "dependencies": {
@@ -75,6 +76,7 @@
     "eslint": "^8.0.0",
     "eslint-config-next": "^15.5.12",
     "husky": "^9.0.0",
+    "license-checker": "^25.0.0",
     "lint-staged": "^15.0.0",
     "postcss": "^8.4.0",
     "prettier": "^3.0.0",

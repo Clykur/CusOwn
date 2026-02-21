@@ -26,3 +26,4 @@ These rules MUST be strictly followed for every prompt and all ongoing developme
 2. **Hardcodes**: No magic numbers, raw user-facing strings, or `process.env` in business logic. Use `config/constants.ts`, `config/env.ts`, `ERROR_MESSAGES`, `SUCCESS_MESSAGES`, `UI_BOOKING_STATE`, etc.
 3. **Documentation**: Add only necessary, non-verbose comments (e.g. purpose of a function or non-obvious invariant). No essay-style comments.
 4. **Formatter**: Code must be formatted consistently. Use the project linter/formatter; do not leave trailing whitespace or inconsistent quotes/indent.
+5. **Pre-push security**: Before pushing, run `npm run security-check`. Ensure `package-lock.json` is committed. See `.cursor/rules/pre-push-and-ci-security.mdc`.
