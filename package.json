@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=18.18.0 <25.0.0"
+    "node": ">=20"
   },
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "security": "npm audit --omit=dev",
+    "validate": "npm run lint && npm run type-check && npm run build",
     "format": "ts-node --project scripts/tsconfig.json scripts/format-all.ts",
+    "format:check": "prettier --check --config config/quality/prettier.config.js \"app/**/*.{js,jsx,ts,tsx,json,css,md}\" \"components/**/*.{js,jsx,ts,tsx,json,css,md}\" \"lib/**/*.{js,jsx,ts,tsx,json,css,md}\" \"config/**/*.{js,jsx,ts,tsx,json}\"",
     "verify-env": "ts-node --project scripts/tsconfig.json scripts/verify-env.ts",
     "local-ci": "ts-node --project scripts/tsconfig.json scripts/local-ci.ts",
     "prepare": "husky",
