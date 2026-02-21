@@ -9,7 +9,7 @@ import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline'
 import { userService } from '@/services/user.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { auditService } from '@/services/audit.service';
-import { isAdminProfile } from '@/lib/utils/role-verification';
+import { hasPermission, PERMISSIONS } from '@/services/permission.service';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
 const rejectRateLimit = enhancedRateLimit({
@@ -55,14 +55,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const ctx = await getAuthContext(request);
     if (ctx) {
-      const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-      const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
-      if (!ownsBusiness && !isAdminProfile(ctx.profile)) {
+      const canReject = await hasPermission(ctx.user.id, PERMISSIONS.BOOKINGS_REJECT);
+      if (!canReject) {
         logAuthDeny({
           user_id: ctx.user.id,
           route: ROUTE,
           reason: 'auth_denied',
-          role: (ctx.profile as any)?.user_type ?? 'unknown',
+          permission: PERMISSIONS.BOOKINGS_REJECT,
+          resource: id,
+        });
+        return errorResponse('Access denied', 403);
+      }
+      const isAdmin = await hasPermission(ctx.user.id, PERMISSIONS.ADMIN_ACCESS);
+      const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
+      const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
+      if (!ownsBusiness && !isAdmin) {
+        logAuthDeny({
+          user_id: ctx.user.id,
+          route: ROUTE,
+          reason: 'auth_denied',
           resource: id,
         });
         return errorResponse('Access denied', 403);
@@ -91,7 +102,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.BOOKING_ALREADY_CANCELLED, 409);
     }
 
-    const rejectedBooking = await bookingService.rejectBooking(id);
+    const rejectedBooking = await bookingService.rejectBooking(id, ctx?.user?.id);
     const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
 
     if (!bookingWithDetails || !bookingWithDetails.salon || !bookingWithDetails.slot) {

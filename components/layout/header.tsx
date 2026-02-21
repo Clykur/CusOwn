@@ -17,15 +17,17 @@ function Header() {
     let mounted = true;
     const loadState = async () => {
       try {
-        const { supabaseAuth } = await import('@/lib/supabase/auth');
-        const { data } = await supabaseAuth.auth.getSession();
-        const userId = data?.session?.user?.id || null;
-        const { getUserState } = await import('@/lib/utils/user-state');
-        const state = await getUserState(userId);
+        const stateRes = await fetch('/api/user/state', { credentials: 'include' });
+        if (!stateRes.ok) {
+          if (!mounted) return;
+          setUserState(null);
+          return;
+        }
+        const json = await stateRes.json();
+        const state = json?.data;
         if (!mounted) return;
-        setUserState(state);
-      } catch (err) {
-        console.error('[HEADER] failed to load user state', err);
+        setUserState(state ?? null);
+      } catch {
         if (!mounted) return;
         setUserState(null);
       } finally {
@@ -34,7 +36,6 @@ function Header() {
       }
     };
 
-    // Only load user state when on owner/customer routes; keep header lightweight otherwise
     if (onOwnerRoute || onCustomerRoute) loadState();
     else setChecking(false);
 

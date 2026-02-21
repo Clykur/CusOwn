@@ -1,3 +1,18 @@
+/** In dev, ensure localhost has port 3000 so redirects (e.g. sign-out) work. */
+function normalizeAppBaseUrl(url: string): string {
+  if (process.env.NODE_ENV !== 'development') return url;
+  try {
+    const u = new URL(url);
+    if ((u.hostname === 'localhost' || u.hostname === '127.0.0.1') && !u.port) {
+      u.port = '3000';
+      return u.toString().replace(/\/?$/, '/');
+    }
+  } catch {
+    // ignore
+  }
+  return url;
+}
+
 export const env = {
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -5,7 +20,7 @@ export const env = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   app: {
-    baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    baseUrl: normalizeAppBaseUrl(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   },
   cron: {
     secret: process.env.CRON_SECRET || '',

@@ -100,16 +100,13 @@ export default function SuccessMetricsDashboard() {
 
   const fetchMetrics = useCallback(
     async (backgroundRevalidate = false) => {
-      if (!token && !backgroundRevalidate) {
-        setLoading(false);
-        return;
-      }
       if (!backgroundRevalidate) setLoading(true);
       try {
         const url = `/api/metrics/success?start_date=${startDate}&end_date=${endDate}&include_alerts=true`;
-        const response = token
-          ? await adminFetch(url, { token, credentials: 'include' })
-          : await fetch(url, { credentials: 'include' });
+        const response = await adminFetch(url, {
+          ...(token ? { token } : {}),
+          credentials: 'include',
+        });
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
@@ -139,7 +136,7 @@ export default function SuccessMetricsDashboard() {
       setBusiness(cached.business);
       setThresholds(cached.thresholds || []);
       setLoading(false);
-      if (token) fetchMetrics(true);
+      fetchMetrics(true);
       return;
     }
     const stale = getAdminCachedStale<CachedMetrics>(key);
@@ -148,11 +145,11 @@ export default function SuccessMetricsDashboard() {
       setBusiness(stale.data.business);
       setThresholds(stale.data.thresholds || []);
       setLoading(false);
-      if (token) fetchMetrics(true);
+      fetchMetrics(true);
       return;
     }
     fetchMetrics(false);
-  }, [startDate, endDate, token, fetchMetrics]);
+  }, [startDate, endDate, fetchMetrics]);
 
   if (loading && !technical && !business) {
     return <SuccessMetricsDashboardSkeleton />;

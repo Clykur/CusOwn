@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { SLOT_DURATIONS, API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
 import { CreateSalonInput } from '@/types';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
-import { supabaseAuth } from '@/lib/supabase/auth';
+import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import { SetupSkeleton } from '@/components/ui/skeleton';
@@ -46,26 +46,17 @@ export default function SetupPage() {
     getCSRFToken().catch(console.error);
   }, []);
   const checkAuthAndState = useCallback(async () => {
-    if (!supabaseAuth) {
-      setCheckingAuth(false);
-      return;
-    }
+    const { user: sessionUser } = await getServerSessionClient();
+    setUser(sessionUser ?? null);
 
-    const {
-      data: { session },
-    } = await supabaseAuth.auth.getSession();
-
-    setUser(session?.user ?? null);
-
-    // 🔹 Not logged in → onboarding flow
-    if (!session?.user) {
+    if (!sessionUser) {
       setShowOnboardingProgress(true);
       setCheckingAuth(false);
       return;
     }
 
     const { getUserState } = await import('@/lib/utils/user-state');
-    const stateResult = await getUserState(session.user.id);
+    const stateResult = await getUserState(sessionUser.id);
 
     const isOwner = stateResult.businessCount >= 1;
 
@@ -220,29 +211,14 @@ export default function SetupPage() {
     setError(null);
 
     try {
-      // Get session for authentication
-      if (!supabaseAuth) {
-        throw new Error('Authentication not available');
-      }
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabaseAuth.auth.getSession();
-
-      if (sessionError || !session?.access_token) {
+      const { user: sessionUser } = await getServerSessionClient();
+      if (!sessionUser) {
         throw new Error('Authentication required. Please sign in again.');
       }
 
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      };
-
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch(API_ROUTES.SALONS, {
         method: 'POST',
@@ -281,8 +257,8 @@ export default function SetupPage() {
           window.dispatchEvent(new Event('userStateChanged'));
 
           // Force a fresh state check (skip cache) so redirect sees correct role
-          if (session?.user) {
-            await getUserState(session.user.id, { skipCache: true });
+          if (sessionUser) {
+            await getUserState(sessionUser.id, { skipCache: true });
           }
         } catch (e) {
           console.warn('[SETUP] Could not notify other tabs:', e);

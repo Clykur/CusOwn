@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { env } from '@/config/env';
+import { createSecureSetAll } from '@/lib/auth/cookie-adapter.server';
 import { userService } from '@/services/user.service';
 import { getOAuthRedirect } from '@/lib/auth/getOAuthRedirect';
 import { ROUTES } from '@/lib/utils/navigation';
+import { AUTH_COOKIE_MAX_AGE_SECONDS, AUTH_PENDING_ROLE_COOKIE } from '@/config/constants';
 
 /**
- * OAuth callback handler (server-side).
- * Redirect base is derived from the incoming request only (host + proto), not env.
+ * OAuth callback: atomic profile upsert, role from cookie then query, never override admin.
+ * Clears pending-role cookie after use.
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -16,100 +18,220 @@ export async function GET(request: NextRequest) {
   const baseUrlFromRequest = getOAuthRedirect('/auth/callback', request);
   const baseUrl = `${new URL(baseUrlFromRequest).origin}/`;
 
-  // If no code, just go home
+  console.log('[AUTH] callback: GET', {
+    hasCode: !!code,
+    error: requestUrl.searchParams.get('error') ?? null,
+    error_description: requestUrl.searchParams.get('error_description') ?? null,
+  });
+
   if (!code) {
+    const errDesc = requestUrl.searchParams.get('error_description');
+    const errCode = requestUrl.searchParams.get('error_code');
+    const err = requestUrl.searchParams.get('error');
+    if (errDesc || errCode || err) {
+      console.log('[AUTH] callback: negative — no code, redirect to login with error', {
+        error: err ?? null,
+        error_description: errDesc ?? null,
+      });
+      const msg = encodeURIComponent(errDesc || err || 'auth_failed');
+      return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
+    }
+    console.log('[AUTH] callback: negative — no code, redirect to home');
     return NextResponse.redirect(new URL(ROUTES.HOME, baseUrl));
   }
 
-  // Create Supabase SSR client using cookies (stores PKCE verifier + session here)
   const cookieStore = await cookies();
+  const cookiesToForward: { name: string; value: string; options?: Record<string, unknown> }[] = [];
+  const setAll = createSecureSetAll((name, value, options) => {
+    cookieStore.set(name, value, options);
+    cookiesToForward.push({ name, value, options });
+  });
   const supabase = createServerClient(env.supabase.url, env.supabase.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        setAll(
+          cookiesToSet as { name: string; value: string; options?: Record<string, unknown> }[]
+        );
       },
     },
   });
 
-  // Exchange code for session (requires PKCE code verifier cookie)
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.session || !data.user) {
+    console.log('[AUTH] callback: negative — exchangeCodeForSession failed', {
+      error: error?.message ?? null,
+      hasSession: !!data?.session,
+      hasUser: !!data?.user,
+    });
     const msg = encodeURIComponent(error?.message || 'auth_failed');
-    return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN}?error=${msg}`, baseUrl));
+    return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
   }
 
-  // Role passed during OAuth start (optional)
-  const selectedRole = requestUrl.searchParams.get('role') as 'owner' | 'customer' | null;
+  console.log('[AUTH] callback: positive — session exchanged', {
+    userId: data.user.id.substring(0, 8) + '...',
+  });
 
-  // Admin users should never be downgraded/changed by onboarding
-  let profile: any = null;
+  const pendingRoleCookie = cookieStore.get(AUTH_PENDING_ROLE_COOKIE)?.value as
+    | 'owner'
+    | 'customer'
+    | null;
+  const roleFromQuery = requestUrl.searchParams.get('role') as 'owner' | 'customer' | null;
+  const selectedRole = pendingRoleCookie ?? roleFromQuery;
+
+  let profile: Awaited<ReturnType<typeof userService.getUserProfile>> = null;
   try {
     profile = await userService.getUserProfile(data.user.id);
-    if (profile?.user_type === 'admin') {
-      return NextResponse.redirect(new URL(ROUTES.ADMIN_DASHBOARD, baseUrl));
-    }
   } catch {
     // ignore
   }
 
-  // Ensure user profile exists (only if not admin)
+  if (profile?.user_type === 'admin') {
+    console.log('[AUTH] callback: positive — redirect admin', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: 'admin_dashboard',
+    });
+    void import('@/services/audit.service').then(({ auditService }) =>
+      auditService.createAuditLog(data.user.id, 'admin_login', 'user', {
+        entityId: data.user.id,
+        description: 'Admin login',
+      })
+    );
+    return redirectToSuccess(ROUTES.ADMIN_DASHBOARD, baseUrl, cookiesToForward);
+  }
+
   try {
+    const fullName = data.user.user_metadata?.full_name ?? data.user.email?.split('@')[0] ?? null;
+
     if (!profile) {
-      const userType = selectedRole || 'customer';
       profile = await userService.upsertUserProfile(data.user.id, {
-        full_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || null,
-        user_type: userType,
+        full_name: fullName,
+        user_type: selectedRole ?? 'customer',
       });
-    } else if (selectedRole && profile.user_type !== 'admin') {
-      const currentType = profile.user_type;
-      let newType: 'owner' | 'customer' | 'both' | 'admin' = selectedRole;
-
-      if (currentType === 'owner' && selectedRole === 'customer') newType = 'both';
-      if (currentType === 'customer' && selectedRole === 'owner') newType = 'both';
-      if (currentType === 'both') newType = 'both';
-
-      if (newType !== currentType) {
+    } else if (selectedRole && (profile as { user_type: string }).user_type !== 'admin') {
+      const current = profile.user_type;
+      let newType: 'owner' | 'customer' | 'both' = selectedRole;
+      if (current === 'owner' && selectedRole === 'customer') newType = 'both';
+      if (current === 'customer' && selectedRole === 'owner') newType = 'both';
+      if (current === 'both') newType = 'both';
+      if (newType !== current) {
         profile = await userService.updateUserType(data.user.id, newType);
+        void import('@/services/audit.service').then(({ auditService }) =>
+          auditService.createAuditLog(data.user.id, 'role_changed', 'user', {
+            entityId: data.user.id,
+            oldData: { user_type: current },
+            newData: { user_type: newType },
+            description: 'Role updated on login',
+          })
+        );
+        await supabase.auth.refreshSession();
       }
     }
   } catch {
-    // profile creation can be retried later
+    // retry later
   }
 
-  // redirect_to takes precedence (must not loop back to callback)
   const redirectTo = requestUrl.searchParams.get('redirect_to');
   if (redirectTo && !redirectTo.includes('/auth/callback')) {
-    const redirectUrl = redirectTo.startsWith('http')
-      ? redirectTo
-      : new URL(redirectTo, baseUrl).toString();
-    return NextResponse.redirect(redirectUrl);
+    console.log('[AUTH] callback: positive — redirect to redirect_to param', {
+      userId: data.user.id.substring(0, 8) + '...',
+    });
+    const path = redirectTo.startsWith('http') ? new URL(redirectTo).pathname : redirectTo;
+    return redirectToSuccess(path, baseUrl, cookiesToForward);
   }
 
-  // Use canonical user state system if available
   try {
     const { getUserState } = await import('@/lib/utils/user-state');
     const stateResult = await getUserState(data.user.id);
     if (stateResult.redirectUrl) {
-      return NextResponse.redirect(new URL(stateResult.redirectUrl, baseUrl));
+      console.log('[AUTH] callback: positive — redirect from getUserState', {
+        userId: data.user.id.substring(0, 8) + '...',
+        redirectUrl: stateResult.redirectUrl,
+      });
+      const path = stateResult.redirectUrl.startsWith('http')
+        ? new URL(stateResult.redirectUrl).pathname
+        : stateResult.redirectUrl;
+      return redirectToSuccess(path, baseUrl, cookiesToForward);
     }
   } catch {
     // ignore
   }
 
-  // Fallback redirects based on canonical profile user_type
   if (profile?.user_type === 'owner' || profile?.user_type === 'both') {
-    return NextResponse.redirect(new URL(ROUTES.OWNER_DASHBOARD_BASE, baseUrl));
+    console.log('[AUTH] callback: positive — redirect owner/both', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: 'owner_dashboard',
+    });
+    return redirectToSuccess(ROUTES.OWNER_DASHBOARD_BASE, baseUrl, cookiesToForward);
   }
-
   if (profile?.user_type === 'admin') {
-    return NextResponse.redirect(new URL(ROUTES.ADMIN_DASHBOARD, baseUrl));
+    return redirectToSuccess(ROUTES.ADMIN_DASHBOARD, baseUrl, cookiesToForward);
   }
+  if (selectedRole === 'owner') {
+    console.log('[AUTH] callback: positive — redirect setup (new owner)', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: 'setup',
+    });
+    return redirectToSuccess(ROUTES.SETUP, baseUrl, cookiesToForward);
+  }
+  console.log('[AUTH] callback: positive — redirect customer', {
+    userId: data.user.id.substring(0, 8) + '...',
+    target: 'customer_dashboard',
+  });
+  return redirectToSuccess(ROUTES.CUSTOMER_DASHBOARD, baseUrl, cookiesToForward);
+}
 
-  if (selectedRole === 'owner') return NextResponse.redirect(new URL(ROUTES.SETUP, baseUrl));
-  return NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, baseUrl));
+/**
+ * Return 200 with Set-Cookie + HTML that redirects to /auth/success?to=<path>.
+ * The browser sends cookies on that GET; the success route then server-redirects to the
+ * final dashboard so the dashboard request also has cookies.
+ */
+function redirectToSuccess(
+  path: string,
+  baseUrl: string,
+  sessionCookies: { name: string; value: string; options?: Record<string, unknown> }[] = []
+): NextResponse {
+  const to = path.startsWith('/') ? path : `/${path}`;
+  const successUrl = new URL(`/auth/success?to=${encodeURIComponent(to)}`, baseUrl).toString();
+  const safeUrlAttr = successUrl.replace(/"/g, '&quot;');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta http-equiv="Refresh" content="2;url=${safeUrlAttr}"/><script>
+(function(){
+  var u = ${JSON.stringify(successUrl)};
+  console.log('[AUTH_FLOW] Callback: redirecting in 300ms to /auth/success then dashboard');
+  setTimeout(function(){ window.location.href = u; }, 300);
+})();
+</script></head><body><p>Signing you in…</p><a href="${safeUrlAttr}">Continue</a></body></html>`;
+  const res = new NextResponse(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      Pragma: 'no-cache',
+    },
+  });
+  for (const { name, value, options } of sessionCookies) {
+    const opts = (options || {}) as Record<string, unknown>;
+    const cookieOpts: Record<string, unknown> = {
+      path: (opts.path as string) ?? '/',
+      maxAge: (opts.maxAge as number) ?? AUTH_COOKIE_MAX_AGE_SECONDS,
+      sameSite: (opts.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
+      secure:
+        opts.secure !== undefined
+          ? (opts.secure as boolean)
+          : process.env.NODE_ENV === 'production',
+      httpOnly: opts.httpOnly !== undefined ? (opts.httpOnly as boolean) : true,
+    };
+    if (opts.expires != null) cookieOpts.expires = opts.expires as Date;
+    res.cookies.set(name, value, cookieOpts as Parameters<NextResponse['cookies']['set']>[2]);
+  }
+  res.cookies.set(AUTH_PENDING_ROLE_COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  });
+  return res;
 }

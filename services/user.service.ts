@@ -16,17 +16,11 @@ export class UserService {
    * Get user profile by user ID
    */
   async getUserProfile(userId: string): Promise<UserProfile | null> {
-    const DEBUG = process.env.NODE_ENV === 'development';
-    
-    if (DEBUG) {
-      console.log('[USER_SERVICE] getUserProfile called for userId:', userId.substring(0, 8) + '...');
-    }
-    
     if (!supabaseAdmin) {
       console.error('[USER_SERVICE] Supabase admin not configured');
       throw new Error('Database not configured');
     }
-    
+
     const { data, error } = await supabaseAdmin
       .from('user_profiles')
       .select('*')
@@ -34,10 +28,7 @@ export class UserService {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        if (DEBUG) console.log('[USER_SERVICE] Profile not found (PGRST116)');
-        return null;
-      }
+      if (error.code === 'PGRST116') return null;
       console.error('[USER_SERVICE] Error fetching profile:', {
         error: error.message,
         code: error.code,
@@ -45,16 +36,6 @@ export class UserService {
       });
       throw new Error(error.message || 'Failed to fetch user profile');
     }
-
-    if (DEBUG) {
-      console.log('[USER_SERVICE] Profile found:', {
-        userId: data.id,
-        userType: data.user_type,
-        fullName: data.full_name,
-        hasPhone: !!data.phone_number,
-      });
-    }
-
     return data;
   }
 
@@ -125,26 +106,17 @@ export class UserService {
    * Get all businesses owned by user
    */
   async getUserBusinesses(userId: string, includeSuspended = false) {
-    const DEBUG = process.env.NODE_ENV === 'development';
-    
-    if (DEBUG) {
-      console.log('[USER_SERVICE] getUserBusinesses called for userId:', userId.substring(0, 8) + '...');
-    }
-    
     if (!supabaseAdmin) {
       console.warn('[USER_SERVICE] Supabase admin not configured, returning empty array');
       return [];
     }
-    
-    let query = supabaseAdmin
-      .from('businesses')
-      .select('*')
-      .eq('owner_user_id', userId);
-    
+
+    let query = supabaseAdmin.from('businesses').select('*').eq('owner_user_id', userId);
+
     if (!includeSuspended) {
       query = query.eq('suspended', false);
     }
-    
+
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
@@ -156,21 +128,7 @@ export class UserService {
       throw new Error(error.message || 'Failed to fetch user businesses');
     }
 
-    const businesses = data || [];
-    
-    if (DEBUG) {
-      console.log('[USER_SERVICE] Businesses found:', {
-        count: businesses.length,
-        businesses: businesses.map((b: any) => ({
-          id: b.id,
-          name: b.salon_name,
-          bookingLink: b.booking_link,
-          ownerUserId: b.owner_user_id,
-        })),
-      });
-    }
-
-    return businesses;
+    return data || [];
   }
 
   /**
@@ -183,7 +141,8 @@ export class UserService {
 
     const { data, error } = await supabaseAdmin
       .from('bookings')
-      .select(`
+      .select(
+        `
         *,
         business:business_id (
           id,
@@ -199,7 +158,8 @@ export class UserService {
           end_time,
           status
         )
-      `)
+      `
+      )
       .eq('customer_user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -212,4 +172,3 @@ export class UserService {
 }
 
 export const userService = new UserService();
-

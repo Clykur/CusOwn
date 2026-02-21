@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { formatDate } from '@/lib/utils/string';
-import { supabaseAuth } from '@/lib/supabase/auth';
+import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import AnalyticsDashboardSkeleton from '@/components/analytics/analytics-dashboard.skeleton';
 
 interface AnalyticsData {
@@ -46,45 +46,21 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      // Get session for authentication
-      if (!supabaseAuth) {
-        throw new Error('Authentication not available');
-      }
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabaseAuth.auth.getSession();
-
-      if (sessionError || !session?.access_token) {
-        throw new Error('Authentication required');
-      }
-
-      const headers = {
-        Authorization: `Bearer ${session.access_token}`,
-      };
+      const { user } = await getServerSessionClient();
+      if (!user) throw new Error('Authentication required');
 
       const [overviewRes, dailyRes, peakRes] = await Promise.all([
         fetch(
           `/api/owner/analytics?business_id=${businessId}&type=overview&start_date=${startDate}&end_date=${endDate}`,
-          {
-            headers,
-            credentials: 'include',
-          }
+          { credentials: 'include' }
         ),
         fetch(
           `/api/owner/analytics?business_id=${businessId}&type=daily&start_date=${startDate}&end_date=${endDate}`,
-          {
-            headers,
-            credentials: 'include',
-          }
+          { credentials: 'include' }
         ),
         fetch(
           `/api/owner/analytics?business_id=${businessId}&type=peak-hours&start_date=${startDate}&end_date=${endDate}`,
-          {
-            headers,
-            credentials: 'include',
-          }
+          { credentials: 'include' }
         ),
       ]);
 
@@ -115,7 +91,8 @@ export default function AnalyticsDashboard({ businessId }: { businessId: string 
     setExporting(true);
     try {
       const response = await fetch(
-        `/api/owner/analytics/export?business_id=${businessId}&start_date=${startDate}&end_date=${endDate}`
+        `/api/owner/analytics/export?business_id=${businessId}&start_date=${startDate}&end_date=${endDate}`,
+        { credentials: 'include' }
       );
       if (response.ok) {
         const blob = await response.blob();

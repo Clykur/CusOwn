@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signOut, getUserProfile } from '@/lib/supabase/auth';
-import { supabaseAuth } from '@/lib/supabase/auth';
 
 interface NavItem {
   name: string;
@@ -15,6 +13,7 @@ interface NavItem {
 import { getAdminDashboardUrl } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
 import { useAdminPrefetch } from '@/components/admin/admin-prefetch-context';
+import { useAdminSession } from '@/components/admin/admin-session-context';
 
 const navigation: NavItem[] = [
   {
@@ -117,69 +116,63 @@ const navigation: NavItem[] = [
   },
 ];
 
-function AdminSidebarContent() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [userName, setUserName] = useState<string>('');
+const ADMIN_TAB_EVENT = 'admin-tab-change';
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/');
-    } catch (err) {
-      console.error('Logout failed:', err);
-      alert('Failed to logout. Please try again.');
-    }
-  };
+function getTabFromSearch(search: string): string {
+  const tab = new URLSearchParams(search).get('tab');
+  return tab || 'overview';
+}
+
+function AdminSidebarContent() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { session } = useAdminSession();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState('overview');
+
+  const userEmail = session?.user?.email ?? '';
+  const userName =
+    (session?.profile as { full_name?: string } | null)?.full_name ||
+    session?.user?.email?.split('@')[0] ||
+    'User';
 
   useEffect(() => {
-    const loadUserInfo = async () => {
-      if (!supabaseAuth) return;
-
-      try {
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-        if (session?.user) {
-          setUserEmail(session.user.email || '');
-
-          // Get user profile for full name
-          try {
-            const profile = await getUserProfile(session.user.id);
-            if (profile && (profile as any).full_name) {
-              setUserName((profile as any).full_name);
-            } else {
-              setUserName(session.user.email?.split('@')[0] || 'User');
-            }
-          } catch {
-            setUserName(session.user.email?.split('@')[0] || 'User');
-          }
-        }
-      } catch (error) {
-        console.error('[AdminSidebar] Error loading user info:', error);
-      }
+    if (pathname !== '/admin/dashboard') return;
+    const readFromWindow = () =>
+      setDashboardTab(
+        typeof window !== 'undefined' ? getTabFromSearch(window.location.search) : 'overview'
+      );
+    readFromWindow();
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab?: string }>).detail;
+      if (detail?.tab) setDashboardTab(detail.tab);
     };
-
-    loadUserInfo();
-  }, []);
+    window.addEventListener(ADMIN_TAB_EVENT, handler);
+    window.addEventListener('popstate', readFromWindow);
+    return () => {
+      window.removeEventListener(ADMIN_TAB_EVENT, handler);
+      window.removeEventListener('popstate', readFromWindow);
+    };
+  }, [pathname]);
 
   const { prefetchTab } = useAdminPrefetch();
   const getTabFromHref = (href: string) =>
     href.includes('?tab=') ? (href.split('tab=')[1]?.split('&')[0] ?? null) : null;
 
   const isActive = (href: string) => {
-    // Links outside dashboard (e.g. Profile): active only when pathname matches
-    if (!href.startsWith('/admin/dashboard')) {
-      return pathname === href;
-    }
-    // Dashboard tabs: active only when on dashboard and tab matches
+    if (pathname.startsWith('/admin/bookings') && href.includes('tab=bookings')) return true;
+    if (pathname.startsWith('/admin/users') && href.includes('tab=users')) return true;
+    if (!href.startsWith('/admin/dashboard')) return pathname === href;
     if (pathname !== '/admin/dashboard') return false;
-    const currentTab = searchParams?.get('tab') || 'overview';
-    const hrefTab = href.includes('?tab=') ? href.split('tab=')[1] : 'overview';
-    return currentTab === hrefTab;
+    const hrefTab = href.includes('?tab=') ? href.split('tab=')[1]?.split('&')[0] : 'overview';
+    return dashboardTab === hrefTab;
+  };
+
+  const onTabLinkClick = (href: string) => {
+    const tab = getTabFromHref(href);
+    if (tab && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(ADMIN_TAB_EVENT, { detail: { tab } }));
+    }
   };
 
   return (
@@ -221,16 +214,18 @@ function AdminSidebarContent() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-gray-200 transition-transform ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
-        <div className="h-full flex flex-col">
-          {/* Logo/Header */}
-          <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+        <div className="flex h-full flex-col">
+          {/* Logo/Header - section grouping */}
+          <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{UI_CONTEXT.ADMIN_CONSOLE}</h2>
-              <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.YOU_ARE_IN_ADMIN_MODE}</p>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                {UI_CONTEXT.ADMIN_CONSOLE}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.YOU_ARE_IN_ADMIN_MODE}</p>
             </div>
             {/* Close button shown inside sidebar on mobile to avoid overlap */}
             <div className="lg:hidden">
@@ -256,49 +251,54 @@ function AdminSidebarContent() {
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {/* Navigation - increased spacing, subtle active state */}
+          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
             {navigation.map((item) => {
               const active = isActive(item.href);
               const tab = getTabFromHref(item.href);
+              const isDashboardTab = item.href.startsWith('/admin/dashboard');
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setSidebarOpen(false)}
+                  prefetch={false}
+                  onClick={(e) => {
+                    setSidebarOpen(false);
+                    if (isDashboardTab) {
+                      e.preventDefault();
+                      router.replace(item.href);
+                    }
+                    onTabLinkClick(item.href);
+                  }}
                   onMouseEnter={() => {
                     if (tab) prefetchTab(tab);
                   }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
                     active
-                      ? 'bg-black text-white shadow-md'
-                      : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
+                      ? 'border-l-2 border-slate-900 bg-slate-200/60 font-medium text-slate-900'
+                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
                   }`}
                 >
-                  <span className="flex-shrink-0">{item.icon}</span>
-                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                    {item.name}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-5 [&>svg]:w-5">
+                    {item.icon}
                   </span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Profile Section */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="shrink-0 border-t border-slate-200 p-4">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/profile"
-                className="flex-1 min-w-0 flex items-center gap-3"
+                prefetch={false}
+                className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -307,16 +307,16 @@ function AdminSidebarContent() {
                     />
                   </svg>
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-sm font-semibold text-gray-900 truncate">
+                <div className="min-w-0 flex-1 flex flex-col">
+                  <span className="truncate text-sm font-medium text-slate-900">
                     {userName || 'User'}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
+                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
                 </div>
               </Link>
-              <button
-                onClick={handleLogout}
-                className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              <a
+                href="/api/auth/signout"
+                className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign Out"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +327,7 @@ function AdminSidebarContent() {
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-              </button>
+              </a>
             </div>
           </div>
         </div>

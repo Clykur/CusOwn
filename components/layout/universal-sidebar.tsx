@@ -1,27 +1,48 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/utils/navigation';
-import MobileBottomNav from '@/components/owner/mobile-bottom-nav';
-import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
-import { supabaseAuth } from '@/lib/supabase/auth';
-import { getUserState } from '@/lib/utils/user-state';
-import AdminSidebar from '@/components/admin/admin-sidebar';
-import OwnerSidebar from '@/components/owner/owner-sidebar';
-import CustomerSidebar from '@/components/customer/customer-sidebar';
+
+const AdminSidebar = dynamic(
+  () => import('@/components/admin/admin-sidebar').then((m) => m.default),
+  { ssr: false }
+);
+const OwnerSidebar = dynamic(
+  () => import('@/components/owner/owner-sidebar').then((m) => m.default),
+  { ssr: false }
+);
+const CustomerSidebar = dynamic(
+  () => import('@/components/customer/customer-sidebar').then((m) => m.default),
+  { ssr: false }
+);
+const MobileBottomNav = dynamic(
+  () => import('@/components/owner/mobile-bottom-nav').then((m) => m.default),
+  { ssr: false }
+);
+const CustomerMobileBottomNav = dynamic(
+  () => import('@/components/customer/mobile-bottom-nav').then((m) => m.default),
+  { ssr: false }
+);
 
 export default function UniversalSidebar() {
   const pathname = usePathname();
+  const cleanPath = pathname?.split('?')[0] || '';
+  const pathRef = useRef<string | null>(null);
   const [sidebarType, setSidebarType] = useState<'admin' | 'owner' | 'customer' | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    if (pathRef.current === cleanPath && sidebarType !== null) {
+      setLoading(false);
+      return;
+    }
+    pathRef.current = cleanPath;
+
     const determineSidebar = async () => {
       try {
-        const cleanPath = pathname?.split('?')[0] || '';
-
         // Public pages with no sidebar
         if (cleanPath === '/' || cleanPath.startsWith('/auth') || cleanPath === '/select-role') {
           setSidebarType(null);
@@ -73,18 +94,18 @@ export default function UniversalSidebar() {
           }
         }
 
-        // Fallback based on logged-in role
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-
-        if (!session?.user) {
+        // Fallback based on logged-in role (server endpoint)
+        const stateRes = await fetch('/api/user/state', { credentials: 'include' });
+        if (!stateRes.ok) {
           setSidebarType(null);
           return;
         }
-
-        const state = await getUserState(session.user.id);
-
+        const stateJson = await stateRes.json();
+        const state = stateJson?.data;
+        if (!state?.authenticated) {
+          setSidebarType(null);
+          return;
+        }
         if (state.userType === 'admin') {
           setSidebarType('admin');
         } else if (state.userType === 'owner') {
@@ -100,11 +121,9 @@ export default function UniversalSidebar() {
     };
 
     determineSidebar();
-  }, [pathname]);
+  }, [cleanPath, sidebarType]);
 
   if (loading || !sidebarType) return null;
-
-  const cleanPath = pathname?.split('?')[0] || '';
 
   const getMobileHeaderTitle = () => {
     // Owner base dashboard

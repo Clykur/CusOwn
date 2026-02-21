@@ -2,8 +2,8 @@ import { env } from '@/config/env';
 import { createBrowserClient } from '@supabase/ssr';
 
 /**
- * Client-side Supabase client
- * Configured for PKCE flow with proper session persistence
+ * Client-side Supabase client. Session is also available via /api/auth/session.
+ * Refresh is throttled by global fetch patch (see layout.tsx script).
  */
 export const supabase = createBrowserClient(env.supabase.url, env.supabase.anonKey, {
   cookies: {
@@ -31,10 +31,9 @@ export const supabase = createBrowserClient(env.supabase.url, env.supabase.anonK
     },
   },
   auth: {
-    autoRefreshToken: true,
+    autoRefreshToken: false,
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
   },
 });
-

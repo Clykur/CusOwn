@@ -1,15 +1,17 @@
 /**
  * CANONICAL USER STATE SYSTEM
- * 
+ *
  * This is the SINGLE SOURCE OF TRUTH for user state determination and redirect decisions.
  * All pages and APIs MUST use this utility - no duplicate logic allowed.
- * 
+ *
  * Security: All checks are server-side. Client-side usage is for UX only.
+ * Server: React cache() dedupes per request to avoid repeated getUserBusinesses.
  */
 
+import { cache } from 'react';
 import { ROUTES } from './navigation';
 
-export type UserState = 
+export type UserState =
   | 'S0' // Unauthenticated
   | 'S1' // Authenticated, No Profile
   | 'S2' // Customer Only
@@ -44,9 +46,10 @@ async function getUserProfileSafe(userId: string): Promise<any> {
     const { getServerUserProfile } = await import('@/lib/supabase/server-auth');
     return getServerUserProfile(userId);
   } else {
-    // Client-side: use client auth
-    const { getUserProfile } = await import('@/lib/supabase/auth');
-    return getUserProfile(userId);
+    // Client-side: server-only session
+    const { getServerSessionClient } = await import('@/lib/auth/server-session-client');
+    const { user, profile } = await getServerSessionClient();
+    return user?.id === userId ? profile : null;
   }
 }
 
@@ -76,28 +79,12 @@ let userStateCache: {
 
 const CACHE_TTL = 5000; // Cache for 5 seconds
 
-/**
- * Determine the canonical user state and redirect decision
- * This is the ONLY function that should determine user state
- */
-export async function getUserState(userId: string | null, options?: { skipCache?: boolean }): Promise<UserStateResult> {
-  const DEBUG = process.env.NODE_ENV === 'development';
-  const context = typeof window === 'undefined' ? 'server' : 'client';
-  
-  // Check cache first (client-side only, skip if requested)
-  if (context === 'client' && !options?.skipCache && userStateCache.userId === userId) {
-    const cacheAge = Date.now() - userStateCache.timestamp;
-    if (cacheAge < CACHE_TTL && userStateCache.result) {
-      if (DEBUG) {
-        console.log(`[USER_STATE:${context}] Using cached result (age: ${Math.round(cacheAge)}ms)`);
-      }
-      return userStateCache.result;
-    }
-  }
-  
-  // S0: Unauthenticated
+/** Inner implementation; shared by server (cached per-request) and client. */
+async function computeUserState(
+  userId: string | null,
+  context: 'server' | 'client'
+): Promise<UserStateResult> {
   if (!userId) {
-    if (DEBUG) console.log(`[USER_STATE:${context}] User not authenticated (S0)`);
     return {
       state: 'S0',
       authenticated: false,
@@ -114,10 +101,8 @@ export async function getUserState(userId: string | null, options?: { skipCache?
   }
 
   try {
-    // Check admin first (S7)
     const adminCheck = await isAdminSafe(userId);
     if (adminCheck) {
-      if (DEBUG) console.log(`[USER_STATE:${context}] User is admin (S7)`);
       return {
         state: 'S7',
         authenticated: true,
@@ -135,7 +120,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
 
     // Get user profile
     const profile = await getUserProfileSafe(userId);
-    
+
     // S1: Authenticated but no profile
     if (!profile) {
       const result: UserStateResult = {
@@ -151,7 +136,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
         canAccessSetup: false,
         canAccessAdminDashboard: false,
       };
-      
+
       // Cache the result (client-side only)
       if (context === 'client') {
         userStateCache = {
@@ -160,88 +145,37 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           timestamp: Date.now(),
         };
       }
-      
+
       return result;
     }
 
     const userType = (profile as any).user_type;
 
-    // Get business count for owner/both users
     let businessCount = 0;
     if (userType === 'owner' || userType === 'both') {
       try {
         let businesses: any[] = [];
-        
         if (context === 'client') {
-          // Client-side: use API endpoint
+          // Client-side: server-only auth via cookies
           try {
-            const { supabaseAuth } = await import('@/lib/supabase/auth');
-            if (supabaseAuth) {
-              const { data: { session } } = await supabaseAuth.auth.getSession();
-              if (session?.access_token) {
-                const response = await fetch('/api/owner/businesses', {
-                  headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                  },
-                });
-                
-                if (response.ok) {
-                  const result = await response.json();
-                  if (DEBUG) {
-                    console.log(`[USER_STATE:${context}] API response data:`, {
-                      success: result.success,
-                      dataType: Array.isArray(result.data) ? 'array' : typeof result.data,
-                      dataLength: Array.isArray(result.data) ? result.data.length : 'N/A',
-                      data: result.data,
-                    });
-                  }
-                  
-                  if (result.success && Array.isArray(result.data)) {
-                    businesses = result.data;
-                  } else if (result.success && result.data === null) {
-                    // API returned success but null data - no businesses
-                    businesses = [];
-                  } else {
-                    if (DEBUG) {
-                      console.warn(`[USER_STATE:${context}] Unexpected API response format:`, result);
-                    }
-                    businesses = [];
-                  }
-                } else {
-                  // Log the error response
-                  const errorText = await response.text();
-                  if (DEBUG) {
-                    console.warn(`[USER_STATE:${context}] API error response:`, {
-                      status: response.status,
-                      statusText: response.statusText,
-                      body: errorText,
-                    });
-                  }
-                  
-                  if (response.status === 401 || response.status === 403) {
-                    // User doesn't have access - no businesses
-                    businesses = [];
-                  } else {
-                    // Other error - assume no businesses for fail-safe
-                    businesses = [];
-                  }
-                }
+            const response = await fetch('/api/owner/businesses', { credentials: 'include' });
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && Array.isArray(result.data)) {
+                businesses = result.data;
+              } else if (result.success && result.data === null) {
+                businesses = [];
               } else {
-                if (DEBUG) {
-                  console.warn(`[USER_STATE:${context}] No access token in session`);
-                }
                 businesses = [];
               }
             } else {
-              if (DEBUG) {
-                console.warn(`[USER_STATE:${context}] Supabase auth not available`);
+              if (process.env.NODE_ENV === 'development') {
+                const errorText = await response.text();
+                console.warn(`[USER_STATE:${context}] API error:`, response.status, errorText);
               }
-              businesses = [];
+              businesses = response.status === 401 || response.status === 403 ? [] : [];
             }
-          } catch (apiError) {
-            if (DEBUG) {
-              console.error(`[USER_STATE:${context}] API call failed:`, apiError);
-            }
+          } catch {
             businesses = [];
           }
         } else {
@@ -249,15 +183,13 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           const { userService } = await import('@/services/user.service');
           businesses = await userService.getUserBusinesses(userId);
         }
-        
+
         businessCount = businesses?.length || 0;
       } catch (error) {
         // If business check fails, assume no businesses (fail-safe)
         console.error(`[USER_STATE:${context}] Failed to check businesses:`, error);
         businessCount = 0;
       }
-    } else {
-      if (DEBUG) console.log(`[USER_STATE:${context}] User is not owner/both, skipping business check`);
     }
 
     // S2: Customer only
@@ -275,7 +207,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
         canAccessSetup: false,
         canAccessAdminDashboard: false,
       };
-      
+
       // Cache the result (client-side only)
       if (context === 'client') {
         userStateCache = {
@@ -284,7 +216,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           timestamp: Date.now(),
         };
       }
-      
+
       return result;
     }
 
@@ -292,16 +224,6 @@ export async function getUserState(userId: string | null, options?: { skipCache?
     if (userType === 'owner' && businessCount === 0) {
       // Check if we're already on setup page to provide context-aware message
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      const isOnSetupPage = currentPath === ROUTES.SETUP;
-      
-      if (DEBUG) {
-        if (isOnSetupPage) {
-          console.log(`[USER_STATE:${context}] Owner with no business (S3) - on setup page (correct state)`);
-        } else {
-          console.log(`[USER_STATE:${context}] Owner with no business (S3) - should redirect to setup`);
-        }
-      }
-      
       const result = {
         state: 'S3' as const,
         authenticated: true,
@@ -315,7 +237,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
         canAccessSetup: true,
         canAccessAdminDashboard: false,
       };
-      
+
       // Cache the result (client-side only)
       if (context === 'client') {
         userStateCache = {
@@ -324,7 +246,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           timestamp: Date.now(),
         };
       }
-      
+
       return result;
     }
 
@@ -343,7 +265,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
         canAccessSetup: false, // Has business, cannot access setup
         canAccessAdminDashboard: false,
       };
-      
+
       // Cache the result (client-side only)
       if (context === 'client') {
         userStateCache = {
@@ -352,7 +274,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           timestamp: Date.now(),
         };
       }
-      
+
       return result;
     }
 
@@ -371,7 +293,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
         canAccessSetup: true,
         canAccessAdminDashboard: false,
       };
-      
+
       // Cache the result (client-side only)
       if (context === 'client') {
         userStateCache = {
@@ -380,7 +302,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           timestamp: Date.now(),
         };
       }
-      
+
       return result;
     }
 
@@ -399,7 +321,7 @@ export async function getUserState(userId: string | null, options?: { skipCache?
         canAccessSetup: false, // Has business, cannot access setup
         canAccessAdminDashboard: false,
       };
-      
+
       // Cache the result (client-side only)
       if (context === 'client') {
         userStateCache = {
@@ -408,12 +330,11 @@ export async function getUserState(userId: string | null, options?: { skipCache?
           timestamp: Date.now(),
         };
       }
-      
+
       return result;
     }
 
     // Unknown state - fail safe
-    if (DEBUG) console.warn(`[USER_STATE:${context}] Unknown state - userType: ${userType}, businessCount: ${businessCount}`);
     return {
       state: 'S1', // Treat as no profile
       authenticated: true,
@@ -450,6 +371,25 @@ export async function getUserState(userId: string | null, options?: { skipCache?
   }
 }
 
+const getCachedUserState = cache((userId: string | null) => computeUserState(userId, 'server'));
+
+/**
+ * Determine the canonical user state and redirect decision.
+ * Server: one computation per request (React cache). Client: in-memory cache 5s.
+ */
+export async function getUserState(
+  userId: string | null,
+  options?: { skipCache?: boolean }
+): Promise<UserStateResult> {
+  const context = typeof window === 'undefined' ? 'server' : 'client';
+  if (context === 'server') return getCachedUserState(userId);
+  if (!options?.skipCache && userStateCache.userId === userId) {
+    const cacheAge = Date.now() - userStateCache.timestamp;
+    if (cacheAge < CACHE_TTL && userStateCache.result) return userStateCache.result;
+  }
+  return computeUserState(userId, 'client');
+}
+
 /**
  * Check if user should be redirected and where
  * This replaces the old getUserRedirectUrl function
@@ -460,7 +400,7 @@ export async function shouldRedirectUser(userId: string | null): Promise<{
   reason: string;
 }> {
   const stateResult = await getUserState(userId);
-  
+
   return {
     shouldRedirect: stateResult.redirectUrl !== null,
     redirectUrl: stateResult.redirectUrl,
@@ -484,16 +424,17 @@ export function clearUserStateCache(): void {
  */
 export function getRedirectMessage(reason: string): string {
   const messages: Record<string, string> = {
-    'admin_user': 'Redirecting to admin dashboard…',
-    'owner_no_business': 'You need to create a business first. Redirecting to setup…',
-    'owner_with_business': 'Taking you to your businesses…',
-    'both_no_business': 'You need to create a business to access owner features. Redirecting to setup…',
-    'both_with_business': 'Taking you to your dashboard…',
-    'customer_only': 'Taking you to your bookings…',
-    'no_profile': 'Please complete your profile setup.',
-    'unauthenticated': 'Please sign in to continue.',
-    'error': 'An error occurred. Please try again.',
+    admin_user: 'Redirecting to admin dashboard…',
+    owner_no_business: 'You need to create a business first. Redirecting to setup…',
+    owner_with_business: 'Taking you to your businesses…',
+    both_no_business:
+      'You need to create a business to access owner features. Redirecting to setup…',
+    both_with_business: 'Taking you to your dashboard…',
+    customer_only: 'Taking you to your bookings…',
+    no_profile: 'Please complete your profile setup.',
+    unauthenticated: 'Please sign in to continue.',
+    error: 'An error occurred. Please try again.',
   };
-  
+
   return messages[reason] || 'Redirecting…';
 }

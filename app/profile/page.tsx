@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-//import { supabaseAuth } from '@/lib/supabase/auth';
-import { supabase } from '@/lib/supabase/client';
+import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import {
   ROUTES,
   getOwnerDashboardUrl,
@@ -66,25 +65,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!supabase) {
-        router.push(ROUTES.AUTH_LOGIN(ROUTES.PROFILE));
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.user) {
+      const { user: sessionUser } = await getServerSessionClient();
+      if (!sessionUser) {
         router.push(ROUTES.AUTH_LOGIN(ROUTES.PROFILE));
         return;
       }
 
       try {
-        const response = await fetch('/api/user/profile', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
+        const response = await fetch('/api/user/profile', { credentials: 'include' });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -138,27 +126,19 @@ export default function ProfilePage() {
   }, [router]);
 
   const handleSave = async () => {
-    if (!supabase) return;
+    const { user: sessionUser } = await getServerSessionClient();
+    if (!sessionUser) {
+      setSaveMessage('Session expired');
+      return;
+    }
 
     setSaving(true);
     setSaveMessage(null);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('Session expired');
-      }
-
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
@@ -172,11 +152,9 @@ export default function ProfilePage() {
       if (result.success) {
         setSaveMessage('Profile updated successfully');
         setEditMode(false);
-        // Refresh profile data
+        // Refresh profile data (cookie auth)
         const refreshResponse = await fetch('/api/user/profile', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          credentials: 'include',
         });
         const refreshResult = await refreshResponse.json();
         if (refreshResult.success && refreshResult.data) {

@@ -1,14 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  // Disabled to avoid double-mount/render storms that trigger repeated GET /admin/dashboard.
+  reactStrictMode: false,
   // Disable static optimization for better dev experience
   experimental: {
     // Ensure proper chunk loading
     optimizePackageImports: [],
+    // Cache dynamic RSC segments in client router to reduce repeated GET /admin|owner|customer/dashboard in dev.
+    staleTimes: { dynamic: 30, static: 300 },
   },
-  // Improve webpack chunk handling
-  webpack: (config, { isServer, dev }) => {
-    // Exclude server-only files from client bundles
+  // Keep Supabase server-only out of client bundles; avoid custom splitChunks
+  // so server and client chunk paths stay in sync (fixes vendor-chunks/@supabase.js ENOENT).
+  webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
@@ -16,38 +19,10 @@ const nextConfig = {
         '@/lib/supabase/server': false,
       };
     }
-
-    // Better error handling for chunk loading
-    if (!isServer && dev) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            default: false,
-            vendors: false,
-            // Create a separate vendor chunk
-            vendor: {
-              name: 'vendor',
-              chunks: 'all',
-              test: /node_modules/,
-              priority: 20,
-            },
-            // Common chunk for shared code
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              priority: 10,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-      };
-    }
-
     return config;
   },
+  // Resolve @supabase on server via Node (avoids broken vendor chunk path in server bundle).
+  serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
   async headers() {
     return [
       {

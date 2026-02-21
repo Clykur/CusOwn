@@ -387,7 +387,7 @@ export function BusinessesSkeleton() {
   );
 }
 
-/** Inline skeleton rows for users table body (5 cols: Name, Email, Type, Businesses, Bookings). */
+/** Inline skeleton rows for users table body (6 cols: Name, Email, Type, Businesses, Bookings, Actions). */
 export function UsersTableBodySkeleton() {
   return (
     <>
@@ -407,6 +407,9 @@ export function UsersTableBodySkeleton() {
           </td>
           <td className="px-5 py-4">
             <div className={`h-4 ${skeletonBase} w-8 rounded`} />
+          </td>
+          <td className="px-5 py-4 text-right">
+            <div className={`h-8 ${skeletonBase} w-16 rounded ml-auto`} />
           </td>
         </tr>
       ))}

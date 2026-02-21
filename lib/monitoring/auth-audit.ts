@@ -18,6 +18,7 @@ export interface AuthDenyPayload {
   reason: AuthDenyReason;
   role?: string;
   resource?: string;
+  permission?: string;
 }
 
 function metricForReason(reason: AuthDenyReason): string {
@@ -38,7 +39,7 @@ function metricForReason(reason: AuthDenyReason): string {
  * Call on every 401/403 from auth (missing user, wrong role, invalid signed URL).
  */
 export function logAuthDeny(payload: AuthDenyPayload): void {
-  const { user_id, route, reason, role, resource } = payload;
+  const { user_id, route, reason, role, resource, permission } = payload;
   const metric = metricForReason(reason);
   const logPayload = {
     auth_deny: true,
@@ -47,6 +48,7 @@ export function logAuthDeny(payload: AuthDenyPayload): void {
     reason,
     role: role ?? null,
     resource: resource ?? null,
+    permission: permission ?? null,
   };
   if (process.env.NODE_ENV === 'development') {
     console.warn('[AUTH_DENY]', JSON.stringify(logPayload));

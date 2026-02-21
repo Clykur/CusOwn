@@ -2,9 +2,13 @@
   "name": "cusown",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.18.0 <25.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:fresh": "rm -rf .next node_modules/.cache && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -15,6 +19,7 @@
     "clean": "rm -rf .next node_modules/.cache .turbo",
     "clean:all": "pkill -f 'next dev' 2>/dev/null; pkill -f 'node.*next' 2>/dev/null; rm -rf .next node_modules/.cache .turbo; echo 'All caches cleared and processes killed'",
     "dev:clean": "npm run clean:all && npm run dev",
+    "dev:fresh": "rm -rf .next && next dev",
     "test:all": "bash scripts/run-all-tests.sh",
     "test:customer-journey": "ts-node --project scripts/tsconfig.json scripts/user-customer-journey.test.ts",
     "test:owner-journey": "ts-node --project scripts/tsconfig.json scripts/user-owner-journey.test.ts",
