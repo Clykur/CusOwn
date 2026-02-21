@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { signOut, getUserProfile } from '@/lib/supabase/auth';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
-import { supabaseAuth } from '@/lib/supabase/auth';
+import { useCustomerSession } from '@/components/customer/customer-session-context';
 
 interface NavItem {
   name: string;
@@ -61,7 +60,6 @@ export default function CustomerSidebar({
   sidebarOpen?: boolean;
   setSidebarOpen?: (v: boolean) => void;
 } = {}) {
-  const router = useRouter();
   const pathname = usePathname();
 
   // Support lifted state from parent (CustomerLayout) or fallback to internal state
@@ -69,54 +67,15 @@ export default function CustomerSidebar({
   const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
 
+  const { initialUser } = useCustomerSession();
   const [navigating, setNavigating] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [userName, setUserName] = useState<string>('');
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/');
-    } catch (err) {
-      console.error('Logout failed:', err);
-      alert('Failed to logout. Please try again.');
-    }
-  };
+  const userEmail = initialUser?.email ?? '';
+  const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
 
   useEffect(() => {
     setNavigating(null);
   }, [pathname]);
-
-  useEffect(() => {
-    const loadUserInfo = async () => {
-      if (!supabaseAuth) return;
-
-      try {
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-        if (session?.user) {
-          setUserEmail(session.user.email || '');
-
-          // Get user profile for full name
-          try {
-            const profile = await getUserProfile(session.user.id);
-            if (profile && (profile as any).full_name) {
-              setUserName((profile as any).full_name);
-            } else {
-              setUserName(session.user.email?.split('@')[0] || 'User');
-            }
-          } catch {
-            setUserName(session.user.email?.split('@')[0] || 'User');
-          }
-        }
-      } catch (error) {
-        console.error('[CustomerSidebar] Error loading user info:', error);
-      }
-    };
-
-    loadUserInfo();
-  }, []);
 
   const isActive = (href: string) => {
     // Check exact matches first
@@ -252,8 +211,8 @@ export default function CustomerSidebar({
                   <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
                 </div>
               </Link>
-              <button
-                onClick={handleLogout}
+              <a
+                href="/api/auth/signout"
                 className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Sign Out"
               >
@@ -265,7 +224,7 @@ export default function CustomerSidebar({
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-              </button>
+              </a>
             </div>
           </div>
         </div>

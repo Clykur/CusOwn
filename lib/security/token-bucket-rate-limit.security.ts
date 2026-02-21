@@ -1,6 +1,7 @@
 /**
  * Token bucket rate limit: config-driven capacity and refill per second.
- * Identifier: userId when logged in, else IP. Per-route overrides for admin and export.
+ * Identifier: IP (and optional session cookie hash). Does not call Supabase in middleware
+ * to avoid Auth 429 (over_request_rate_limit). Per-route overrides for admin and export.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,6 +13,8 @@ import {
   TOKEN_BUCKET_ADMIN_REFILL_PER_SEC,
   TOKEN_BUCKET_EXPORT_CAPACITY,
   TOKEN_BUCKET_EXPORT_REFILL_PER_SEC,
+  TOKEN_BUCKET_AUTH_CAPACITY,
+  TOKEN_BUCKET_AUTH_REFILL_PER_SEC,
 } from '@/config/constants';
 import { ERROR_MESSAGES } from '@/config/constants';
 
@@ -23,13 +26,14 @@ interface BucketState {
 const buckets = new Map<string, BucketState>();
 const BUCKET_CLEANUP_MAX = 20_000;
 
-function getRouteTier(pathname: string): 'admin' | 'export' | 'default' {
+function getRouteTier(pathname: string): 'admin' | 'export' | 'auth' | 'default' {
   if (pathname.startsWith('/api/admin/')) return 'admin';
   if (/\/api\/[^/]+\/export\/?/.test(pathname) || pathname.includes('/export')) return 'export';
+  if (pathname === '/api/auth/login') return 'auth';
   return 'default';
 }
 
-function getCapacityRefill(tier: 'admin' | 'export' | 'default'): {
+function getCapacityRefill(tier: 'admin' | 'export' | 'auth' | 'default'): {
   capacity: number;
   refillPerSec: number;
 } {
@@ -43,6 +47,11 @@ function getCapacityRefill(tier: 'admin' | 'export' | 'default'): {
       return {
         capacity: TOKEN_BUCKET_EXPORT_CAPACITY,
         refillPerSec: TOKEN_BUCKET_EXPORT_REFILL_PER_SEC,
+      };
+    case 'auth':
+      return {
+        capacity: TOKEN_BUCKET_AUTH_CAPACITY,
+        refillPerSec: TOKEN_BUCKET_AUTH_REFILL_PER_SEC,
       };
     default:
       return { capacity: TOKEN_BUCKET_CAPACITY, refillPerSec: TOKEN_BUCKET_REFILL_PER_SEC };
@@ -67,19 +76,23 @@ function recordRateLimitBlock(): void {
   });
 }
 
+/** Lightweight identifier for rate limit without calling Supabase (avoids Auth 429). */
+function getRateLimitIdentifier(request: NextRequest): string {
+  const ip = getClientIp(request);
+  const cookieHeader = request.headers.get('cookie');
+  if (!cookieHeader) return `ip:${ip}`;
+  let hash = 0;
+  for (let i = 0; i < Math.min(cookieHeader.length, 200); i++) {
+    hash = (hash * 31 + cookieHeader.charCodeAt(i)) >>> 0;
+  }
+  return `ip:${ip}:${hash}`;
+}
+
 export async function tokenBucketRateLimit(request: NextRequest): Promise<NextResponse | null> {
   const pathname = request.nextUrl.pathname;
   const tier = getRouteTier(pathname);
   const { capacity, refillPerSec } = getCapacityRefill(tier);
-
-  let identifier: string;
-  try {
-    const { getServerUser } = await import('@/lib/supabase/server-auth');
-    const user = await getServerUser(request);
-    identifier = user ? `user:${user.id}` : `ip:${getClientIp(request)}`;
-  } catch {
-    identifier = `ip:${getClientIp(request)}`;
-  }
+  const identifier = getRateLimitIdentifier(request);
 
   const key = `tb:${tier}:${identifier}`;
   const nowMs = Date.now();

@@ -1,18 +1,13 @@
 /**
- * API auth pipeline: single source of truth for route auth.
- * Order: getServerUser → fetch profile once → role guard → scoped resource check.
- * O(1) per request; no N+1 profile/role queries.
+ * API auth pipeline: permission-based (O(1) lookup). No hardcoded role strings.
+ * getServerUser → getAuthContext → requirePermission / requireAuth.
+ * [AUTH] console logs are server-side only; they appear in the terminal (npm run dev), not in the browser DevTools.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerUser, getServerUserProfile } from '@/lib/supabase/server-auth';
-import { checkIsAdmin } from '@/lib/utils/admin';
-import {
-  isAdminProfile,
-  hasOwnerProfile,
-  hasCustomerProfile,
-  type ProfileLike,
-} from '@/lib/utils/role-verification';
+import { hasPermission, PERMISSIONS } from '@/services/permission.service';
+import type { ProfileLike } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 import { errorResponse } from '@/lib/utils/response';
 
@@ -21,103 +16,89 @@ export type AuthContext = {
   profile: ProfileLike | null;
 };
 
-/**
- * Fetch user + profile once (O(1) per request). Use in every API route that needs auth.
- */
 export async function getAuthContext(request: NextRequest): Promise<AuthContext | null> {
   const user = await getServerUser(request);
-  if (!user) return null;
+  if (!user) {
+    console.log('[AUTH] getAuthContext: no user', { hasRequest: !!request });
+    return null;
+  }
   const profile = await getServerUserProfile(user.id);
+  console.log('[AUTH] getAuthContext: ok', {
+    userId: user.id.substring(0, 8) + '...',
+    hasProfile: !!profile,
+    userType: (profile as { user_type?: string } | null)?.user_type ?? null,
+  });
   return { user, profile };
 }
 
-/**
- * Require authenticated user. Returns 401 + log auth_missing if no user.
- */
 export async function requireAuth(
   request: NextRequest,
   route: string
 ): Promise<NextResponse | AuthContext> {
   const ctx = await getAuthContext(request);
   if (!ctx) {
+    console.log('[AUTH] requireAuth: denied (missing)', { route });
     logAuthDeny({ route, reason: 'auth_missing' });
     return errorResponse('Authentication required', 401);
   }
+  console.log('[AUTH] requireAuth: ok', { route, userId: ctx.user.id.substring(0, 8) + '...' });
   return ctx;
 }
 
 /**
- * Require admin: getServerUser → checkIsAdmin. Rate limit via token bucket in security middleware.
- * Returns 401 if no user, 403 if not admin. All /api/admin/* must use this.
+ * Require permission by name (dynamic lookup). O(1) after user roles loaded.
  */
+export async function requirePermission(
+  request: NextRequest,
+  route: string,
+  permissionName: string
+): Promise<NextResponse | AuthContext> {
+  const ctx = await getAuthContext(request);
+  if (!ctx) {
+    console.log('[AUTH] requirePermission: denied (missing)', {
+      route,
+      permission: permissionName,
+    });
+    logAuthDeny({ route, reason: 'auth_missing' });
+    return errorResponse('Authentication required', 401);
+  }
+  const allowed = await hasPermission(ctx.user.id, permissionName);
+  if (!allowed) {
+    console.log('[AUTH] requirePermission: denied (forbidden)', {
+      route,
+      permission: permissionName,
+      userId: ctx.user.id.substring(0, 8) + '...',
+    });
+    logAuthDeny({ user_id: ctx.user.id, route, reason: 'auth_denied', permission: permissionName });
+    return errorResponse('Access denied', 403);
+  }
+  console.log('[AUTH] requirePermission: ok', {
+    route,
+    permission: permissionName,
+    userId: ctx.user.id.substring(0, 8) + '...',
+  });
+  return ctx;
+}
+
 export async function requireAdmin(
   request: NextRequest,
   route: string
 ): Promise<NextResponse | AuthContext> {
-  const ctx = await getAuthContext(request);
-  if (!ctx) {
-    logAuthDeny({ route, reason: 'auth_missing' });
-    return errorResponse('Authentication required', 401);
-  }
-  const isAdmin = await checkIsAdmin(ctx.user.id, ctx.profile);
-  if (!isAdmin) {
-    logAuthDeny({
-      user_id: ctx.user.id,
-      route,
-      reason: 'auth_denied',
-      role: (ctx.profile as any)?.user_type ?? 'unknown',
-    });
-    return errorResponse('Admin access required', 403);
-  }
-  return ctx;
+  return requirePermission(request, route, PERMISSIONS.ADMIN_ACCESS);
 }
 
-/**
- * Require owner role (owner, both, or admin). Returns 401 or 403 with log.
- */
 export async function requireOwner(
   request: NextRequest,
   route: string
 ): Promise<NextResponse | AuthContext> {
-  const ctx = await getAuthContext(request);
-  if (!ctx) {
-    logAuthDeny({ route, reason: 'auth_missing' });
-    return errorResponse('Authentication required', 401);
-  }
-  if (!hasOwnerProfile(ctx.profile)) {
-    logAuthDeny({
-      user_id: ctx.user.id,
-      route,
-      reason: 'auth_denied',
-      role: (ctx.profile as any)?.user_type ?? 'unknown',
-    });
-    return errorResponse('Access denied', 403);
-  }
-  return ctx;
+  return requirePermission(request, route, PERMISSIONS.BUSINESSES_READ);
 }
 
-/**
- * Require customer role (customer, both, or admin). Returns 401 or 403 with log.
- */
 export async function requireCustomer(
   request: NextRequest,
   route: string
 ): Promise<NextResponse | AuthContext> {
-  const ctx = await getAuthContext(request);
-  if (!ctx) {
-    logAuthDeny({ route, reason: 'auth_missing' });
-    return errorResponse('Authentication required', 401);
-  }
-  if (!hasCustomerProfile(ctx.profile)) {
-    logAuthDeny({
-      user_id: ctx.user.id,
-      route,
-      reason: 'auth_denied',
-      role: (ctx.profile as any)?.user_type ?? 'unknown',
-    });
-    return errorResponse('Access denied', 403);
-  }
-  return ctx;
+  return requirePermission(request, route, PERMISSIONS.BOOKINGS_READ);
 }
 
 /**
@@ -128,6 +109,10 @@ export function denyInvalidToken(
   route: string,
   resource?: string
 ): NextResponse {
+  console.log('[AUTH] denyInvalidToken: invalid or expired token', {
+    route,
+    resource: resource ?? null,
+  });
   logAuthDeny({
     route,
     reason: 'auth_invalid_token',

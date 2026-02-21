@@ -1,29 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { signOut } from '@/lib/supabase/auth';
-
 export default function CustomerHeader({ title, subtitle }: { title?: string; subtitle?: string }) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/');
-    } catch (err) {
-      console.error('Logout failed:', err);
-      alert('Failed to logout. Please try again.');
-    }
-  };
-
   return (
     <div className="mb-8 flex justify-between items-start">
       <div>
         {title && <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>}
         {subtitle && <p className="text-gray-600">{subtitle}</p>}
       </div>
-      <button
-        onClick={handleLogout}
+      <a
+        href="/api/auth/signout"
         className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +20,7 @@ export default function CustomerHeader({ title, subtitle }: { title?: string; su
           />
         </svg>
         Logout
-      </button>
+      </a>
     </div>
   );
 }

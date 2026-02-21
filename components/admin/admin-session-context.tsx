@@ -1,78 +1,43 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { supabaseAuth } from '@/lib/supabase/auth';
-import { ADMIN_SESSION_REFRESH_INTERVAL_MS } from '@/config/constants';
+import { createContext, useContext, useMemo, useState } from 'react';
+
+/** Minimal session shape from server layout only. Zero client session fetch. */
+export type SessionLike = { user: { id: string; email?: string }; profile?: unknown } | null;
 
 type AdminSessionContextValue = {
-  session: Session | null;
+  session: SessionLike;
   token: string | null;
   ready: boolean;
+  initialAdminConfirmed?: boolean;
 };
 
 const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
 
-export function AdminSessionProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [ready, setReady] = useState(false);
-  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+export type AdminSessionProviderProps = {
+  children: React.ReactNode;
+  initialSession?: SessionLike;
+  initialAdminConfirmed?: boolean;
+  /** Unused; session is always from layout. Kept for type compatibility. */
+  skipClientSessionFetch?: boolean;
+};
 
-  useEffect(() => {
-    if (!supabaseAuth) {
-      setReady(true);
-      return;
-    }
-    let cancelled = false;
-    supabaseAuth.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      if (!cancelled) {
-        setSession(data.session ?? null);
-        setReady(true);
-      }
-    });
-    const {
-      data: { subscription },
-    } = supabaseAuth.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      if (!cancelled) setSession(session ?? null);
-    });
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!supabaseAuth || !session) {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-      return;
-    }
-    refreshIntervalRef.current = setInterval(() => {
-      supabaseAuth.auth.refreshSession().then(({ data }: { data: { session: Session | null } }) => {
-        if (data?.session) setSession(data.session);
-      });
-    }, ADMIN_SESSION_REFRESH_INTERVAL_MS);
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-    };
-  }, [session]);
+export function AdminSessionProvider({
+  children,
+  initialSession = null,
+  initialAdminConfirmed = false,
+}: AdminSessionProviderProps) {
+  const [session] = useState<SessionLike>(initialSession);
+  const ready = !!initialSession?.user;
 
   const value = useMemo<AdminSessionContextValue>(
     () => ({
       session,
-      token: session?.access_token ?? null,
+      token: null,
       ready,
+      initialAdminConfirmed,
     }),
-    [session, ready]
+    [session, ready, initialAdminConfirmed]
   );
 
   return <AdminSessionContext.Provider value={value}>{children}</AdminSessionContext.Provider>;

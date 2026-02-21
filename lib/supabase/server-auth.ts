@@ -1,5 +1,12 @@
 import { env } from '@/config/env';
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
+import { createSecureSetAll } from '@/lib/auth/cookie-adapter.server';
+import {
+  getCachedProfile,
+  setCachedProfile,
+  getCachedAuthUser,
+  setCachedAuthUser,
+} from '@/lib/cache/auth-cache';
 
 // Lazy import cookies to avoid bundling in client
 let cookiesModule: typeof import('next/headers') | null = null;
@@ -38,15 +45,25 @@ export const createServerClient = async () => {
 
   // Use @supabase/ssr so cookies are the canonical storage for sessions/PKCE.
   // Server-side should not auto-refresh tokens or persist sessions in-memory.
+  // In Server Components, cookies().set() throws; no-op so getSession() still works (read-only).
+  const setAll = createSecureSetAll((name, value, options) => {
+    try {
+      cookieStore.set(name, value, options);
+    } catch {
+      // Cookies can only be modified in a Server Action or Route Handler (Next.js).
+      // In layouts/pages we only need to read; ignore write failures.
+    }
+  });
+
   return createSupabaseServerClient(env.supabase.url, env.supabase.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        setAll(
+          cookiesToSet as { name: string; value: string; options?: Record<string, unknown> }[]
+        );
       },
     },
     auth: {
@@ -57,29 +74,53 @@ export const createServerClient = async () => {
   });
 };
 
+/** Parse Cookie header into array of { name, value } for Supabase SSR. */
+function parseCookieHeader(cookieHeader: string | null): { name: string; value: string }[] {
+  if (!cookieHeader || !cookieHeader.trim()) return [];
+  return cookieHeader.split(';').map((part) => {
+    const eq = part.trim().indexOf('=');
+    if (eq <= 0) return { name: part.trim(), value: '' };
+    return {
+      name: part.trim().slice(0, eq).trim(),
+      value: part
+        .trim()
+        .slice(eq + 1)
+        .trim(),
+    };
+  });
+}
+
+/**
+ * Create a Supabase client that reads session from the request Cookie header.
+ * Used when cookies() from next/headers may be empty (e.g. RSC request) but the
+ * incoming request actually has cookies (e.g. navigation request had them).
+ */
+function createServerClientFromCookieHeader(cookieHeader: string | null) {
+  const all = parseCookieHeader(cookieHeader);
+  return createSupabaseServerClient(env.supabase.url, env.supabase.anonKey, {
+    cookies: {
+      getAll: () => all,
+      setAll: () => {},
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
 /**
  * Get current authenticated user on server
  * For Next.js 14, auth is primarily client-side
  * This function makes auth optional to prevent timeouts
  */
 export const getServerUser = async (request?: Request) => {
-  const DEBUG = process.env.NODE_ENV === 'development';
-
   try {
-    // Check if Supabase is configured
     const supabaseAdmin = await getSupabaseAdmin();
-    if (!supabaseAdmin) {
-      if (DEBUG) console.log('[getServerUser] Supabase admin client not configured');
-      return null;
-    }
+    if (!supabaseAdmin) return null;
 
-    // Add timeout to prevent hanging
-    const timeout = new Promise<null>((resolve) =>
-      setTimeout(() => {
-        if (DEBUG) console.log('[getServerUser] Auth check timed out after 2 seconds');
-        resolve(null);
-      }, 2000)
-    );
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
 
     const authCheck = async () => {
       try {
@@ -87,144 +128,96 @@ export const getServerUser = async (request?: Request) => {
         // Empty "Authorization: Bearer " (no token after trim) is invalid — do not attempt validation.
         if (request) {
           const authHeader = request.headers.get('authorization');
-          if (DEBUG)
-            console.log(
-              '[getServerUser] Authorization header:',
-              authHeader ? 'present' : 'missing'
-            );
 
           if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.substring(7).trim();
             if (!token) {
-              // Explicitly invalid: Bearer present but empty
-              if (DEBUG)
-                console.log('[getServerUser] Bearer present but token empty, trying cookies');
+              // Bearer present but empty: fall through to cookies
             } else {
               const { hashToken } = await import('@/lib/utils/token-hash.server');
               const tokenHash = hashToken(token);
-              const { getCachedAuthUser, setCachedAuthUser } =
-                await import('@/lib/cache/auth-cache');
               const cached = getCachedAuthUser(tokenHash);
               if (cached) {
-                if (DEBUG) console.log('[getServerUser] User from auth cache');
+                console.log('[AUTH] getServerUser: ok (Bearer, cached)', {
+                  userId: cached.id.substring(0, 8) + '...',
+                });
                 return cached;
               }
-              if (DEBUG) console.log('[getServerUser] Bearer token found, validating...');
-              const supabaseAdmin = await getSupabaseAdmin();
-              if (supabaseAdmin) {
+              const supabaseAdminForToken = await getSupabaseAdmin();
+              if (supabaseAdminForToken) {
                 const {
                   data: { user },
                   error,
-                } = await supabaseAdmin.auth.getUser(token);
+                } = await supabaseAdminForToken.auth.getUser(token);
                 if (!error && user) {
                   setCachedAuthUser(tokenHash, user);
-                  if (DEBUG)
-                    console.log('[getServerUser] User authenticated via Bearer token:', user.email);
+                  console.log('[AUTH] getServerUser: ok (Bearer)', {
+                    userId: user.id.substring(0, 8) + '...',
+                  });
                   return user;
                 }
-                if (error && DEBUG)
-                  console.log('[getServerUser] Bearer token validation error:', error.message);
               }
+              console.log('[AUTH] getServerUser: Bearer invalid, trying cookies');
               // Bearer invalid: fall through to try cookies
             }
           }
-        } else {
-          if (DEBUG) console.log('[getServerUser] No request object provided');
         }
 
-        // Try to get user from cookies (set by auth callback)
-        try {
-          const cookieStore = await getCookies();
-          const projectRef = env.supabase.url.split('//')[1]?.split('.')[0] || '';
-
-          // Check for access token in cookies
-          const accessTokenKey = `sb-${projectRef}-auth-token`;
-          const accessToken = cookieStore.get(accessTokenKey)?.value;
-          const sessionAccessToken = cookieStore.get('sb-access-token')?.value;
-
-          if (DEBUG) {
-            console.log('[getServerUser] Cookie check:', {
-              hasAccessToken: !!accessToken,
-              hasSessionToken: !!sessionAccessToken,
-              cookieKey: accessTokenKey,
-            });
-          }
-
-          if (accessToken) {
-            if (DEBUG) console.log('[getServerUser] Validating Supabase cookie token...');
-            const supabaseAdmin = await getSupabaseAdmin();
-            if (!supabaseAdmin) {
-              if (DEBUG) console.log('[getServerUser] Supabase admin not configured');
-              return null;
-            }
-            const {
-              data: { user },
-              error,
-            } = await supabaseAdmin.auth.getUser(accessToken);
-            if (error) {
-              if (DEBUG)
-                console.log('[getServerUser] Supabase cookie validation error:', error.message);
-            } else if (user) {
-              if (DEBUG)
-                console.log('[getServerUser] User authenticated via Supabase cookie:', user.email);
-              return user;
-            }
-          }
-
-          // Also check for the session cookies we set in callback
-          if (sessionAccessToken) {
-            if (DEBUG) console.log('[getServerUser] Validating session cookie token...');
-            const supabaseAdmin = await getSupabaseAdmin();
-            if (!supabaseAdmin) {
-              if (DEBUG) console.log('[getServerUser] Supabase admin not configured');
-              return null;
-            }
-            const {
-              data: { user },
-              error,
-            } = await supabaseAdmin.auth.getUser(sessionAccessToken);
-            if (error) {
-              if (DEBUG)
-                console.log('[getServerUser] Session cookie validation error:', error.message);
-            } else if (user) {
-              if (DEBUG)
-                console.log('[getServerUser] User authenticated via session cookie:', user.email);
-              return user;
-            }
-          }
-
-          if (DEBUG && !accessToken && !sessionAccessToken) {
-            console.log('[getServerUser] No auth cookies found');
-          }
-        } catch (cookieError) {
-          if (DEBUG)
-            console.log(
-              '[getServerUser] Cookie check error:',
-              cookieError instanceof Error ? cookieError.message : 'Unknown'
-            );
+        // Prefer Cookie header; fallback to x-middleware-cookie (middleware forwards it so layouts see it).
+        const cookieHeader =
+          request?.headers.get('cookie') ?? request?.headers.get('x-middleware-cookie') ?? null;
+        const hasCookieHeader = !!(cookieHeader && cookieHeader.length > 0);
+        if (process.env.NODE_ENV === 'development' && request) {
+          console.log('[AUTH] getServerUser: cookie check', {
+            hasCookieHeader,
+            cookieLength: cookieHeader?.length ?? 0,
+            hasSb: cookieHeader?.includes('sb-') ?? false,
+          });
         }
+        const supabase = hasCookieHeader
+          ? createServerClientFromCookieHeader(cookieHeader)
+          : await createServerClient();
 
-        if (DEBUG) console.log('[getServerUser] No user found');
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+        if (sessionError || !session?.access_token) {
+          console.log('[AUTH] getServerUser: no session', {
+            hasError: !!sessionError,
+            error: sessionError?.message ?? null,
+            hadCookieHeader: hasCookieHeader,
+          });
+          return null;
+        }
+        const {
+          data: { user },
+          error: userError,
+        } = await supabaseAdmin.auth.getUser(session.access_token);
+        if (!userError && user) {
+          console.log('[AUTH] getServerUser: ok (cookie)', {
+            userId: user.id.substring(0, 8) + '...',
+          });
+          return user;
+        }
+        console.log('[AUTH] getServerUser: getUser failed after session', {
+          hasError: !!userError,
+          error: userError?.message ?? null,
+        });
         return null;
-      } catch (error) {
-        if (DEBUG)
-          console.log(
-            '[getServerUser] Auth check error:',
-            error instanceof Error ? error.message : 'Unknown'
-          );
+      } catch (err) {
+        console.log('[AUTH] getServerUser: exception', {
+          message: err instanceof Error ? err.message : 'unknown',
+        });
         return null;
       }
     };
 
     return await Promise.race([authCheck(), timeout]);
-  } catch (error) {
-    if (DEBUG)
-      console.log(
-        '[getServerUser] Fatal error:',
-        error instanceof Error ? error.message : 'Unknown'
-      );
-    // Graceful failure - return null if auth check fails
-    // This allows the app to work without blocking on auth
+  } catch (err) {
+    console.log('[AUTH] getServerUser: outer exception', {
+      message: err instanceof Error ? err.message : 'unknown',
+    });
     return null;
   }
 };
@@ -243,20 +236,24 @@ export type ServerUserProfileResult = {
  * Uses admin client to bypass RLS policies. Results cached for CACHE_TTL_AUTH_MS.
  */
 export const getServerUserProfile = async (userId: string): Promise<ServerUserProfileResult> => {
-  const DEBUG = process.env.NODE_ENV === 'development';
-  const { getCachedProfile, setCachedProfile } = await import('@/lib/cache/auth-cache');
   const cached = getCachedProfile(userId);
-  if (cached !== null) return cached as ServerUserProfileResult;
+  if (cached !== null) {
+    console.log('[AUTH] getServerUserProfile: ok (cached)', {
+      userId: userId.substring(0, 8) + '...',
+      userType: (cached as ServerUserProfileResult)?.user_type ?? null,
+    });
+    return cached as ServerUserProfileResult;
+  }
 
   const supabaseAdmin = await getSupabaseAdmin();
   if (!supabaseAdmin) {
-    if (DEBUG) console.log('[getServerUserProfile] Supabase admin client not configured');
+    console.log('[AUTH] getServerUserProfile: no admin client', {
+      userId: userId.substring(0, 8) + '...',
+    });
     return null;
   }
 
   try {
-    if (DEBUG) console.log('[getServerUserProfile] Fetching profile for user:', userId);
-
     const { data, error } = await supabaseAdmin
       .from('user_profiles')
       .select('id, user_type, full_name, created_at, updated_at')
@@ -264,24 +261,25 @@ export const getServerUserProfile = async (userId: string): Promise<ServerUserPr
       .single();
 
     if (error) {
-      if (DEBUG)
-        console.log('[getServerUserProfile] Error fetching profile:', error.message, error.code);
+      console.log('[AUTH] getServerUserProfile: not found or error', {
+        userId: userId.substring(0, 8) + '...',
+        error: error.message,
+      });
       return null;
     }
-
-    if (data) setCachedProfile(userId, data);
-    if (DEBUG)
-      console.log(
-        '[getServerUserProfile] Profile found:',
-        data ? { user_type: data.user_type } : 'null'
-      );
+    if (data) {
+      setCachedProfile(userId, data);
+      console.log('[AUTH] getServerUserProfile: ok', {
+        userId: userId.substring(0, 8) + '...',
+        userType: data.user_type,
+      });
+    }
     return data;
-  } catch (error) {
-    if (DEBUG)
-      console.log(
-        '[getServerUserProfile] Exception:',
-        error instanceof Error ? error.message : 'Unknown'
-      );
+  } catch (err) {
+    console.log('[AUTH] getServerUserProfile: exception', {
+      userId: userId.substring(0, 8) + '...',
+      message: err instanceof Error ? err.message : 'unknown',
+    });
     return null;
   }
 };

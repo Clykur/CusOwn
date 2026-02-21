@@ -13,13 +13,14 @@ export const securityMiddleware = async (request: NextRequest): Promise<NextResp
     return tokenBucketResponse;
   }
 
-  // Exempt URL generation endpoints from CSRF (read-only operations)
-  // Still protected by rate limiting and authorization
-  const isUrlGenerationEndpoint =
+  // Exempt: read-only URL generation; webhooks (signature-verified); cron (CRON_SECRET)
+  const isExemptFromCsrf =
     request.nextUrl.pathname === '/api/security/generate-salon-url' ||
-    request.nextUrl.pathname === '/api/security/generate-resource-url';
+    request.nextUrl.pathname === '/api/security/generate-resource-url' ||
+    request.nextUrl.pathname.startsWith('/api/payments/webhook/') ||
+    request.nextUrl.pathname.startsWith('/api/cron/');
 
-  if (!isUrlGenerationEndpoint) {
+  if (!isExemptFromCsrf) {
     const csrfResponse = await csrfProtection(request);
     if (csrfResponse) {
       return csrfResponse;

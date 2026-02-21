@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { signOut, getUserProfile } from '@/lib/supabase/auth';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
-import { supabaseAuth } from '@/lib/supabase/auth';
-import { getUserState } from '@/lib/utils/user-state';
 import { UI_CONTEXT } from '@/config/constants';
+import { useOwnerSession } from '@/components/owner/owner-session-context';
 
 interface NavItem {
   name: string;
@@ -23,7 +21,6 @@ export default function OwnerSidebar({
   sidebarOpen?: boolean;
   setSidebarOpen?: (v: boolean) => void;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const cleanPath = pathname.split('?')[0];
 
@@ -31,56 +28,43 @@ export default function OwnerSidebar({
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
+  const { initialUser } = useOwnerSession();
   const [navigating, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState('');
-  const [userName, setUserName] = useState('');
+
+  const userEmail = initialUser?.email ?? '';
+  const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
 
   useEffect(() => {
     setNavigating(null);
   }, [pathname]);
 
-  // ===============================
-  // Load user + business state
-  // ===============================
+  // Load business list for nav state only; user from layout.
   useEffect(() => {
-    const loadUser = async () => {
-      if (!supabaseAuth) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-
-        if (!session?.user) {
-          setHasBusinesses(false);
-          return;
-        }
-
-        setUserEmail(session.user.email || '');
-
-        try {
-          const profile = await getUserProfile(session.user.id);
-          setUserName((profile as any)?.full_name || session.user.email?.split('@')[0] || 'User');
-        } catch {
-          setUserName(session.user.email?.split('@')[0] || 'User');
-        }
-
-        const state = await getUserState(session.user.id);
-        setHasBusinesses(state.businessCount > 0);
-      } catch {
-        setHasBusinesses(false);
-      } finally {
-        setLoading(false);
-      }
+    if (!initialUser?.id) {
+      setHasBusinesses(false);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/owner/businesses', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelled) return;
+        const list = json?.data;
+        setHasBusinesses(Array.isArray(list) && list.length > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHasBusinesses(false);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
     };
-
-    loadUser();
-  }, [pathname]);
+  }, [pathname, initialUser?.id]);
 
   // ===============================
   // Navigation items (UNCHANGED)
@@ -144,14 +128,6 @@ export default function OwnerSidebar({
     }
 
     return false;
-  };
-
-  // ===============================
-  // Logout
-  // ===============================
-  const handleLogout = async () => {
-    await signOut();
-    router.push('/');
   };
 
   // ===============================
@@ -276,8 +252,8 @@ export default function OwnerSidebar({
                   <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
                 </div>
               </Link>
-              <button
-                onClick={handleLogout}
+              <a
+                href="/api/auth/signout"
                 className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Sign Out"
               >
@@ -289,7 +265,7 @@ export default function OwnerSidebar({
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-              </button>
+              </a>
             </div>
           </div>
         </div>

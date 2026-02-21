@@ -1,0 +1,1031 @@
+{
+  "info": {
+    "name": "CusOwn API",
+    "_postman_id": "cusown-api-full",
+    "description": "# CusOwn API – Postman Collection\n\n## How to use\n\n1. **Environment:** Select **CusOwn Local** and set `baseUrl` (e.g. `http://localhost:3000`) and `cron_secret` (from `.env.local`) for cron requests.\n\n2. **Testing order:** Run folders in order: **01 Setup** → **02 Auth** (or use browser login) → **03 User** → then **04 Salons**, **05 Slots**, **06 Bookings** as needed.\n\n3. **Session auth:** Protected routes need session cookies. Sign in at `http://localhost:3000/auth/login` in a browser, then in Postman either send cookies automatically (same domain) or copy the session cookies from DevTools → Application → Cookies.\n\n4. **CSRF:** For any POST/PUT/PATCH/DELETE (except cron and webhooks), run **01 Setup → Get CSRF token** first. The script saves the token; requests that need it use the `x-csrf-token` header.\n\n5. **Cron:** Use header `Authorization: Bearer {{cron_secret}}`; set `cron_secret` in the environment.\n\n6. **Variables:** Set `salon_id`, `slot_id`, `booking_id` in the collection or environment when testing flows. Some requests auto-save `booking_id` after create.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "csrf_token", "value": "" },
+    { "key": "booking_id", "value": "" },
+    { "key": "slot_id", "value": "" },
+    { "key": "salon_id", "value": "" },
+    { "key": "booking_link", "value": "" },
+    { "key": "payment_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Setup & Health",
+      "description": "Run these first. Get CSRF token before any POST/PUT/PATCH/DELETE (except cron and webhooks).",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health",
+            "description": "**Purpose:** Check application and database health.\n**Auth:** None.\n**Returns:** success, data with health status."
+          }
+        },
+        {
+          "name": "Get CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('csrf_token', json.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/csrf-token",
+            "description": "**Purpose:** Get a CSRF token for state-changing requests.\n**Auth:** None.\n**When:** Run once before POST/PUT/PATCH/DELETE (cron and webhooks are exempt).\n**Note:** Script saves token to variable; use header x-csrf-token and send cookies for same origin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Auth",
+      "description": "Authentication. Session is cookie-based; use browser login then send cookies in Postman for protected routes.",
+      "item": [
+        {
+          "name": "Login (OAuth redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/login?role=customer",
+            "description": "**Purpose:** Start Google OAuth login; redirects to Google.\n**Auth:** None (use in browser to obtain session cookies).\n**Query:** role = owner | customer (optional). redirect_to = URL (optional)."
+          }
+        },
+        {
+          "name": "Set pending role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"customer\"\n}" },
+            "url": "{{baseUrl}}/api/auth/set-pending-role",
+            "description": "**Purpose:** Set pending role cookie before OAuth (used when role is in URL).\n**Auth:** None.\n**Body:** role (string) = owner | customer."
+          }
+        },
+        {
+          "name": "Session (current user)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/session",
+            "description": "**Purpose:** Return current session: user and profile.\n**Auth:** Session cookies required. Returns 401 if not logged in."
+          }
+        },
+        {
+          "name": "Sign out (GET redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/signout",
+            "description": "**Purpose:** Sign out and redirect to login page. Use in browser.\n**Auth:** Session cookies."
+          }
+        },
+        {
+          "name": "Sign out (POST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/auth/signout",
+            "description": "**Purpose:** Sign out; returns JSON { success: true }.\n**Auth:** Session cookies."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - User",
+      "description": "Current user state, profile, and role. All require session auth.",
+      "item": [
+        {
+          "name": "User state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/user/state",
+            "description": "**Purpose:** Get current user state (e.g. canAccessOwnerDashboard) for UI.\n**Auth:** Session required."
+          }
+        },
+        {
+          "name": "User profile (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/user/profile",
+            "description": "**Purpose:** Get current user profile.\n**Auth:** Session required."
+          }
+        },
+        {
+          "name": "User profile (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Your Name\",\n  \"phone_number\": \"+919876543210\"\n}"
+            },
+            "url": "{{baseUrl}}/api/user/profile",
+            "description": "**Purpose:** Update current user profile.\n**Auth:** Session required.\n**Body:** full_name (string, min 2 chars), phone_number (E.164 optional)."
+          }
+        },
+        {
+          "name": "Update role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"owner\"\n}" },
+            "url": "{{baseUrl}}/api/user/update-role",
+            "description": "**Purpose:** Set user role to owner or customer.\n**Auth:** Session required.\n**Body:** role (string) = owner | customer."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Salons",
+      "description": "Salon listing, locations, and booking-link public data.",
+      "item": [
+        {
+          "name": "Salons list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/salons/list",
+            "description": "**Purpose:** List salons. Query params per implementation.\n**Auth:** Typically public or optional."
+          }
+        },
+        {
+          "name": "Salons locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/salons/locations?location=",
+            "description": "**Purpose:** Get salon locations; optional location filter.\n**Auth:** Public.\n**Query:** location (optional string, max 200 chars)."
+          }
+        },
+        {
+          "name": "Salon by booking link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/salons/{{booking_link}}",
+            "description": "**Purpose:** Get salon by booking link (slug or identifier).\n**Auth:** Public.\n**Path:** booking_link (replace with actual link/slug)."
+          }
+        },
+        {
+          "name": "Salon QR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/salons/{{booking_link}}/qr",
+            "description": "**Purpose:** Get QR code or data for salon booking link.\n**Auth:** Per implementation.\n**Path:** booking_link."
+          }
+        },
+        {
+          "name": "Create salon",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/salons",
+            "description": "**Purpose:** Create a salon/business. Body fields per API.\n**Auth:** Required (owner/admin).\n**Body:** Check API for allowed fields."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Slots",
+      "description": "Slots: get by salon/date, reserve, release. Set salon_id and slot_id in variables.",
+      "item": [
+        {
+          "name": "Get slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/slots?salon_id={{salon_id}}&date=2025-02-21",
+            "description": "**Purpose:** Get available slots for a salon and date.\n**Auth:** None.\n**Query:** salon_id (required, UUID), date (YYYY-MM-DD, default today)."
+          }
+        },
+        {
+          "name": "Create slots",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salon_id\": \"{{salon_id}}\",\n  \"date\": \"2025-02-21\"\n}"
+            },
+            "url": "{{baseUrl}}/api/slots",
+            "description": "**Purpose:** Generate/create slots for a salon and date. Body per API.\n**Auth:** Required (owner/admin)."
+          }
+        },
+        {
+          "name": "Get slot by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/slots/{{slot_id}}",
+            "description": "**Purpose:** Get a single slot by UUID.\n**Auth:** Per implementation.\n**Path:** slot_id (UUID)."
+          }
+        },
+        {
+          "name": "Reserve slot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/slots/{{slot_id}}/reserve",
+            "description": "**Purpose:** Reserve a slot (holds it for booking).\n**Auth:** Optional (user or anonymous).\n**Path:** slot_id (UUID). Optional header: x-request-id (UUID) for idempotency."
+          }
+        },
+        {
+          "name": "Release slot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/slots/{{slot_id}}/release",
+            "description": "**Purpose:** Release a reserved slot.\n**Auth:** Per implementation.\n**Path:** slot_id (UUID)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Bookings",
+      "description": "Create and manage bookings. Use booking_id from Create booking or set it manually.",
+      "item": [
+        {
+          "name": "Create booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.booking && json.data.booking.id) {",
+                  "  pm.collectionVariables.set('booking_id', json.data.booking.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salon_id\": \"{{salon_id}}\",\n  \"slot_id\": \"{{slot_id}}\",\n  \"customer_name\": \"Test Customer\",\n  \"customer_phone\": \"+919876543210\",\n  \"service_ids\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/bookings",
+            "description": "**Purpose:** Create a new booking.\n**Auth:** Optional (customer_user_id set if logged in).\n**Body:** salon_id, slot_id (UUIDs), customer_name, customer_phone, service_ids (array). Optional header: x-request-id (UUID) for idempotency.\n**Note:** On success, booking_id is saved to collection variable."
+          }
+        },
+        {
+          "name": "Get booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}?token=",
+            "description": "**Purpose:** Get booking details by UUID. Optional signed token for public status page.\n**Auth:** Optional; with token no auth; otherwise customer/owner/admin.\n**Path:** id (UUID). Query: token (optional)."
+          }
+        },
+        {
+          "name": "Get booking by booking ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/booking-id/{{booking_id}}",
+            "description": "**Purpose:** Get booking by internal booking ID (path param bookingId).\n**Auth:** Customer (own), owner, or admin."
+          }
+        },
+        {
+          "name": "Bookings by salon",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/salon/{{salon_id}}",
+            "description": "**Purpose:** List bookings for a salon.\n**Auth:** Owner/admin or scoped.\n**Path:** salonId (UUID)."
+          }
+        },
+        {
+          "name": "Accept booking",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/accept?token=",
+            "description": "**Purpose:** Accept a pending booking (owner/admin or signed link).\n**Auth:** Owner/admin or query token (accept link).\n**Path:** id (UUID). Query: token (optional)."
+          }
+        },
+        {
+          "name": "Reject booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Optional reason\"\n}" },
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/reject?token=",
+            "description": "**Purpose:** Reject a pending booking.\n**Auth:** Owner/admin or signed token.\n**Path:** id. Query: token (optional). Body: reason (optional)."
+          }
+        },
+        {
+          "name": "Cancel booking",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/cancel",
+            "description": "**Purpose:** Cancel a booking. Idempotent if already cancelled.\n**Auth:** Customer (own), owner, or admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Reschedule booking (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_slot_id\": \"{{slot_id}}\",\n  \"reason\": \"Optional reason\",\n  \"rescheduled_by\": \"customer\"\n}"
+            },
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/reschedule",
+            "description": "**Purpose:** Reschedule booking to a new slot.\n**Auth:** Customer (own) or owner.\n**Body:** new_slot_id (UUID), reason (optional), rescheduled_by = customer | owner."
+          }
+        },
+        {
+          "name": "Reschedule booking (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/reschedule",
+            "description": "**Purpose:** Get reschedule options or info for a booking. Params per API.\n**Auth:** Customer/owner."
+          }
+        },
+        {
+          "name": "No-show booking",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/no-show",
+            "description": "**Purpose:** Mark booking as no-show.\n**Auth:** Owner/admin.\n**Path:** id (UUID)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Businesses",
+      "description": "Business search, services, and downtime (holidays/closures).",
+      "item": [
+        {
+          "name": "Business search",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": null,\n  \"longitude\": null,\n  \"city\": \"\",\n  \"area\": \"\",\n  \"category\": \"salon\"\n}"
+            },
+            "url": "{{baseUrl}}/api/businesses/search",
+            "description": "**Purpose:** Search businesses by location/category. Body: latitude, longitude, city, area, category (e.g. salon).\n**Auth:** Optional. Optional header: x-request-id (UUID)."
+          }
+        },
+        {
+          "name": "Business services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/businesses/{{salon_id}}/services",
+            "description": "**Purpose:** Get services for a business.\n**Auth:** Per implementation.\n**Path:** id (business UUID)."
+          }
+        },
+        {
+          "name": "Business downtime holidays (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/businesses/{{salon_id}}/downtime/holidays",
+            "description": "**Purpose:** List holiday downtime for a business.\n**Path:** business id (UUID)."
+          }
+        },
+        {
+          "name": "Business downtime holidays (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/businesses/{{salon_id}}/downtime/holidays",
+            "description": "**Purpose:** Add holiday downtime. Body per API.\n**Path:** business id (UUID)."
+          }
+        },
+        {
+          "name": "Business downtime closures (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/businesses/{{salon_id}}/downtime/closures",
+            "description": "**Purpose:** List closures for a business.\n**Path:** business id (UUID)."
+          }
+        },
+        {
+          "name": "Business downtime closures (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/businesses/{{salon_id}}/downtime/closures",
+            "description": "**Purpose:** Add closure. Body per API.\n**Path:** business id (UUID)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Payments",
+      "description": "Payment initiate, verify, create, status. Webhooks are called by providers.",
+      "item": [
+        {
+          "name": "Payment initiate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"nonce\": \"unique-nonce-from-csrf-or-server\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payments/initiate",
+            "description": "**Purpose:** Start payment for a booking.\n**Auth:** Session required (customer or owner).\n**Body:** booking_id (UUID), nonce (string, from nonce flow)."
+          }
+        },
+        {
+          "name": "Payment verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"payment_id\": \"\",\n  \"order_id\": \"\"\n}" },
+            "url": "{{baseUrl}}/api/payments/verify",
+            "description": "**Purpose:** Verify payment status after provider callback. Body per provider (e.g. payment_id, order_id).\n**Auth:** Per implementation."
+          }
+        },
+        {
+          "name": "Payment create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"booking_id\": \"{{booking_id}}\"\n}" },
+            "url": "{{baseUrl}}/api/payments/create",
+            "description": "**Purpose:** Create payment record for a booking. Body per API.\n**Auth:** Required."
+          }
+        },
+        {
+          "name": "Payment status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/payments/{{payment_id}}/status",
+            "description": "**Purpose:** Get payment status by payment ID.\n**Path:** paymentId (replace with actual ID)."
+          }
+        },
+        {
+          "name": "Webhook Razorpay (reference)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/payments/webhook/razorpay",
+            "description": "**Purpose:** Razorpay webhook; called by Razorpay. Signature verified. Do not call manually unless testing with valid signature.\n**Auth:** Webhook signature."
+          }
+        },
+        {
+          "name": "Webhook UPI (reference)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/payments/webhook/upi",
+            "description": "**Purpose:** UPI webhook; called by payment provider. Do not call manually unless testing.\n**Auth:** Webhook secret."
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Notifications",
+      "description": "Notification preferences and history.",
+      "item": [
+        {
+          "name": "Notification preferences (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/preferences?customer_phone=",
+            "description": "**Purpose:** Get notification preferences for current user or by customer_phone.\n**Auth:** Session or query customer_phone."
+          }
+        },
+        {
+          "name": "Notification preferences (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_phone\": \"\",\n  \"email_enabled\": true,\n  \"sms_enabled\": true,\n  \"whatsapp_enabled\": true,\n  \"email_address\": \"\",\n  \"phone_number\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/notifications/preferences",
+            "description": "**Purpose:** Update notification preferences.\n**Auth:** Session or body customer_phone.\n**Body:** customer_phone, email_enabled, sms_enabled, whatsapp_enabled, email_address, phone_number."
+          }
+        },
+        {
+          "name": "Notification history by booking",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/notifications/history/{{booking_id}}",
+            "description": "**Purpose:** Get notification history for a booking.\n**Path:** bookingId (UUID).\n**Auth:** Per implementation."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Security",
+      "description": "Generate signed URLs for salon and resource access. CSRF exempt.",
+      "item": [
+        {
+          "name": "Generate salon URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salonId\": \"{{salon_id}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/security/generate-salon-url",
+            "description": "**Purpose:** Generate a signed URL for a salon (e.g. booking page).\n**Auth:** Per implementation.\n**Body:** salonId (UUID)."
+          }
+        },
+        {
+          "name": "Generate resource URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resourceType\": \"booking-status\",\n  \"resourceId\": \"{{booking_id}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/security/generate-resource-url",
+            "description": "**Purpose:** Generate signed URL for a resource. resourceType: salon, booking, booking-status, owner-dashboard, accept, reject, admin-business, admin-booking.\n**Body:** resourceType (string), resourceId (string/UUID)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Admin",
+      "description": "Admin-only endpoints. Require admin session (cookies).",
+      "item": [
+        {
+          "name": "Admin check status (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/check-status",
+            "description": "**Purpose:** Check if current user is admin.\n**Auth:** Admin session."
+          }
+        },
+        {
+          "name": "Admin check status (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/admin/check-status",
+            "description": "**Purpose:** Admin check with body. Body per API.\n**Auth:** Admin session."
+          }
+        },
+        {
+          "name": "Admin bookings list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/bookings?limit=20&offset=0&business_id=&status=",
+            "description": "**Purpose:** List all bookings with filters.\n**Auth:** Admin.\n**Query:** limit, offset, business_id, status."
+          }
+        },
+        {
+          "name": "Admin booking by ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/bookings/{{booking_id}}",
+            "description": "**Purpose:** Get single booking with relations.\n**Auth:** Admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Admin booking (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmed\",\n  \"customer_name\": \"\",\n  \"customer_phone\": \"\",\n  \"cancellation_reason\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/bookings/{{booking_id}}",
+            "description": "**Purpose:** Update booking. Allowed: status (pending|confirmed|rejected|cancelled), customer_name, customer_phone, cancellation_reason.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin booking (POST action)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"resend_notification\"\n}" },
+            "url": "{{baseUrl}}/api/admin/bookings/{{booking_id}}",
+            "description": "**Purpose:** Admin action on booking. action = resend_notification (for confirmed/rejected).\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin booking lifecycle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/bookings/{{booking_id}}/lifecycle",
+            "description": "**Purpose:** Get booking lifecycle/history.\n**Auth:** Admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Admin audit logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/audit-logs?limit=20&offset=0&admin_user_id=&action_type=&entity_type=&entity_id=",
+            "description": "**Purpose:** Get audit logs with filters.\n**Auth:** Admin.\n**Query:** limit, offset, admin_user_id, action_type, entity_type, entity_id."
+          }
+        },
+        {
+          "name": "Admin businesses list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/businesses",
+            "description": "**Purpose:** List all businesses.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin business by ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/businesses/{{salon_id}}",
+            "description": "**Purpose:** Get one business by ID.\n**Auth:** Admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Admin business (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/admin/businesses/{{salon_id}}",
+            "description": "**Purpose:** Update business. Body fields per API.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin business (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "url": "{{baseUrl}}/api/admin/businesses/{{salon_id}}",
+            "description": "**Purpose:** Delete (or suspend) business. Use with caution.\n**Auth:** Admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Admin users list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/users",
+            "description": "**Purpose:** List users.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/metrics",
+            "description": "**Purpose:** Admin dashboard metrics (booking funnel, payment counts, etc.).\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin system metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/system-metrics",
+            "description": "**Purpose:** System-level metrics.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin revenue metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/revenue-metrics",
+            "description": "**Purpose:** Revenue metrics.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin trends",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/trends",
+            "description": "**Purpose:** Trends data.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin booking funnel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/booking-funnel",
+            "description": "**Purpose:** Booking funnel metrics.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin business health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/business-health",
+            "description": "**Purpose:** Business health metrics.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin export bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/export/bookings?limit=100&offset=0",
+            "description": "**Purpose:** Export bookings (e.g. CSV). Query: limit, offset, filters per API.\n**Auth:** Admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Owner",
+      "description": "Owner dashboard and analytics. Requires owner session.",
+      "item": [
+        {
+          "name": "Owner businesses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/owner/businesses",
+            "description": "**Purpose:** List businesses owned by current user.\n**Auth:** Owner."
+          }
+        },
+        {
+          "name": "Owner dashboard stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/owner/dashboard-stats",
+            "description": "**Purpose:** Dashboard statistics for owner.\n**Auth:** Owner."
+          }
+        },
+        {
+          "name": "Owner analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/owner/analytics",
+            "description": "**Purpose:** Analytics data for owner.\n**Auth:** Owner."
+          }
+        },
+        {
+          "name": "Owner analytics export",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/owner/analytics/export",
+            "description": "**Purpose:** Export analytics. Format per API.\n**Auth:** Owner."
+          }
+        },
+        {
+          "name": "Owner no-show analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/owner/no-show/analytics",
+            "description": "**Purpose:** No-show analytics.\n**Auth:** Owner."
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Customer",
+      "description": "Customer-scoped endpoints. Requires customer session.",
+      "item": [
+        {
+          "name": "Customer bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customer/bookings",
+            "description": "**Purpose:** List current customer's bookings.\n**Auth:** Customer session."
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Cron",
+      "description": "Cron jobs. Require header: Authorization: Bearer {{cron_secret}}. Set cron_secret in environment.",
+      "item": [
+        {
+          "name": "Cron expire bookings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/cron/expire-bookings",
+            "description": "**Purpose:** Expire old pending bookings.\n**Auth:** CRON_SECRET (Bearer token)."
+          }
+        },
+        {
+          "name": "Cron expire payments",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/cron/expire-payments",
+            "description": "**Purpose:** Expire old payments.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron cleanup reservations",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/cron/cleanup-reservations",
+            "description": "**Purpose:** Clean up expired slot reservations.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron generate slots",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{cron_secret}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/cron/generate-slots",
+            "description": "**Purpose:** Generate slots for upcoming dates. Body per API.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron send reminders",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/cron/send-reminders",
+            "description": "**Purpose:** Send booking reminders.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron trim metric timings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/cron/trim-metric-timings",
+            "description": "**Purpose:** Trim old metric timings.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron health check (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/cron/health-check",
+            "description": "**Purpose:** Cron health check endpoint.\n**Auth:** May be public or require CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron health check (POST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/cron/health-check",
+            "description": "**Purpose:** Cron health check (POST).\n**Auth:** Per implementation."
+          }
+        },
+        {
+          "name": "Bookings expire (manual/cron)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "url": "{{baseUrl}}/api/bookings/expire",
+            "description": "**Purpose:** Same as cron/expire-bookings; expire old pending bookings.\n**Auth:** CRON_SECRET."
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - Debug & Metrics",
+      "description": "Debug and metrics endpoints. Use only in development.",
+      "item": [
+        {
+          "name": "Debug auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/debug/auth",
+            "description": "**Purpose:** Debug auth state (user/session). Use only in development.\n**Auth:** None or dev-only."
+          }
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/metrics",
+            "description": "**Purpose:** Get metrics (booking funnel, payment counts, etc.).\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Metrics success",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/metrics/success",
+            "description": "**Purpose:** Record or return success metrics. Params per API.\n**Auth:** Per implementation."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,58 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/utils/navigation';
-import { UI_CONTEXT } from '@/config/constants';
-import { supabaseAuth } from '@/lib/supabase/auth';
-import { shouldRedirectUser } from '@/lib/utils/user-state';
-import { HomeSkeleton } from '@/components/ui/skeleton';
+import { PublicHeader } from '@/components/layout/public-header';
 
+/**
+ * Public landing page. No auth required; zero client session fetch.
+ * Redirects to login with error message when OAuth fails and user lands on /?error=...
+ */
 export default function Home() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const checkUserAndRedirect = async () => {
-      if (!supabaseAuth) {
-        setLoading(false);
-        setCheckingAuth(false);
-        return;
-      }
-
-      try {
-        const {
-          data: { session },
-        } = await supabaseAuth.auth.getSession();
-
-        if (session?.user) {
-          const redirectResult = await shouldRedirectUser(session.user.id);
-
-          if (redirectResult.shouldRedirect && redirectResult.redirectUrl) {
-            router.push(redirectResult.redirectUrl);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Error checking user session:', error);
-      } finally {
-        setLoading(false);
-        setCheckingAuth(false);
-      }
-    };
-
-    checkUserAndRedirect();
-  }, [router]);
-
-  if (checkingAuth || loading) {
-    return <HomeSkeleton />;
-  }
+    const error = searchParams.get('error');
+    const errorCode = searchParams.get('error_code');
+    const errorDesc = searchParams.get('error_description');
+    if (error || errorCode === 'bad_oauth_state' || errorDesc) {
+      const msg = errorDesc || error || 'Sign-in was cancelled or expired. Please try again.';
+      router.replace(
+        `${typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN() : '/auth/login'}?error=${encodeURIComponent(msg)}`
+      );
+    }
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen bg-white">
+      <PublicHeader />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-gray-50 to-white pt-20 pb-20 sm:pt-28 sm:pb-28 overflow-hidden">
         {/* Background decorative elements */}

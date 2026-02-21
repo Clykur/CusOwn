@@ -30,7 +30,10 @@ export type AuditActionType =
   | 'payment_refunded'
   | 'admin_revenue_export'
   | 'admin_health_score_view'
-  | 'admin_funnel_analytics_view';
+  | 'admin_funnel_analytics_view'
+  | 'role_changed'
+  | 'admin_access_denied'
+  | 'admin_login';
 
 export type AuditEntityType = 'business' | 'user' | 'booking' | 'system' | 'slot' | 'payment';
 

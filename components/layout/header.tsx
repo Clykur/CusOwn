@@ -23,16 +23,17 @@ function Header() {
 
     const loadState = async () => {
       try {
-        const { supabaseAuth } = await import('@/lib/supabase/auth');
-        const { data } = await supabaseAuth.auth.getSession();
-        const userId = data?.session?.user?.id || null;
-
-        const { getUserState } = await import('@/lib/utils/user-state');
-        const state = await getUserState(userId);
-
+        const stateRes = await fetch('/api/user/state', { credentials: 'include' });
+        if (!stateRes.ok) {
+          if (!mounted) return;
+          setUserState(null);
+          return;
+        }
+        const json = await stateRes.json();
+        const state = json?.data;
         if (!mounted) return;
-        setUserState(state);
-      } catch (err) {
+        setUserState(state ?? null);
+      } catch {
         if (!mounted) return;
         setUserState(null);
       } finally {

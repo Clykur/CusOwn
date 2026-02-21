@@ -1,33 +1,21 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { signOut } from '@/lib/supabase/auth';
-
 export default function AdminHeader({ title, subtitle }: { title?: string; subtitle?: string }) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/');
-    } catch (err) {
-      console.error('Logout failed:', err);
-      alert('Failed to logout. Please try again.');
-      console.error('Logout failed:', err);
-    }
-  };
-
   return (
-    <div className="mb-8 flex justify-between items-start">
+    <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
       <div>
-        {title && <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>}
-        {subtitle && <p className="text-gray-600">{subtitle}</p>}
+        {title && (
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            {title}
+          </h1>
+        )}
+        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
       </div>
-      <button
-        onClick={handleLogout}
-        className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
+      <a
+        href="/api/auth/signout"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -36,7 +24,7 @@ export default function AdminHeader({ title, subtitle }: { title?: string; subti
           />
         </svg>
         Logout
-      </button>
+      </a>
     </div>
   );
 }

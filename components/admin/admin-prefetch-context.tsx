@@ -20,15 +20,15 @@ const AdminPrefetchContext = createContext<PrefetchContextValue | null>(null);
 
 export function AdminPrefetchProvider({
   children,
-  token,
+  sessionReady,
 }: {
   children: React.ReactNode;
-  token: string | null;
+  sessionReady: boolean;
 }) {
   const prefetchTab = useCallback(
     (tab: string) => {
-      if (!token) return;
-      const opts = { token, credentials: 'include' as RequestCredentials };
+      if (!sessionReady) return;
+      const opts = { credentials: 'include' as RequestCredentials };
       switch (tab) {
         case 'businesses':
           if (getAdminCached(ADMIN_CACHE_KEYS.BUSINESSES)) return;
@@ -104,7 +104,7 @@ export function AdminPrefetchProvider({
           break;
       }
     },
-    [token]
+    [sessionReady]
   );
 
   return (

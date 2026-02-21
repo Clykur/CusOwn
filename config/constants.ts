@@ -137,6 +137,12 @@ export const ERROR_MESSAGES = {
   REMINDER_NOT_FOUND: 'Reminder not found',
   REMINDER_ALREADY_SENT: 'Reminder already sent',
   RATE_LIMIT_EXCEEDED: 'Too many requests. Please try again later.',
+  UNAUTHORIZED: 'Unauthorized',
+  IDEMPOTENCY_KEY_REQUIRED: 'Idempotency key required: send x-idempotency-key header',
+  USER_BLOCK_FAILED: 'Failed to block user',
+  USER_UNBLOCK_FAILED: 'Failed to unblock user',
+  USER_DELETE_FAILED: 'Failed to delete user',
+  CANNOT_DELETE_SELF: 'You cannot delete your own account',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -149,6 +155,9 @@ export const SUCCESS_MESSAGES = {
   BOOKING_REJECTED: 'Booking rejected successfully',
   BOOKING_CANCELLED: 'Booking cancelled successfully',
   REMINDER_SENT: 'Reminder sent successfully',
+  USER_BLOCKED: 'User blocked successfully',
+  USER_UNBLOCKED: 'User unblocked successfully',
+  USER_DELETED: 'User deleted successfully',
 } as const;
 
 /** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */
@@ -262,18 +271,32 @@ export const TOKEN_BUCKET_ADMIN_CAPACITY = 80;
 export const TOKEN_BUCKET_ADMIN_REFILL_PER_SEC = 15;
 export const TOKEN_BUCKET_EXPORT_CAPACITY = 10;
 export const TOKEN_BUCKET_EXPORT_REFILL_PER_SEC = 1;
+/** Auth endpoints (login initiation): stricter to prevent abuse. */
+export const TOKEN_BUCKET_AUTH_CAPACITY = 10;
+export const TOKEN_BUCKET_AUTH_REFILL_PER_SEC = 0.5;
 
 /** Export: rate limit tier (max date range uses ADMIN_ANALYTICS_MAX_DAYS). */
 export const EXPORT_RATE_LIMIT_REQUESTS_PER_MIN = 5;
 
 /** Idempotency: header name and feature flag. */
 export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
+/** Booking create: require this header for idempotent create. */
+export const BOOKING_IDEMPOTENCY_HEADER = 'x-idempotency-key';
 export const IDEMPOTENCY_ENABLED = true;
 
 /** Client retry: single retry with backoff (ms). */
 export const CLIENT_RETRY_BACKOFF_MS = 500;
+/** Admin fetch: max number of retries (0 = no retry, 1 = one retry after first attempt). Never unlimited. */
+export const ADMIN_FETCH_MAX_RETRIES = 1;
 
 /** Admin session: proactive refresh interval so token stays valid. */
 export const ADMIN_SESSION_REFRESH_INTERVAL_MS = 55 * 60 * 1000; // 55 min (before default 1h JWT expiry)
 /** Auth cookie max-age (seconds) so admin can stay logged in 24h. Set JWT expiry to 86400 in Supabase Dashboard for 24h. */
 export const AUTH_COOKIE_MAX_AGE_SECONDS = 86400; // 24 hours
+
+/** Pending role during OAuth: set on login when ?role=, read/cleared in callback only. Never override admin. */
+export const AUTH_PENDING_ROLE_COOKIE = 'cusown_pending_role';
+export const AUTH_PENDING_ROLE_MAX_AGE_SECONDS = 300; // 5 min
+
+/** Client: debounce Supabase auth refresh_token requests to avoid 429. */
+export const AUTH_REFRESH_DEBOUNCE_MS = 60_000; // 1 min

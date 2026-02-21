@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { supabaseAuth, isAdmin } from '@/lib/supabase/auth';
+import { getServerSessionClient } from '@/lib/auth/server-session-client';
+import { isAdmin } from '@/lib/supabase/auth';
 // userService is imported dynamically to avoid bundling server-only code
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
@@ -36,25 +37,15 @@ function SelectRoleContent() {
     // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
 
-    if (!supabaseAuth) {
-      setLoading(false);
-      return;
-    }
     const run = async () => {
-      const {
-        data: { session },
-      } = await supabaseAuth.auth.getSession();
-
-      // Not logged in → stay on role selection
-      if (!session?.user) {
+      const { user: sessionUser } = await getServerSessionClient();
+      if (!sessionUser) {
         setLoading(false);
         return;
       }
+      setUser(sessionUser);
 
-      setUser(session.user);
-
-      // Admin → admin dashboard
-      const adminCheck = await isAdmin(session.user.id);
+      const adminCheck = await isAdmin(sessionUser.id);
       if (adminCheck) {
         router.replace(ROUTES.ADMIN_DASHBOARD);
         return;
@@ -62,7 +53,7 @@ function SelectRoleContent() {
 
       try {
         const { getUserState } = await import('@/lib/utils/user-state');
-        const state = await getUserState(session.user.id);
+        const state = await getUserState(sessionUser.id);
 
         const isOwner = state.businessCount >= 1;
 
@@ -113,22 +104,10 @@ function SelectRoleContent() {
     }
 
     try {
-      const {
-        data: { session },
-      } = await supabaseAuth!.auth.getSession();
-
-      if (!session) return;
-
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
-      // Update role (non-blocking for redirect logic)
       await fetch('/api/user/update-role', {
         method: 'POST',
         headers,

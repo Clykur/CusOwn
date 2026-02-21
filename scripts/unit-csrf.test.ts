@@ -146,12 +146,14 @@ export async function runUnitCsrfTests(): Promise<void> {
     assert(status === 403, `Expected status 403, got ${status}`);
   });
 
-  runTest('should_csrfProtection_POST_cross_origin_return_null', async () => {
+  runTest('should_csrfProtection_POST_cross_origin_return_403', async () => {
     const req = createMockRequest('POST', 'a', 'a');
     (req as any).url = 'https://example.com/api/action';
     (req as any).headers = { get: () => null };
     const result = await csrfProtection(req as any);
-    assert(result === null, 'Cross-origin should pass through');
+    assert(result !== null, 'Cross-origin state-changing request must be rejected');
+    const status = (result as any)?.status;
+    assert(status === 403, `Expected 403, got ${status}`);
   });
 
   runTest('should_csrfProtection_GET_with_existing_token_return_response', async () => {

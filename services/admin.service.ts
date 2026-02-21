@@ -323,6 +323,97 @@ export class AdminService {
     return usersWithDetails;
   }
 
+  /** Get a single user by id for admin user detail page. */
+  async getAdminUserById(userId: string): Promise<any> {
+    const supabase = requireSupabaseAdmin();
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') throw new Error('User not found');
+      throw new Error(`Failed to fetch user: ${error.message}`);
+    }
+    if (!profile) throw new Error('User not found');
+
+    const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
+    const email = authUser?.user?.email ?? '';
+    const isBanned =
+      typeof (authUser?.user as { banned_until?: string } | undefined)?.banned_until === 'string';
+
+    const { data: ownerBusinesses } = await supabase
+      .from('businesses')
+      .select('id, salon_name, booking_link, owner_user_id')
+      .eq('owner_user_id', profile.id);
+    const { count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_user_id', profile.id);
+
+    return {
+      ...profile,
+      email,
+      is_banned: isBanned,
+      businesses: ownerBusinesses ?? [],
+      bookingCount: count ?? 0,
+    };
+  }
+
+  /** Block user (Supabase Auth ban). Blocked users cannot sign in. */
+  async blockUser(userId: string): Promise<void> {
+    const supabase = requireSupabaseAdmin();
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      ban_duration: '876600h',
+    } as { ban_duration: string });
+    if (error) throw new Error(error.message || 'Failed to block user');
+  }
+
+  /** Unblock user (Supabase Auth unban). */
+  async unblockUser(userId: string): Promise<void> {
+    const supabase = requireSupabaseAdmin();
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      ban_duration: 'none',
+    } as { ban_duration: string });
+    if (error) throw new Error(error.message || 'Failed to unblock user');
+  }
+
+  /** Delete user from Auth (cascades depend on DB FKs). Cannot delete self. */
+  async deleteUser(userId: string, requestingAdminId: string): Promise<void> {
+    if (userId === requestingAdminId) throw new Error('Cannot delete your own account');
+    const supabase = requireSupabaseAdmin();
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    if (error) throw new Error(error.message || 'Failed to delete user');
+  }
+
+  /** Update admin-editable profile fields (admin_note, user_type). */
+  async updateAdminUserProfile(
+    userId: string,
+    updates: { admin_note?: string | null; user_type?: string }
+  ): Promise<any> {
+    const supabase = requireSupabaseAdmin();
+    const body: Record<string, unknown> = {};
+    if (updates.admin_note !== undefined) body.admin_note = updates.admin_note;
+    if (updates.user_type !== undefined) body.user_type = updates.user_type;
+    if (Object.keys(body).length === 0) return this.getAdminUserById(userId);
+
+    const validTypes = ['owner', 'customer', 'both', 'admin'];
+    if (body.user_type !== undefined && !validTypes.includes(body.user_type as string)) {
+      throw new Error('Invalid user_type');
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(body)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message || 'Failed to update user');
+    return data;
+  }
+
   async getAllBookings(filters?: {
     businessId?: string;
     status?: string;

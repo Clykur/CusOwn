@@ -3,7 +3,10 @@
 let salonUrlCache: Map<string, { url: string; timestamp: number }> = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-export const getSecureSalonUrlClient = async (salonId: string, forceRefresh = false): Promise<string> => {
+export const getSecureSalonUrlClient = async (
+  salonId: string,
+  forceRefresh = false
+): Promise<string> => {
   // Validate salonId
   if (!salonId || typeof salonId !== 'string') {
     console.error('[CLIENT_URL_GEN] Invalid salonId provided:', salonId);
@@ -12,13 +15,20 @@ export const getSecureSalonUrlClient = async (salonId: string, forceRefresh = fa
 
   const startTime = Date.now();
   const salonIdPreview = salonId.length > 8 ? salonId.substring(0, 8) + '...' : salonId;
-  console.log('[CLIENT_URL_GEN] Starting client-side URL generation for salon:', salonIdPreview, 'forceRefresh:', forceRefresh);
+  console.log(
+    '[CLIENT_URL_GEN] Starting client-side URL generation for salon:',
+    salonIdPreview,
+    'forceRefresh:',
+    forceRefresh
+  );
 
   // Check cache first (with TTL)
   const cached = salonUrlCache.get(salonId);
   if (cached && !forceRefresh && Date.now() - cached.timestamp < CACHE_TTL) {
     const cacheAge = Date.now() - cached.timestamp;
-    console.log(`[CLIENT_URL_GEN] Using cached URL (age: ${Math.round(cacheAge / 1000)}s) for salon: ${salonIdPreview}`);
+    console.log(
+      `[CLIENT_URL_GEN] Using cached URL (age: ${Math.round(cacheAge / 1000)}s) for salon: ${salonIdPreview}`
+    );
     return cached.url;
   }
   console.log('[CLIENT_URL_GEN] Cache miss or expired, generating new URL');
@@ -42,15 +52,15 @@ export const getSecureSalonUrlClient = async (salonId: string, forceRefresh = fa
       } catch (csrfError) {
         console.warn('[CLIENT_URL_GEN] Failed to get CSRF token:', csrfError);
       }
-      
+
       if (!csrfToken) {
         console.warn('[CLIENT_URL_GEN] CSRF token not available, request may fail');
       }
 
-      const headers: HeadersInit = { 
+      const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      
+
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }
@@ -91,7 +101,7 @@ export const getSecureSalonUrlClient = async (salonId: string, forceRefresh = fa
           console.error('[CLIENT_URL_GEN] Invalid response structure:', {
             success: data.success,
             hasData: !!data.data,
-            hasUrl: !!data.data?.url
+            hasUrl: !!data.data?.url,
           });
         }
       } else {
@@ -101,11 +111,15 @@ export const getSecureSalonUrlClient = async (salonId: string, forceRefresh = fa
           console.error('[CLIENT_URL_GEN] API error response:', {
             status: response.status,
             statusText: response.statusText,
-            error: errorData.error || 'Unknown error'
+            error: errorData.error || 'Unknown error',
           });
         } catch (jsonError) {
           console.error('[CLIENT_URL_GEN] Failed to parse error response:', jsonError);
-          console.error('[CLIENT_URL_GEN] Raw response status:', response.status, response.statusText);
+          console.error(
+            '[CLIENT_URL_GEN] Raw response status:',
+            response.status,
+            response.statusText
+          );
         }
       }
     } catch (error) {
@@ -138,7 +152,10 @@ export const getSecureSalonUrlServer = (salonId: string): string => {
 };
 
 // Client-side secure URL generation for any resource type
-export const getSecureResourceUrlClient = async (resourceType: 'salon' | 'booking' | 'booking-status' | 'owner-dashboard' | 'accept' | 'reject', resourceId: string): Promise<string> => {
+export const getSecureResourceUrlClient = async (
+  resourceType: 'salon' | 'booking' | 'booking-status' | 'owner-dashboard' | 'accept' | 'reject',
+  resourceId: string
+): Promise<string> => {
   const cacheKey = `${resourceType}_${resourceId}`;
   const cached = salonUrlCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -154,26 +171,8 @@ export const getSecureResourceUrlClient = async (resourceType: 'salon' | 'bookin
     try {
       const { getCSRFToken } = await import('@/lib/utils/csrf-client');
       const csrfToken = await getCSRFToken();
-      
-      // Get session for authentication
-      let authToken: string | null = null;
-      try {
-        const { supabaseAuth } = await import('@/lib/supabase/auth');
-        if (supabaseAuth) {
-          const { data: { session } } = await supabaseAuth.auth.getSession();
-          authToken = session?.access_token || null;
-        }
-      } catch (authError) {
-        console.warn('[NAVIGATION] Failed to get auth token:', authError);
-      }
-      
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch('/api/security/generate-resource-url', {
         method: 'POST',
@@ -212,6 +211,7 @@ export const ROUTES = {
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_BUSINESS: (businessId: string) => `/admin/businesses/${businessId}`,
   ADMIN_BOOKING: (bookingId: string) => `/admin/bookings/${bookingId}`,
+  ADMIN_USER: (userId: string) => `/admin/users/${userId}`,
   ACCEPT: (bookingId: string) => `/accept/${bookingId}`,
   REJECT: (bookingId: string) => `/reject/${bookingId}`,
   CATEGORIES: '/categories',
@@ -229,12 +229,15 @@ export const ROUTES = {
   },
   CUSTOMER_DASHBOARD: '/customer/dashboard',
   PROFILE: '/profile',
-  AUTH_LOGIN: (redirectTo?: string) => redirectTo ? `/auth/login?redirect_to=${encodeURIComponent(redirectTo)}` : '/auth/login',
-  SELECT_ROLE: (role?: string) => role ? `/select-role?role=${role}` : '/select-role',
+  AUTH_LOGIN: (redirectTo?: string) =>
+    redirectTo ? `/auth/login?redirect_to=${encodeURIComponent(redirectTo)}` : '/auth/login',
+  SELECT_ROLE: (role?: string) => (role ? `/select-role?role=${role}` : '/select-role'),
 } as const;
 
-export const getAdminDashboardUrl = (tab?: string): string => {
-  return tab ? `/admin/dashboard?tab=${tab}` : '/admin/dashboard';
+export const getAdminDashboardUrl = (tab?: string, page?: number): string => {
+  const base = tab ? `/admin/dashboard?tab=${tab}` : '/admin/dashboard';
+  if (page != null && page > 1) return `${base}${base.includes('?') ? '&' : '?'}page=${page}`;
+  return base;
 };
 
 export const getOwnerDashboardUrl = (bookingLink?: string): string => {

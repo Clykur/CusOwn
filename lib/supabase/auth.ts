@@ -5,6 +5,7 @@ import { AUTH_COOKIE_MAX_AGE_SECONDS } from '@/config/constants';
 /**
  * Client-side Supabase client for authentication
  * Use this in client components for login/logout
+ * Refresh is throttled by global fetch patch (see layout.tsx script).
  */
 const supabaseUrl = typeof window !== 'undefined' ? env.supabase.url || '' : '';
 const supabaseAnonKey = typeof window !== 'undefined' ? env.supabase.anonKey || '' : '';
@@ -15,8 +16,6 @@ let supabaseAuth: ReturnType<typeof createBrowserClient> | null = null;
 
 if (supabaseUrl && supabaseAnonKey) {
   try {
-    // Cookie-based storage is required for SSR frameworks to reliably persist PKCE verifier.
-    // This prevents "PKCE code verifier not found in storage" across redirects.
     supabaseAuth = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         get(name) {
@@ -25,29 +24,32 @@ if (supabaseUrl && supabaseAnonKey) {
           const match = cookies.find((c) => c.startsWith(`${name}=`));
           return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : undefined;
         },
-        set(name, value, options) {
+        // Auth/session cookies are set only server-side. No client writes to prevent XSS stealing.
+        set(name, _value, _options) {
           if (typeof document === 'undefined') return;
-          const opts = options ?? {};
-          let maxAge = opts.maxAge;
-          if (maxAge == null && name.includes('auth')) {
-            maxAge = AUTH_COOKIE_MAX_AGE_SECONDS;
-          }
-          const parts = [`${name}=${encodeURIComponent(value)}`];
+          const n = name.toLowerCase();
+          if (n.startsWith('sb-') || n.includes('auth') || n.includes('session')) return;
+          const opts = _options ?? {};
+          const maxAge =
+            opts.maxAge ?? (n.includes('auth') ? AUTH_COOKIE_MAX_AGE_SECONDS : undefined);
+          const parts = [`${name}=${encodeURIComponent(_value)}`];
           parts.push(`Path=${opts.path ?? '/'}`);
           if (maxAge != null) parts.push(`Max-Age=${maxAge}`);
-          if (opts.expires) parts.push(`Expires=${opts.expires.toUTCString()}`);
+          if (opts.expires) parts.push(`Expires=${(opts.expires as Date).toUTCString()}`);
           if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`);
           if (opts.secure) parts.push('Secure');
           document.cookie = parts.join('; ');
         },
-        remove(name, options) {
+        remove(name, _options) {
           if (typeof document === 'undefined') return;
-          const opts = options ?? {};
+          const n = name.toLowerCase();
+          if (n.startsWith('sb-') || n.includes('auth') || n.includes('session')) return;
+          const opts = _options ?? {};
           document.cookie = `${name}=; Path=${opts.path ?? '/'}; Max-Age=0`;
         },
       },
       auth: {
-        autoRefreshToken: true,
+        autoRefreshToken: false,
         persistSession: true,
         detectSessionInUrl: true,
         flowType: 'pkce',
@@ -62,16 +64,13 @@ if (supabaseUrl && supabaseAnonKey) {
 export { supabaseAuth };
 
 /**
- * Get current authenticated user
+ * Get current authenticated user. Client: server-only via /api/auth/session.
  */
 export const getCurrentUser = async () => {
-  if (!supabaseAuth) return null;
+  if (typeof window === 'undefined') return null;
   try {
-    const {
-      data: { user },
-      error,
-    } = await supabaseAuth.auth.getUser();
-    if (error) return null;
+    const { getServerSessionClient } = await import('@/lib/auth/server-session-client');
+    const { user } = await getServerSessionClient();
     return user;
   } catch {
     return null;
@@ -79,40 +78,16 @@ export const getCurrentUser = async () => {
 };
 
 /**
- * Get user profile with role information
+ * Get user profile with role information. Client: server-only via /api/auth/session.
  */
 export const getUserProfile = async (userId: string) => {
-  if (!supabaseAuth) return null;
+  if (typeof window === 'undefined') return null;
   try {
-    // First check if we have a valid session
-    const {
-      data: { session },
-    } = await supabaseAuth.auth.getSession();
-    if (!session) return null;
-
-    const { data, error } = await supabaseAuth
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error) {
-      // If error is "not found" (PGRST116), that's okay - profile doesn't exist yet
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      // For other errors, log in dev but return null
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Error fetching user profile:', error.message);
-      }
-      return null;
-    }
-    return data;
-  } catch (error) {
-    // Silently handle errors
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Exception fetching user profile:', error);
-    }
+    const { getServerSessionClient } = await import('@/lib/auth/server-session-client');
+    const { user, profile } = await getServerSessionClient();
+    if (!user || user.id !== userId) return null;
+    return profile;
+  } catch {
     return null;
   }
 };
@@ -172,17 +147,17 @@ export const signInWithGoogle = async (redirectTo?: string) => {
 };
 
 /**
- * Sign out
+ * Sign out: server-only. Redirects to /api/auth/signout so server clears session.
  */
 export const signOut = async () => {
-  if (!supabaseAuth) {
-    return { error: null };
-  }
+  if (typeof window === 'undefined') return { error: null };
   try {
-    const { error } = await supabaseAuth.auth.signOut();
-    return { error };
-  } catch (error: any) {
-    return { error };
+    const { clearServerSessionCache } = await import('@/lib/auth/server-session-client');
+    clearServerSessionCache();
+    window.location.href = '/api/auth/signout';
+    return { error: null };
+  } catch (error: unknown) {
+    return { error: error as { message?: string } };
   }
 };
 

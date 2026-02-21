@@ -6,13 +6,18 @@ export interface RetryOptions {
   retryable?: (error: unknown) => boolean;
 }
 
+/** Hard cap so retry() never runs unlimited attempts even if options pass a large maxAttempts. */
+const RETRY_MAX_SAFE_ATTEMPTS = 10;
+
 const defaultRetryable = (error: unknown): boolean => {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    return message.includes('timeout') || 
-           message.includes('network') || 
-           message.includes('econnreset') ||
-           message.includes('etimedout');
+    return (
+      message.includes('timeout') ||
+      message.includes('network') ||
+      message.includes('econnreset') ||
+      message.includes('etimedout')
+    );
   }
   return false;
 };
@@ -29,17 +34,18 @@ export const retry = async <T>(
     retryable: defaultRetryable,
     ...options,
   };
+  const cappedAttempts = Math.min(Math.max(1, opts.maxAttempts), RETRY_MAX_SAFE_ATTEMPTS);
 
   let lastError: unknown;
   let delay = opts.initialDelayMs;
 
-  for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
+  for (let attempt = 1; attempt <= cappedAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
 
-      if (attempt === opts.maxAttempts) {
+      if (attempt === cappedAttempts) {
         throw error;
       }
 
@@ -47,7 +53,7 @@ export const retry = async <T>(
         throw error;
       }
 
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       delay = Math.min(delay * opts.backoffMultiplier, opts.maxDelayMs);
     }
   }
