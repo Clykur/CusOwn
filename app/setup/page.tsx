@@ -682,24 +682,6 @@ export default function SetupPage() {
           </div>
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
             <div className="mb-6 text-center">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-black rounded-full mb-3">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-                Set Up Your Booking Page
-              </h2>
               <p className="text-gray-600 text-sm md:text-base">
                 Fill in the details below. All fields marked with{' '}
                 <span className="text-red-500">*</span> are required.

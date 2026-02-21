@@ -106,29 +106,14 @@ export async function GET(request: NextRequest) {
     const fullName = data.user.user_metadata?.full_name ?? data.user.email?.split('@')[0] ?? null;
 
     if (!profile) {
+      const initialRole = selectedRole ?? 'customer';
       profile = await userService.upsertUserProfile(data.user.id, {
         full_name: fullName,
-        user_type: selectedRole ?? 'customer',
+        user_type: initialRole as 'owner' | 'customer',
       });
-    } else if (selectedRole && (profile as { user_type: string }).user_type !== 'admin') {
-      const current = profile.user_type;
-      let newType: 'owner' | 'customer' | 'both' = selectedRole;
-      if (current === 'owner' && selectedRole === 'customer') newType = 'both';
-      if (current === 'customer' && selectedRole === 'owner') newType = 'both';
-      if (current === 'both') newType = 'both';
-      if (newType !== current) {
-        profile = await userService.updateUserType(data.user.id, newType);
-        void import('@/services/audit.service').then(({ auditService }) =>
-          auditService.createAuditLog(data.user.id, 'role_changed', 'user', {
-            entityId: data.user.id,
-            oldData: { user_type: current },
-            newData: { user_type: newType },
-            description: 'Role updated on login',
-          })
-        );
-        await supabase.auth.refreshSession();
-      }
+      await userService.setUserRoles(data.user.id, [initialRole]);
     }
+    // Do not mutate roles for existing users in callback; role changes only via /api/user/update-role.
   } catch {
     // retry later
   }
@@ -145,20 +130,30 @@ export async function GET(request: NextRequest) {
   try {
     const { getUserState } = await import('@/lib/utils/user-state');
     const stateResult = await getUserState(data.user.id);
-    if (stateResult.redirectUrl) {
+    const stateRedirect = stateResult.redirectUrl;
+    // Do not send customer intent to setup: getUserState may return /setup for "both, no business"
+    if (stateRedirect && !(stateRedirect === ROUTES.SETUP && selectedRole === 'customer')) {
       console.log('[AUTH] callback: positive — redirect from getUserState', {
         userId: data.user.id.substring(0, 8) + '...',
-        redirectUrl: stateResult.redirectUrl,
+        redirectUrl: stateRedirect,
       });
-      const path = stateResult.redirectUrl.startsWith('http')
-        ? new URL(stateResult.redirectUrl).pathname
-        : stateResult.redirectUrl;
+      const path = stateRedirect.startsWith('http')
+        ? new URL(stateRedirect).pathname
+        : stateRedirect;
       return redirectToSuccess(path, baseUrl, cookiesToForward);
     }
   } catch {
     // ignore
   }
 
+  // Customer login intent: always send to customer dashboard
+  if (selectedRole === 'customer') {
+    console.log('[AUTH] callback: positive — redirect customer (selected role)', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: 'customer_dashboard',
+    });
+    return redirectToSuccess(ROUTES.CUSTOMER_DASHBOARD, baseUrl, cookiesToForward);
+  }
   if (profile?.user_type === 'owner' || profile?.user_type === 'both') {
     console.log('[AUTH] callback: positive — redirect owner/both', {
       userId: data.user.id.substring(0, 8) + '...',
@@ -176,7 +171,7 @@ export async function GET(request: NextRequest) {
     });
     return redirectToSuccess(ROUTES.SETUP, baseUrl, cookiesToForward);
   }
-  console.log('[AUTH] callback: positive — redirect customer', {
+  console.log('[AUTH] callback: positive — redirect customer (default)', {
     userId: data.user.id.substring(0, 8) + '...',
     target: 'customer_dashboard',
   });

@@ -32,6 +32,8 @@ export function AdminLayoutShell({
   const router = useRouter();
   const [clientSession, setClientSession] = useState<SessionLike>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
+  /** When true, session was missing or not admin after client check; user stays in flow until they click Sign in or Logout. */
+  const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
     if (DEV && typeof window !== 'undefined') {
@@ -55,24 +57,21 @@ export function AdminLayoutShell({
         const profile = data?.profile ?? null;
         if (cancelled) return;
         if (!user) {
-          const loginUrl =
-            typeof ROUTES.AUTH_LOGIN === 'function'
-              ? ROUTES.AUTH_LOGIN('/admin/dashboard')
-              : '/auth/login';
-          router.replace(`${loginUrl}?redirect_from=guard`);
+          setSessionMissing(true);
+          setClientCheckDone(true);
           return;
         }
         const isAdmin = (profile as { user_type?: string } | null)?.user_type === 'admin';
         if (!isAdmin) {
-          router.replace(ROUTES.HOME);
+          setSessionMissing(true);
+          setClientCheckDone(true);
           return;
         }
         setClientSession({ user: { id: user.id, email: user.email }, profile });
       } catch {
-        if (!cancelled)
-          router.replace(
-            typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN() : '/auth/login'
-          );
+        if (!cancelled) {
+          setSessionMissing(true);
+        }
       } finally {
         if (!cancelled) setClientCheckDone(true);
       }
@@ -83,11 +82,31 @@ export function AdminLayoutShell({
   }, [requireClientAuthCheck, router]);
 
   const session = initialSession ?? clientSession;
+  const loginUrl =
+    typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN('/admin/dashboard') : '/auth/login';
 
   if (requireClientAuthCheck && !clientCheckDone) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <p className="text-gray-500">Checking authentication…</p>
+      </div>
+    );
+  }
+
+  if (requireClientAuthCheck && sessionMissing) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-sm px-4">
+          <p className="text-gray-600 mb-4">
+            Your session may have expired. Sign in again to continue.
+          </p>
+          <a
+            href={loginUrl}
+            className="inline-block text-brand-600 hover:text-brand-700 font-medium"
+          >
+            Sign in again
+          </a>
+        </div>
       </div>
     );
   }

@@ -54,16 +54,35 @@ async function getUserProfileSafe(userId: string): Promise<any> {
 }
 
 /**
- * Check if user is admin - works in both contexts
+ * Get roles array (from access.service). Server-only; client uses profile/user_type fallback.
  */
-async function isAdminSafe(userId: string): Promise<boolean> {
-  try {
+async function getRolesSafe(userId: string, context: 'server' | 'client'): Promise<string[]> {
+  if (context === 'client') {
     const profile = await getUserProfileSafe(userId);
-    if (!profile) return false;
-    return (profile as any).user_type === 'admin';
-  } catch {
-    return false;
+    const ut = (profile as any)?.user_type;
+    if (!ut) return [];
+    if (ut === 'admin') return ['admin'];
+    if (ut === 'owner') return ['owner'];
+    if (ut === 'customer') return ['customer'];
+    if (ut === 'both') return ['customer', 'owner'];
+    return [];
   }
+  const { getRoles } = await import('@/services/access.service');
+  return getRoles(userId);
+}
+
+/** Derive legacy userType from roles for backward-compat return shape. */
+function rolesToUserType(roles: string[]): 'customer' | 'owner' | 'both' | 'admin' | null {
+  if (roles.includes('admin')) return 'admin';
+  if (roles.includes('owner') && roles.includes('customer')) return 'both';
+  if (roles.includes('owner')) return 'owner';
+  if (roles.includes('customer')) return 'customer';
+  return null;
+}
+
+async function isAdminSafe(userId: string, context: 'server' | 'client'): Promise<boolean> {
+  const roles = await getRolesSafe(userId, context);
+  return roles.includes('admin');
 }
 
 // Simple cache to prevent redundant API calls
@@ -101,7 +120,7 @@ async function computeUserState(
   }
 
   try {
-    const adminCheck = await isAdminSafe(userId);
+    const adminCheck = await isAdminSafe(userId, context);
     if (adminCheck) {
       return {
         state: 'S7',
@@ -149,10 +168,11 @@ async function computeUserState(
       return result;
     }
 
-    const userType = (profile as any).user_type;
+    const roles = await getRolesSafe(userId, context);
+    const userType = rolesToUserType(roles);
 
     let businessCount = 0;
-    if (userType === 'owner' || userType === 'both') {
+    if (roles.includes('owner')) {
       try {
         let businesses: any[] = [];
         if (context === 'client') {
@@ -192,7 +212,7 @@ async function computeUserState(
       }
     }
 
-    // S2: Customer only
+    // S2: Customer only (no owner role)
     if (userType === 'customer') {
       const result = {
         state: 'S2' as const,
@@ -336,10 +356,10 @@ async function computeUserState(
 
     // Unknown state - fail safe
     return {
-      state: 'S1', // Treat as no profile
+      state: 'S1',
       authenticated: true,
       profileExists: true,
-      userType: userType as any,
+      userType: userType as UserStateResult['userType'],
       businessCount: 0,
       redirectUrl: null,
       reason: 'unknown_state',

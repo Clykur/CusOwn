@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/utils/navigation';
+import { UI_CUSTOMER } from '@/config/constants';
 
 const AdminSidebar = dynamic(
   () => import('@/components/admin/admin-sidebar').then((m) => m.default),
@@ -144,15 +145,14 @@ export default function UniversalSidebar() {
     if (cleanPath === ROUTES.SETUP) return 'Create Business';
     if (cleanPath === ROUTES.PROFILE) return 'Profile';
 
-    // Customer
-    if (cleanPath === ROUTES.CUSTOMER_DASHBOARD) {
-      return 'My Bookings';
-    }
-
-    if (cleanPath === ROUTES.CATEGORIES) return 'Book Appointment';
-    if (cleanPath === ROUTES.SALON_LIST) return 'Browse Salons';
-    if (cleanPath.startsWith('/salon/')) return 'Salon Details';
-    if (cleanPath.startsWith('/booking/')) return 'Booking Details';
+    // Customer (generic, multi-service)
+    if (cleanPath === ROUTES.CUSTOMER_DASHBOARD) return UI_CUSTOMER.NAV_MY_ACTIVITY;
+    if (cleanPath === ROUTES.CUSTOMER_CATEGORIES) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
+    if (cleanPath === ROUTES.CATEGORIES) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
+    if (cleanPath === ROUTES.SALON_LIST) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
+    if (cleanPath === ROUTES.CUSTOMER_SALON_LIST) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
+    if (cleanPath.startsWith('/salon/')) return UI_CUSTOMER.CATEGORY_CTA;
+    if (cleanPath.startsWith('/booking/')) return UI_CUSTOMER.HEADER_BOOKING_DETAILS;
 
     return null;
   };

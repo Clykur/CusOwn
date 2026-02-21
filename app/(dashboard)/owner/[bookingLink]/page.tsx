@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
+import { API_ROUTES, ERROR_MESSAGES, SLOT_DURATIONS, VALIDATION } from '@/config/constants';
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import AnalyticsDashboard from '@/components/analytics/analytics-dashboard';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { supabaseAuth } from '@/lib/supabase/auth';
+import { Toast } from '@/components/ui/toast';
 
 export default function OwnerDashboardPage() {
   const params = useParams();
+  const router = useRouter();
   const bookingLink = params.bookingLink as string;
   const [salon, setSalon] = useState<Salon | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -28,36 +30,28 @@ export default function OwnerDashboardPage() {
   const [newClosureStart, setNewClosureStart] = useState('');
   const [newClosureEnd, setNewClosureEnd] = useState('');
   const [newClosureReason, setNewClosureReason] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    salon_name: '',
+    owner_name: '',
+    whatsapp_number: '',
+    opening_time: '',
+    closing_time: '',
+    slot_duration: 30,
+    address: '',
+    location: '',
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
   }, []);
 
-  // SECURITY: Require authentication for owner dashboard access
-  useEffect(() => {
-    const checkAuth = async () => {
-      if (!supabaseAuth) {
-        window.location.href = '/auth/login';
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabaseAuth.auth.getSession();
-
-      if (!session?.user) {
-        // Not authenticated - redirect to login
-        window.location.href = '/auth/login';
-        return;
-      }
-
-      // Verify user has access to this business (check after salon is loaded)
-      // This is handled by the API, but we do a client-side check for better UX
-    };
-
-    checkAuth();
-  }, [bookingLink]);
+  // Auth: owner layout already verified session. API will return 401 if unauthenticated; we redirect only on 401 from fetchSalon.
 
   // Handle tab visibility changes - refresh data when tab becomes visible
   useEffect(() => {
@@ -125,7 +119,7 @@ export default function OwnerDashboardPage() {
           url += `?token=${encodeURIComponent(token)}`;
         }
 
-        // Include authentication for owner dashboard access
+        // Auth: credentials: 'include' sends cookies; server getServerUser() validates. Optionally add Bearer if Supabase session exists.
         const headers: HeadersInit = {};
         if (supabaseAuth) {
           const {
@@ -205,20 +199,23 @@ export default function OwnerDashboardPage() {
     fetchSalon();
   }, [bookingLink]);
 
-  // Fetch slots for this salon when salon/date changes
+  // Fetch slots for this salon when salon/date changes. Auth via cookies (credentials: 'include') or optional Bearer.
   const fetchSlots = useCallback(async () => {
     if (!salon) return;
     if (typeof document !== 'undefined' && document.hidden) return;
     try {
-      if (!supabaseAuth) return;
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabaseAuth.auth.getSession();
-      if (sessionError || !session?.access_token) return;
       const date = selectedDate || new Date().toISOString().split('T')[0];
+      const headers: HeadersInit = {};
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      }
       const response = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${date}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers,
         credentials: 'include',
       });
       const result = await response.json();
@@ -244,8 +241,8 @@ export default function OwnerDashboardPage() {
 
     try {
       const [holidaysRes, closuresRes] = await Promise.all([
-        fetch(`/api/businesses/${salon.id}/downtime/holidays`),
-        fetch(`/api/businesses/${salon.id}/downtime/closures`),
+        fetch(`/api/businesses/${salon.id}/downtime/holidays`, { credentials: 'include' }),
+        fetch(`/api/businesses/${salon.id}/downtime/closures`, { credentials: 'include' }),
       ]);
 
       // Check if tab is still visible before processing
@@ -336,6 +333,98 @@ export default function OwnerDashboardPage() {
     }
   };
 
+  const openEditModal = () => {
+    if (!salon) return;
+    setEditForm({
+      salon_name: salon.salon_name,
+      owner_name: salon.owner_name,
+      whatsapp_number: salon.whatsapp_number
+        .replace(/\D/g, '')
+        .slice(0, VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH),
+      opening_time: salon.opening_time?.substring(0, 5) ?? '10:00',
+      closing_time: salon.closing_time?.substring(0, 5) ?? '21:00',
+      slot_duration: salon.slot_duration ?? 30,
+      address: salon.address ?? '',
+      location: salon.location ?? '',
+    });
+    setEditError(null);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!salon || !bookingLink) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(bookingLink)}`, {
+        method: 'PATCH',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          salon_name: editForm.salon_name.trim(),
+          owner_name: editForm.owner_name.trim(),
+          whatsapp_number: editForm.whatsapp_number,
+          opening_time:
+            editForm.opening_time.length === 5
+              ? `${editForm.opening_time}:00`
+              : editForm.opening_time,
+          closing_time:
+            editForm.closing_time.length === 5
+              ? `${editForm.closing_time}:00`
+              : editForm.closing_time,
+          slot_duration: editForm.slot_duration,
+          address: editForm.address.trim(),
+          location: editForm.location.trim(),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setEditError(json.error || ERROR_MESSAGES.UNEXPECTED_ERROR);
+        return;
+      }
+      if (json.success && json.data) {
+        setSalon(json.data);
+        setEditModalOpen(false);
+        setToastMessage('Business updated successfully');
+      }
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!salon || !bookingLink) return;
+    if (!window.confirm('Are you sure you want to delete this business? This cannot be undone.')) {
+      return;
+    }
+    setDeleteSaving(true);
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(bookingLink)}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        router.push('/owner/businesses?deleted=1');
+        return;
+      }
+      setError(json.error || 'Failed to delete business');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete business');
+    } finally {
+      setDeleteSaving(false);
+    }
+  };
+
   useEffect(() => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
   }, []);
@@ -368,15 +457,13 @@ export default function OwnerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="mb-6 lg:mb-8">
-          <div className="h-8 bg-gray-200 rounded w-64 mb-2 animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-6 animate-pulse">
-          <div className="h-48 bg-gray-200 rounded mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="w-full pb-24 flex flex-col gap-6">
+        <div className="h-8 bg-slate-200 rounded w-64 mb-2 animate-pulse" />
+        <div className="h-4 bg-slate-200 rounded w-48 animate-pulse" />
+        <div className="bg-white border border-slate-200 rounded-lg p-6 animate-pulse">
+          <div className="h-48 bg-slate-200 rounded mb-4" />
+          <div className="h-6 bg-slate-200 rounded w-3/4 mb-2" />
+          <div className="h-4 bg-slate-200 rounded w-1/2" />
         </div>
       </div>
     );
@@ -384,46 +471,42 @@ export default function OwnerDashboardPage() {
 
   if (error || !salon) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 lg:py-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600 mb-8">Invalid booking link or salon not found.</p>
+      <div className="w-full pb-24">
+        <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Access Denied</h2>
+          <p className="text-slate-600 mb-8">Invalid booking link or salon not found.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-24">
-      {/* Mobile Header - Sticky */}
-      <div className="mb-4 sm:mb-6 lg:mb-8">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/owner/businesses"
-            className="lg:hidden flex items-center justify-center p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
+    <div className="w-full pb-24 flex flex-col gap-6">
+      <div className="flex items-center gap-2">
+        <Link
+          href="/owner/businesses"
+          className="lg:hidden flex items-center justify-center p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <svg
+            className="w-6 h-6 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className="w-6 h-6 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </Link>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </Link>
 
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate leading-tight">
-            {salon.salon_name}
-          </h1>
-        </div>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate leading-tight">
+          {salon.salon_name}
+        </h1>
       </div>
-      {/* QR Code Section - Mobile Optimized */}
-      <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4 sm:p-5 lg:p-6">
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
         <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
           <div className="flex-shrink-0">
             {salon.qr_code ? (
@@ -469,9 +552,213 @@ export default function OwnerDashboardPage() {
         </div>
       </div>
 
+      {/* Business details – owner CRUD */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">Business details</h2>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={openEditModal}
+              className="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteSaving}
+              className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {deleteSaving ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-slate-500">Business name</dt>
+            <dd className="font-medium text-slate-900">{salon.salon_name}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Owner name</dt>
+            <dd className="font-medium text-slate-900">{salon.owner_name}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">WhatsApp</dt>
+            <dd className="font-medium text-slate-900">{salon.whatsapp_number}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Hours</dt>
+            <dd className="font-medium text-slate-900">
+              {salon.opening_time?.substring(0, 5)} – {salon.closing_time?.substring(0, 5)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Slot duration</dt>
+            <dd className="font-medium text-slate-900">{salon.slot_duration} min</dd>
+          </div>
+          {salon.location && (
+            <div>
+              <dt className="text-slate-500">Location</dt>
+              <dd className="font-medium text-slate-900">{salon.location}</dd>
+            </div>
+          )}
+          {salon.address && (
+            <div className="sm:col-span-2">
+              <dt className="text-slate-500">Address</dt>
+              <dd className="font-medium text-slate-900">{salon.address}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
+      {/* Edit business modal – blurred backdrop */}
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Edit business</h3>
+            {editError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-800 text-sm">{editError}</div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Business name *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.salon_name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, salon_name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  maxLength={VALIDATION.SALON_NAME_MAX_LENGTH}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Owner name *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.owner_name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, owner_name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  maxLength={VALIDATION.OWNER_NAME_MAX_LENGTH}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  WhatsApp number * (10 digits)
+                </label>
+                <input
+                  type="tel"
+                  value={editForm.whatsapp_number}
+                  onChange={(e) => {
+                    const digits = e.target.value
+                      .replace(/\D/g, '')
+                      .slice(0, VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH);
+                    setEditForm((f) => ({ ...f, whatsapp_number: digits }));
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  placeholder="10 digits"
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Opening time
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.opening_time}
+                    onChange={(e) => setEditForm((f) => ({ ...f, opening_time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Closing time
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.closing_time}
+                    onChange={(e) => setEditForm((f) => ({ ...f, closing_time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Slot duration (min)
+                </label>
+                <select
+                  value={editForm.slot_duration}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, slot_duration: Number(e.target.value) }))
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                >
+                  {SLOT_DURATIONS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Location / City
+                </label>
+                <input
+                  type="text"
+                  value={editForm.location}
+                  onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                  maxLength={200}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                <textarea
+                  value={editForm.address}
+                  onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none"
+                  maxLength={VALIDATION.ADDRESS_MAX_LENGTH}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setEditModalOpen(false)}
+                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleEditSave}
+                disabled={
+                  editSaving ||
+                  !editForm.salon_name.trim() ||
+                  !editForm.owner_name.trim() ||
+                  editForm.whatsapp_number.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH
+                }
+                className="flex-1 px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
+
       {/* Tabs Section - Mobile Scrollable */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="flex gap-1 bg-gray-100 p-1 border-b border-gray-200 overflow-x-auto">
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="flex gap-1 bg-slate-100 p-1 border-b border-slate-200 overflow-x-auto">
           {/* Bookings tab removed from per-salon page; moved to owner dashboard */}
           <button
             onClick={() => setActiveTab('slots')}

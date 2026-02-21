@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
@@ -31,7 +31,7 @@ export default function OwnerSidebar({
   const { initialUser } = useOwnerSession();
   const [navigating, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+  const loading = false;
 
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
@@ -44,7 +44,6 @@ export default function OwnerSidebar({
   useEffect(() => {
     if (!initialUser?.id) {
       setHasBusinesses(false);
-      setLoading(false);
       return;
     }
     let cancelled = false;
@@ -57,9 +56,6 @@ export default function OwnerSidebar({
       })
       .catch(() => {
         if (!cancelled) setHasBusinesses(false);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
@@ -92,7 +88,7 @@ export default function OwnerSidebar({
     },
     {
       name: 'Create Business',
-      href: '/setup',
+      href: '/owner/setup',
       requiresBusiness: false,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,17 +110,25 @@ export default function OwnerSidebar({
       return cleanPath === '/owner/dashboard';
     }
 
-    // My Businesses (list + individual business pages)
+    // My Businesses (list + individual business pages; exclude dashboard, setup, profile)
     if (name === 'My Businesses') {
       return (
         cleanPath === '/owner/businesses' ||
-        (cleanPath.startsWith('/owner/') && cleanPath !== '/owner/dashboard')
+        (cleanPath.startsWith('/owner/') &&
+          cleanPath !== '/owner/dashboard' &&
+          cleanPath !== '/owner/setup' &&
+          cleanPath !== '/owner/profile')
       );
     }
 
     // Create Business
     if (name === 'Create Business') {
-      return cleanPath === '/setup';
+      return cleanPath === '/owner/setup';
+    }
+
+    // Profile (bottom link uses OWNER_PROFILE)
+    if (name === 'Profile') {
+      return cleanPath === '/owner/profile';
     }
 
     return false;
@@ -143,18 +147,18 @@ export default function OwnerSidebar({
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - UI aligned with admin sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-gray-200 transition-transform ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
-        <div className="h-full flex flex-col">
+        <div className="flex h-full flex-col">
           {/* Logo/Header */}
-          <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+          <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Business Owner</h2>
-              <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">CusOwn</h2>
+              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
             </div>
             {/* Close button shown inside sidebar on mobile to avoid overlap */}
             <div className="lg:hidden">
@@ -180,63 +184,48 @@ export default function OwnerSidebar({
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
-            {loading ? (
-              <div className="flex justify-center py-10">
-                <div className="animate-spin h-5 w-5 border-b-2 border-gray-400" />
-              </div>
-            ) : (
-              navigation.map((item) => {
-                const active = isActive(item.name);
+          {/* Navigation - no loading bar; match admin sidebar style */}
+          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
+            {navigation.map((item) => {
+              const active = isActive(item.name);
 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.href !== pathname) {
-                        setNavigating(item.href);
-                        setSidebarOpen(false);
-                      } else {
-                        e.preventDefault();
-                      }
-                    }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      active
-                        ? 'bg-black text-white shadow-md'
-                        : navigating === item.href
-                          ? 'bg-gray-100 text-gray-700'
-                          : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
-                    }`}
-                  >
-                    <span className={navigating === item.href ? 'animate-spin' : ''}>
-                      {item.icon}
-                    </span>
-                    <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                      {item.name}
-                    </span>
-                  </Link>
-                );
-              })
-            )}
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={(e) => {
+                    if (item.href !== pathname) {
+                      setNavigating(item.href);
+                      setSidebarOpen(false);
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
+                    active
+                      ? 'border-l-2 border-slate-900 bg-slate-200/60 font-medium text-slate-900'
+                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
+                  }`}
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-5 [&>svg]:w-5">
+                    {item.icon}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                </Link>
+              );
+            })}
           </nav>
 
-          {/* Profile Section */}
-          <div className="p-4 border-t border-gray-200">
+          {/* Profile Section - match admin sidebar; Profile keeps sidebar, Logout icon */}
+          <div className="shrink-0 border-t border-slate-200 p-4">
             <div className="flex items-center justify-between gap-3">
               <Link
-                href={ROUTES.PROFILE}
-                className="flex-1 min-w-0 flex items-center gap-3"
+                href={ROUTES.OWNER_PROFILE}
+                className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -245,17 +234,17 @@ export default function OwnerSidebar({
                     />
                   </svg>
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-sm font-semibold text-gray-900 truncate">
+                <div className="min-w-0 flex-1 flex flex-col">
+                  <span className="truncate text-sm font-medium text-slate-900">
                     {userName || 'User'}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
+                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
                 </div>
               </Link>
               <a
-                href="/api/auth/signout"
-                className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Sign Out"
+                href={`/api/auth/signout?redirect_to=${encodeURIComponent(ROUTES.SELECT_ROLE('owner'))}`}
+                className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
+                title="Sign out"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

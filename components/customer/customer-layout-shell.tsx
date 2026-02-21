@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import CustomerHeader from '@/components/customer/customer-header';
 import CustomerSidebar from '@/components/customer/customer-sidebar';
 import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
@@ -10,6 +10,24 @@ import {
   type CustomerInitialUser,
 } from '@/components/customer/customer-session-context';
 import { ROUTES } from '@/lib/utils/navigation';
+import { UI_CUSTOMER } from '@/config/constants';
+
+function getCustomerHeader(pathname: string): { title: string; subtitle: string } {
+  if (pathname === ROUTES.CUSTOMER_DASHBOARD)
+    return { title: UI_CUSTOMER.HEADER_MY_ACTIVITY, subtitle: UI_CUSTOMER.HEADER_MY_ACTIVITY_SUB };
+  if (pathname === ROUTES.CUSTOMER_CATEGORIES)
+    return { title: UI_CUSTOMER.DISCOVER_HEADING, subtitle: UI_CUSTOMER.DISCOVER_SUB };
+  if (pathname === ROUTES.CUSTOMER_SALON_LIST)
+    return { title: UI_CUSTOMER.NAV_EXPLORE_SERVICES, subtitle: UI_CUSTOMER.HEADER_BROWSE_SUB };
+  if (pathname === ROUTES.CUSTOMER_PROFILE)
+    return { title: UI_CUSTOMER.HEADER_PROFILE, subtitle: UI_CUSTOMER.HEADER_PROFILE_SUB };
+  if (pathname?.startsWith('/booking/'))
+    return {
+      title: UI_CUSTOMER.HEADER_BOOKING_DETAILS,
+      subtitle: UI_CUSTOMER.HEADER_BOOKING_DETAILS_SUB,
+    };
+  return { title: UI_CUSTOMER.HEADER_MY_ACTIVITY, subtitle: UI_CUSTOMER.HEADER_MY_ACTIVITY_SUB };
+}
 
 const DEV = process.env.NODE_ENV === 'development';
 
@@ -30,9 +48,13 @@ export default function CustomerLayoutShell({
   requireClientAuthCheck = false,
 }: CustomerLayoutShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const header = getCustomerHeader(pathname ?? '');
   const [clientUser, setClientUser] = useState<CustomerInitialUser | null>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
+  /** When true, session was missing after client check; user stays in flow until they click Sign in or Logout. */
+  const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
     if (DEV && typeof window !== 'undefined') {
@@ -55,11 +77,8 @@ export default function CustomerLayoutShell({
         const profile = data?.profile ?? null;
         if (cancelled) return;
         if (!user) {
-          const loginUrl =
-            typeof ROUTES.AUTH_LOGIN === 'function'
-              ? ROUTES.AUTH_LOGIN('/customer/dashboard')
-              : '/auth/login';
-          router.replace(`${loginUrl}?redirect_from=guard`);
+          setSessionMissing(true);
+          setClientCheckDone(true);
           return;
         }
         setClientUser({
@@ -68,10 +87,9 @@ export default function CustomerLayoutShell({
           full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
         });
       } catch {
-        if (!cancelled)
-          router.replace(
-            typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN() : '/auth/login'
-          );
+        if (!cancelled) {
+          setSessionMissing(true);
+        }
       } finally {
         if (!cancelled) setClientCheckDone(true);
       }
@@ -81,7 +99,11 @@ export default function CustomerLayoutShell({
     };
   }, [requireClientAuthCheck, router]);
 
-  const user = initialUser ?? clientUser;
+  const user = initialUser?.id ? initialUser : clientUser;
+  const loginUrl =
+    typeof ROUTES.AUTH_LOGIN === 'function'
+      ? ROUTES.AUTH_LOGIN('/customer/dashboard')
+      : '/auth/login';
 
   if (requireClientAuthCheck && !clientCheckDone) {
     return (
@@ -91,18 +113,34 @@ export default function CustomerLayoutShell({
     );
   }
 
-  if (requireClientAuthCheck && !user?.id) {
-    return null;
+  if (requireClientAuthCheck && sessionMissing) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-sm px-4">
+          <p className="text-gray-600 mb-4">
+            Your session may have expired. Sign in again to continue.
+          </p>
+          <a
+            href={loginUrl}
+            className="inline-block text-brand-600 hover:text-brand-700 font-medium"
+          >
+            Sign in again
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (
     <CustomerSessionProvider initialUser={user ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 lg:ml-64">
-          <div className="px-4 sm:px-6 lg:px-8 py-8 lg:pl-0">
-            <CustomerHeader title="My Bookings" subtitle="Manage your bookings and appointments" />
-            {children}
+        <main className="flex-1 lg:ml-64 w-full">
+          <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
+            <div className="flex flex-col gap-8">
+              <CustomerHeader title={header.title} subtitle={header.subtitle} />
+              {children}
+            </div>
           </div>
         </main>
         <CustomerMobileBottomNav sidebarOpen={sidebarOpen} />

@@ -34,6 +34,8 @@ export default function OwnerLayoutShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientUser, setClientUser] = useState<OwnerInitialUser | null>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
+  /** When true, session was missing after client check; user stays in flow until they click Sign in or Logout. */
+  const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
     if (DEV && typeof window !== 'undefined') {
@@ -57,11 +59,8 @@ export default function OwnerLayoutShell({
         const profile = data?.profile ?? null;
         if (cancelled) return;
         if (!user) {
-          const loginUrl =
-            typeof ROUTES.AUTH_LOGIN === 'function'
-              ? ROUTES.AUTH_LOGIN('/owner/dashboard')
-              : '/auth/login';
-          router.replace(`${loginUrl}?redirect_from=guard`);
+          setSessionMissing(true);
+          setClientCheckDone(true);
           return;
         }
         setClientUser({
@@ -70,10 +69,9 @@ export default function OwnerLayoutShell({
           full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
         });
       } catch {
-        if (!cancelled)
-          router.replace(
-            typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN() : '/auth/login'
-          );
+        if (!cancelled) {
+          setSessionMissing(true);
+        }
       } finally {
         if (!cancelled) setClientCheckDone(true);
       }
@@ -84,6 +82,8 @@ export default function OwnerLayoutShell({
   }, [requireClientAuthCheck, router]);
 
   const user = initialUser ?? clientUser;
+  const loginUrl =
+    typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN('/owner/dashboard') : '/auth/login';
 
   if (requireClientAuthCheck && !clientCheckDone) {
     return (
@@ -93,26 +93,71 @@ export default function OwnerLayoutShell({
     );
   }
 
-  if (requireClientAuthCheck && !user?.id) {
-    return null;
+  if (requireClientAuthCheck && sessionMissing) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-sm px-4">
+          <p className="text-gray-600 mb-4">
+            Your session may have expired. Sign in again to continue.
+          </p>
+          <a
+            href={loginUrl}
+            className="inline-block text-brand-600 hover:text-brand-700 font-medium"
+          >
+            Sign in again
+          </a>
+        </div>
+      </div>
+    );
   }
 
   const isDashboard = pathname === '/owner/dashboard';
   const isProfile = pathname === '/owner/profile';
   const isCreateBusiness = pathname === '/owner/setup';
-  const mainSpacing = isProfile || isCreateBusiness ? 'lg:pl-12 lg:pr-12' : '';
+  const isBusinesses = pathname === '/owner/businesses';
+  const isBusinessDetail =
+    pathname.startsWith('/owner/') &&
+    pathname !== '/owner/dashboard' &&
+    pathname !== '/owner/setup' &&
+    pathname !== '/owner/businesses' &&
+    pathname !== '/owner/profile' &&
+    pathname.split('/').filter(Boolean).length === 2;
+  const isOwnerMainArea =
+    isDashboard || isCreateBusiness || isBusinesses || isBusinessDetail || isProfile;
+  const mainSpacing = '';
 
   return (
     <OwnerSessionProvider initialUser={user ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <OwnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className={`flex-1 lg:ml-64 w-full ${mainSpacing}`}>
-          <div className="px-4 sm:px-6 lg:px-12 xl:px-16 py-6 lg:py-8">
-            {isDashboard && (
-              <OwnerHeader title="Owner Dashboard" subtitle="Manage your businesses and bookings" />
-            )}
-            {children}
-          </div>
+          {isOwnerMainArea ? (
+            <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
+              <div className="flex flex-col gap-6">
+                {isDashboard && (
+                  <OwnerHeader
+                    title="Owner Dashboard"
+                    subtitle="Manage your businesses and bookings"
+                  />
+                )}
+                {isCreateBusiness && (
+                  <OwnerHeader
+                    title="Create Business"
+                    subtitle="Add a new business to your account"
+                  />
+                )}
+                {isBusinesses && (
+                  <OwnerHeader title="My Businesses" subtitle="View and manage your businesses" />
+                )}
+                {isProfile && (
+                  <OwnerHeader title="My Profile" subtitle="Manage your account and preferences" />
+                )}
+                {children}
+              </div>
+            </div>
+          ) : (
+            <div className="px-4 sm:px-6 lg:px-12 xl:px-16 py-6 lg:py-8">{children}</div>
+          )}
         </main>
         <MobileBottomNav sidebarOpen={sidebarOpen} />
       </div>

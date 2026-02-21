@@ -208,6 +208,8 @@ export const ROUTES = {
   BOOKING_STATUS: (bookingId: string) => `/booking/${bookingId}`,
   OWNER_DASHBOARD: (bookingLink: string) => `/owner/${bookingLink}`,
   OWNER_DASHBOARD_BASE: '/owner/dashboard',
+  OWNER_SETUP: '/owner/setup',
+  OWNER_PROFILE: '/owner/profile',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_BUSINESS: (businessId: string) => `/admin/businesses/${businessId}`,
   ADMIN_BOOKING: (bookingId: string) => `/admin/bookings/${bookingId}`,
@@ -228,6 +230,9 @@ export const ROUTES = {
     return `/salon/${salonId}?token=pending`;
   },
   CUSTOMER_DASHBOARD: '/customer/dashboard',
+  CUSTOMER_CATEGORIES: '/customer/categories',
+  CUSTOMER_SALON_LIST: '/customer/categories/salon',
+  CUSTOMER_PROFILE: '/customer/profile',
   PROFILE: '/profile',
   AUTH_LOGIN: (redirectTo?: string) =>
     redirectTo ? `/auth/login?redirect_to=${encodeURIComponent(redirectTo)}` : '/auth/login',

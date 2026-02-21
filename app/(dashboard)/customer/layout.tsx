@@ -1,31 +1,34 @@
 import { redirect } from 'next/navigation';
-import { resolveUserAndRedirect } from '@/lib/auth/resolve-user-and-redirect';
+import { resolveUserAccess } from '@/services/access.service';
+import { CAPABILITIES } from '@/config/constants';
 import CustomerLayoutShell from '@/components/customer/customer-layout-shell';
 
 /**
- * Customer layout: server-side guard. Role deterministic at layout. Zero client session fetch.
+ * Customer layout: access via resolveUserAccess only. No business logic.
  */
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV === 'development') {
     console.log('[customer layout] Rendering at', Date.now());
   }
-  const resolved = await resolveUserAndRedirect(null, { requireScope: 'customer' });
-  if (resolved.redirectUrl) {
-    redirect(resolved.redirectUrl);
+  const result = await resolveUserAccess(null, {
+    requiredCapability: CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD,
+  });
+  if (!result.allowed && result.redirectUrl) {
+    redirect(result.redirectUrl);
   }
   const initialUser =
-    resolved.user?.id != null
+    result.user?.id != null
       ? {
-          id: resolved.user.id,
-          email: resolved.user.email,
-          full_name: (resolved.profile as { full_name?: string } | null)?.full_name,
+          id: result.user.id,
+          email: result.user.email,
+          full_name: (result.profile as { full_name?: string } | null)?.full_name,
         }
       : null;
   return (
     <CustomerLayoutShell
       role="customer"
       initialUser={initialUser}
-      requireClientAuthCheck={resolved.requireClientAuthCheck}
+      requireClientAuthCheck={result.requireClientAuthCheck}
     >
       {children}
     </CustomerLayoutShell>

@@ -83,9 +83,12 @@ export const WHATSAPP_MESSAGE_TEMPLATES = {
     `Thank you for your understanding.`,
 } as const;
 
+/** Mobile/phone: exactly 10 digits (no extra digits allowed). */
+export const PHONE_DIGITS = 10;
+
 export const VALIDATION = {
-  WHATSAPP_NUMBER_MIN_LENGTH: 10,
-  WHATSAPP_NUMBER_MAX_LENGTH: 15,
+  WHATSAPP_NUMBER_MIN_LENGTH: PHONE_DIGITS,
+  WHATSAPP_NUMBER_MAX_LENGTH: PHONE_DIGITS,
   SALON_NAME_MIN_LENGTH: 2,
   SALON_NAME_MAX_LENGTH: 100,
   OWNER_NAME_MIN_LENGTH: 2,
@@ -94,13 +97,17 @@ export const VALIDATION = {
   ADDRESS_MAX_LENGTH: 500,
 } as const;
 
+/** Simple email format for input validation (local + @ + domain). */
+export const EMAIL_REGEX =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
 export const ERROR_MESSAGES = {
   SALON_NAME_REQUIRED: 'Salon name is required',
   SALON_NAME_INVALID: `Salon name must be between ${VALIDATION.SALON_NAME_MIN_LENGTH} and ${VALIDATION.SALON_NAME_MAX_LENGTH} characters`,
   OWNER_NAME_REQUIRED: 'Owner name is required',
   OWNER_NAME_INVALID: `Owner name must be between ${VALIDATION.OWNER_NAME_MIN_LENGTH} and ${VALIDATION.OWNER_NAME_MAX_LENGTH} characters`,
   WHATSAPP_NUMBER_REQUIRED: 'WhatsApp number is required',
-  WHATSAPP_NUMBER_INVALID: 'Invalid WhatsApp number format',
+  WHATSAPP_NUMBER_INVALID: `Please enter a valid 10-digit mobile number (${PHONE_DIGITS} digits only)`,
   ADDRESS_REQUIRED: 'Address is required',
   ADDRESS_INVALID: `Address must be between ${VALIDATION.ADDRESS_MIN_LENGTH} and ${VALIDATION.ADDRESS_MAX_LENGTH} characters`,
   OPENING_TIME_REQUIRED: 'Opening time is required',
@@ -116,8 +123,9 @@ export const ERROR_MESSAGES = {
   SLOT_NOT_AVAILABLE: 'This slot is no longer available',
   BOOKING_NOT_FOUND: 'Booking not found',
   CUSTOMER_NAME_REQUIRED: 'Customer name is required',
-  CUSTOMER_PHONE_REQUIRED: 'Customer phone number is required',
-  CUSTOMER_PHONE_INVALID: 'Invalid phone number format',
+  CUSTOMER_PHONE_REQUIRED: 'Please enter your phone number',
+  CUSTOMER_PHONE_INVALID: `Please enter a valid 10-digit mobile number (${PHONE_DIGITS} digits only)`,
+  EMAIL_INVALID: 'Please enter a valid email address',
   BOOKING_ID_REQUIRED: 'Booking ID is required',
   WHATSAPP_SEND_FAILED: 'Failed to send WhatsApp message',
   WHATSAPP_NUMBER_EXISTS:
@@ -186,12 +194,73 @@ export const UI_CONTEXT = {
   ROOT_CHECKING_ACCOUNT: 'Checking your account…',
   ADMIN_CONSOLE: 'Admin Console',
   YOU_ARE_IN_ADMIN_MODE: 'You are in admin mode',
-  VIEWING_AS_CUSTOMER: 'Viewing as: Customer',
-  VIEWING_AS_OWNER: 'Viewing as: Owner',
+  VIEWING_AS_CUSTOMER: 'Customer',
+  VIEWING_AS_OWNER: 'Owner',
   VIEWING_AS_ADMIN: 'Viewing as: Admin',
   ROLE_OWNER_HELPER: 'Manages a business and receives bookings.',
   ROLE_CUSTOMER_HELPER: 'Books services.',
   ROLE_BOTH_HELPER: 'Does both.',
+  /** Shown when user tries to access owner area but this account is not set up as owner. */
+  ROLE_ACCESS_DENIED_NOT_OWNER:
+    "This account isn't set up as an owner. You can use it as a customer here, or sign in with a different email for the owner flow. One email can be both; you can also use two different emails for the two roles.",
+  /** Shown when user tries to access customer area but this account cannot use customer flow. */
+  ROLE_ACCESS_DENIED_NOT_CUSTOMER:
+    "This account doesn't have customer access. You can continue as owner, or sign in with a different email for the customer flow.",
+} as const;
+
+/** Customer flow UI – generic, multi-service-ready copy. No category names. */
+export const UI_CUSTOMER = {
+  NAV_MY_ACTIVITY: 'My Activity',
+  NAV_EXPLORE_SERVICES: 'Explore Services',
+  NAV_PROFILE: 'Profile',
+  HEADER_MY_ACTIVITY: 'My Activity',
+  HEADER_MY_ACTIVITY_SUB: 'View and manage your appointments',
+  HEADER_EXPLORE_SERVICES: 'Explore Services',
+  HEADER_EXPLORE_SUB: 'Discover services near you',
+  HEADER_BROWSE_SUB: 'Find trusted providers in your area',
+  HEADER_PROFILE: 'My Profile',
+  HEADER_PROFILE_SUB: 'Manage your account and preferences',
+  HEADER_BOOKING_DETAILS: 'Appointment Details',
+  HEADER_BOOKING_DETAILS_SUB: 'View your appointment status',
+  STAT_TOTAL_APPOINTMENTS: 'Total Appointments',
+  STAT_UPCOMING: 'Upcoming',
+  STAT_COMPLETED: 'Completed',
+  SECTION_APPOINTMENTS: 'Appointments',
+  EMPTY_ACTIVITY: "You don't have any appointments yet.",
+  CTA_EXPLORE_SERVICES: 'Explore Services',
+  DISCOVER_HEADING: 'Discover Services Near You',
+  DISCOVER_SUB: 'Choose a service to get started',
+  CATEGORY_CTA: 'View Providers',
+  SEARCH_PLACEHOLDER: 'Search by name or location',
+  RESULTS_COUNT: 'results found',
+  RESULT_COUNT: 'result found',
+  EMPTY_NO_MATCH: "We couldn't find any matches.",
+  EMPTY_TRY_FILTERS: 'Adjust filters or try a different search.',
+  CTA_ADJUST_FILTERS: 'Adjust filters',
+  PROVIDER_FALLBACK: 'Provider',
+  LABEL_BOOKING_ID: 'Appointment ID',
+  BREADCRUMB_BACK_EXPLORE: 'Back to Explore Services',
+  BOOK_PAGE_SUB: 'Book your appointment',
+  BOOKING_SENT_HEADING: 'Booking Request Sent!',
+  BOOKING_SENT_ID_LABEL: 'Your booking ID is:',
+  BOOKING_SENT_WHATSAPP_HINT:
+    'Click the button below to send your booking request to the salon owner on WhatsApp',
+  CTA_OPEN_WHATSAPP: 'Open WhatsApp',
+  CTA_VIEW_BOOKING_STATUS: 'View Booking Status',
+  BOOKING_SENT_CONFIRM_HINT:
+    'The salon owner will confirm your appointment and send you a confirmation message',
+  LABEL_YOUR_NAME: 'Your Name',
+  LABEL_PHONE_NUMBER: 'Phone Number',
+  LABEL_SELECT_DATE: 'Select Date',
+  LABEL_SELECT_TIME: 'Select Time',
+  PLACEHOLDER_NAME: 'John Doe',
+  PLACEHOLDER_PHONE: '10 digits',
+  SLOT_VERIFYING: 'Verifying...',
+  SLOT_FULL: 'Full',
+  SUBMIT_BOOKING: 'Send Booking Request',
+  SUBMIT_BOOKING_LOADING: 'Creating Booking...',
+  SLOTS_NONE: 'No slots available for this date',
+  SLOT_NO_LONGER_AVAILABLE: 'Your selected slot is no longer available. Please select another.',
 } as const;
 
 /** Contextual error messages (no internal details). */
@@ -300,3 +369,28 @@ export const AUTH_PENDING_ROLE_MAX_AGE_SECONDS = 300; // 5 min
 
 /** Client: debounce Supabase auth refresh_token requests to avoid 429. */
 export const AUTH_REFRESH_DEBOUNCE_MS = 60_000; // 1 min
+
+/** Role names stored in DB (roles.name) and in user_roles. No "both" - use multiple roles. */
+export const ROLES = ['customer', 'owner', 'admin'] as const;
+export type RoleName = (typeof ROLES)[number];
+
+/** Capabilities for layout/route access. Derive from roles; do not check role directly. */
+export const CAPABILITIES = {
+  ACCESS_ADMIN_DASHBOARD: 'access:admin_dashboard',
+  ACCESS_OWNER_DASHBOARD: 'access:owner_dashboard',
+  ACCESS_CUSTOMER_DASHBOARD: 'access:customer_dashboard',
+  ACCESS_SETUP: 'access:setup',
+} as const;
+export type CapabilityName = (typeof CAPABILITIES)[keyof typeof CAPABILITIES];
+
+/** Role → capabilities. Admin has all; owner/customer only their own unless both roles. */
+export const ROLE_CAPABILITIES: Record<RoleName, CapabilityName[]> = {
+  admin: [
+    CAPABILITIES.ACCESS_ADMIN_DASHBOARD,
+    CAPABILITIES.ACCESS_OWNER_DASHBOARD,
+    CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD,
+    CAPABILITIES.ACCESS_SETUP,
+  ],
+  owner: [CAPABILITIES.ACCESS_OWNER_DASHBOARD, CAPABILITIES.ACCESS_SETUP],
+  customer: [CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD],
+};
