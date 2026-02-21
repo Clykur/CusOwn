@@ -109,18 +109,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
     }
 
-    // Check if salon has address (required for confirmation message)
-    if (!bookingWithDetails.salon.address || bookingWithDetails.salon.address.trim() === '') {
-      throw new Error(
-        'Salon address is required to send confirmation. Please update the salon address first.'
-      );
-    }
-
-    const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
-      bookingWithDetails,
-      bookingWithDetails.salon,
-      request
-    );
+    const hasSalonAddress =
+      !!bookingWithDetails.salon.address && bookingWithDetails.salon.address.trim() !== '';
+    const whatsappUrl = hasSalonAddress
+      ? whatsappService.getConfirmationWhatsAppUrl(
+          bookingWithDetails,
+          bookingWithDetails.salon,
+          request
+        )
+      : undefined;
 
     await reminderService.scheduleBookingReminders(id);
 
@@ -141,13 +138,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       `[SECURITY] Booking accepted: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${user?.id.substring(0, 8) || 'token-based'}...`
     );
 
-    const response = successResponse(
-      {
-        ...confirmedBooking,
-        whatsapp_url: whatsappUrl,
-      },
-      SUCCESS_MESSAGES.BOOKING_CONFIRMED
-    );
+    const payload =
+      whatsappUrl !== undefined
+        ? { ...confirmedBooking, whatsapp_url: whatsappUrl }
+        : confirmedBooking;
+    const response = successResponse(payload, SUCCESS_MESSAGES.BOOKING_CONFIRMED);
     setNoCacheHeaders(response);
     return response;
   } catch (error) {

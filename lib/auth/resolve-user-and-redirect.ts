@@ -1,6 +1,7 @@
 /**
  * Single entry auth gate for protected routes.
  * Run in server components/layouts only. Redirect before any UI to avoid flicker.
+ * @deprecated Dashboard layouts use resolveUserAccess from @/services/access.service. Kept for non-layout callers.
  */
 
 import type { NextRequest } from 'next/server';
@@ -165,6 +166,16 @@ export async function resolveUserAndRedirect(
     redirectUrl = new URL(ROUTES.SELECT_ROLE(), baseUrl).toString();
   }
 
+  // Customer scope: do not redirect to /setup; let them stay on customer dashboard.
+  if (
+    requireScope === 'customer' &&
+    permissions.canAccessCustomer &&
+    redirectUrl &&
+    new URL(redirectUrl).pathname === ROUTES.SETUP
+  ) {
+    redirectUrl = null;
+  }
+
   if (requireScope === 'admin' && !permissions.canAccessAdmin) {
     void import('@/services/audit.service').then(({ auditService }) =>
       auditService.createAuditLog(user.id, 'admin_access_denied', 'user', {
@@ -176,11 +187,20 @@ export async function resolveUserAndRedirect(
     redirectUrl = redirectUrl ?? new URL(state.redirectUrl ?? ROUTES.HOME, baseUrl).toString();
   }
   if (requireScope === 'owner' && !permissions.canAccessOwner) {
-    redirectUrl = redirectUrl ?? new URL(state.redirectUrl ?? ROUTES.HOME, baseUrl).toString();
+    const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl);
+    selectRoleUrl.searchParams.set('error', 'not_owner');
+    redirectUrl = selectRoleUrl.toString();
   }
   if (requireScope === 'customer' && !permissions.canAccessCustomer) {
-    redirectUrl = redirectUrl ?? new URL(state.redirectUrl ?? ROUTES.HOME, baseUrl).toString();
+    const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('customer'), baseUrl);
+    selectRoleUrl.searchParams.set('error', 'not_customer');
+    redirectUrl = selectRoleUrl.toString();
   }
+
+  // User has permission for this scope: do not redirect (avoids loop when already on scope path).
+  if (requireScope === 'admin' && permissions.canAccessAdmin) redirectUrl = null;
+  if (requireScope === 'owner' && permissions.canAccessOwner) redirectUrl = null;
+  if (requireScope === 'customer' && permissions.canAccessCustomer) redirectUrl = null;
 
   if (process.env.NODE_ENV === 'development' && redirectUrl) {
     console.log('[AUTH] resolveUserAndRedirect: redirecting', {

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
+import { Toast } from '@/components/ui/toast';
 
 interface RescheduleButtonProps {
   bookingId: string;
@@ -27,7 +28,7 @@ export default function RescheduleButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validatingSlot, setValidatingSlot] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleReschedule = async () => {
     if (!selectedSlotId) {
@@ -78,15 +79,12 @@ export default function RescheduleButton({
       }
 
       const selectedSlot = availableSlots.find((slot) => slot.id === selectedSlotId);
-
-      setSuccessMessage(
-        `Rescheduled to ${formatDate(selectedSlot?.date || '')} at ${formatTime(
-          selectedSlot?.start_time || ''
-        )}`
-      );
+      const message = `Rescheduled to ${formatDate(selectedSlot?.date || '')} at ${formatTime(
+        selectedSlot?.start_time || ''
+      )}`;
 
       setShowModal(false);
-
+      setToastMessage(message);
       if (onRescheduled) onRescheduled();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reschedule');
@@ -101,10 +99,8 @@ export default function RescheduleButton({
 
   return (
     <>
-      {successMessage && (
-        <div className="mb-3 p-3 bg-green-100 text-green-800 rounded-lg text-sm font-medium">
-          {successMessage}
-        </div>
+      {toastMessage && (
+        <Toast message={toastMessage} variant="success" onDismiss={() => setToastMessage(null)} />
       )}
       <button
         onClick={() => setShowModal(true)}

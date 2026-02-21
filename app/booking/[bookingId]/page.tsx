@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { UI_BOOKING_STATE, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
+import { UI_BOOKING_STATE, UI_CONTEXT, UI_CUSTOMER, UI_ERROR_CONTEXT } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import RescheduleButton from '@/components/booking/reschedule-button';
 import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingStatusSkeleton } from '@/components/ui/skeleton';
-import { supabaseAuth } from '@/lib/supabase/auth'; // add this at top if not already
-import Header from '@/components/layout/header';
+import { supabaseAuth } from '@/lib/supabase/auth';
 
 export default function BookingStatusPage() {
   const params = useParams();
@@ -66,14 +65,14 @@ export default function BookingStatusPage() {
         data: { session },
       } = await supabaseAuth.auth.getSession();
 
-      if (!session?.access_token) {
-        throw new Error('Unauthorized');
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
       }
 
       const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        credentials: 'include',
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
       });
       const result = await response.json();
 
@@ -157,21 +156,29 @@ export default function BookingStatusPage() {
   };
 
   if (loading) {
-    return <BookingStatusSkeleton />;
+    return (
+      <div className="w-full pb-24 flex flex-col gap-8">
+        <BookingStatusSkeleton />
+      </div>
+    );
   }
 
   if (error || !booking) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Not Found</h2>
-          <p className="text-gray-600 mb-8">{UI_ERROR_CONTEXT.BOOKING_PAGE}</p>
-          <Link
-            href={ROUTES.HOME}
-            className="inline-block px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
-          >
-            Go to Home
-          </Link>
+      <div className="w-full pb-24 flex flex-col gap-8">
+        <div className="w-full">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">
+              {UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}
+            </h2>
+            <p className="text-slate-600 mb-6">{error || 'Booking not found.'}</p>
+            <Link
+              href={ROUTES.CUSTOMER_DASHBOARD}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition shadow-sm"
+            >
+              {UI_CUSTOMER.NAV_MY_ACTIVITY}
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -212,141 +219,62 @@ export default function BookingStatusPage() {
   const canCancel = booking.status === 'confirmed' || booking.status === 'pending';
 
   return (
-    <div className="min-h-screen bg-white flex">
-      <Header />
-      <div className="flex-1 lg:ml-64">
-        <div className="max-w-7xl mx-auto px-4 pt-20 sm:pt-20 lg:pt-32 pb-20 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200">
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Booking Status</h1>
-              <p className="text-sm text-gray-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
-              <div className="flex items-center gap-2 text-gray-600">
-                <span>Booking ID:</span>
-                <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg">
-                  {booking.booking_id}
-                </span>
-              </div>
-            </div>
+    <div className="w-full pb-24 flex flex-col gap-8">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div className="mb-8">
+          <h1 className="text-xl font-semibold text-slate-900 mb-2">
+            {UI_CUSTOMER.HEADER_BOOKING_DETAILS}
+          </h1>
+          <p className="text-sm text-slate-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
+          <div className="flex items-center gap-2 text-slate-600">
+            <span className="text-sm">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
+            <span className="font-mono text-sm bg-slate-100 px-3 py-1 rounded-xl text-slate-900">
+              {booking.booking_id}
+            </span>
+          </div>
+        </div>
 
-            <div
-              className={`px-6 py-4 rounded-xl mb-8 border-2 ${
-                booking.status === 'confirmed'
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : booking.status === 'pending'
-                    ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                    : booking.status === 'rejected'
-                      ? 'bg-red-50 border-red-200 text-red-800'
-                      : 'bg-gray-50 border-gray-200 text-gray-800'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {booking.status === 'confirmed' ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : booking.status === 'pending' ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                ) : null}
-                <p className="font-bold text-lg">{getStatusMessage(booking.status)}</p>
-              </div>
-            </div>
+        <div
+          className={`px-6 py-4 rounded-xl mb-8 border-2 ${
+            booking.status === 'confirmed'
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : booking.status === 'pending'
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : booking.status === 'rejected'
+                  ? 'bg-red-50 border-red-200 text-red-800'
+                  : 'bg-slate-50 border-slate-200 text-slate-800'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {booking.status === 'confirmed' ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : booking.status === 'pending' ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            ) : null}
+            <p className="font-bold text-lg">{getStatusMessage(booking.status)}</p>
+          </div>
+        </div>
 
-            <div className="grid gap-6 md:grid-cols-2 mb-8">
-              {booking.salon && (
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                    Business Details
-                  </h2>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                        Business Name
-                      </p>
-                      <p className="font-semibold text-gray-900">{booking.salon.salon_name}</p>
-                    </div>
-                    {booking.salon.location && (
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                          Location
-                        </p>
-                        <p className="text-gray-700">{booking.salon.location}</p>
-                      </div>
-                    )}
-                    {booking.salon.address && (
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                          Address
-                        </p>
-                        <p className="text-sm text-gray-600">{booking.salon.address}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {booking.slot && (
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    Appointment Details
-                  </h2>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Date</p>
-                      <p className="font-semibold text-gray-900">{formatDate(booking.slot.date)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Time</p>
-                      <p className="font-semibold text-gray-900">
-                        {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 mb-8">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
+          {booking.salon && (
+            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                 <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-5 h-5 text-slate-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -355,84 +283,155 @@ export default function BookingStatusPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
-                Your Details
+                Business Details
               </h2>
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Name</p>
-                  <p className="font-semibold text-gray-900">{booking.customer_name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Phone</p>
-                  <p className="font-semibold text-gray-900">{booking.customer_phone}</p>
-                </div>
-              </div>
-            </div>
-
-            {booking.cancelled_at && (
-              <div className="mb-6 bg-gray-100 p-4 rounded-lg">
-                <p className="font-medium text-gray-900">Cancellation Details</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Cancelled{' '}
-                  {booking.cancelled_by === 'customer'
-                    ? 'by you'
-                    : booking.cancelled_by === 'owner'
-                      ? 'by business owner'
-                      : 'automatically'}{' '}
-                  on {new Date(booking.cancelled_at).toLocaleString()}
-                </p>
-                {booking.cancellation_reason && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Reason: {booking.cancellation_reason}
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+                    Business Name
                   </p>
+                  <p className="font-semibold text-slate-900">{booking.salon.salon_name}</p>
+                </div>
+                {booking.salon.location && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Location</p>
+                    <p className="text-slate-700">{booking.salon.location}</p>
+                  </div>
                 )}
-              </div>
-            )}
-
-            {canCancel && (
-              <div className="mb-6 space-y-3">
-                <button
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="w-full bg-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {cancelling ? 'Cancelling...' : 'Cancel Booking'}
-                </button>
-                {booking.slot && booking.salon && availableSlots.length > 0 && !booking.no_show && (
-                  <div className="flex justify-center">
-                    <RescheduleButton
-                      bookingId={booking.id}
-                      currentSlot={booking.slot}
-                      businessId={booking.business_id}
-                      availableSlots={availableSlots}
-                      onRescheduled={fetchBooking}
-                      rescheduledBy="customer"
-                    />
+                {booking.salon.address && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Address</p>
+                    <p className="text-sm text-slate-600">{booking.salon.address}</p>
                   </div>
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
-              <Link
-                href={ROUTES.CUSTOMER_DASHBOARD}
-                className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-gray-100 text-gray-800 font-semibold py-3 px-6 rounded-xl hover:bg-gray-200 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {booking.slot && (
+            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-slate-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                View All Bookings
-              </Link>
+                Appointment Details
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Date</p>
+                  <p className="font-semibold text-slate-900">{formatDate(booking.slot.date)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Time</p>
+                  <p className="font-semibold text-slate-900">
+                    {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 mb-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-slate-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            Your Details
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Name</p>
+              <p className="font-semibold text-slate-900">{booking.customer_name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Phone</p>
+              <p className="font-semibold text-slate-900">{booking.customer_phone}</p>
             </div>
           </div>
+        </div>
+
+        {booking.cancelled_at && (
+          <div className="mb-6 bg-slate-100 p-4 rounded-xl">
+            <p className="font-medium text-slate-900">Cancellation Details</p>
+            <p className="text-sm text-slate-600 mt-1">
+              Cancelled{' '}
+              {booking.cancelled_by === 'customer'
+                ? 'by you'
+                : booking.cancelled_by === 'owner'
+                  ? 'by business owner'
+                  : 'automatically'}{' '}
+              on {new Date(booking.cancelled_at).toLocaleString()}
+            </p>
+            {booking.cancellation_reason && (
+              <p className="text-sm text-slate-600 mt-1">Reason: {booking.cancellation_reason}</p>
+            )}
+          </div>
+        )}
+
+        {canCancel && (
+          <div className="mb-6 space-y-3">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="w-full bg-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cancelling ? 'Cancelling...' : 'Cancel Booking'}
+            </button>
+            {booking.slot && booking.salon && availableSlots.length > 0 && !booking.no_show && (
+              <div className="flex justify-center">
+                <RescheduleButton
+                  bookingId={booking.id}
+                  currentSlot={booking.slot}
+                  businessId={booking.business_id}
+                  availableSlots={availableSlots}
+                  onRescheduled={fetchBooking}
+                  rescheduledBy="customer"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-200">
+          <Link
+            href={ROUTES.CUSTOMER_DASHBOARD}
+            className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-slate-100 text-slate-800 font-semibold py-3 px-6 rounded-xl hover:bg-slate-200 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            {UI_CUSTOMER.NAV_MY_ACTIVITY}
+          </Link>
         </div>
       </div>
     </div>

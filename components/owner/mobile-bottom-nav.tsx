@@ -21,8 +21,8 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   const bookingLink = bookingLinkMatch ? bookingLinkMatch[1] : undefined;
   const tabParam = searchParams?.get('tab') ?? null;
 
-  const isSetup = pathname === ROUTES.SETUP;
-  const isProfile = pathname === ROUTES.PROFILE;
+  const isSetup = pathname === ROUTES.SETUP || pathname === ROUTES.OWNER_SETUP;
+  const isProfile = pathname === ROUTES.PROFILE || pathname === ROUTES.OWNER_PROFILE;
 
   // Determine a single active tab value. Priority: explicit `tab` query -> businesses route -> business instance -> dashboard -> others
   let activeTab: string | null = null;
@@ -81,7 +81,7 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
     },
     {
       name: 'Create',
-      href: ROUTES.SETUP,
+      href: ROUTES.OWNER_SETUP,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -95,7 +95,7 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
     },
     {
       name: 'Profile',
-      href: ROUTES.PROFILE,
+      href: ROUTES.OWNER_PROFILE,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -115,8 +115,8 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   ];
 
   const isActive = (href: string) => {
-    if (href === ROUTES.SETUP) return activeTab === 'create';
-    if (href === ROUTES.PROFILE) return activeTab === 'profile';
+    if (href === ROUTES.OWNER_SETUP || href === ROUTES.SETUP) return activeTab === 'create';
+    if (href === ROUTES.OWNER_PROFILE || href === ROUTES.PROFILE) return activeTab === 'profile';
 
     // hrefs for dashboard tabs use ?tab=...
     const tabMatch = href.match(/\?tab=(.+)$/);

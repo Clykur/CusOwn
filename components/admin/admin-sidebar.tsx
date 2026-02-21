@@ -292,7 +292,7 @@ function AdminSidebarContent() {
           <div className="shrink-0 border-t border-slate-200 p-4">
             <div className="flex items-center justify-between gap-3">
               <Link
-                href="/profile"
+                href="/admin/profile"
                 prefetch={false}
                 className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}

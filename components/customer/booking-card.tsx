@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatDate, formatTime } from '@/lib/utils/string';
+import { UI_CUSTOMER } from '@/config/constants';
 
 interface CustomerBookingCardProps {
   booking: any;
@@ -127,27 +128,24 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
   };
 
   const statusConfig = getStatusConfig(booking.status);
-  const salonName = booking.salon?.salon_name || booking.business?.salon_name || 'Business';
+  const providerName =
+    booking.salon?.salon_name || booking.business?.salon_name || UI_CUSTOMER.PROVIDER_FALLBACK;
   const location = booking.salon?.location || booking.business?.location;
 
   return (
-    <div
-      className={`${statusConfig.bg} ${statusConfig.border} border-2 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-lg`}
-    >
+    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-sm">
       <div className="p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div
-              className={`${statusConfig.bg} ${statusConfig.border} border rounded-xl p-2.5 flex-shrink-0`}
-            >
+            <div className="bg-slate-100 border border-slate-200 rounded-lg p-2.5 flex-shrink-0">
               {statusConfig.icon}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className={`text-lg sm:text-xl font-bold ${statusConfig.text} mb-1 truncate`}>
-                {salonName}
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-1 truncate">
+                {providerName}
               </h3>
               {location && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <div className="flex items-center gap-1.5 text-sm text-slate-500">
                   <svg
                     className="w-4 h-4 flex-shrink-0"
                     fill="none"
@@ -180,12 +178,12 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
         </div>
 
         {booking.slot && (
-          <div className="bg-white/60 rounded-xl p-4 mb-4">
+          <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-100">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-2">
+                <div className="bg-white rounded-lg p-2 border border-slate-200">
                   <svg
-                    className="w-4 h-4 text-gray-700"
+                    className="w-4 h-4 text-slate-700"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -199,16 +197,16 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Date</p>
-                  <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Date</p>
+                  <p className="font-semibold text-slate-900 text-sm sm:text-base truncate">
                     {formatDate(booking.slot.date)}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-2">
+                <div className="bg-white rounded-lg p-2 border border-slate-200">
                   <svg
-                    className="w-4 h-4 text-gray-700"
+                    className="w-4 h-4 text-slate-700"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -222,8 +220,8 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Time</p>
-                  <p className="font-semibold text-gray-900 text-sm sm:text-base">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Time</p>
+                  <p className="font-semibold text-slate-900 text-sm sm:text-base">
                     {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
                   </p>
                 </div>
@@ -235,7 +233,7 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Link
             href={`/booking/${booking.booking_id}`}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white font-semibold rounded-xl hover:bg-gray-900 transition-all text-sm sm:text-base"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all text-sm sm:text-base"
           >
             View Details
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,10 +242,10 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
           </Link>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-gray-200/60">
+        <div className="mt-3 pt-3 border-t border-slate-200">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-gray-500">Booking ID:</p>
-            <span className="font-mono text-xs bg-white/80 px-2 py-1 rounded text-gray-700">
+            <p className="text-xs text-slate-500">{UI_CUSTOMER.LABEL_BOOKING_ID}:</p>
+            <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded text-slate-700 border border-slate-200">
               {booking.booking_id}
             </span>
           </div>

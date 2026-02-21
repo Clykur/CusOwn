@@ -3,7 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { API_ROUTES, BOOKING_LINK_PREFIX, ERROR_MESSAGES } from '@/config/constants';
+import {
+  API_ROUTES,
+  BOOKING_IDEMPOTENCY_HEADER,
+  ERROR_MESSAGES,
+  PHONE_DIGITS,
+  UI_CUSTOMER,
+} from '@/config/constants';
+import { ROUTES } from '@/lib/utils/navigation';
+import { generateUuidV7 } from '@/lib/uuid';
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
@@ -105,9 +113,7 @@ export default function BookingPage() {
             if (!updatedSlot || updatedSlot.status !== 'available') {
               setSelectedSlot(null);
               if (updatedSlot && updatedSlot.status !== 'available') {
-                setSlotValidationError(
-                  'Your selected slot is no longer available. Please select another.'
-                );
+                setSlotValidationError(UI_CUSTOMER.SLOT_NO_LONGER_AVAILABLE);
               }
             }
           }
@@ -139,9 +145,7 @@ export default function BookingPage() {
           if (!updatedSlot || updatedSlot.status !== 'available') {
             setSelectedSlot(null);
             if (updatedSlot && updatedSlot.status !== 'available') {
-              setSlotValidationError(
-                'Your selected slot is no longer available. Please select another.'
-              );
+              setSlotValidationError(UI_CUSTOMER.SLOT_NO_LONGER_AVAILABLE);
             }
           }
         }
@@ -160,7 +164,7 @@ export default function BookingPage() {
     setSlotValidationError(null);
     setError(null);
     try {
-      const response = await fetch(`/api/slots/${slot.id}`);
+      const response = await fetch(`/api/slots/${slot.id}`, { credentials: 'include' });
       const result = await response.json();
       if (result.success && result.data) {
         const currentSlot = result.data;
@@ -199,14 +203,13 @@ export default function BookingPage() {
       return;
     }
 
-    if (!customerPhone.trim()) {
-      setError('Please enter your phone number');
+    const phoneDigits = customerPhone.replace(/\D/g, '');
+    if (!phoneDigits) {
+      setError(ERROR_MESSAGES.CUSTOMER_PHONE_REQUIRED);
       return;
     }
-
-    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
-    if (!phoneRegex.test(customerPhone.trim())) {
-      setError('Please enter a valid phone number');
+    if (phoneDigits.length !== PHONE_DIGITS) {
+      setError(ERROR_MESSAGES.CUSTOMER_PHONE_INVALID);
       return;
     }
 
@@ -228,8 +231,10 @@ export default function BookingPage() {
       }
 
       const csrfToken = await getCSRFToken();
+      const idempotencyKey = generateUuidV7();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        [BOOKING_IDEMPOTENCY_HEADER]: idempotencyKey,
       };
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
@@ -243,7 +248,7 @@ export default function BookingPage() {
           salon_id: salon.id,
           slot_id: selectedSlot.id,
           customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim(),
+          customer_phone: phoneDigits,
         }),
       });
 
@@ -296,10 +301,12 @@ export default function BookingPage() {
 
   if (error && !salon) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Salon Not Found</h2>
-          <p className="text-gray-600 mb-8">{error}</p>
+      <div className="w-full">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">
+            {ERROR_MESSAGES.SALON_NOT_FOUND}
+          </h2>
+          <p className="text-slate-600">{error}</p>
         </div>
       </div>
     );
@@ -307,9 +314,9 @@ export default function BookingPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="w-full">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
+          <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
               className="w-8 h-8 text-white"
               fill="none"
@@ -324,30 +331,29 @@ export default function BookingPage() {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Sent!</h2>
-          <p className="text-gray-600 mb-6">
-            Your booking ID is: <strong>{success.bookingId}</strong>
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">
+            {UI_CUSTOMER.BOOKING_SENT_HEADING}
+          </h2>
+          <p className="text-slate-600 mb-6">
+            {UI_CUSTOMER.BOOKING_SENT_ID_LABEL}{' '}
+            <strong className="text-slate-900">{success.bookingId}</strong>
           </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Click the button below to send your booking request to the salon owner on WhatsApp
-          </p>
+          <p className="text-sm text-slate-500 mb-6">{UI_CUSTOMER.BOOKING_SENT_WHATSAPP_HINT}</p>
           <button
             onClick={openWhatsApp}
-            className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors mb-4"
+            className="w-full bg-slate-900 text-white font-semibold py-3 px-6 rounded-xl hover:bg-slate-800 transition-colors mb-4"
           >
-            Open WhatsApp
+            {UI_CUSTOMER.CTA_OPEN_WHATSAPP}
           </button>
-          {success.bookingStatusUrl && (
+          {success.bookingId && (
             <Link
-              href={success.bookingStatusUrl}
-              className="block w-full bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors mb-4"
+              href={ROUTES.BOOKING_STATUS(success.bookingId)}
+              className="block w-full bg-slate-100 text-slate-800 font-semibold py-3 px-6 rounded-xl hover:bg-slate-200 transition-colors mb-4"
             >
-              View Booking Status
+              {UI_CUSTOMER.CTA_VIEW_BOOKING_STATUS}
             </Link>
           )}
-          <p className="text-xs text-gray-500">
-            The salon owner will confirm your appointment and send you a confirmation message
-          </p>
+          <p className="text-xs text-slate-500">{UI_CUSTOMER.BOOKING_SENT_CONFIRM_HINT}</p>
         </div>
       </div>
     );
@@ -381,32 +387,35 @@ export default function BookingPage() {
   const bookedSlots = slots.filter((s) => s.status === 'booked');
 
   return (
-    <div className="min-h-screen bg-white px-4 pt-4 sm:pt-6 lg:pt-2 pb-12">
-      <div className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{salon?.salon_name}</h1>
-          <p className="text-gray-600 mb-8">Book your appointment</p>
+    <div className="w-full pb-24 flex flex-col gap-8">
+      <div className="w-full">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-slate-900 mb-2">{salon?.salon_name}</h1>
+          <p className="text-slate-600 mb-8">{UI_CUSTOMER.BOOK_PAGE_SUB}</p>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              {UI_CUSTOMER.LABEL_SELECT_DATE}
+            </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {' '}
               <button
+                type="button"
                 onClick={() => setSelectedDate(today.toISOString().split('T')[0])}
-                className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                className={`px-4 py-2 rounded-xl border-2 transition-colors ${
                   selectedDate === today.toISOString().split('T')[0]
-                    ? 'border-black bg-gray-100 text-black'
-                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                    ? 'border-slate-900 bg-slate-100 text-slate-900'
+                    : 'border-slate-300 text-slate-700 hover:border-slate-400'
                 }`}
               >
                 Today ({formatDate(today.toISOString().split('T')[0])})
               </button>
               <button
+                type="button"
                 onClick={() => setSelectedDate(tomorrow.toISOString().split('T')[0])}
-                className={`px-4 py-2 rounded-lg border-2 transition-colors ${
+                className={`px-4 py-2 rounded-xl border-2 transition-colors ${
                   selectedDate === tomorrow.toISOString().split('T')[0]
-                    ? 'border-black bg-gray-100 text-black'
-                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                    ? 'border-slate-900 bg-slate-100 text-slate-900'
+                    : 'border-slate-300 text-slate-700 hover:border-slate-400'
                 }`}
               >
                 Tomorrow ({formatDate(tomorrow.toISOString().split('T')[0])})
@@ -416,43 +425,45 @@ export default function BookingPage() {
 
           {selectedDate && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Time</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {UI_CUSTOMER.LABEL_SELECT_TIME}
+              </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                 {slots.length === 0 ? (
-                  <p className="col-span-full text-gray-500 text-center py-4">
-                    No slots available for this date
+                  <p className="col-span-full text-slate-500 text-center py-4">
+                    {UI_CUSTOMER.SLOTS_NONE}
                   </p>
                 ) : (
                   getFilteredSlots().map((slot) => {
                     const isSelected = selectedSlot?.id === slot.id;
                     const isBooked = slot.status === 'booked';
-                    // Backend already filters past slots, so we just need to check booked status
                     const isDisabled = isBooked;
 
                     return (
                       <button
                         key={slot.id}
+                        type="button"
                         onClick={() => handleSlotSelect(slot)}
                         disabled={isDisabled || validatingSlot || submitting}
-                        className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border-2 transition-colors ${
+                        className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-xl border-2 transition-colors ${
                           isDisabled
-                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                             : validatingSlot && isSelected
-                              ? 'border-yellow-400 bg-yellow-50 text-yellow-800'
+                              ? 'border-amber-400 bg-amber-50 text-amber-800'
                               : isSelected
-                                ? 'border-black bg-gray-100 text-black'
-                                : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                                ? 'border-slate-900 bg-slate-100 text-slate-900'
+                                : 'border-slate-300 text-slate-700 hover:border-slate-400'
                         }`}
                       >
                         {validatingSlot && isSelected ? (
                           <span className="flex items-center gap-2">
-                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></span>
-                            Verifying...
+                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
+                            {UI_CUSTOMER.SLOT_VERIFYING}
                           </span>
                         ) : (
                           <>
                             {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                            {isBooked && ' (Full)'}
+                            {isBooked && ` (${UI_CUSTOMER.SLOT_FULL})`}
                           </>
                         )}
                       </button>
@@ -467,9 +478,9 @@ export default function BookingPage() {
             <div>
               <label
                 htmlFor="customer_name"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Your Name <span className="text-black">*</span>
+                {UI_CUSTOMER.LABEL_YOUR_NAME} <span className="text-slate-900">*</span>
               </label>
               <input
                 type="text"
@@ -477,31 +488,38 @@ export default function BookingPage() {
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                placeholder="John Doe"
+                className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
+                placeholder={UI_CUSTOMER.PLACEHOLDER_NAME}
               />
             </div>
 
             <div>
               <label
                 htmlFor="customer_phone"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Phone Number <span className="text-black">*</span>
+                {UI_CUSTOMER.LABEL_PHONE_NUMBER} <span className="text-slate-900">*</span>
               </label>
               <input
                 type="tel"
                 id="customer_phone"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, PHONE_DIGITS);
+                  setCustomerPhone(digits);
+                }}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                placeholder="9876543210"
+                maxLength={PHONE_DIGITS}
+                pattern="[0-9]{10}"
+                inputMode="numeric"
+                autoComplete="tel"
+                className="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
+                placeholder={UI_CUSTOMER.PLACEHOLDER_PHONE}
               />
             </div>
 
             {(error || slotValidationError) && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
                 {error || slotValidationError}
               </div>
             )}
@@ -509,15 +527,15 @@ export default function BookingPage() {
             <button
               type="submit"
               disabled={submitting || !selectedSlot || validatingSlot}
-              className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-slate-900 text-white font-semibold py-3 px-6 rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
-                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                  Creating Booking...
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  {UI_CUSTOMER.SUBMIT_BOOKING_LOADING}
                 </>
               ) : (
-                'Send Booking Request'
+                UI_CUSTOMER.SUBMIT_BOOKING
               )}
             </button>
           </form>

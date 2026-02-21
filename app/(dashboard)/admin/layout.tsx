@@ -1,28 +1,30 @@
 import { redirect } from 'next/navigation';
-import { resolveUserAndRedirect } from '@/lib/auth/resolve-user-and-redirect';
+import { resolveUserAccess } from '@/services/access.service';
+import { CAPABILITIES } from '@/config/constants';
 import { AdminLayoutShell } from '@/components/admin/admin-layout-shell';
 
 /**
- * Admin layout: server-side guard. Redirect before any UI. Role deterministic at layout.
- * Passes minimal user + role to shell; zero client session fetch.
+ * Admin layout: access via resolveUserAccess only. No business logic.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV === 'development') {
     console.log('[admin layout] Rendering at', Date.now());
   }
-  const resolved = await resolveUserAndRedirect(null, { requireScope: 'admin' });
-  if (resolved.redirectUrl) {
-    redirect(resolved.redirectUrl);
+  const result = await resolveUserAccess(null, {
+    requiredCapability: CAPABILITIES.ACCESS_ADMIN_DASHBOARD,
+  });
+  if (!result.allowed && result.redirectUrl) {
+    redirect(result.redirectUrl);
   }
-  const initialSession = resolved.user?.id
-    ? { user: { id: resolved.user.id, email: resolved.user.email }, profile: resolved.profile }
+  const initialSession = result.user?.id
+    ? { user: { id: result.user.id, email: result.user.email }, profile: result.profile }
     : null;
   return (
     <AdminLayoutShell
       role="admin"
       initialSession={initialSession}
-      initialAdminConfirmed={!resolved.requireClientAuthCheck}
-      requireClientAuthCheck={resolved.requireClientAuthCheck}
+      initialAdminConfirmed={!result.requireClientAuthCheck}
+      requireClientAuthCheck={result.requireClientAuthCheck}
     >
       {children}
     </AdminLayoutShell>

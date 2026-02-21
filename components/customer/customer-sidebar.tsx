@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
-import { UI_CONTEXT } from '@/config/constants';
+import { UI_CONTEXT, UI_CUSTOMER } from '@/config/constants';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
 
 interface NavItem {
@@ -15,7 +15,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   {
-    name: 'My Bookings',
+    name: UI_CUSTOMER.NAV_MY_ACTIVITY,
     href: ROUTES.CUSTOMER_DASHBOARD,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,24 +29,15 @@ const navigation: NavItem[] = [
     ),
   },
   {
-    name: 'Book Appointment',
-    href: ROUTES.CATEGORIES,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Browse Salons',
-    href: ROUTES.SALON_LIST,
+    name: UI_CUSTOMER.NAV_EXPLORE_SERVICES,
+    href: ROUTES.CUSTOMER_CATEGORIES,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={2}
-          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
         />
       </svg>
     ),
@@ -62,48 +53,32 @@ export default function CustomerSidebar({
 } = {}) {
   const pathname = usePathname();
 
-  // Support lifted state from parent (CustomerLayout) or fallback to internal state
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
 
   const { initialUser } = useCustomerSession();
-  const [navigating, setNavigating] = useState<string | null>(null);
 
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
 
-  useEffect(() => {
-    setNavigating(null);
-  }, [pathname]);
-
   const isActive = (href: string) => {
-    // Check exact matches first
-    if (pathname === href) {
-      return true;
-    }
-
-    // Dashboard: active on dashboard or booking status pages
+    if (pathname === href) return true;
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
       return pathname === ROUTES.CUSTOMER_DASHBOARD || pathname?.startsWith('/booking/');
     }
-
-    // Categories: active only on /categories (not on /categories/salon or /salon/)
-    if (href === ROUTES.CATEGORIES) {
-      return pathname === ROUTES.CATEGORIES;
-    }
-
-    // Salon List: active on /categories/salon or /salon/[id]
-    if (href === ROUTES.SALON_LIST) {
-      return pathname === ROUTES.SALON_LIST || pathname?.startsWith('/salon/');
-    }
-
+    if (href === ROUTES.CUSTOMER_CATEGORIES)
+      return (
+        pathname === ROUTES.CUSTOMER_CATEGORIES ||
+        pathname === ROUTES.CUSTOMER_SALON_LIST ||
+        pathname?.startsWith('/b/')
+      );
+    if (href === ROUTES.CUSTOMER_PROFILE) return pathname === ROUTES.CUSTOMER_PROFILE;
     return false;
   };
 
   return (
     <>
-      {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -111,23 +86,17 @@ export default function CustomerSidebar({
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`
-    fixed top-0 left-0 z-50 h-full w-64 bg-white
-    transition-transform duration-300
-    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-    lg:static lg:translate-x-0
-  `}
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
       >
-        <div className="h-full flex flex-col">
-          {/* Logo/Header */}
-          <div className="p-6 border-b border-gray-200 flex items-start justify-between">
+        <div className="flex h-full flex-col">
+          <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Customer</h2>
-              <p className="text-sm text-gray-500 mt-1">{UI_CONTEXT.VIEWING_AS_CUSTOMER}</p>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">CusOwn</h2>
+              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_CUSTOMER}</p>
             </div>
-            {/* Close button shown inside sidebar on mobile to avoid overlap */}
             <div className="lg:hidden">
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -151,51 +120,41 @@ export default function CustomerSidebar({
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-6">
             {navigation.map((item) => {
               const active = isActive(item.href);
-              const isNavigating = navigating === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   onClick={(e) => {
-                    if (item.href !== pathname) {
-                      setNavigating(item.href);
-                      setSidebarOpen(false);
-                    } else {
-                      e.preventDefault();
-                    }
+                    if (item.href !== pathname) setSidebarOpen(false);
+                    else e.preventDefault();
                   }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150 ${
                     active
-                      ? 'bg-black text-white shadow-md'
-                      : isNavigating
-                        ? 'bg-gray-100 text-gray-700'
-                        : 'text-gray-700 hover:bg-gray-100 hover:shadow-sm'
+                      ? 'border-l-2 border-slate-900 bg-slate-200/60 font-medium text-slate-900'
+                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
                   }`}
                 >
-                  <span className={isNavigating ? 'animate-spin' : ''}>{item.icon}</span>
-                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                    {item.name}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-5 [&>svg]:w-5">
+                    {item.icon}
                   </span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
                 </Link>
               );
             })}
           </nav>
 
-          {/* Profile Section */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="shrink-0 border-t border-slate-200 p-4">
             <div className="flex items-center justify-between gap-3">
-              <Link href={ROUTES.PROFILE} className="flex-1 min-w-0 flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+              <Link
+                href={ROUTES.CUSTOMER_PROFILE}
+                className="min-w-0 flex-1 flex items-center gap-3"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -204,17 +163,17 @@ export default function CustomerSidebar({
                     />
                   </svg>
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-sm font-semibold text-gray-900 truncate">
+                <div className="min-w-0 flex-1 flex flex-col">
+                  <span className="truncate text-sm font-medium text-slate-900">
                     {userName || 'User'}
                   </span>
-                  <span className="text-xs text-gray-500 truncate">{userEmail || ''}</span>
+                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
                 </div>
               </Link>
               <a
-                href="/api/auth/signout"
-                className="flex-shrink-0 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Sign Out"
+                href={`/api/auth/signout?redirect_to=${encodeURIComponent(ROUTES.SELECT_ROLE('owner'))}`}
+                className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
+                title="Sign out"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

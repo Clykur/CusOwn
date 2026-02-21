@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { ROLES, type RoleName } from '@/config/constants';
 
 export type UserType = 'owner' | 'customer' | 'both' | 'admin';
 
@@ -76,10 +77,56 @@ export class UserService {
   }
 
   /**
-   * Update user type (e.g., upgrade customer to owner)
+   * Update user type (e.g., upgrade customer to owner). Kept for backward compat; syncs to user_roles.
    */
   async updateUserType(userId: string, userType: UserType): Promise<UserProfile> {
-    return this.upsertUserProfile(userId, { user_type: userType });
+    const roleNames: string[] =
+      userType === 'admin'
+        ? ['admin']
+        : userType === 'both'
+          ? ['customer', 'owner']
+          : userType === 'owner'
+            ? ['owner']
+            : ['customer'];
+    await this.setUserRoles(userId, roleNames);
+    const profile = await this.getUserProfile(userId);
+    if (!profile) throw new Error('Profile not found after setUserRoles');
+    return profile;
+  }
+
+  /**
+   * Set user roles (string array). Writes user_roles and syncs user_profiles.user_type for RLS.
+   * Does not allow setting admin via this method; use DB or admin flow.
+   */
+  async setUserRoles(userId: string, roleNames: string[]): Promise<void> {
+    if (!supabaseAdmin) throw new Error('Database not configured');
+
+    const valid = roleNames.filter((r) => ROLES.includes(r as RoleName));
+    const { data: roleRows } = await supabaseAdmin
+      .from('roles')
+      .select('id, name')
+      .in('name', valid);
+    if (!roleRows?.length) {
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+      await this.upsertUserProfile(userId, { user_type: 'customer' });
+      return;
+    }
+
+    await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+    const inserts = roleRows.map((r) => ({ user_id: userId, role_id: r.id }));
+    await supabaseAdmin.from('user_roles').insert(inserts);
+
+    const names = roleRows.map((r) => r.name);
+    const userType: UserType = names.includes('admin')
+      ? 'admin'
+      : names.includes('owner') && names.includes('customer')
+        ? 'both'
+        : names.includes('owner')
+          ? 'owner'
+          : names.includes('customer')
+            ? 'customer'
+            : 'customer';
+    await this.upsertUserProfile(userId, { user_type: userType });
   }
 
   /**

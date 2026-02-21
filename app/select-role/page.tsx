@@ -9,6 +9,11 @@ import { isAdmin } from '@/lib/supabase/auth';
 // userService is imported dynamically to avoid bundling server-only code
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
+
+const ROLE_ACCESS_ERRORS = {
+  not_owner: UI_CONTEXT.ROLE_ACCESS_DENIED_NOT_OWNER,
+  not_customer: UI_CONTEXT.ROLE_ACCESS_DENIED_NOT_CUSTOMER,
+} as const;
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import RoleCard from '@/components/onboarding/role-card';
 import { SelectRoleSkeleton } from '@/components/ui/skeleton';
@@ -18,16 +23,22 @@ function SelectRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlRole = searchParams.get('role') as 'owner' | 'customer' | null;
+  const accessError = searchParams.get('error') as keyof typeof ROLE_ACCESS_ERRORS | null;
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<'owner' | 'customer' | null>(urlRole);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [dismissedError, setDismissedError] = useState(false);
+
+  const errorMessage =
+    accessError && !dismissedError && ROLE_ACCESS_ERRORS[accessError]
+      ? ROLE_ACCESS_ERRORS[accessError]
+      : null;
 
   // Sync URL role with state when URL changes (only run when urlRole changes, not selectedRole)
   useEffect(() => {
     if (urlRole && urlRole !== selectedRole) {
-      console.log('[Role Select] URL role changed to:', urlRole);
       setSelectedRole(urlRole);
     }
   }, [urlRole]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -183,6 +194,22 @@ function SelectRoleContent() {
   return (
     <div className="min-h-screen bg-white py-16 px-4 sm:py-24">
       <div className="max-w-5xl mx-auto">
+        {errorMessage && (
+          <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 flex items-start gap-3">
+            <span className="text-amber-600 flex-shrink-0 mt-0.5" aria-hidden>
+              ℹ️
+            </span>
+            <p className="text-sm text-amber-900 flex-1">{errorMessage}</p>
+            <button
+              type="button"
+              onClick={() => setDismissedError(true)}
+              className="text-amber-700 hover:text-amber-900 font-medium flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 mb-4">
             How would you like to use CusOwn?
@@ -240,7 +267,7 @@ function SelectRoleContent() {
               'Book appointments instantly',
               'Get WhatsApp confirmations',
               'View all your bookings',
-              'Reschedule or fcancel easily',
+              'Reschedule or cancel easily',
             ]}
             selected={selectedRole === 'customer'}
             onClick={() => handleRoleSelect('customer')}

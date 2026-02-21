@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     'A modern appointment and slot management platform for service businesses. Simple, reliable, and built to scale.',
 };
 
-/** Root layout: static. No cookies, no headers, no user resolution. Auth only in (dashboard) role layouts. */
-export const dynamic = 'force-static';
+/** Segment config must be a static literal (no conditional). Use force-dynamic so auth/chunk URLs work in dev and prod. */
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
