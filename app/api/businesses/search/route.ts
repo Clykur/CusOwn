@@ -8,7 +8,6 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { haversineDistance, validateCoordinates, validateRadius } from '@/lib/utils/geo';
 import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
 
-
 const searchRateLimit = enhancedRateLimit({
   maxRequests: 20,
   windowMs: 60000,
@@ -43,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { filterFields } = await import('@/lib/security/input-filter');
+
     const allowedFields = [
       'latitude',
       'longitude',
@@ -58,8 +58,10 @@ export async function POST(request: NextRequest) {
       'sort_by',
       'sort_order',
     ] as const;
+
     const filteredBody = filterFields(body, allowedFields);
 
+    // Validate coordinates
     if (filteredBody.latitude !== undefined || filteredBody.longitude !== undefined) {
       if (
         filteredBody.latitude === undefined ||
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Require at least one location filter
     if (
       !filteredBody.latitude &&
       !filteredBody.city &&
@@ -79,15 +82,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('Location required', 400);
     }
 
-    const allowedCategories = await getAllowedCategoryValues();
-    if (
-      filteredBody.category &&
-      allowedCategories.length &&
-      !allowedCategories.includes(filteredBody.category)
-    ) {
-      return errorResponse('Invalid category', 400);
-    }
-
+    // Validate radius
     if (filteredBody.radius_km && !validateRadius(filteredBody.radius_km)) {
       return errorResponse('Invalid radius', 400);
     }
@@ -103,13 +98,16 @@ export async function POST(request: NextRequest) {
     let query = supabaseAdmin
       .from('businesses')
       .select('id, salon_name, location, category, latitude, longitude, area');
-    // Only show active, non-deleted businesses
+
+    // Only active & non-deleted businesses
     query = applyActiveBusinessFilters(query);
 
+    // Category filter
     if (filteredBody.category) {
       query = query.eq('category', filteredBody.category);
     }
 
+    // Location filters
     if (filteredBody.pincode) {
       query = query.eq('pincode', filteredBody.pincode);
     } else if (filteredBody.city) {
@@ -133,38 +131,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    let results: Array<{
-      id: any;
-      salon_name: any;
-      location: any;
-      category: any;
-      latitude: any;
-      longitude: any;
-      area?: any;
-      distance_km?: number;
-    }> = businesses;
+    let results = businesses;
     const hasMore = results.length > limit;
+
     if (hasMore) {
       results = results.slice(0, limit);
     }
 
+    // Distance filtering
     if (filteredBody.latitude && filteredBody.longitude) {
       const radius = filteredBody.radius_km || 10;
+
       results = results
         .map((business) => {
-          if (!business.latitude || !business.longitude) {
-            return null;
-          }
+          if (!business.latitude || !business.longitude) return null;
+
           const distance = haversineDistance(
             filteredBody.latitude!,
             filteredBody.longitude!,
             business.latitude,
             business.longitude
           );
-          if (distance > radius) {
-            return null;
-          }
-          return { ...business, distance_km: Math.round(distance * 10) / 10 };
+
+          if (distance > radius) return null;
+
+          return {
+            ...business,
+            distance_km: Math.round(distance * 10) / 10,
+          };
         })
         .filter((b): b is NonNullable<typeof b> => b !== null);
 
