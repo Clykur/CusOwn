@@ -103,8 +103,20 @@ export type ResolveAccessOptions = {
   baseUrl?: string;
 };
 
+/** Normalize host so duplicated hostnames (e.g. proxy misconfig) become a single host. */
+function normalizeHost(host: string): string {
+  const h = host.split(':')[0]?.toLowerCase() ?? host;
+  // If host looks like "domain.comdomain.com", use first segment only.
+  const mid = h.length / 2;
+  if (mid >= 2 && h.slice(0, mid) === h.slice(mid)) {
+    return host.replace(new RegExp(h.slice(mid) + '(?=:|$)', 'i'), '');
+  }
+  return host;
+}
+
 function buildBaseUrl(headers: Headers): string {
-  const host = headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost';
+  let host = headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost';
+  host = normalizeHost(host);
   const proto = headers.get('x-forwarded-proto') ?? 'http';
   const h = host.split(':')[0]?.toLowerCase();
   const port =
@@ -190,10 +202,11 @@ export async function resolveUserAccess(
     allowed = false;
   }
 
+  // Use path-only redirects so layouts get /path (no full URL); avoids doubled host from proxy/baseUrl.
   let redirectUrl: string | null = null;
   if (!allowed) {
     if (!profile) {
-      redirectUrl = new URL(ROUTES.SELECT_ROLE(), baseUrl).toString();
+      redirectUrl = ROUTES.SELECT_ROLE();
     } else if (requiredCapability === CAPABILITIES.ACCESS_ADMIN_DASHBOARD) {
       void import('@/services/audit.service').then(({ auditService }) =>
         auditService.createAuditLog(user.id, 'admin_access_denied', 'user', {
@@ -202,17 +215,13 @@ export async function resolveUserAccess(
           request: request as NextRequest,
         })
       );
-      redirectUrl = new URL(ROUTES.HOME, baseUrl).toString();
+      redirectUrl = ROUTES.HOME;
     } else if (requiredCapability === CAPABILITIES.ACCESS_OWNER_DASHBOARD) {
-      const u = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl);
-      u.searchParams.set('error', 'not_owner');
-      redirectUrl = u.toString();
+      redirectUrl = `${ROUTES.SELECT_ROLE('owner')}&error=not_owner`;
     } else if (requiredCapability === CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD) {
-      const u = new URL(ROUTES.SELECT_ROLE('customer'), baseUrl);
-      u.searchParams.set('error', 'not_customer');
-      redirectUrl = u.toString();
+      redirectUrl = `${ROUTES.SELECT_ROLE('customer')}&error=not_customer`;
     } else if (requiredCapability === CAPABILITIES.ACCESS_SETUP) {
-      redirectUrl = new URL(ROUTES.OWNER_DASHBOARD_BASE, baseUrl).toString();
+      redirectUrl = ROUTES.OWNER_DASHBOARD_BASE;
     }
   }
 

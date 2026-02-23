@@ -13,12 +13,15 @@ export const securityMiddleware = async (request: NextRequest): Promise<NextResp
     return tokenBucketResponse;
   }
 
-  // Exempt: read-only URL generation; webhooks (signature-verified); cron (CRON_SECRET)
+  // Exempt: read-only URL generation; webhooks (signature-verified); cron (CRON_SECRET);
+  // public booking (no session when user lands from QR, so no CSRF cookie yet).
   const isExemptFromCsrf =
     request.nextUrl.pathname === '/api/security/generate-salon-url' ||
     request.nextUrl.pathname === '/api/security/generate-resource-url' ||
     request.nextUrl.pathname.startsWith('/api/payments/webhook/') ||
-    request.nextUrl.pathname.startsWith('/api/cron/');
+    request.nextUrl.pathname.startsWith('/api/cron/') ||
+    request.nextUrl.pathname === '/api/book/set-pending' ||
+    request.nextUrl.pathname === '/api/bookings';
 
   if (!isExemptFromCsrf) {
     const csrfResponse = await csrfProtection(request);
