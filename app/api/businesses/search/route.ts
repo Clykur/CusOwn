@@ -131,7 +131,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    let results = businesses;
+  type BusinessResult = {
+  id: any;
+  salon_name: any;
+  location: any;
+  category: any;
+  latitude: any;
+  longitude: any;
+  area?: any;
+  distance_km?: number;
+};
+
+let results: BusinessResult[] = businesses;
     const hasMore = results.length > limit;
 
     if (hasMore) {
