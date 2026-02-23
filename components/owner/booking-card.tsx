@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import NoShowButton from '@/components/booking/no-show-button';
+import { UI_CONTEXT } from '@/config/constants';
 
 interface BookingCardProps {
   booking: any;
@@ -12,6 +13,9 @@ interface BookingCardProps {
   actionError: string | null;
   actionSuccess: string | null;
   onRescheduled?: () => void;
+  onUndoAccept?: (id: string) => void;
+  onUndoReject?: (id: string) => void;
+  undoWindowMinutes?: number;
 }
 
 export default function BookingCard({
@@ -22,6 +26,9 @@ export default function BookingCard({
   actionError,
   actionSuccess,
   onRescheduled,
+  onUndoAccept,
+  onUndoReject,
+  undoWindowMinutes = 5,
 }: BookingCardProps) {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -54,12 +61,29 @@ export default function BookingCard({
         return 'bg-gray-200 text-gray-800';
       case 'rejected':
         return 'bg-gray-300 text-gray-800';
+      case 'cancelled':
+      case 'expired':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const statusLabel =
+    booking.status === 'cancelled' && booking.cancelled_by === 'customer'
+      ? UI_CONTEXT.CANCELLED_BY_CUSTOMER
+      : booking.status === 'cancelled'
+        ? 'Cancelled'
+        : booking.status;
+
   const isProcessing = processingId === booking.id;
+  const canUndo =
+    undoWindowMinutes > 0 &&
+    (booking.status === 'confirmed' || booking.status === 'rejected') &&
+    !booking.undo_used_at &&
+    (booking.updated_at
+      ? Date.now() - new Date(booking.updated_at).getTime() < undoWindowMinutes * 60 * 1000
+      : false);
 
   return (
     <div className="relative w-full overflow-hidden">
@@ -165,7 +189,7 @@ export default function BookingCard({
               booking.status
             )}`}
           >
-            {booking.status}
+            {statusLabel}
           </span>
         </div>
 
@@ -190,7 +214,7 @@ export default function BookingCard({
               <button
                 onClick={() => onAccept(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center bg-black text-white rounded-lg disabled:opacity-50"
+                className="h-9 w-9 flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                 title="Accept"
               >
                 <svg
@@ -208,7 +232,7 @@ export default function BookingCard({
               <button
                 onClick={() => onReject(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center bg-gray-200 text-gray-800 rounded-lg disabled:opacity-50"
+                className="h-9 w-9 flex items-center justify-center bg-rose-900 text-white rounded-lg hover:bg-rose-800 disabled:opacity-50"
                 title="Reject"
               >
                 <svg
@@ -229,6 +253,60 @@ export default function BookingCard({
               bookingId={booking.id}
               onMarked={() => onRescheduled && onRescheduled()}
             />
+          )}
+          {canUndo && booking.status === 'confirmed' && onUndoAccept && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-emerald-700">Accepted</span>
+              <button
+                type="button"
+                onClick={() => onUndoAccept(booking.id)}
+                disabled={isProcessing}
+                title={UI_CONTEXT.UNDO_LABEL}
+                className="h-9 w-9 flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 disabled:opacity-50"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
+          {canUndo && booking.status === 'rejected' && onUndoReject && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-rose-800">Rejected</span>
+              <button
+                type="button"
+                onClick={() => onUndoReject(booking.id)}
+                disabled={isProcessing}
+                title={UI_CONTEXT.UNDO_LABEL}
+                className="h-9 w-9 flex items-center justify-center bg-rose-100 text-rose-900 rounded-lg hover:bg-rose-200 disabled:opacity-50"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+                  />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
       </div>

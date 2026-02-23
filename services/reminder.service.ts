@@ -21,7 +21,12 @@ export type BookingReminder = {
 };
 
 export class ReminderService {
-  async createReminder(bookingId: string, reminderType: '24h_before' | '2h_before' | 'custom', scheduledAt: string, channel: 'whatsapp' | 'sms' | 'email'): Promise<BookingReminder> {
+  async createReminder(
+    bookingId: string,
+    reminderType: '24h_before' | '2h_before' | 'custom',
+    scheduledAt: string,
+    channel: 'whatsapp' | 'sms' | 'email'
+  ): Promise<BookingReminder> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('booking_reminders')
@@ -42,6 +47,16 @@ export class ReminderService {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
     return data;
+  }
+
+  /** Cancel pending reminders for a booking (e.g. when owner undoes accept). */
+  async cancelRemindersForBooking(bookingId: string): Promise<void> {
+    const supabaseAdmin = requireSupabaseAdmin();
+    await supabaseAdmin
+      .from('booking_reminders')
+      .delete()
+      .eq('booking_id', bookingId)
+      .eq('status', 'pending');
   }
 
   async scheduleBookingReminders(bookingId: string): Promise<void> {
@@ -117,10 +132,10 @@ export class ReminderService {
     try {
       if (reminder.channel === 'whatsapp') {
         await whatsappCircuitBreaker.execute(async () => {
-          return retry(
-            () => this.sendWhatsAppReminder(booking, reminder.reminder_type),
-            { maxAttempts: 3, initialDelayMs: 1000 }
-          );
+          return retry(() => this.sendWhatsAppReminder(booking, reminder.reminder_type), {
+            maxAttempts: 3,
+            initialDelayMs: 1000,
+          });
         });
       }
       await this.markReminderSent(reminderId);
@@ -131,7 +146,10 @@ export class ReminderService {
     }
   }
 
-  private async sendWhatsAppReminder(booking: BookingWithDetails, reminderType: string): Promise<void> {
+  private async sendWhatsAppReminder(
+    booking: BookingWithDetails,
+    reminderType: string
+  ): Promise<void> {
     if (!booking.slot || !booking.salon) {
       throw new Error('Booking details incomplete');
     }

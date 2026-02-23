@@ -1,22 +1,32 @@
 import { NextRequest } from 'next/server';
-import { noShowService } from '@/services/no-show.service';
 import { bookingService } from '@/services/booking.service';
-import { notificationService } from '@/services/notification.service';
-import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { isValidUUID } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
-import { ERROR_MESSAGES } from '@/config/constants';
+import { userService } from '@/services/user.service';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { auditService } from '@/services/audit.service';
 import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 
-const ROUTE = 'POST /api/bookings/[id]/no-show';
+const undoAcceptRateLimit = enhancedRateLimit({
+  maxRequests: 10,
+  windowMs: 60000,
+  perIP: true,
+  keyPrefix: 'booking_undo_accept',
+});
+const ROUTE = 'POST /api/bookings/[id]/undo-accept';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const clientIP = getClientIp(request);
+
   try {
     await bookingService.runLazyExpireIfNeeded();
+
+    const rateLimitResponse = await undoAcceptRateLimit(request);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await params;
     if (!id || !isValidUUID(id)) {
@@ -47,39 +57,39 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse('Access denied', 403);
     }
 
-    const updatedBooking = await noShowService.markNoShow({
-      bookingId: id,
-      markedBy: 'owner',
-    });
-
-    // SECURITY: Log mutation for audit
+    const updated = await bookingService.revertConfirmToPending(id, ctx.user.id);
     try {
-      await auditService.createAuditLog(ctx.user.id, 'booking_no_show', 'booking', {
+      await auditService.createAuditLog(ctx.user.id, 'booking_undo_accept', 'booking', {
         entityId: id,
-        description: 'Booking marked as no-show by owner',
+        description: 'Booking reverted to pending (undo accept)',
+        oldData: { status: 'confirmed' },
+        newData: { status: 'pending' },
         request,
       });
     } catch (auditError) {
       console.error('[SECURITY] Failed to create audit log:', auditError);
     }
 
-    if (booking.salon) {
-      const message = `We noticed you didn't show up for your appointment on ${booking.slot?.date} at ${booking.slot?.start_time}. Please contact us to reschedule.`;
-      try {
-        await notificationService.sendBookingNotification(
-          id,
-          'whatsapp',
-          message,
-          booking.customer_phone
-        );
-      } catch {}
-    }
+    console.log(
+      `[SECURITY] Booking undo accept: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${ctx.user.id.substring(0, 8)}...`
+    );
 
-    const response = successResponse(updatedBooking);
+    const response = successResponse(updated, SUCCESS_MESSAGES.BOOKING_REVERTED_TO_PENDING);
     setNoCacheHeaders(response);
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
-    return errorResponse(message, 400);
+    console.error(`[SECURITY] Undo accept error: IP: ${clientIP}, Error: ${message}`);
+    if (message === ERROR_MESSAGES.BOOKING_NOT_FOUND) {
+      return errorResponse(message, 404);
+    }
+    const isRpcUnavailable =
+      (message.includes('function') && message.includes('does not exist')) ||
+      message.includes('Could not find the function');
+    if (isRpcUnavailable) {
+      return errorResponse(ERROR_MESSAGES.DATABASE_ERROR, 503);
+    }
+    // Any other failure (state machine, RPC result, window, etc.) is a conflict from user's perspective
+    return errorResponse(message, 409);
   }
 }

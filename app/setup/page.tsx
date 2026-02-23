@@ -4,7 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SLOT_DURATIONS, API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
+import {
+  SLOT_DURATIONS,
+  API_ROUTES,
+  ERROR_MESSAGES,
+  BUSINESS_CATEGORIES_FALLBACK,
+} from '@/config/constants';
 import { CreateSalonInput } from '@/types';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
@@ -30,12 +35,16 @@ export default function SetupPage() {
     slot_duration: '30',
     address: '',
     location: '',
+    category: 'salon',
   });
   const [success, setSuccess] = useState<{
     bookingLink: string;
     bookingUrl: string;
     qrCode?: string;
   } | null>(null);
+  const [businessCategories, setBusinessCategories] = useState<{ value: string; label: string }[]>(
+    BUSINESS_CATEGORIES_FALLBACK
+  );
 
   const searchParams = useSearchParams();
   const fromOnboarding = searchParams.get('from') === 'onboarding';
@@ -97,6 +106,23 @@ export default function SetupPage() {
   useEffect(() => {
     checkAuthAndState();
   }, [checkAuthAndState]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(API_ROUTES.BUSINESS_CATEGORIES, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((res) => {
+        if (cancelled) return;
+        const list = res?.data && Array.isArray(res.data) ? res.data : [];
+        setBusinessCategories(list.length ? list : BUSINESS_CATEGORIES_FALLBACK);
+      })
+      .catch(() => {
+        if (!cancelled) setBusinessCategories(BUSINESS_CATEGORIES_FALLBACK);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Refresh state when tab becomes visible (handles tab switching)
   useEffect(() => {
@@ -746,6 +772,33 @@ export default function SetupPage() {
                 <p className="mt-1.5 text-xs text-gray-600">
                   This name will appear on your booking page
                 </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+                <label
+                  htmlFor="category"
+                  className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+                >
+                  Business type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="category"
+                  name="category"
+                  value={
+                    businessCategories.some((c) => c.value === (formData.category ?? 'salon'))
+                      ? (formData.category ?? 'salon')
+                      : (businessCategories[0]?.value ?? 'salon')
+                  }
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black transition-all"
+                >
+                  {businessCategories.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">

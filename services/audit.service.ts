@@ -15,6 +15,8 @@ export type AuditActionType =
   | 'booking_updated'
   | 'booking_confirmed'
   | 'booking_rejected'
+  | 'booking_undo_accept'
+  | 'booking_undo_reject'
   | 'booking_cancelled'
   | 'booking_rescheduled'
   | 'booking_no_show'

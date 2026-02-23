@@ -4,7 +4,7 @@
  *
  * APPROVED ASSUMPTIONS:
  * - Booking–slot consistency: one slot → at most one confirmed booking (DB-enforced).
- * - Booking lifecycle: state machine (pending → confirm | reject | cancel | expire) only.
+ * - Booking lifecycle: state machine (pending → confirm | reject | cancel | expire) only; undo (confirmed/rejected → pending) allowed within configured time window.
  * - Cancellation/expiry: customer/owner cancel within policy; system expire via cron only.
  *
  * PAYMENT–BOOKING POLICY (Product Owner decision):

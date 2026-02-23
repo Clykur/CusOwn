@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   salon_name TEXT NOT NULL,
   owner_name TEXT NOT NULL,
-  whatsapp_number TEXT NOT NULL UNIQUE,
+  whatsapp_number TEXT NOT NULL,
   opening_time TIME NOT NULL,
   closing_time TIME NOT NULL,
   slot_duration INTEGER NOT NULL CHECK (slot_duration > 0),
@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS bookings (
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'rejected', 'cancelled')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Business categories: available services for Business type (dropdown). Populated by migration_business_categories_table.sql.
+CREATE TABLE IF NOT EXISTS business_categories (
+  value TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for performance

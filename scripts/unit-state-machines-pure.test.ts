@@ -60,6 +60,27 @@ export function runUnitStateMachinesPureTests(): void {
     );
   });
 
+  runTest('should_booking_canTransition_allow_confirmed_to_pending_when_event_undo_confirm', () => {
+    assert(
+      bookingStateMachine.canTransition('confirmed', 'undo_confirm') === true,
+      'Expected true'
+    );
+  });
+
+  runTest('should_booking_canTransition_allow_rejected_to_pending_when_event_undo_reject', () => {
+    assert(bookingStateMachine.canTransition('rejected', 'undo_reject') === true, 'Expected true');
+  });
+
+  runTest('should_booking_getNextState_return_pending_when_confirmed_undo_confirm', () => {
+    const next = bookingStateMachine.getNextState('confirmed', 'undo_confirm');
+    assert(next === 'pending', `Expected 'pending', got '${next}'`);
+  });
+
+  runTest('should_booking_getNextState_return_pending_when_rejected_undo_reject', () => {
+    const next = bookingStateMachine.getNextState('rejected', 'undo_reject');
+    assert(next === 'pending', `Expected 'pending', got '${next}'`);
+  });
+
   runTest('should_slot_canTransition_allow_available_to_reserved_when_event_reserve', () => {
     assert(slotStateMachine.canTransition('available', 'reserve') === true, 'Expected true');
   });
