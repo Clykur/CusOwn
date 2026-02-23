@@ -28,9 +28,7 @@ export async function middleware(request: NextRequest) {
         cookieLength: cookieHeader.length,
       });
     }
-    if (host === 'localhost' && !pathname.startsWith('/_next')) {
-      console.log('[middleware] Dev server runs on port 3000. Use http://localhost:3000');
-    }
+    // No-op: do not log localhost warning in production
   }
 
   let response: NextResponse;

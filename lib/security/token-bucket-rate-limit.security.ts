@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getClientIp } from '@/lib/utils/security';
+import { getClientIp } from '@/lib/utils/edge-helpers';
 import {
   TOKEN_BUCKET_CAPACITY,
   TOKEN_BUCKET_REFILL_PER_SEC,

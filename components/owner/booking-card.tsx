@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import NoShowButton from '@/components/booking/no-show-button';
+import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import { UI_CONTEXT } from '@/config/constants';
 
 interface BookingCardProps {
@@ -77,6 +78,7 @@ export default function BookingCard({
         : booking.status;
 
   const isProcessing = processingId === booking.id;
+  // Accept/Reject should be disabled if processing (parent disables via prop)
   const canUndo =
     undoWindowMinutes > 0 &&
     (booking.status === 'confirmed' || booking.status === 'rejected') &&
@@ -99,32 +101,11 @@ export default function BookingCard({
                   setSwipeOffset(0);
                 }}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center bg-black text-white rounded-lg disabled:opacity-50"
+                className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
                 title="Accept"
+                aria-label="Accept booking"
               >
-                {isProcessing ? (
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
+                <IconCheck className="h-6 w-6" />
               </button>
 
               {/* Reject */}
@@ -134,21 +115,16 @@ export default function BookingCard({
                   setSwipeOffset(0);
                 }}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center bg-gray-200 text-gray-800 rounded-lg disabled:opacity-50"
+                className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
                 title="Reject"
+                aria-label="Reject booking"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <IconCross className="h-6 w-6" />
               </button>
             </>
           )}
+
+          {/* Undo button removed */}
         </div>
       </div>
 
@@ -185,11 +161,17 @@ export default function BookingCard({
             <p className="text-sm text-gray-500">{booking.customer_phone || 'No phone'}</p>
           </div>
           <span
-            className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+            className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(
               booking.status
             )}`}
           >
-            {statusLabel}
+            {booking.status === 'confirmed' && (
+              <IconCheck className="h-4 w-4 text-green-600" aria-label="Accepted" />
+            )}
+            {booking.status === 'rejected' && (
+              <IconCross className="h-4 w-4 text-red-600" aria-label="Rejected" />
+            )}
+            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
           </span>
         </div>
 
@@ -214,45 +196,34 @@ export default function BookingCard({
               <button
                 onClick={() => onAccept(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+
+                className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
+
                 title="Accept"
+                aria-label="Accept booking"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                <IconCheck className="h-6 w-6" />
               </button>
 
               {/* Reject */}
               <button
                 onClick={() => onReject(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center bg-rose-900 text-white rounded-lg hover:bg-rose-800 disabled:opacity-50"
+
+                className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
+
                 title="Reject"
+                aria-label="Reject booking"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <IconCross className="h-6 w-6" />
               </button>
             </>
           )}
 
           {booking.status === 'confirmed' && !booking.no_show && (
-            <NoShowButton
-              bookingId={booking.id}
-              onMarked={() => onRescheduled && onRescheduled()}
-            />
+            <div className="w-full">
+              <NoShowButton bookingId={booking.id} onMarked={onRescheduled} />
+            </div>
           )}
           {canUndo && booking.status === 'confirmed' && onUndoAccept && (
             <div className="flex items-center gap-2">

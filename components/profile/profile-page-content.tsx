@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ERROR_MESSAGES, PHONE_DIGITS } from '@/config/constants';
+import { ERROR_MESSAGES, PHONE_DIGITS, SUCCESS_MESSAGES } from '@/config/constants';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import {
   ROUTES,
@@ -72,6 +72,11 @@ export function ProfilePageContent({
   });
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [secureBusinessUrls, setSecureBusinessUrls] = useState<Map<string, string>>(new Map());
+
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -189,6 +194,49 @@ export function ProfilePageContent({
     }
   };
 
+  const handleDeleteAccount = async () => {
+    const { user: sessionUser } = await getServerSessionClient();
+    if (!sessionUser) {
+      setError('Session expired');
+      setShowDeleteConfirm(false);
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
+      const response = await fetch('/api/user/profile', {
+        method: 'DELETE',
+        headers,
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setDeleteMessage(SUCCESS_MESSAGES.ACCOUNT_DELETED);
+        setShowDeleteConfirm(false);
+        // Sign out and redirect after showing the message
+        setTimeout(() => {
+          window.location.href = `/api/auth/signout?redirect_to=${encodeURIComponent(ROUTES.HOME)}`;
+        }, 5000);
+      } else {
+        setError(result.error || 'Failed to delete account');
+        setShowDeleteConfirm(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const getUserTypeLabel = (type: string) => {
     switch (type) {
       case 'owner':
@@ -251,7 +299,11 @@ export function ProfilePageContent({
       </div>
     );
   }
-
+  const handleMobileSignOut = () => {
+    window.location.href = `/api/auth/signout?redirect_to=${encodeURIComponent(
+      ROUTES.SELECT_ROLE('owner')
+    )}`;
+  };
   if (!profileData) {
     return embedded ? <OwnerProfileSkeleton /> : <ProfileSkeleton />;
   }
@@ -404,152 +456,116 @@ export function ProfilePageContent({
         )}
       </section>
 
-      {/* Statistics */}
-      <section className="rounded-lg border border-slate-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-1">Overview</h3>
-        <p className="text-sm text-slate-500 mt-0.5 mb-6">Your businesses and bookings</p>
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-              Total businesses
-            </p>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-              {profileData.statistics.businessCount}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-              Total bookings
-            </p>
-            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-              {profileData.statistics.bookingCount}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Businesses (if owner) */}
-      {profileData.businesses.length > 0 && (
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">My businesses</h3>
-              <p className="text-sm text-slate-500 mt-0.5">Manage and view your businesses</p>
-            </div>
-            <Link
-              href={setupHref}
-              className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
+      {/* Delete Account Section */}
+      {deleteMessage ? (
+        <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-6">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              + Add business
-            </Link>
-          </div>
-          <div className="rounded-xl border border-slate-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-[700px] w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Business name
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Location
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Created
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {profileData.businesses.map((business) => (
-                    <tr key={business.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="text-sm font-medium text-slate-900">
-                          {business.salon_name}
-                        </div>
-                        <div className="text-xs text-slate-500">{business.booking_link}</div>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-slate-600">
-                        {business.location || 'N/A'}
-                      </td>
-                      <td className="px-5 py-4 text-sm text-slate-600">
-                        {formatDate(business.created_at)}
-                      </td>
-                      <td className="px-5 py-4 text-sm font-medium">
-                        <Link
-                          href={
-                            secureBusinessUrls.get(business.booking_link) ||
-                            getOwnerDashboardUrl(business.booking_link)
-                          }
-                          className="text-slate-900 hover:text-slate-700"
-                        >
-                          Manage
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-emerald-800 mb-2">Account Deleted</h3>
+              <p className="text-sm text-emerald-700">{deleteMessage}</p>
+              <p className="text-sm text-emerald-600 mt-3">Redirecting to home page...</p>
             </div>
           </div>
         </section>
+      ) : (
+        <section className="rounded-lg border border-red-200 bg-red-50/50 p-6">
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div>
+              <h3 className="text-lg font-semibold text-red-800">Delete Account</h3>
+              <p className="text-sm text-red-600 mt-0.5">
+                Permanently remove your account and data
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-slate-600 mb-4">
+            Once you delete your account, all your profile information and associated business data
+            will be removed from the public platform. Your data will be retained for 30 days for
+            administrative purposes before being permanently deleted.
+          </p>
+          {profileData.statistics.businessCount > 0 && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <strong>Warning:</strong> You have {profileData.statistics.businessCount} business
+              {profileData.statistics.businessCount > 1 ? 'es' : ''} associated with your account.
+              Deleting your account will also remove{' '}
+              {profileData.statistics.businessCount > 1 ? 'these businesses' : 'this business'} from
+              the platform.
+            </div>
+          )}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={deleting || profileData.profile?.user_type === 'admin'}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Delete my account
+          </button>
+          {profileData.profile?.user_type === 'admin' && (
+            <p className="text-xs text-slate-500 mt-2">Admin accounts cannot be self-deleted.</p>
+          )}
+        </section>
       )}
 
-      {/* Quick Actions */}
-      <section className="rounded-lg border border-slate-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-1">Quick actions</h3>
-        <p className="text-sm text-slate-500 mt-0.5 mb-6">Shortcuts to dashboards and booking</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(profileData.profile?.user_type === 'owner' ||
-            profileData.profile?.user_type === 'both') && (
-            <Link
-              href={ROUTES.OWNER_DASHBOARD_BASE}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-            >
-              <div className="font-semibold text-slate-900">Owner dashboard</div>
-              <div className="text-sm text-slate-500 mt-0.5">Manage your businesses</div>
-            </Link>
-          )}
-          {(profileData.profile?.user_type === 'customer' ||
-            profileData.profile?.user_type === 'both') && (
-            <Link
-              href={ROUTES.CUSTOMER_DASHBOARD}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-            >
-              <div className="font-semibold text-slate-900">Customer dashboard</div>
-              <div className="text-sm text-slate-500 mt-0.5">View your bookings</div>
-            </Link>
-          )}
-          {(profileData.profile?.user_type === 'owner' ||
-            profileData.profile?.user_type === 'both') && (
-            <Link
-              href={setupHref}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-            >
-              <div className="font-semibold text-slate-900">Create business</div>
-              <div className="text-sm text-slate-500 mt-0.5">Add a new business</div>
-            </Link>
-          )}
-          {profileData.profile?.user_type === 'admin' && (
-            <Link
-              href={ROUTES.ADMIN_DASHBOARD}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-            >
-              <div className="font-semibold text-slate-900">Admin dashboard</div>
-              <div className="text-sm text-slate-500 mt-0.5">Platform management</div>
-            </Link>
-          )}
-          <Link
-            href={ROUTES.CATEGORIES}
-            className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-          >
-            <div className="font-semibold text-slate-900">Book a service</div>
-            <div className="text-sm text-slate-500 mt-0.5">Find and book services</div>
-          </Link>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-xl font-semibold text-slate-900 mb-4">Confirm Account Deletion</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Are you sure you want to delete your account? This action will:
+            </p>
+            <ul className="text-sm text-slate-600 mb-4 list-disc list-inside space-y-1">
+              <li>Remove your profile from the platform</li>
+              {profileData.statistics.businessCount > 0 && (
+                <li>
+                  Remove {profileData.statistics.businessCount} business
+                  {profileData.statistics.businessCount > 1 ? 'es' : ''} from the platform
+                </li>
+              )}
+              <li>Keep your data for 30 days for recovery purposes</li>
+              <li>Permanently delete your data after 30 days</li>
+            </ul>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting...' : 'Yes, delete my account'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
-      </section>
+      )}
+
+      {/* Sign out button for mobile */}
+      <div className="mt-10 flex justify-center lg:hidden">
+        {' '}
+        <button
+          onClick={handleMobileSignOut}
+          className="px-8 py-3 rounded-xl bg-red-600 text-sm font-semibold text-white shadow-lg active:scale-95 transition-transform"
+        >
+          Sign Out
+        </button>
+      </div>
     </div>
   );
 

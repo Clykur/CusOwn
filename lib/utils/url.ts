@@ -5,6 +5,19 @@ const isLocalhost = (url: string): boolean => {
   return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('0.0.0.0');
 };
 
+/** Ensure the localhost-in-production warning is only emitted once per process, and never during `next build`. */
+let _localhostWarned = false;
+const warnLocalhostOnce = (): void => {
+  if (_localhostWarned) return;
+  // Suppress during build — NODE_ENV is 'production' but localhost is expected.
+  if (process.env.NEXT_PHASE === 'phase-production-build') return;
+  _localhostWarned = true;
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[WARNING] Running in production with a localhost base URL. Set NEXT_PUBLIC_APP_URL to your production domain.'
+  );
+};
+
 const isProduction = (): boolean => {
   if (process.env.NODE_ENV === 'production') return true;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -54,9 +67,17 @@ export const getBaseUrl = (request?: NextRequest): string => {
     }
   }
 
-  if (isNode) {
+  // Server environment (Node.js or Edge Runtime)
+  const isServer = typeof window === 'undefined';
+
+  if (isServer) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (appUrl) return appUrl;
+    if (appUrl) {
+      if (process.env.NODE_ENV === 'production' && isLocalhost(appUrl)) {
+        warnLocalhostOnce();
+      }
+      return appUrl;
+    }
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
     return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -93,21 +114,23 @@ export const getApiUrl = (path: string, request?: NextRequest): string => {
 };
 
 export const getClientBaseUrl = (): string => {
-  // Check if we're in Node.js environment (not browser)
-  const isNode =
-    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+  // Server environment (Node.js or Edge Runtime)
+  const isServer = typeof window === 'undefined';
 
-  if (isNode) {
+  if (isServer) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (appUrl) return appUrl;
+    if (appUrl) {
+      if (process.env.NODE_ENV === 'production' && isLocalhost(appUrl)) {
+        warnLocalhostOnce();
+      }
+      return appUrl;
+    }
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
-    return isProduction()
-      ? 'https://cusown.clykur.com'
-      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return 'http://localhost:3000';
   }
 
-  // Browser environment - check for window object safely
+  // Browser environment
   try {
     if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
       const win = globalThis as any;
@@ -119,12 +142,6 @@ export const getClientBaseUrl = (): string => {
     // Ignore errors in Node.js environment
   }
 
-  // Fallback: check environment variables and production status
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl) return appUrl;
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl}`;
-  return isProduction()
-    ? 'https://cusown.clykur.com'
-    : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // Final fallback
+  return 'http://localhost:3000';
 };

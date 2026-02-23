@@ -12,7 +12,7 @@ let terminalStates: Set<string> | null = null;
 let stateMachineBuiltAt = 0;
 const STATE_MACHINE_TTL_MS = 60_000;
 
-export type BookingEvent = 'confirm' | 'reject' | 'cancel' | 'expire';
+export type BookingEvent = 'confirm' | 'reject' | 'cancel' | 'expire' | 'restore';
 
 /**
  * Load states and transitions from DB; build adjacency map and terminal set.

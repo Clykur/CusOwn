@@ -44,6 +44,7 @@ export type CreateBookingRpcParams = {
 };
 
 export class BookingService {
+  // Undo/restoreBooking feature removed
   /**
    * Prepares params for create_booking_atomically / create_booking_idempotent_reserve.
    * Validates services and generates unique booking_id.

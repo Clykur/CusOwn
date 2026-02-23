@@ -100,6 +100,7 @@ export class SalonService {
       )
       .eq('booking_link', bookingLink)
       .eq('suspended', false)
+      .is('deleted_at', null)
       .single();
 
     if (error) {
@@ -112,30 +113,41 @@ export class SalonService {
     return data;
   });
 
-  getSalonById = cache(async (salonId: string, includeSuspended = false): Promise<Salon | null> => {
-    const supabaseAdmin = requireSupabaseAdmin();
-    let query = supabaseAdmin
-      .from('businesses')
-      .select(
-        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
-      )
-      .eq('id', salonId);
+  getSalonById = cache(
+    async (
+      salonId: string,
+      includeSuspended = false,
+      includeDeleted = false
+    ): Promise<Salon | null> => {
+      const supabaseAdmin = requireSupabaseAdmin();
+      let query = supabaseAdmin
+        .from('businesses')
+        .select(
+          'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+        )
+        .eq('id', salonId);
 
-    if (!includeSuspended) {
-      query = query.eq('suspended', false);
-    }
-
-    const { data, error } = await query.single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
+      if (!includeSuspended) {
+        query = query.eq('suspended', false);
       }
-      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
-    }
 
-    return data;
-  });
+      // Filter out soft-deleted businesses unless explicitly requested (admin use)
+      if (!includeDeleted) {
+        query = query.is('deleted_at', null);
+      }
+
+      const { data, error } = await query.single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+      }
+
+      return data;
+    }
+  );
 }
 
 export const salonService = new SalonService();

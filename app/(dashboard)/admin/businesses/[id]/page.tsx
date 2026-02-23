@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import AdminSidebar from '@/components/admin/admin-sidebar';
 import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
 import { ROUTES, getAdminDashboardUrl } from '@/lib/utils/navigation';
+import { getCSRFToken } from '@/lib/utils/csrf-client';
 
 export default function EditBusinessPage() {
   const router = useRouter();
@@ -105,9 +105,13 @@ export default function EditBusinessPage() {
         suspended_reason: formData.suspended ? formData.suspended_reason : null,
       };
 
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
       const res = await fetch(`/api/admin/businesses/${businessId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify(updateData),
       });
@@ -133,8 +137,13 @@ export default function EditBusinessPage() {
     }
 
     try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
       const res = await fetch(`/api/admin/businesses/${businessId}`, {
         method: 'DELETE',
+        headers,
         credentials: 'include',
       });
 
@@ -157,7 +166,7 @@ export default function EditBusinessPage() {
 
   if (error && !business) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="w-full flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
           <p className="text-gray-600 mb-8">{error}</p>
@@ -173,184 +182,179 @@ export default function EditBusinessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex">
-      <AdminSidebar />
-      <div className="flex-1 lg:ml-64">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8">
-            <button
-              onClick={() => router.push(getAdminDashboardUrl('businesses'))}
-              className="text-gray-600 hover:text-gray-900 mb-4"
-            >
-              ← Back to Dashboard
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Business</h1>
-            <p className="text-gray-600 mt-2">{business?.salon_name}</p>
+    <div className="w-full">
+      <div className="mb-8">
+        <button
+          onClick={() => router.push(getAdminDashboardUrl('businesses'))}
+          className="text-gray-600 hover:text-gray-900 mb-4"
+        >
+          ← Back to Dashboard
+        </button>
+        <h1 className="text-3xl font-bold text-gray-900">Edit Business</h1>
+        <p className="text-gray-600 mt-2">{business?.salon_name}</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Business Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.salon_name}
+            onChange={(e) => setFormData({ ...formData, salon_name: e.target.value })}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Owner Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.owner_name}
+            onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            WhatsApp Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            value={formData.whatsapp_number}
+            onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Opening Time <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="time"
+              value={formData.opening_time}
+              onChange={(e) => setFormData({ ...formData, opening_time: e.target.value })}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            />
           </div>
 
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Closing Time <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="time"
+              value={formData.closing_time}
+              onChange={(e) => setFormData({ ...formData, closing_time: e.target.value })}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Slot Duration (minutes) <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={formData.slot_duration}
+            onChange={(e) => setFormData({ ...formData, slot_duration: e.target.value })}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          >
+            <option value="15">15 minutes</option>
+            <option value="30">30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+          <input
+            type="text"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+          />
+        </div>
+
+        <div className="border-t pt-6">
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="suspended"
+              checked={formData.suspended}
+              onChange={(e) => setFormData({ ...formData, suspended: e.target.checked })}
+              className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+            />
+            <label htmlFor="suspended" className="ml-2 text-sm font-medium text-gray-700">
+              Suspend this business
+            </label>
+          </div>
+
+          {formData.suspended && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Suspension Reason
+              </label>
+              <textarea
+                value={formData.suspended_reason}
+                onChange={(e) => setFormData({ ...formData, suspended_reason: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                placeholder="Reason for suspension..."
+              />
             </div>
           )}
-
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.salon_name}
-                onChange={(e) => setFormData({ ...formData, salon_name: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Owner Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.owner_name}
-                onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                WhatsApp Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                value={formData.whatsapp_number}
-                onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Opening Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  value={formData.opening_time}
-                  onChange={(e) => setFormData({ ...formData, opening_time: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Closing Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  value={formData.closing_time}
-                  onChange={(e) => setFormData({ ...formData, closing_time: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Slot Duration (minutes) <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.slot_duration}
-                onChange={(e) => setFormData({ ...formData, slot_duration: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              >
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">60 minutes</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-            </div>
-
-            <div className="border-t pt-6">
-              <div className="flex items-center mb-4">
-                <input
-                  type="checkbox"
-                  id="suspended"
-                  checked={formData.suspended}
-                  onChange={(e) => setFormData({ ...formData, suspended: e.target.checked })}
-                  className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                />
-                <label htmlFor="suspended" className="ml-2 text-sm font-medium text-gray-700">
-                  Suspend this business
-                </label>
-              </div>
-
-              {formData.suspended && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Suspension Reason
-                  </label>
-                  <textarea
-                    value={formData.suspended_reason}
-                    onChange={(e) => setFormData({ ...formData, suspended_reason: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    placeholder="Reason for suspension..."
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-4 pt-6 border-t">
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex-1 bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
+
+        <div className="flex gap-4 pt-6 border-t">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

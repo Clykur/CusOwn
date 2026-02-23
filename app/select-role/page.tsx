@@ -3,11 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { isAdmin } from '@/lib/supabase/auth';
-// userService is imported dynamically to avoid bundling server-only code
-import { ROUTES } from '@/lib/utils/navigation';
+import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
 
 const ROLE_ACCESS_ERRORS = {
@@ -16,6 +16,7 @@ const ROLE_ACCESS_ERRORS = {
 } as const;
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import RoleCard from '@/components/onboarding/role-card';
+import CreateBusinessForm from '@/components/setup/create-business-form';
 import { SelectRoleSkeleton } from '@/components/ui/skeleton';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 
@@ -30,6 +31,12 @@ function SelectRoleContent() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [dismissedError, setDismissedError] = useState(false);
+  /** Stores business creation result for the "Get Started" step */
+  const [businessResult, setBusinessResult] = useState<{
+    bookingLink: string;
+    bookingUrl: string;
+    qrCode?: string;
+  } | null>(null);
 
   const errorMessage =
     accessError && !dismissedError && ROLE_ACCESS_ERRORS[accessError]
@@ -44,7 +51,6 @@ function SelectRoleContent() {
   }, [urlRole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // Check if user is already logged in
     // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
 
@@ -66,29 +72,44 @@ function SelectRoleContent() {
         const { getUserState } = await import('@/lib/utils/user-state');
         const state = await getUserState(sessionUser.id);
 
-        const isOwner = state.businessCount >= 1;
+        const isOwner = state.userType === 'owner' || state.userType === 'both';
+        const hasBusiness = state.businessCount >= 1;
 
         /**
-         * 🔴 Existing owner (has at least 1 business)
-         * → go straight to owner dashboard
+         * Auto-redirect when no ?role= param:
+         * - Owner with business → dashboard
+         * - Customer → customer dashboard
          */
-        if (!urlRole && isOwner) {
+        if (!urlRole) {
+          if (isOwner && hasBusiness) {
+            router.replace(ROUTES.OWNER_DASHBOARD_BASE);
+            return;
+          }
+          if (!isOwner) {
+            router.replace(state.redirectUrl ?? ROUTES.CUSTOMER_DASHBOARD);
+            return;
+          }
+        }
+
+        /**
+         * Logged-in owner with no business arriving via ?role=owner
+         * → start at step 2 (setup) directly
+         */
+        if (urlRole === 'owner' && isOwner && !hasBusiness) {
+          setSelectedRole('owner');
+          setCurrentStep(2);
+          setLoading(false);
+          return;
+        }
+
+        /**
+         * Owner with business arriving via ?role=owner → skip onboarding
+         */
+        if (urlRole === 'owner' && isOwner && hasBusiness) {
           router.replace(ROUTES.OWNER_DASHBOARD_BASE);
           return;
         }
 
-        /**
-         * 🟢 Logged-in user with NO business
-         * → treat as customer
-         */
-        if (!urlRole && !isOwner) {
-          router.replace(ROUTES.CUSTOMER_DASHBOARD);
-          return;
-        }
-
-        /**
-         * 🔁 Role switch via URL (?role=owner|customer)
-         */
         if (urlRole) {
           setSelectedRole(urlRole);
         }
@@ -106,7 +127,6 @@ function SelectRoleContent() {
     if (!selectedRole || processing) return;
 
     setProcessing(true);
-    setCurrentStep(2);
 
     // Not logged in → login first
     if (!user) {
@@ -126,44 +146,45 @@ function SelectRoleContent() {
         body: JSON.stringify({ role: selectedRole }),
       });
 
-      // 🔥 USE BUSINESS COUNT — NOT user_type
       const { getUserState } = await import('@/lib/utils/user-state');
       const state = await getUserState(user.id, { skipCache: true });
 
       const hasBusiness = state.businessCount >= 1;
 
-      // ✅ CUSTOMER
+      // CUSTOMER → redirect immediately
       if (selectedRole === 'customer') {
         router.replace(ROUTES.CUSTOMER_DASHBOARD);
         return;
       }
 
-      // ✅ OWNER
-      if (selectedRole === 'owner') {
-        if (hasBusiness) {
-          // Existing owner → dashboard
-          router.replace(ROUTES.OWNER_DASHBOARD_BASE);
-        } else {
-          // First-time owner → setup
-          router.replace(ROUTES.SETUP);
-        }
+      // OWNER with existing business → skip onboarding, go to dashboard
+      if (selectedRole === 'owner' && hasBusiness) {
+        router.replace(ROUTES.OWNER_DASHBOARD_BASE);
+        return;
+      }
+
+      // OWNER with no business → move to Step 2 (inline setup)
+      if (selectedRole === 'owner' && !hasBusiness) {
+        setCurrentStep(2);
+        setProcessing(false);
         return;
       }
     } catch (error) {
       console.error('Role update error:', error);
 
-      // Fallback using same rules
+      // Fallback
       try {
         const { getUserState } = await import('@/lib/utils/user-state');
         const state = await getUserState(user.id, { skipCache: true });
 
-        router.replace(
-          selectedRole === 'customer'
-            ? ROUTES.CUSTOMER_DASHBOARD
-            : state.businessCount >= 1
-              ? ROUTES.OWNER_DASHBOARD_BASE
-              : ROUTES.SETUP
-        );
+        if (selectedRole === 'customer') {
+          router.replace(ROUTES.CUSTOMER_DASHBOARD);
+        } else if (state.businessCount >= 1) {
+          router.replace(ROUTES.OWNER_DASHBOARD_BASE);
+        } else {
+          // Stay on page and show step 2
+          setCurrentStep(2);
+        }
       } catch {
         router.replace(ROUTES.HOME);
       }
@@ -172,14 +193,21 @@ function SelectRoleContent() {
     }
   };
 
-  const steps = ['Choose Role', user ? 'Complete Setup' : 'Sign In', 'Get Started'];
-  //const currentStep = user ? (selectedRole ? 2 : 1) : selectedRole ? 2 : 1;
+  /** Called by CreateBusinessForm when business is successfully created */
+  const handleBusinessCreated = (data: {
+    bookingLink: string;
+    bookingUrl: string;
+    qrCode?: string;
+  }) => {
+    setBusinessResult(data);
+    setCurrentStep(3);
+  };
+
+  const steps = ['Choose Role', 'Complete Setup', 'Get Started'];
 
   const handleRoleSelect = (role: 'owner' | 'customer') => {
-    // Always allow role selection - update state immediately
     console.log('[Role Select] Setting role to:', role);
     setSelectedRole(role);
-    // Update URL to reflect selection (for better UX and refresh handling)
     if (typeof window !== 'undefined') {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('role', role);
@@ -187,10 +215,168 @@ function SelectRoleContent() {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   if (loading) {
     return <SelectRoleSkeleton />;
   }
 
+  // ─── Step 3: "Get Started" — business created successfully ───
+  if (currentStep === 3 && businessResult) {
+    return (
+      <div className="min-h-screen bg-white py-16 px-4 sm:py-24">
+        <div className="max-w-3xl mx-auto">
+          <OnboardingProgress currentStep={3} totalSteps={3} steps={steps} />
+
+          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mt-8">
+            <div className="text-center mb-6 md:mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
+                <svg
+                  className="w-10 h-10 md:w-12 md:h-12 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                🎉 Business Created Successfully!
+              </h2>
+              <p className="text-sm md:text-base text-gray-600">
+                Your booking page is ready to share with customers
+              </p>
+            </div>
+
+            <div className="space-y-4 md:space-y-6">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 rounded-xl p-4 md:p-6">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
+                  <svg
+                    className="w-5 h-5 text-gray-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                    />
+                  </svg>
+                  Your Booking Link
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={businessResult.bookingUrl}
+                    readOnly
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg bg-white text-sm font-mono focus:ring-2 focus:ring-black focus:border-black"
+                  />
+                  <button
+                    onClick={() => {
+                      copyToClipboard(businessResult.bookingUrl);
+                      alert('Booking link copied to clipboard!');
+                    }}
+                    className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition-all text-sm font-semibold whitespace-nowrap shadow-md hover:shadow-lg"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+
+              {businessResult.qrCode && (
+                <div className="bg-white border-2 border-gray-300 rounded-xl p-4 md:p-6">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-3">
+                    QR Code
+                  </h3>
+                  <div className="flex flex-col items-center space-y-5">
+                    <div className="bg-white p-5 rounded-xl border-2 border-gray-200 shadow-md relative w-48 h-48">
+                      <Image
+                        src={businessResult.qrCode}
+                        alt="QR Code"
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!businessResult.qrCode) return;
+                        const link = document.createElement('a');
+                        link.href = businessResult.qrCode;
+                        link.download = `${businessResult.bookingLink}-qr-code.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="w-full bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-900 transition-all"
+                    >
+                      Download QR Code
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3">
+                <button
+                  onClick={() => router.push(getOwnerDashboardUrl(businessResult.bookingLink))}
+                  className="w-full bg-black text-white font-semibold py-4 px-6 rounded-xl hover:bg-gray-900 transition-all text-base shadow-lg hover:shadow-xl"
+                >
+                  Get Started →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Step 2: Owner Setup — embedded business creation form ───
+  if (currentStep === 2 && selectedRole === 'owner') {
+    return (
+      <div className="min-h-screen bg-white py-16 px-4 sm:py-24">
+        <div className="max-w-3xl mx-auto">
+          <OnboardingProgress currentStep={2} totalSteps={3} steps={steps} />
+
+          <div className="mt-8">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-2">
+                Set up your first business
+              </h2>
+              <p className="text-sm text-gray-600">
+                Create your booking page so customers can start booking appointments.
+              </p>
+            </div>
+            <CreateBusinessForm
+              embedded
+              showOnboardingProgress={false}
+              onSuccess={handleBusinessCreated}
+            />
+          </div>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setCurrentStep(1)}
+              className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+            >
+              ← Back to role selection
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Step 1: Choose Role ───
   return (
     <div className="min-h-screen bg-white py-16 px-4 sm:py-24">
       <div className="max-w-5xl mx-auto">
@@ -220,7 +406,7 @@ function SelectRoleContent() {
           </p>
         </div>
 
-        <OnboardingProgress currentStep={currentStep} totalSteps={3} steps={steps} />
+        <OnboardingProgress currentStep={1} totalSteps={3} steps={steps} />
 
         <div className="grid gap-6 md:grid-cols-2 mb-10 mt-10">
           <RoleCard
