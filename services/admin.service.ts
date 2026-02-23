@@ -1,6 +1,12 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { formatPhoneNumber } from '@/lib/utils/string';
+import { cronRunService } from '@/services/cron-run.service';
+import { adminAnalyticsService } from '@/services/admin-analytics.service';
+import {
+  ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS,
+  ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS,
+} from '@/config/constants';
 
 export interface PlatformMetrics {
   totalBusinesses: number;
@@ -34,7 +40,79 @@ export interface BusinessWithOwner {
   recentBookings?: any[];
 }
 
+export interface AdminOverview {
+  bookingsToday: number;
+  bookingsLast7Days: number;
+  bookingsLast30Days: number;
+  totalUsers: number;
+  totalBusinesses: number;
+  failedBookingsLast24h: number;
+  cronRunsLast24h: number;
+  systemHealth: {
+    status: 'healthy' | 'unhealthy';
+    database: string;
+    cronExpireBookingsOk: boolean;
+    cronExpireBookingsLastRun: string | null;
+  };
+}
+
 export class AdminService {
+  /**
+   * Aggregated overview for admin dashboard: bookings, users, businesses, failed bookings, cron activity, health.
+   */
+  async getAdminOverview(): Promise<AdminOverview> {
+    const metrics = await this.getPlatformMetrics();
+    const systemMetrics = await adminAnalyticsService.getSystemMetrics();
+
+    const since24h = new Date();
+    since24h.setHours(since24h.getHours() - ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS);
+    const cronSince = new Date();
+    cronSince.setHours(cronSince.getHours() - ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS);
+
+    let failedBookingsLast24h = 0;
+    let cronRunsLast24h = 0;
+
+    try {
+      const supabase = requireSupabaseAdmin();
+      const countOpt = { count: 'exact' as const, head: true };
+      const failedBookingsRes = await supabase
+        .from('bookings')
+        .select('id', countOpt)
+        .eq('status', 'rejected')
+        .gte('updated_at', since24h.toISOString());
+      failedBookingsLast24h = failedBookingsRes?.count ?? 0;
+    } catch {
+      // table or query error; use 0
+    }
+
+    try {
+      const cronRunsResult = await cronRunService.getCronRuns({
+        start_date: cronSince.toISOString(),
+        limit: 1000,
+        offset: 0,
+      });
+      cronRunsLast24h = cronRunsResult.total;
+    } catch {
+      // cron_run_logs may not exist yet; use 0
+    }
+
+    return {
+      bookingsToday: metrics.bookingsToday,
+      bookingsLast7Days: metrics.bookingsThisWeek,
+      bookingsLast30Days: metrics.bookingsThisMonth,
+      totalUsers: metrics.totalOwners + metrics.totalCustomers,
+      totalBusinesses: metrics.totalBusinesses,
+      failedBookingsLast24h,
+      cronRunsLast24h,
+      systemHealth: {
+        status: systemMetrics.cronExpireBookingsOk ? 'healthy' : 'unhealthy',
+        database: 'up',
+        cronExpireBookingsOk: systemMetrics.cronExpireBookingsOk,
+        cronExpireBookingsLastRun: systemMetrics.cronExpireBookingsLastRun,
+      },
+    };
+  }
+
   async getPlatformMetrics(): Promise<PlatformMetrics> {
     const supabase = requireSupabaseAdmin();
     const today = new Date().toISOString().split('T')[0];
@@ -262,6 +340,89 @@ export class AdminService {
         recentBookings: recentByBusiness.get(business.id) ?? [],
       };
     });
+  }
+
+  /**
+   * List users for admin auth management: email, role, created_at, last_sign_in_at, status.
+   * Filters: role (user_type), status (active|banned), email (substring).
+   */
+  async getAuthManagementUsers(filters?: {
+    limit?: number;
+    offset?: number;
+    role?: string;
+    status?: 'active' | 'banned';
+    email?: string;
+  }): Promise<{ users: any[]; total: number }> {
+    const supabase = requireSupabaseAdmin();
+    const limit = Math.min(100, Math.max(1, filters?.limit ?? 25));
+    const offset = Math.max(0, filters?.offset ?? 0);
+
+    let profileQuery = supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    if (filters?.role) {
+      profileQuery = profileQuery.eq('user_type', filters.role);
+    }
+
+    const { data: profiles, error, count } = await profileQuery.range(offset, offset + limit - 1);
+
+    if (error) {
+      throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+
+    if (!profiles?.length) {
+      return { users: [], total: count ?? 0 };
+    }
+
+    const profileIds = profiles.map((p) => p.id);
+    const authResults = await Promise.all(
+      profileIds.map((id) => supabase.auth.admin.getUserById(id))
+    );
+
+    const authById = new Map<
+      string,
+      { email: string; last_sign_in_at: string | null; banned: boolean }
+    >();
+    authResults.forEach((res: unknown, i: number) => {
+      const id = profileIds[i];
+      const u = (res as { data?: { user?: Record<string, unknown> | null } })?.data?.user;
+      if (!id || !u) return;
+      const email = typeof u.email === 'string' ? u.email : '';
+      const lastSignIn =
+        typeof (u as { last_sign_in_at?: string }).last_sign_in_at === 'string'
+          ? (u as { last_sign_in_at: string }).last_sign_in_at
+          : null;
+      const banned =
+        typeof (u as { banned_until?: string }).banned_until === 'string' &&
+        (u as { banned_until: string }).banned_until !== null;
+      authById.set(id, { email, last_sign_in_at: lastSignIn, banned });
+    });
+
+    let combined = profiles.map((p) => {
+      const auth = authById.get(p.id);
+      return {
+        id: p.id,
+        email: auth?.email ?? '',
+        role: p.user_type,
+        created_at: p.created_at,
+        last_sign_in_at: auth?.last_sign_in_at ?? null,
+        status: auth?.banned ? 'banned' : 'active',
+        full_name: p.full_name,
+        user_type: p.user_type,
+      };
+    });
+
+    if (filters?.status) {
+      combined = combined.filter((u) => u.status === filters.status);
+    }
+    if (filters?.email?.trim()) {
+      const term = filters.email.trim().toLowerCase();
+      combined = combined.filter((u) => u.email.toLowerCase().includes(term));
+    }
+
+    return { users: combined, total: count ?? 0 };
   }
 
   async getAllUsers(options?: { limit?: number; offset?: number }): Promise<any[]> {

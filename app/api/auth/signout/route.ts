@@ -17,7 +17,24 @@ function isSafeRedirect(path: string | null): path is string {
 
 export async function GET(request: NextRequest) {
   const supabase = await createServerClient();
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session?.session?.user?.id;
+  const email = session?.session?.user?.email ?? undefined;
   const { error } = await supabase.auth.signOut();
+  if (!error && userId) {
+    try {
+      const { authEventsService } = await import('@/services/auth-events.service');
+      const { getClientIp } = await import('@/lib/utils/security');
+      authEventsService.insert('logout', {
+        userId,
+        email,
+        ip: getClientIp(request),
+        userAgent: request.headers.get('user-agent') ?? undefined,
+      });
+    } catch {
+      // optional logging
+    }
+  }
   if (error) {
     console.log('[AUTH] signout GET: negative', { error: error.message });
   } else {
@@ -32,9 +49,26 @@ export async function GET(request: NextRequest) {
   return NextResponse.redirect(new URL(targetPath, env.app.baseUrl));
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   const supabase = await createServerClient();
+  const { data: session } = await supabase.auth.getSession();
+  const userId = session?.session?.user?.id;
+  const email = session?.session?.user?.email ?? undefined;
   const { error } = await supabase.auth.signOut();
+  if (!error && userId) {
+    try {
+      const { authEventsService } = await import('@/services/auth-events.service');
+      const { getClientIp } = await import('@/lib/utils/security');
+      authEventsService.insert('logout', {
+        userId,
+        email,
+        ip: getClientIp(request),
+        userAgent: request.headers.get('user-agent') ?? undefined,
+      });
+    } catch {
+      // optional logging
+    }
+  }
   if (error) {
     console.log('[AUTH] signout POST: negative', { error: error.message });
   } else {

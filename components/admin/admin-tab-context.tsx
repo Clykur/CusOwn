@@ -9,6 +9,9 @@ export type AdminTabValue =
   | 'users'
   | 'bookings'
   | 'audit'
+  | 'cron-monitor'
+  | 'auth-management'
+  | 'storage'
   | 'success-metrics'
   | 'analytics';
 
@@ -18,6 +21,9 @@ const VALID_TABS: AdminTabValue[] = [
   'users',
   'bookings',
   'audit',
+  'cron-monitor',
+  'auth-management',
+  'storage',
   'success-metrics',
   'analytics',
 ];
