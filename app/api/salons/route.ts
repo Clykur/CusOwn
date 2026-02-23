@@ -8,11 +8,11 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { getUserFriendlyError } from '@/lib/utils/error-handler';
-import { formatPhoneNumber } from '@/lib/utils/string';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { auditService } from '@/services/audit.service';
+import { getAllowedCategoryValues } from '@/services/business-category.service';
 
 export async function POST(request: NextRequest) {
   const clientIP = getClientIp(request);
@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
 
     validateTimeRange(validatedData.opening_time, validatedData.closing_time);
 
+    const category = validatedData.category ?? 'salon';
+    const allowedCategories = await getAllowedCategoryValues();
+    if (allowedCategories.length && !allowedCategories.includes(category)) {
+      return errorResponse('Invalid business type. Please choose from the list.', 400);
+    }
+
     // SECURITY: Require authentication for salon creation
     const user = await getServerUser(request);
     if (!user) {
@@ -104,28 +110,6 @@ export async function POST(request: NextRequest) {
         user_type: 'owner',
         full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || null,
       });
-    }
-
-    // Check if user already has a business with this WhatsApp number
-    if (user && ownerUserId) {
-      if (!supabaseAdmin) {
-        return errorResponse('Database not configured', 500);
-      }
-      const formattedPhone = formatPhoneNumber(validatedData.whatsapp_number);
-      const { data: existingBusiness } = await supabaseAdmin
-        .from('businesses')
-        .select('id, booking_link, salon_name')
-        .eq('whatsapp_number', formattedPhone)
-        .eq('owner_user_id', ownerUserId)
-        .single();
-
-      if (existingBusiness) {
-        // User already owns a business with this WhatsApp number
-        return errorResponse(
-          `You already have a business "${existingBusiness.salon_name}" with this WhatsApp number. Please use your existing booking link or use a different WhatsApp number.`,
-          409
-        );
-      }
     }
 
     const salon = await salonService.createSalon(validatedData, ownerUserId);

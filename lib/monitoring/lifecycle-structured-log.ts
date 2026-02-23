@@ -7,6 +7,8 @@ export type BookingLifecycleAction =
   | 'booking_created'
   | 'booking_confirmed'
   | 'booking_rejected'
+  | 'booking_undo_accept'
+  | 'booking_undo_reject'
   | 'booking_cancelled';
 
 export type BookingLifecycleSource = 'api' | 'cron' | 'lazy_heal';

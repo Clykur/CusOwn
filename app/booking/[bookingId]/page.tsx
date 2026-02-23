@@ -21,6 +21,7 @@ export default function BookingStatusPage() {
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [salonSecureUrl, setSalonSecureUrl] = useState<string>('');
   const [secureBookingUrls, setSecureBookingUrls] = useState<Map<string, string>>(new Map());
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
 
   useEffect(() => {
     // Pre-fetch CSRF token
@@ -33,11 +34,31 @@ export default function BookingStatusPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId]);
 
-  const fetchBooking = async () => {
+  // Refetch when user returns to the tab so status updates (e.g. owner undo) are visible
+  useEffect(() => {
+    if (!bookingId || !booking) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchBooking({ silent: true });
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId, booking]);
+
+  const handleRefreshStatus = async () => {
+    if (refreshingStatus || !bookingId) return;
+    setRefreshingStatus(true);
+    await fetchBooking({ silent: true });
+    setRefreshingStatus(false);
+  };
+
+  const fetchBooking = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
     // Extract token from URL if present (for secure access)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
 
+    if (!silent) setLoading(true);
     try {
       // Build URL with token if available
       let url = `/api/bookings/booking-id/${bookingId}`;
@@ -72,6 +93,7 @@ export default function BookingStatusPage() {
 
       const response = await fetch(url, {
         credentials: 'include',
+        cache: 'no-store',
         headers: Object.keys(headers).length > 0 ? headers : undefined,
       });
       const result = await response.json();
@@ -103,9 +125,9 @@ export default function BookingStatusPage() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load booking');
+      if (!silent) setError(err instanceof Error ? err.message : 'Failed to load booking');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -200,6 +222,7 @@ export default function BookingStatusPage() {
   };
 
   const getStatusMessage = (status: string) => {
+    if (status === 'confirmed' && booking.no_show) return UI_BOOKING_STATE.NO_SHOW;
     switch (status) {
       case 'confirmed':
         return UI_BOOKING_STATE.CONFIRMED;
@@ -216,6 +239,8 @@ export default function BookingStatusPage() {
     }
   };
 
+  const isNoShow = booking.status === 'confirmed' && booking.no_show;
+
   const canCancel = booking.status === 'confirmed' || booking.status === 'pending';
 
   return (
@@ -226,27 +251,51 @@ export default function BookingStatusPage() {
             {UI_CUSTOMER.HEADER_BOOKING_DETAILS}
           </h1>
           <p className="text-sm text-slate-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
-          <div className="flex items-center gap-2 text-slate-600">
+          <div className="flex flex-wrap items-center gap-2 text-slate-600">
             <span className="text-sm">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
             <span className="font-mono text-sm bg-slate-100 px-3 py-1 rounded-xl text-slate-900">
               {booking.booking_id}
             </span>
+            <button
+              type="button"
+              onClick={handleRefreshStatus}
+              disabled={refreshingStatus}
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 underline hover:no-underline disabled:opacity-50"
+            >
+              {refreshingStatus ? 'Refreshing…' : 'Refresh status'}
+            </button>
           </div>
         </div>
 
         <div
           className={`px-6 py-4 rounded-xl mb-8 border-2 ${
-            booking.status === 'confirmed'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : booking.status === 'pending'
-                ? 'bg-amber-50 border-amber-200 text-amber-800'
-                : booking.status === 'rejected'
-                  ? 'bg-red-50 border-red-200 text-red-800'
-                  : 'bg-slate-50 border-slate-200 text-slate-800'
+            isNoShow
+              ? 'bg-amber-50 border-amber-200 text-amber-800'
+              : booking.status === 'confirmed'
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : booking.status === 'pending'
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : booking.status === 'rejected'
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-slate-50 border-slate-200 text-slate-800'
           }`}
         >
           <div className="flex items-center gap-3">
-            {booking.status === 'confirmed' ? (
+            {isNoShow ? (
+              <svg
+                className="w-6 h-6 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            ) : booking.status === 'confirmed' ? (
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"

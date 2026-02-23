@@ -54,6 +54,7 @@ export class SalonService {
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         owner_user_id: ownerUserId || null,
+        category: data.category || 'salon',
       })
       .select()
       .single();

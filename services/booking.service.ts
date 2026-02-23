@@ -1,7 +1,12 @@
 import { supabaseAdmin, requireSupabaseAdmin } from '@/lib/supabase/server';
 import { generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateBookingInput, Booking, BookingWithDetails, Salon, Slot } from '@/types';
-import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
+import {
+  ERROR_MESSAGES,
+  BOOKING_STATUS,
+  SLOT_STATUS,
+  UNDO_ACCEPT_REJECT_WINDOW_MINUTES,
+} from '@/config/constants';
 import { env } from '@/config/env';
 import { slotService } from './slot.service';
 import { salonService } from './salon.service';
@@ -166,7 +171,7 @@ export class BookingService {
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at'
+        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
       )
       .eq('booking_id', bookingId)
       .single();
@@ -199,7 +204,7 @@ export class BookingService {
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at'
+        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
       )
       .eq('id', id)
       .single();
@@ -337,15 +342,144 @@ export class BookingService {
     return updated;
   }
 
+  /**
+   * Revert confirmed booking to pending (undo accept). Allowed only within UNDO_ACCEPT_REJECT_WINDOW_MINUTES.
+   */
+  async revertConfirmToPending(bookingId: string, actorId?: string | null): Promise<Booking> {
+    const booking = await this.getBookingByUuid(bookingId);
+    if (!booking) {
+      throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+    }
+    if (booking.undo_used_at) {
+      throw new Error(ERROR_MESSAGES.UNDO_ALREADY_USED);
+    }
+    const allowed = await canTransition(booking.status, 'undo_confirm');
+    if (!allowed) {
+      throw new Error(ERROR_MESSAGES.BOOKING_NOT_CONFIRMED);
+    }
+    const updatedAt = new Date(booking.updated_at).getTime();
+    const windowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
+    if (Date.now() - updatedAt > windowMs) {
+      throw new Error(ERROR_MESSAGES.UNDO_WINDOW_EXPIRED);
+    }
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
+    const { data: result, error: rpcError } = await supabaseAdmin.rpc(
+      'undo_confirm_booking_atomically',
+      { p_booking_id: bookingId, p_actor_id: actorId ?? null }
+    );
+    if (rpcError) {
+      throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    if (!result?.success) {
+      const err = (result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
+      if (
+        err.includes('confirmed') &&
+        (err.includes('not in') || err.includes('not in confirmed'))
+      ) {
+        throw new Error(ERROR_MESSAGES.BOOKING_NOT_CONFIRMED);
+      }
+      if (err === 'Booking not found') {
+        throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+      }
+      if (err === 'Booking update failed' || err === 'Slot update failed') {
+        throw new Error(ERROR_MESSAGES.BOOKING_REVERT_FAILED);
+      }
+      throw new Error(err);
+    }
+    try {
+      const { reminderService } = await import('@/services/reminder.service');
+      await reminderService.cancelRemindersForBooking(bookingId);
+    } catch {
+      // Do not block undo on reminder cancellation
+    }
+    const updated = await this.getBookingByUuid(bookingId);
+    if (!updated) {
+      throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    logBookingLifecycle({
+      booking_id: bookingId,
+      slot_id: booking.slot_id,
+      action: 'booking_undo_accept',
+      actor: actorId ?? 'owner',
+      source: 'api',
+    });
+    return updated;
+  }
+
+  /**
+   * Revert rejected booking to pending (undo reject). Allowed only within window and if slot still available.
+   */
+  async revertRejectToPending(bookingId: string, actorId?: string | null): Promise<Booking> {
+    const booking = await this.getBookingByUuid(bookingId);
+    if (!booking) {
+      throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+    }
+    if (booking.undo_used_at) {
+      throw new Error(ERROR_MESSAGES.UNDO_ALREADY_USED);
+    }
+    const allowed = await canTransition(booking.status, 'undo_reject');
+    if (!allowed) {
+      throw new Error(ERROR_MESSAGES.BOOKING_NOT_REJECTED);
+    }
+    const updatedAt = new Date(booking.updated_at).getTime();
+    const windowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
+    if (Date.now() - updatedAt > windowMs) {
+      throw new Error(ERROR_MESSAGES.UNDO_WINDOW_EXPIRED);
+    }
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
+    const { data: result, error: rpcError } = await supabaseAdmin.rpc(
+      'undo_reject_booking_atomically',
+      { p_booking_id: bookingId, p_actor_id: actorId ?? null }
+    );
+    if (rpcError) {
+      throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    if (!result?.success) {
+      const err = (result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
+      if (err.includes('Slot') || err.includes('available')) {
+        throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
+      }
+      if (err.includes('rejected') && (err.includes('not in') || err.includes('not in rejected'))) {
+        throw new Error(ERROR_MESSAGES.BOOKING_NOT_REJECTED);
+      }
+      if (err === 'Booking not found') {
+        throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+      }
+      if (err === 'Booking update failed') {
+        throw new Error(ERROR_MESSAGES.BOOKING_REVERT_FAILED);
+      }
+      throw new Error(err);
+    }
+    const updated = await this.getBookingByUuid(bookingId);
+    if (!updated) {
+      throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    logBookingLifecycle({
+      booking_id: bookingId,
+      slot_id: booking.slot_id,
+      action: 'booking_undo_reject',
+      actor: actorId ?? 'owner',
+      source: 'api',
+    });
+    return updated;
+  }
+
+  private static BOOKING_SELECT =
+    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at';
+  private static BOOKING_SELECT_WITHOUT_UNDO =
+    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at';
+
   async getSalonBookings(salonId: string, date?: string): Promise<BookingWithDetails[]> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
     let query = supabaseAdmin
       .from('bookings')
-      .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at'
-      )
+      .select(BookingService.BOOKING_SELECT)
       .eq('business_id', salonId)
       .order('created_at', { ascending: false });
 
@@ -364,17 +498,46 @@ export class BookingService {
       }
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+    let bookingRows: Booking[] | null = (data as Booking[] | null) ?? null;
+
+    if (error && (error.message?.includes('undo_used_at') || error.message?.includes('column'))) {
+      query = supabaseAdmin
+        .from('bookings')
+        .select(BookingService.BOOKING_SELECT_WITHOUT_UNDO)
+        .eq('business_id', salonId)
+        .order('created_at', { ascending: false });
+      if (date) {
+        const { data: slots } = await supabaseAdmin
+          .from('slots')
+          .select('id')
+          .eq('business_id', salonId)
+          .eq('date', date);
+        if (slots && slots.length > 0) {
+          const slotIds = slots.map((s) => s.id);
+          query = query.in('slot_id', slotIds);
+        }
+      }
+      const fallback = await query;
+      error = fallback.error;
+      const rawData = fallback.data as Record<string, unknown>[] | null;
+      if (rawData && rawData.length > 0) {
+        bookingRows = rawData.map((row) => ({ ...row, undo_used_at: null })) as Booking[];
+      } else {
+        bookingRows = rawData as Booking[] | null;
+      }
+    }
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    if (!data || data.length === 0) {
+    const rows: Booking[] = bookingRows ?? [];
+    if (rows.length === 0) {
       return [];
     }
 
-    const slotIds = [...new Set(data.map((b: { slot_id: string }) => b.slot_id))];
+    const slotIds = [...new Set(rows.map((b) => b.slot_id))];
     const [salon, slotsData] = await Promise.all([
       salonService.getSalonById(salonId),
       slotIds.length
@@ -388,7 +551,7 @@ export class BookingService {
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
 
-    const bookingsWithDetails: BookingWithDetails[] = data.map((booking: Booking) => ({
+    const bookingsWithDetails: BookingWithDetails[] = rows.map((booking) => ({
       ...booking,
       salon: salon ?? undefined,
       slot: slotMap.get(booking.slot_id) ?? undefined,
@@ -606,7 +769,7 @@ export class BookingService {
     const { data: bookings, error } = await supabaseAdmin
       .from('bookings')
       .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at'
+        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
       )
       .eq('customer_user_id', customerUserId)
       .order('created_at', { ascending: false });

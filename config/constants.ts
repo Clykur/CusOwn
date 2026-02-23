@@ -25,12 +25,25 @@ export const SLOT_RESERVATION_TIMEOUT_MINUTES = env.payment.slotExpiryMinutes;
 // Number of days ahead to generate slots when lazy loading
 export const SLOT_GENERATION_WINDOW_DAYS = 7;
 
-export const BOOKING_LINK_PREFIX = '/b/';
+/** Public booking path for QR; no auth. */
+export const BOOKING_LINK_PREFIX = '/book/';
+
+/** Fallback when /api/business-categories is unavailable. Real list comes from DB. */
+export const BUSINESS_CATEGORIES_FALLBACK: { value: string; label: string }[] = [
+  { value: 'salon', label: 'Salon' },
+];
 
 export const API_ROUTES = {
   SALONS: '/api/salons',
   SLOTS: '/api/slots',
   BOOKINGS: '/api/bookings',
+  BUSINESS_CATEGORIES: '/api/business-categories',
+  /** Public booking: business by slug (no auth, no owner data). */
+  BOOK_BUSINESS: (slug: string) => `/api/book/business/${encodeURIComponent(slug)}`,
+  /** Store pending booking before redirect to login; read on /book/complete. */
+  BOOK_SET_PENDING: '/api/book/set-pending',
+  /** Complete pending booking after login (auth required). */
+  BOOK_COMPLETE: '/api/book/complete',
 } as const;
 
 export const ROUTES = {
@@ -130,6 +143,8 @@ export const ERROR_MESSAGES = {
   WHATSAPP_SEND_FAILED: 'Failed to send WhatsApp message',
   WHATSAPP_NUMBER_EXISTS:
     'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.',
+  /** Generic message for create-business failures (constraint/DB). Never expose technical or admin details to owner/customer. */
+  CREATE_BUSINESS_FAILED: "We couldn't create the business right now. Please try again.",
   QR_CODE_GENERATION_FAILED:
     'Unable to generate QR code. You can access it later from your dashboard.',
   NETWORK_ERROR:
@@ -151,6 +166,12 @@ export const ERROR_MESSAGES = {
   USER_UNBLOCK_FAILED: 'Failed to unblock user',
   USER_DELETE_FAILED: 'Failed to delete user',
   CANNOT_DELETE_SELF: 'You cannot delete your own account',
+  UNDO_WINDOW_EXPIRED: 'Undo window has expired',
+  SLOT_NO_LONGER_AVAILABLE: 'Slot is no longer available; cannot undo reject',
+  BOOKING_NOT_CONFIRMED: 'Booking is not confirmed',
+  BOOKING_NOT_REJECTED: 'Booking is not rejected',
+  BOOKING_REVERT_FAILED: 'Booking could not be reverted',
+  UNDO_ALREADY_USED: 'Undo can only be used once per booking',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -169,6 +190,7 @@ export const SUCCESS_MESSAGES = {
   ACCOUNT_DELETED:
     'Your account and associated business data have been removed from the platform. For administrative and recovery purposes, your data will be securely stored for up to 30 days before being permanently deleted.',
   ACCOUNT_RESTORED: 'Account restored successfully',
+
 } as const;
 
 /** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */
@@ -179,6 +201,8 @@ export const UI_BOOKING_STATE = {
   CANCELLED: 'This booking has been cancelled',
   /** When status is cancelled and cancelled_by === 'system' (expired). */
   EXPIRED: 'This request has expired',
+  /** When owner marked as no-show (status remains confirmed). */
+  NO_SHOW: 'Marked as no-show — you did not attend this appointment',
 } as const;
 
 /** Phase 6: Idempotent success copy (e.g. user clicked Accept again on already-confirmed booking). */
@@ -209,6 +233,15 @@ export const UI_CONTEXT = {
   /** Shown when user tries to access customer area but this account cannot use customer flow. */
   ROLE_ACCESS_DENIED_NOT_CUSTOMER:
     "This account doesn't have customer access. You can continue as owner, or sign in with a different email for the customer flow.",
+  /** Owner: undo accept/reject button label. */
+  UNDO_LABEL: 'Undo',
+  /** Owner: toast after reverting to pending. */
+  REVERTED_TO_PENDING: 'Booking reverted to pending',
+  /** Owner: status label when customer cancelled after accept. */
+  CANCELLED_BY_CUSTOMER: 'Cancelled by customer',
+  /** Create business: info when owner reuses a WhatsApp number already used for another business. */
+  WHATSAPP_ALREADY_USED_FOR: (businessName: string) =>
+    `This number is already used for "${businessName}". You can use it for this business too.`,
 } as const;
 
 /** Customer flow UI – generic, multi-service-ready copy. No category names. */
@@ -262,6 +295,8 @@ export const UI_CUSTOMER = {
   SLOT_FULL: 'Full',
   SUBMIT_BOOKING: 'Send Booking Request',
   SUBMIT_BOOKING_LOADING: 'Creating Booking...',
+  /** Shown when unauthenticated user submits; we redirect to login to complete booking. */
+  SIGN_IN_TO_COMPLETE_BOOKING: 'Sign in to complete your booking',
   SLOTS_NONE: 'No slots available for this date',
   SLOT_NO_LONGER_AVAILABLE: 'Your selected slot is no longer available. Please select another.',
 } as const;
@@ -284,6 +319,9 @@ export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(
   process.env.CANCELLATION_MIN_HOURS_BEFORE || '2',
   10
 );
+
+/** Owner undo: 5 min window. Undo allowed only once per accept/reject and only within this period; after undo or expiry the undo button is hidden. */
+export const UNDO_ACCEPT_REJECT_WINDOW_MINUTES = 5;
 
 /** Phase 3: Metric names for SRE. Alert if GET /api/health checks.cron_expire_bookings_last_run_ts is older than X minutes. */
 export const METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN = 'cron.expire_bookings.last_run_ts';
@@ -369,6 +407,10 @@ export const AUTH_COOKIE_MAX_AGE_SECONDS = 86400; // 24 hours
 /** Pending role during OAuth: set on login when ?role=, read/cleared in callback only. Never override admin. */
 export const AUTH_PENDING_ROLE_COOKIE = 'cusown_pending_role';
 export const AUTH_PENDING_ROLE_MAX_AGE_SECONDS = 300; // 5 min
+
+/** Pending booking (public book flow): set before redirect to login, read/cleared on /book/complete. */
+export const PENDING_BOOKING_COOKIE = 'cusown_pending_booking';
+export const PENDING_BOOKING_TTL_SECONDS = 600; // 10 min
 
 /** Client: debounce Supabase auth refresh_token requests to avoid 429. */
 export const AUTH_REFRESH_DEBOUNCE_MS = 60_000; // 1 min

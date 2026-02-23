@@ -37,6 +37,7 @@ export const createSalonSchema = z.object({
   pincode: z.string().max(10, 'Pincode must be at most 10 characters').optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  category: z.string().max(50).optional().default('salon'),
 });
 
 export type CreateSalonInput = z.infer<typeof createSalonSchema>;
@@ -63,6 +64,18 @@ export type Salon = {
   suspended?: boolean;
   created_at: string;
   updated_at: string;
+};
+
+/** Public business shape for QR booking: no owner_user_id, no owner_name. */
+export type PublicBusiness = {
+  id: string;
+  salon_name: string;
+  opening_time: string;
+  closing_time: string;
+  slot_duration: number;
+  booking_link: string;
+  address: string | null;
+  location: string | null;
 };
 
 export type Slot = {
@@ -114,6 +127,7 @@ export type Booking = {
   no_show_marked_by?: 'owner' | 'system' | null;
   created_at: string;
   updated_at: string;
+  undo_used_at?: string | null;
 };
 
 export type BookingWithDetails = Booking & {

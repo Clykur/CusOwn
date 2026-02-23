@@ -257,7 +257,7 @@ export function runUnitUtilsUrlTests(): void {
   runTest('should_getBookingUrl_include_base_and_prefix_and_link', () => {
     const req = createMockRequest('https://app.com') as any;
     const url = getBookingUrl('my-link', req);
-    assert(url === 'https://app.com/b/my-link', `Expected booking URL, got ${url}`);
+    assert(url === 'https://app.com/book/my-link', `Expected booking URL, got ${url}`);
   });
 
   runTest('should_getBookingStatusUrl_include_booking_id', () => {

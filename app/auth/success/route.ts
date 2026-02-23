@@ -22,11 +22,19 @@ function isAllowedPath(to: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  const to = request.nextUrl.searchParams.get('to')?.trim();
+  let to = request.nextUrl.searchParams.get('to')?.trim() ?? '';
   const baseUrl = `${request.nextUrl.origin}/`;
 
+  // Normalize: use path only (avoids doubled host if to was ever a full URL).
+  if (to.startsWith('http://') || to.startsWith('https://')) {
+    try {
+      to = new URL(to).pathname;
+    } catch {
+      to = '';
+    }
+  }
   if (!to || !to.startsWith('/') || to.includes('//') || to.startsWith('/auth/')) {
-    console.log('[AUTH] success: invalid or missing to param', { to: to ?? null });
+    console.log('[AUTH] success: invalid or missing to param', { to: to || null });
     return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
   }
 
