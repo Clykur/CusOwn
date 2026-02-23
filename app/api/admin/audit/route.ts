@@ -1,0 +1,50 @@
+import { NextRequest } from 'next/server';
+import { auditService, type AuditActionType, type AuditEntityType } from '@/services/audit.service';
+import { requireAdmin } from '@/lib/utils/api-auth-pipeline';
+import { successResponse, errorResponse } from '@/lib/utils/response';
+import { ERROR_MESSAGES } from '@/config/constants';
+import { parseLimitOffset } from '@/lib/utils/pagination';
+
+const ROUTE = 'GET /api/admin/audit';
+
+export async function GET(request: NextRequest) {
+  try {
+    const auth = await requireAdmin(request, ROUTE);
+    if (auth instanceof Response) return auth;
+
+    const searchParams = request.nextUrl.searchParams;
+    const { limit, offset } = parseLimitOffset(searchParams);
+    const entity_type = searchParams.get('entity_type') as AuditEntityType | undefined;
+    const action_type = searchParams.get('action_type') as AuditActionType | undefined;
+    const user_id = searchParams.get('user_id') ?? undefined;
+    const business_id = searchParams.get('business_id') ?? undefined;
+    const start_date = searchParams.get('start_date') ?? undefined;
+    const end_date = searchParams.get('end_date') ?? undefined;
+
+    const [logs, total] = await Promise.all([
+      auditService.getAuditLogs({
+        adminUserId: user_id,
+        actionType: action_type,
+        entityType: entity_type,
+        businessId: business_id,
+        startDate: start_date,
+        endDate: end_date,
+        limit,
+        offset,
+      }),
+      auditService.getAuditLogsCount({
+        adminUserId: user_id,
+        actionType: action_type,
+        entityType: entity_type,
+        businessId: business_id,
+        startDate: start_date,
+        endDate: end_date,
+      }),
+    ]);
+
+    return successResponse({ logs, total });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    return errorResponse(message, 500);
+  }
+}

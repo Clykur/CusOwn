@@ -356,6 +356,79 @@ export const ADMIN_EXPORT_BOOKINGS_MAX_ROWS = 10_000;
 export const ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT = 20;
 export const ADMIN_DEFAULT_ANALYTICS_DAYS = 30;
 
+/** Admin overview: failed bookings and cron lookback (hours). */
+export const ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS = 24;
+export const ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS = 24;
+
+/** Cron run log: status values. */
+export const CRON_RUN_STATUS_SUCCESS = 'success';
+export const CRON_RUN_STATUS_FAILED = 'failed';
+
+/** Cron job names for run logging (must match route identifiers). */
+export const CRON_JOB_NAMES = [
+  'expire-bookings',
+  'expire-payments',
+  'prune-idempotency',
+  'cleanup-reservations',
+  'send-reminders',
+  'trim-metric-timings',
+  'health-check',
+] as const;
+export type CronJobName = (typeof CRON_JOB_NAMES)[number];
+
+/** Auth event types for optional logging. */
+export const AUTH_EVENT_LOGIN_SUCCESS = 'login_success';
+export const AUTH_EVENT_LOGIN_FAILED = 'login_failed';
+export const AUTH_EVENT_LOGOUT = 'logout';
+
+/** Audit: structured action types by domain. Only state-changing or security-relevant events. */
+export const AUDIT_ACTIONS = {
+  BOOKING: [
+    'booking_created',
+    'booking_confirmed',
+    'booking_rejected',
+    'booking_cancelled',
+    'booking_rescheduled',
+    'booking_no_show',
+    'booking_updated',
+    'booking_undo_accept',
+    'booking_undo_reject',
+  ],
+  BUSINESS: ['business_created', 'business_updated', 'business_deleted', 'business_suspended'],
+  USER: [
+    'user_created',
+    'user_updated',
+    'user_deleted',
+    'role_changed',
+    'admin_login',
+    'admin_access_denied',
+    'login_success',
+    'login_failed',
+    'password_reset',
+  ],
+  PAYMENT: ['payment_created', 'payment_succeeded', 'payment_failed', 'payment_refunded'],
+  SYSTEM: [
+    'notification_sent',
+    'data_corrected',
+    'data_correction',
+    'system_config_changed',
+    'config_updated',
+    'admin_revenue_export',
+    'cron_failed',
+    'cron_recovered',
+  ],
+  SLOT: ['slot_reserved', 'slot_released', 'slot_booked'],
+} as const;
+
+export const AUDIT_SEVERITY = { INFO: 'info', WARNING: 'warning', CRITICAL: 'critical' } as const;
+export type AuditSeverity = (typeof AUDIT_SEVERITY)[keyof typeof AUDIT_SEVERITY];
+
+export const AUDIT_STATUS = { SUCCESS: 'success', FAILED: 'failed' } as const;
+export type AuditStatus = (typeof AUDIT_STATUS)[keyof typeof AUDIT_STATUS];
+
+/** Dedupe: skip insert if same action_type + entity_id + actor_id within this window (ms). */
+export const AUDIT_DEDUPE_WINDOW_MS = 5000;
+
 /** Backend performance: cache TTL and API cache size. */
 export const CACHE_TTL_AUTH_MS = 5 * 60 * 1000; // 5 min auth verification cache
 export const CACHE_TTL_API_DEFAULT_MS = 60 * 1000; // 1 min for mutable GETs

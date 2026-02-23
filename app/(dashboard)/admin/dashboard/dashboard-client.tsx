@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SuccessMetricsDashboard from '@/components/admin/success-metrics-dashboard';
 import AdminAnalyticsTab from '@/components/admin/admin-analytics-tab';
+import { AdminCronMonitorTab } from '@/components/admin/admin-cron-monitor-tab';
+import { AdminAuthManagementTab } from '@/components/admin/admin-auth-management-tab';
+import { AdminStorageOverviewTab } from '@/components/admin/admin-storage-overview-tab';
 import { DashboardErrorBoundary } from '@/components/admin/dashboard-error-boundary';
 import { AdminMetricCard } from '@/components/admin/admin-metric-card';
 import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
@@ -101,6 +104,9 @@ const VALID_TABS = [
   'users',
   'bookings',
   'audit',
+  'cron-monitor',
+  'auth-management',
+  'storage',
   'success-metrics',
   'analytics',
 ] as const;
@@ -144,6 +150,15 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
     revenueMonth: number;
     paymentSuccessRate: number;
     failedPayments: number;
+  } | null>(null);
+  const [overviewExtras, setOverviewExtras] = useState<{
+    failedBookingsLast24h: number;
+    cronRunsLast24h: number;
+    systemHealth: {
+      status: string;
+      cronExpireBookingsOk: boolean;
+      cronExpireBookingsLastRun: string | null;
+    };
   } | null>(null);
 
   const toastParam = searchParams.get('toast');
@@ -222,7 +237,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
       `/api/admin/users?limit=${LIST_LIMIT}`,
       '/api/admin/businesses',
       `/api/admin/bookings?limit=${LIST_LIMIT}`,
-      `/api/admin/audit-logs?limit=${LIST_LIMIT}`,
+      `/api/admin/audit-logs?limit=${AUDIT_LOGS_FETCH_LIMIT}`,
     ];
     const keys = [
       ADMIN_CACHE_KEYS.USERS,
@@ -292,7 +307,8 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
       adminFetch(`/api/admin/revenue-metrics?days=${OVERVIEW_DAYS}`, opts).then((r) =>
         r.ok ? r.json() : null
       ),
-    ]).then(([metricsResult, trendsResult, revenueResult]) => {
+      adminFetch('/api/admin/overview', opts).then((r) => (r.ok ? r.json() : null)),
+    ]).then(([metricsResult, trendsResult, revenueResult, overviewResult]) => {
       setOverviewLoadSettled(true);
       if (metricsResult.status === 'fulfilled' && metricsResult.value?.success) {
         setMetrics(metricsResult.value.data);
@@ -310,6 +326,28 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
           paymentSuccessRate: r.paymentSuccessRate ?? 0,
           failedPayments: r.failedPayments ?? 0,
         });
+      }
+      if (overviewResult.status === 'fulfilled' && overviewResult.value?.data) {
+        const o = overviewResult.value.data as {
+          failedBookingsLast24h?: number;
+          cronRunsLast24h?: number;
+          systemHealth?: {
+            status?: string;
+            cronExpireBookingsOk?: boolean;
+            cronExpireBookingsLastRun?: string | null;
+          };
+        };
+        if (o.systemHealth) {
+          setOverviewExtras({
+            failedBookingsLast24h: o.failedBookingsLast24h ?? 0,
+            cronRunsLast24h: o.cronRunsLast24h ?? 0,
+            systemHealth: {
+              status: o.systemHealth.status ?? 'unknown',
+              cronExpireBookingsOk: o.systemHealth.cronExpireBookingsOk ?? false,
+              cronExpireBookingsLastRun: o.systemHealth.cronExpireBookingsLastRun ?? null,
+            },
+          });
+        }
       }
       const storedMetrics =
         metricsResult.status === 'fulfilled' && metricsResult.value?.success
@@ -642,6 +680,40 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                     </div>
                   </AdminSectionWrapper>
 
+                  {overviewExtras && (
+                    <AdminSectionWrapper
+                      title="System (last 24h)"
+                      subtitle="Failed bookings, cron runs, health"
+                    >
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <AdminMetricCard
+                          label="Failed bookings (24h)"
+                          value={overviewExtras.failedBookingsLast24h}
+                        />
+                        <AdminMetricCard
+                          label="Cron runs (24h)"
+                          value={overviewExtras.cronRunsLast24h}
+                        />
+                        <AdminMetricCard
+                          label="System health"
+                          value={overviewExtras.systemHealth.status}
+                        />
+                        <AdminMetricCard
+                          label="Cron expire OK"
+                          value={overviewExtras.systemHealth.cronExpireBookingsOk ? 'Yes' : 'No'}
+                        />
+                      </div>
+                      {overviewExtras.systemHealth.cronExpireBookingsLastRun && (
+                        <p className="mt-2 text-xs text-slate-500">
+                          Last cron run:{' '}
+                          {new Date(
+                            overviewExtras.systemHealth.cronExpireBookingsLastRun
+                          ).toLocaleString()}
+                        </p>
+                      )}
+                    </AdminSectionWrapper>
+                  )}
+
                   {revenueSnapshot && (
                     <AdminSectionWrapper
                       title="Revenue (last 30 days)"
@@ -801,6 +873,10 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                   onPageChange={(p) => router.replace(getAdminDashboardUrl('audit', p))}
                 />
               )}
+
+              {activeTab === 'cron-monitor' && <AdminCronMonitorTab />}
+              {activeTab === 'auth-management' && <AdminAuthManagementTab />}
+              {activeTab === 'storage' && <AdminStorageOverviewTab />}
 
               {activeTab === 'success-metrics' && <SuccessMetricsDashboard />}
 
@@ -1667,10 +1743,45 @@ function BookingsTab({ page: controlledPage, onPageChange }: ListTabPageProps = 
   );
 }
 
+const AUDIT_SEVERITY_OPTIONS = [
+  { value: '', label: 'All severities' },
+  { value: 'info', label: 'Info' },
+  { value: 'warning', label: 'Warning' },
+  { value: 'critical', label: 'Critical' },
+];
+const AUDIT_STATUS_OPTIONS = [
+  { value: '', label: 'All statuses' },
+  { value: 'success', label: 'Success' },
+  { value: 'failed', label: 'Failed' },
+];
+const AUDIT_ACTION_GROUP_OPTIONS = [
+  { value: '', label: 'All groups' },
+  { value: 'booking', label: 'Booking' },
+  { value: 'business', label: 'Business' },
+  { value: 'user', label: 'User' },
+  { value: 'payment', label: 'Payment' },
+  { value: 'system', label: 'System' },
+  { value: 'slot', label: 'Slot' },
+];
+const AUDIT_ACTOR_ROLE_OPTIONS = [
+  { value: '', label: 'All actors' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'owner', label: 'Owner' },
+  { value: 'customer', label: 'Customer' },
+  { value: 'both', label: 'Owner & Customer' },
+  { value: 'system', label: 'System' },
+];
+
+const AUDIT_LOGS_FETCH_LIMIT = 50;
+
 function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
   const { session, ready } = useAdminSession();
   const [logs, setLogs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterSeverity, setFilterSeverity] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterActorRole, setFilterActorRole] = useState('');
+  const [filterActionGroup, setFilterActionGroup] = useState('');
   const [internalPage, setInternalPage] = useState(1);
   const page = controlledPage ?? internalPage;
   const setPage = onPageChange
@@ -1692,30 +1803,40 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const isDev = process.env.NODE_ENV === 'development';
 
+  const hasFilters =
+    filterSeverity !== '' ||
+    filterStatus !== '' ||
+    filterActorRole !== '' ||
+    filterActionGroup !== '';
+
   useEffect(() => {
     setError(null);
-    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.AUDIT);
-    if (cached && Array.isArray(cached)) {
-      setLogs(cached);
-      setLoading(false);
-      return;
-    }
-    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.AUDIT);
-    if (stale?.data && Array.isArray(stale.data)) {
-      setLogs(stale.data);
-      setLoading(false);
-      if (!ready || !session) return;
-      adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, { credentials: 'include' })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            const list = Array.isArray(data.data) ? data.data : [];
-            setLogs(list);
-            setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
-          }
+    if (!hasFilters) {
+      const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.AUDIT);
+      if (cached && Array.isArray(cached)) {
+        setLogs(cached);
+        setLoading(false);
+        return;
+      }
+      const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.AUDIT);
+      if (stale?.data && Array.isArray(stale.data)) {
+        setLogs(stale.data);
+        setLoading(false);
+        if (!ready || !session) return;
+        adminFetch(`/api/admin/audit-logs?limit=${AUDIT_LOGS_FETCH_LIMIT}`, {
+          credentials: 'include',
         })
-        .catch(() => {});
-      return;
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) {
+              const list = Array.isArray(data.data) ? data.data : [];
+              setLogs(list);
+              setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
+            }
+          })
+          .catch(() => {});
+        return;
+      }
     }
     if (!ready || !session) {
       setError('Session expired. Please log in again.');
@@ -1724,17 +1845,20 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     }
     setLoading(true);
     const ac = new AbortController();
-    adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, {
-      credentials: 'include',
-      signal: ac.signal,
-    })
+    const params = new URLSearchParams({ limit: String(AUDIT_LOGS_FETCH_LIMIT) });
+    if (filterSeverity) params.set('severity', filterSeverity);
+    if (filterStatus) params.set('status', filterStatus);
+    if (filterActorRole) params.set('actor_role', filterActorRole);
+    if (filterActionGroup) params.set('action_group', filterActionGroup);
+    const url = `/api/admin/audit-logs?${params.toString()}`;
+    adminFetch(url, { credentials: 'include', signal: ac.signal })
       .then((r) => r.json())
       .then((data) => {
         if (ac.signal.aborted) return;
         if (data.success) {
           const list = Array.isArray(data.data) ? data.data : [];
           setLogs(list);
-          setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
+          if (!hasFilters) setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
         } else {
           setError(data.error || 'Failed to load audit logs');
         }
@@ -1747,13 +1871,25 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
         if (!ac.signal.aborted) setLoading(false);
       });
     return () => ac.abort();
-  }, [ready, session]);
+  }, [
+    ready,
+    session,
+    filterSeverity,
+    filterStatus,
+    filterActorRole,
+    filterActionGroup,
+    hasFilters,
+  ]);
 
   const sentenceCase = (s: string) => (s.length ? s[0].toUpperCase() + s.slice(1) : s);
   const humanAction = (action: string) =>
     action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
   const formatAuditDescription = (log: any): string => {
+    if (log.description && String(log.description).trim()) {
+      const d = String(log.description).trim();
+      return d.endsWith('.') ? d : d.charAt(0).toUpperCase() + d.slice(1) + '.';
+    }
     const actionType = log.action_type || '';
     const oldData = log.old_data || {};
     const newData = log.new_data || {};
@@ -1846,25 +1982,57 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
       return `Booking was ${actionType.replace('booking_', '')}.`;
     }
 
-    // Custom description (no arrow syntax)
-    if (log.description && !log.description.includes('→')) {
-      const d = String(log.description).trim();
-      return d.endsWith('.') ? d : sentenceCase(d) + '.';
-    }
-
-    // Technical description with arrows: "key→value" or "key: old→new"
-    if (log.description) {
-      const d = log.description.replace(/→/g, ' → ').replace(/:/g, ': ').replace(/,/g, ', ');
-      const parts = d.split(/\s*→\s*/);
-      if (parts.length >= 2) {
-        const first = parts[0].trim();
-        const rest = parts.slice(1).join(' → ').trim();
-        return `${sentenceCase(first)} changed to ${rest}.`;
-      }
-      return sentenceCase(d.trim()) + (d.trim().endsWith('.') ? '' : '.');
-    }
-
     return humanAction(actionType) + ' performed.';
+  };
+
+  const actorLabel = (log: any): string => {
+    const role = log.actor_role && String(log.actor_role).trim();
+    if (role) {
+      const r = role.toLowerCase();
+      if (r === 'admin') return 'Admin';
+      if (r === 'owner') return 'Owner';
+      if (r === 'customer') return 'Customer';
+      if (r === 'both') return 'Owner & Customer';
+      return role.charAt(0).toUpperCase() + role.slice(1);
+    }
+    if (log.admin_user_id) return '—';
+    return 'System';
+  };
+
+  const severityBadge = (severity: string) => {
+    const s = (severity || 'info').toLowerCase();
+    if (s === 'critical')
+      return (
+        <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+          Critical
+        </span>
+      );
+    if (s === 'warning')
+      return (
+        <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+          Warning
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+        Info
+      </span>
+    );
+  };
+
+  const statusBadge = (status: string) => {
+    const s = (status || 'success').toLowerCase();
+    if (s === 'failed')
+      return (
+        <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+          Failed
+        </span>
+      );
+    return (
+      <span className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+        Success
+      </span>
+    );
   };
 
   if (error) {
@@ -1925,55 +2093,137 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
         </section>
       )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Activity log</h3>
           </div>
-          {(logs.length > 0 || loading) && (
-            <input
-              type="search"
-              placeholder="Search audit logs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Search audit logs"
-            />
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filterSeverity}
+              onChange={(e) => {
+                setFilterSeverity(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Filter by severity"
+            >
+              {AUDIT_SEVERITY_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Filter by status"
+            >
+              {AUDIT_STATUS_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterActionGroup}
+              onChange={(e) => {
+                setFilterActionGroup(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Filter by action group"
+            >
+              {AUDIT_ACTION_GROUP_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterActorRole}
+              onChange={(e) => {
+                setFilterActorRole(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+              aria-label="Filter by actor role"
+            >
+              {AUDIT_ACTOR_ROLE_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {(logs.length > 0 || loading) && (
+              <input
+                type="search"
+                placeholder="Search audit logs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                aria-label="Search audit logs"
+              />
+            )}
+          </div>
         </div>
         {logs.length > 0 || loading ? (
-          <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <table className="w-full max-w-full table-fixed border-collapse">
+                <colgroup>
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col style={{ width: isDev ? '28%' : '36%' }} />
+                  {isDev && <col style={{ width: '8%' }} />}
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Timestamp
                     </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Actor
+                    </th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Action
                     </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Entity
                     </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Severity
+                    </th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Status
+                    </th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Description
                     </th>
                     {isDev && (
-                      <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                         Debug
                       </th>
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody>
                   {loading && logs.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={isDev ? 5 : 4}
-                        className="px-5 py-12 text-center text-sm text-slate-500"
+                        colSpan={isDev ? 8 : 7}
+                        className="px-4 py-16 text-center text-sm text-slate-500"
                       >
-                        Loading audit logs...
+                        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                        <p className="mt-3 font-medium">Loading audit logs...</p>
                       </td>
                     </tr>
                   ) : (
@@ -1986,6 +2236,7 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                               (log.action_type || '').toLowerCase().includes(q) ||
                               (log.entity_type || '').toLowerCase().includes(q) ||
                               (log.entity_id || '').toLowerCase().includes(q) ||
+                              (log.actor_role || '').toLowerCase().includes(q) ||
                               desc.toLowerCase().includes(q)
                             );
                           })
@@ -1994,32 +2245,48 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                       const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
                       const start = (page - 1) * TABLE_PAGE_SIZE;
                       const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
-                      return paginated.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500">
-                            {new Date(log.created_at).toLocaleString()}
+                      return paginated.map((log, idx) => (
+                        <tr
+                          key={log.id}
+                          className={`border-b border-slate-100 transition-colors hover:bg-slate-50/70 ${
+                            idx % 2 === 1 ? 'bg-slate-50/30' : 'bg-white'
+                          }`}
+                        >
+                          <td className="px-4 py-3.5 align-top">
+                            <span className="font-mono text-sm tabular-nums text-slate-600">
+                              {new Date(log.created_at).toLocaleString()}
+                            </span>
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap">
-                            <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
+                          <td className="px-4 py-3.5 align-top text-sm font-medium text-slate-700">
+                            {actorLabel(log)}
+                          </td>
+                          <td className="px-4 py-3.5 align-top">
+                            <span className="inline-block break-words rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-sm font-medium text-slate-700">
                               {log.action_type?.replace(/_/g, ' ')}
                             </span>
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                            {log.entity_type}{' '}
-                            {log.entity_id ? `(${log.entity_id.substring(0, 8)}…)` : ''}
+                          <td className="px-4 py-3.5 align-top text-sm font-medium text-slate-800">
+                            {log.entity_type}
+                            {log.entity_id ? (
+                              <span className="font-mono text-slate-500">
+                                {' '}
+                                ({log.entity_id.substring(0, 8)}…)
+                              </span>
+                            ) : null}
                           </td>
-                          <td className="px-5 py-4 text-sm text-slate-600 max-w-md align-top">
-                            <span className="block break-words whitespace-pre-wrap">
-                              {formatAuditDescription(log)}
-                            </span>
+                          <td className="px-4 py-3.5 align-top">{severityBadge(log.severity)}</td>
+                          <td className="px-4 py-3.5 align-top">{statusBadge(log.status)}</td>
+                          <td className="px-4 py-3.5 min-w-0 align-top text-sm leading-relaxed text-slate-600">
+                            <span className="block break-words">{formatAuditDescription(log)}</span>
                           </td>
                           {isDev && (
-                            <td className="px-5 py-4 whitespace-nowrap text-sm">
+                            <td className="px-4 py-3.5 align-top">
                               <button
+                                type="button"
                                 onClick={() =>
                                   setSelectedLog(selectedLog?.id === log.id ? null : log)
                                 }
-                                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-800 hover:bg-amber-100 text-xs font-medium transition-colors"
+                                className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-100"
                               >
                                 {selectedLog?.id === log.id ? 'Hide' : 'View'}
                               </button>
@@ -2052,27 +2319,31 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                 const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
                 if (totalItems === 0) return null;
                 return (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-4 py-3">
                     <p className="text-sm text-slate-600">
-                      Showing {start + 1}–{end} of {totalItems}
+                      Showing{' '}
+                      <span className="font-medium">
+                        {start + 1}–{end}
+                      </span>{' '}
+                      of <span className="font-medium">{totalItems}</span>
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={page <= 1}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Previous
                       </button>
-                      <span className="text-sm text-slate-600">
+                      <span className="min-w-[7rem] text-center text-sm text-slate-600">
                         Page {page} of {totalPages}
                       </span>
                       <button
                         type="button"
                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                         disabled={page >= totalPages}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Next
                       </button>
@@ -2082,9 +2353,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
               })()}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-slate-500">No audit logs found</p>
-            <p className="mt-1 text-xs text-slate-400">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-14 text-center">
+            <p className="text-sm font-medium text-slate-600">No audit logs found</p>
+            <p className="mt-1.5 text-sm text-slate-400">
               Activity will appear here as changes occur
             </p>
           </div>

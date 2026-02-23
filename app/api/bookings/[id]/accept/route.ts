@@ -126,7 +126,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       try {
         await auditService.createAuditLog(user.id, 'booking_confirmed', 'booking', {
           entityId: id,
-          description: 'Booking confirmed by owner',
+          newData: { status: 'confirmed', business_id: booking.business_id },
+          actorRole: ctx?.profile?.user_type ?? undefined,
           request,
         });
       } catch (auditError) {
@@ -148,6 +149,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     console.error(`[SECURITY] Accept booking error: IP: ${clientIP}, Error: ${message}`);
+    const authCtx = await getAuthContext(request).catch(() => null);
+    const { id: bookingId } = await params;
+    try {
+      await auditService.createAuditLog(authCtx?.user?.id ?? null, 'booking_confirmed', 'booking', {
+        entityId: bookingId,
+        status: 'failed',
+        metadata: { error_message: message },
+        request,
+      });
+    } catch (auditErr) {
+      console.error('[SECURITY] Failed to create audit log for accept failure:', auditErr);
+    }
     return errorResponse(message, 400);
   }
 }
