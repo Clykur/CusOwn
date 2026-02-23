@@ -1,5 +1,9 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Silence "multiple lockfiles" warning by pinning the tracing root to this project.
+  outputFileTracingRoot: path.resolve(__dirname),
   // Disabled to avoid double-mount/render storms that trigger repeated GET /admin/dashboard.
   reactStrictMode: false,
   // Disable static optimization for better dev experience

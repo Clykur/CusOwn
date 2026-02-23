@@ -21,7 +21,7 @@ import type { PostgrestFilterBuilder } from '@supabase/postgrest-js';
  *   query = applyActiveBusinessFilters(query);
  *   const { data } = await query;
  */
-export function applyActiveBusinessFilters<T extends PostgrestFilterBuilder<any, any, any>>(
+export function applyActiveBusinessFilters<T extends PostgrestFilterBuilder<any, any, any, any>>(
   query: T
 ): T {
   return query.eq('suspended', false).is('deleted_at', null) as T;

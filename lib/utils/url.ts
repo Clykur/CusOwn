@@ -5,6 +5,19 @@ const isLocalhost = (url: string): boolean => {
   return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('0.0.0.0');
 };
 
+/** Ensure the localhost-in-production warning is only emitted once per process, and never during `next build`. */
+let _localhostWarned = false;
+const warnLocalhostOnce = (): void => {
+  if (_localhostWarned) return;
+  // Suppress during build — NODE_ENV is 'production' but localhost is expected.
+  if (process.env.NEXT_PHASE === 'phase-production-build') return;
+  _localhostWarned = true;
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[WARNING] Running in production with a localhost base URL. Set NEXT_PUBLIC_APP_URL to your production domain.'
+  );
+};
+
 const isProduction = (): boolean => {
   if (process.env.NODE_ENV === 'production') return true;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -25,18 +38,14 @@ export const getBaseUrl = (request?: NextRequest): string => {
     }
   }
 
-  // Node.js environment
-  const isNode =
-    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+  // Server environment (Node.js or Edge Runtime)
+  const isServer = typeof window === 'undefined';
 
-  if (isNode) {
+  if (isServer) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl) {
       if (process.env.NODE_ENV === 'production' && isLocalhost(appUrl)) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          '[WARNING] Running in production with a localhost base URL. Set NEXT_PUBLIC_APP_URL to your production domain.'
-        );
+        warnLocalhostOnce();
       }
       return appUrl;
     }
@@ -79,18 +88,14 @@ export const getApiUrl = (path: string, request?: NextRequest): string => {
 };
 
 export const getClientBaseUrl = (): string => {
-  // Node.js environment
-  const isNode =
-    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+  // Server environment (Node.js or Edge Runtime)
+  const isServer = typeof window === 'undefined';
 
-  if (isNode) {
+  if (isServer) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl) {
       if (process.env.NODE_ENV === 'production' && isLocalhost(appUrl)) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          '[WARNING] Running in production with a localhost base URL. Set NEXT_PUBLIC_APP_URL to your production domain.'
-        );
+        warnLocalhostOnce();
       }
       return appUrl;
     }
