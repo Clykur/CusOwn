@@ -12,22 +12,32 @@ const isProduction = (): boolean => {
 };
 
 export const getBaseUrl = (request?: NextRequest): string => {
+  const isNode =
+    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+
+  // In production (server), prefer env URL first so QR codes and links always use the public URL
+  // even when request.nextUrl.origin is localhost (e.g. serverless/internal routing).
+  if (isNode && isProduction()) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl && !isLocalhost(appUrl)) return appUrl;
+    const vercelUrl = process.env.VERCEL_URL;
+    if (vercelUrl) return `https://${vercelUrl}`;
+  }
+
   if (request) {
     const origin = request.nextUrl.origin;
-    if (origin && origin !== 'http://localhost:3000' && origin !== 'http://127.0.0.1:3000') {
+    if (origin && !isLocalhost(origin)) {
       return origin;
     }
     const host = request.headers.get('host');
-    if (host) {
+    if (host && !isLocalhost(host)) {
       const protocol =
-        request.headers.get('x-forwarded-proto') || (isLocalhost(host) ? 'http' : 'https');
+        request.headers.get('x-forwarded-proto') ||
+        request.headers.get('x-forwarded-protocol') ||
+        'https';
       return `${protocol}://${host}`;
     }
   }
-
-  // Check if we're in Node.js environment (not browser)
-  const isNode =
-    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
 
   if (isNode) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;

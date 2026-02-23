@@ -27,10 +27,16 @@ export const SLOT_GENERATION_WINDOW_DAYS = 7;
 
 export const BOOKING_LINK_PREFIX = '/b/';
 
+/** Fallback when /api/business-categories is unavailable. Real list comes from DB. */
+export const BUSINESS_CATEGORIES_FALLBACK: { value: string; label: string }[] = [
+  { value: 'salon', label: 'Salon' },
+];
+
 export const API_ROUTES = {
   SALONS: '/api/salons',
   SLOTS: '/api/slots',
   BOOKINGS: '/api/bookings',
+  BUSINESS_CATEGORIES: '/api/business-categories',
 } as const;
 
 export const ROUTES = {
@@ -130,6 +136,8 @@ export const ERROR_MESSAGES = {
   WHATSAPP_SEND_FAILED: 'Failed to send WhatsApp message',
   WHATSAPP_NUMBER_EXISTS:
     'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.',
+  /** Generic message for create-business failures (constraint/DB). Never expose technical or admin details to owner/customer. */
+  CREATE_BUSINESS_FAILED: "We couldn't create the business right now. Please try again.",
   QR_CODE_GENERATION_FAILED:
     'Unable to generate QR code. You can access it later from your dashboard.',
   NETWORK_ERROR:
@@ -151,6 +159,12 @@ export const ERROR_MESSAGES = {
   USER_UNBLOCK_FAILED: 'Failed to unblock user',
   USER_DELETE_FAILED: 'Failed to delete user',
   CANNOT_DELETE_SELF: 'You cannot delete your own account',
+  UNDO_WINDOW_EXPIRED: 'Undo window has expired',
+  SLOT_NO_LONGER_AVAILABLE: 'Slot is no longer available; cannot undo reject',
+  BOOKING_NOT_CONFIRMED: 'Booking is not confirmed',
+  BOOKING_NOT_REJECTED: 'Booking is not rejected',
+  BOOKING_REVERT_FAILED: 'Booking could not be reverted',
+  UNDO_ALREADY_USED: 'Undo can only be used once per booking',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -166,6 +180,7 @@ export const SUCCESS_MESSAGES = {
   USER_BLOCKED: 'User blocked successfully',
   USER_UNBLOCKED: 'User unblocked successfully',
   USER_DELETED: 'User deleted successfully',
+  BOOKING_REVERTED_TO_PENDING: 'Booking reverted to pending',
 } as const;
 
 /** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */
@@ -176,6 +191,8 @@ export const UI_BOOKING_STATE = {
   CANCELLED: 'This booking has been cancelled',
   /** When status is cancelled and cancelled_by === 'system' (expired). */
   EXPIRED: 'This request has expired',
+  /** When owner marked as no-show (status remains confirmed). */
+  NO_SHOW: 'Marked as no-show — you did not attend this appointment',
 } as const;
 
 /** Phase 6: Idempotent success copy (e.g. user clicked Accept again on already-confirmed booking). */
@@ -206,6 +223,15 @@ export const UI_CONTEXT = {
   /** Shown when user tries to access customer area but this account cannot use customer flow. */
   ROLE_ACCESS_DENIED_NOT_CUSTOMER:
     "This account doesn't have customer access. You can continue as owner, or sign in with a different email for the customer flow.",
+  /** Owner: undo accept/reject button label. */
+  UNDO_LABEL: 'Undo',
+  /** Owner: toast after reverting to pending. */
+  REVERTED_TO_PENDING: 'Booking reverted to pending',
+  /** Owner: status label when customer cancelled after accept. */
+  CANCELLED_BY_CUSTOMER: 'Cancelled by customer',
+  /** Create business: info when owner reuses a WhatsApp number already used for another business. */
+  WHATSAPP_ALREADY_USED_FOR: (businessName: string) =>
+    `This number is already used for "${businessName}". You can use it for this business too.`,
 } as const;
 
 /** Customer flow UI – generic, multi-service-ready copy. No category names. */
@@ -281,6 +307,9 @@ export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(
   process.env.CANCELLATION_MIN_HOURS_BEFORE || '2',
   10
 );
+
+/** Owner undo: 5 min window. Undo allowed only once per accept/reject and only within this period; after undo or expiry the undo button is hidden. */
+export const UNDO_ACCEPT_REJECT_WINDOW_MINUTES = 5;
 
 /** Phase 3: Metric names for SRE. Alert if GET /api/health checks.cron_expire_bookings_last_run_ts is older than X minutes. */
 export const METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN = 'cron.expire_bookings.last_run_ts';

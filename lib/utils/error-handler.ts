@@ -1,8 +1,9 @@
+import { ERROR_MESSAGES } from '@/config/constants';
+
 /**
  * Centralized error handling utility
  * Converts technical errors to user-friendly messages
  */
-
 export const getUserFriendlyError = (error: unknown): string => {
   // If it's already a user-friendly string, return it
   if (typeof error === 'string') {
@@ -14,29 +15,38 @@ export const getUserFriendlyError = (error: unknown): string => {
     const message = error.message.toLowerCase();
 
     // Network/API errors
-    if (message.includes('fetch') || message.includes('network') || message.includes('failed to fetch')) {
+    if (
+      message.includes('fetch') ||
+      message.includes('network') ||
+      message.includes('failed to fetch')
+    ) {
       return 'Unable to connect to the server. Please check your internet connection and try again.';
     }
 
-    // Database constraint violations (unique, foreign key, etc.)
+    // Database constraint violations: generic for most; booking_link gets a clear, non-technical hint
     if (message.includes('duplicate key') || message.includes('unique constraint')) {
-      // Check for specific constraint violations
-      if (message.includes('whatsapp_number')) {
-        return 'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.';
-      }
       if (message.includes('booking_link')) {
-        return 'This booking link already exists. Please try a different salon name.';
+        return ERROR_MESSAGES.BOOKING_LINK_EXISTS;
       }
-      return 'This information already exists in our system. Please use different details.';
+      return ERROR_MESSAGES.CREATE_BUSINESS_FAILED;
     }
 
-    // Database errors
-    if (message.includes('database') || message.includes('sql') || message.includes('query') || message.includes('constraint')) {
-      return 'A database error occurred. Please try again in a moment.';
+    // Database errors: generic
+    if (
+      message.includes('database') ||
+      message.includes('sql') ||
+      message.includes('query') ||
+      message.includes('constraint')
+    ) {
+      return ERROR_MESSAGES.CREATE_BUSINESS_FAILED;
     }
 
     // Validation errors
-    if (message.includes('required') || message.includes('invalid') || message.includes('must be')) {
+    if (
+      message.includes('required') ||
+      message.includes('invalid') ||
+      message.includes('must be')
+    ) {
       return error.message; // Keep validation messages as they're usually user-friendly
     }
 
@@ -46,7 +56,11 @@ export const getUserFriendlyError = (error: unknown): string => {
     }
 
     // Permission errors
-    if (message.includes('permission') || message.includes('unauthorized') || message.includes('403')) {
+    if (
+      message.includes('permission') ||
+      message.includes('unauthorized') ||
+      message.includes('403')
+    ) {
       return 'You do not have permission to perform this action.';
     }
 
@@ -61,7 +75,11 @@ export const getUserFriendlyError = (error: unknown): string => {
     }
 
     // Default: return the error message if it seems user-friendly, otherwise generic message
-    if (error.message.length < 100 && !error.message.includes('error:') && !error.message.includes('at ')) {
+    if (
+      error.message.length < 100 &&
+      !error.message.includes('error:') &&
+      !error.message.includes('at ')
+    ) {
       return error.message;
     }
   }
@@ -100,12 +118,12 @@ export const logError = (error: unknown, context?: string): void => {
 export const handleApiError = async (response: Response): Promise<string> => {
   try {
     const data = await response.json();
-    
+
     // Check if API returned a user-friendly error message
     if (data.error && typeof data.error === 'string') {
       return getUserFriendlyError(data.error);
     }
-    
+
     if (data.message && typeof data.message === 'string') {
       return getUserFriendlyError(data.message);
     }
@@ -135,4 +153,3 @@ export const handleApiError = async (response: Response): Promise<string> => {
       return 'An error occurred. Please try again.';
   }
 };
-

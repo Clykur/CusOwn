@@ -8,7 +8,7 @@ import { cache } from 'react';
 export class SalonService {
   async createSalon(data: CreateSalonInput, ownerUserId?: string): Promise<Salon> {
     const supabaseAdmin = requireSupabaseAdmin();
-    
+
     let bookingLink = generateSlug(data.salon_name);
     let isUnique = false;
     let attempts = 0;
@@ -54,6 +54,7 @@ export class SalonService {
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         owner_user_id: ownerUserId || null,
+        category: data.category || 'salon',
       })
       .select()
       .single();
@@ -74,7 +75,9 @@ export class SalonService {
         closing_time: salon.closing_time,
         slot_duration: salon.slot_duration,
       });
-      console.log(`✅ Slots generated for new business: ${salon.salon_name} (${salon.id.substring(0, 8)}...)`);
+      console.log(
+        `✅ Slots generated for new business: ${salon.salon_name} (${salon.id.substring(0, 8)}...)`
+      );
     } catch (slotError) {
       // Log error but don't fail business creation
       // Slots can be generated lazily later via getAvailableSlots
@@ -92,7 +95,9 @@ export class SalonService {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('businesses')
-      .select('id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at')
+      .select(
+        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+      )
       .eq('booking_link', bookingLink)
       .eq('suspended', false)
       .single();
@@ -111,13 +116,15 @@ export class SalonService {
     const supabaseAdmin = requireSupabaseAdmin();
     let query = supabaseAdmin
       .from('businesses')
-      .select('id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at')
+      .select(
+        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+      )
       .eq('id', salonId);
-    
+
     if (!includeSuspended) {
       query = query.eq('suspended', false);
     }
-    
+
     const { data, error } = await query.single();
 
     if (error) {
@@ -132,4 +139,3 @@ export class SalonService {
 }
 
 export const salonService = new SalonService();
-

@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SLOT_DURATIONS, API_ROUTES, ERROR_MESSAGES, VALIDATION } from '@/config/constants';
+import {
+  SLOT_DURATIONS,
+  API_ROUTES,
+  ERROR_MESSAGES,
+  VALIDATION,
+  UI_CONTEXT,
+  BUSINESS_CATEGORIES_FALLBACK,
+} from '@/config/constants';
 import { CreateSalonInput } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { formatPhoneNumber } from '@/lib/utils/string';
 
 export type CreateBusinessFormProps = {
   redirectAfterSuccess?: string;
@@ -36,16 +44,73 @@ export default function CreateBusinessForm({
     slot_duration: '30',
     address: '',
     location: '',
+    category: 'salon',
   });
   const [success, setSuccess] = useState<{
     bookingLink: string;
     bookingUrl: string;
     qrCode?: string;
   } | null>(null);
+  const [ownerBusinesses, setOwnerBusinesses] = useState<
+    { salon_name: string; whatsapp_number: string }[] | null
+  >(null);
+  const [businessCategories, setBusinessCategories] = useState<{ value: string; label: string }[]>(
+    BUSINESS_CATEGORIES_FALLBACK
+  );
 
   useEffect(() => {
     getCSRFToken().catch(console.error);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(API_ROUTES.BUSINESS_CATEGORIES, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((res) => {
+        if (cancelled) return;
+        const list = res?.data && Array.isArray(res.data) ? res.data : [];
+        setBusinessCategories(list.length ? list : BUSINESS_CATEGORIES_FALLBACK);
+      })
+      .catch(() => {
+        if (!cancelled) setBusinessCategories(BUSINESS_CATEGORIES_FALLBACK);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getServerSessionClient().then(({ user }) => {
+      if (!user || cancelled) return;
+      fetch('/api/owner/businesses', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((res) => {
+          if (cancelled || !res?.data?.length) return;
+          setOwnerBusinesses(
+            res.data.map((b: { salon_name: string; whatsapp_number: string }) => ({
+              salon_name: b.salon_name,
+              whatsapp_number: b.whatsapp_number,
+            }))
+          );
+        })
+        .catch(() => {});
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const whatsappReuseHint = useMemo(() => {
+    const digits = formData.whatsapp_number.replace(/\D/g, '');
+    if (digits.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH || !ownerBusinesses?.length)
+      return null;
+    const formatted = formatPhoneNumber(formData.whatsapp_number);
+    const existing = ownerBusinesses.find(
+      (b) => formatPhoneNumber(b.whatsapp_number) === formatted
+    );
+    return existing?.salon_name ?? null;
+  }, [formData.whatsapp_number, ownerBusinesses]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -310,6 +375,29 @@ export default function CreateBusinessForm({
         />
       </div>
       <div>
+        <label htmlFor="category" className={labelClass}>
+          Business type <span className="text-red-500">*</span>
+        </label>
+        <select
+          id="category"
+          name="category"
+          value={
+            businessCategories.some((c) => c.value === (formData.category ?? 'salon'))
+              ? (formData.category ?? 'salon')
+              : (businessCategories[0]?.value ?? 'salon')
+          }
+          onChange={handleChange}
+          required
+          className={inputClass}
+        >
+          {businessCategories.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
         <label htmlFor="owner_name" className={labelClass}>
           Owner name <span className="text-red-500">*</span>
         </label>
@@ -344,6 +432,11 @@ export default function CreateBusinessForm({
           inputMode="numeric"
           autoComplete="tel"
         />
+        {whatsappReuseHint && (
+          <p className="mt-1.5 text-sm text-gray-600" role="status">
+            {UI_CONTEXT.WHATSAPP_ALREADY_USED_FOR(whatsappReuseHint)}
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -491,6 +584,32 @@ export default function CreateBusinessForm({
         </div>
         <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
           <label
+            htmlFor="category"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+          >
+            Business type <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="category"
+            name="category"
+            value={
+              businessCategories.some((c) => c.value === (formData.category ?? 'salon'))
+                ? (formData.category ?? 'salon')
+                : (businessCategories[0]?.value ?? 'salon')
+            }
+            onChange={handleChange}
+            required
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+          >
+            {businessCategories.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+          <label
             htmlFor="owner_name"
             className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
           >
@@ -530,6 +649,11 @@ export default function CreateBusinessForm({
             inputMode="numeric"
             autoComplete="tel"
           />
+          {whatsappReuseHint && (
+            <p className="mt-1.5 text-sm text-gray-600" role="status">
+              {UI_CONTEXT.WHATSAPP_ALREADY_USED_FOR(whatsappReuseHint)}
+            </p>
+          )}
         </div>
         <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
           <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-3">

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
 import BookingCard from '@/components/owner/booking-card';
 import PullToRefresh from '@/components/ui/pull-to-refresh';
 import NoShowButton from '@/components/booking/no-show-button';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
 import { BookingWithDetails, Slot } from '@/types';
+import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constants';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -28,6 +29,15 @@ export default function OwnerDashboardPage() {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [lastUndoable, setLastUndoable] = useState<{
+    bookingId: string;
+    action: 'accept' | 'reject';
+    at: number;
+  } | null>(null);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
+  const isUndoWindowOpen = lastUndoable ? Date.now() - lastUndoable.at < undoWindowMs : false;
 
   useEffect(() => {
     if (!initialUser?.id) {
@@ -126,6 +136,9 @@ export default function OwnerDashboardPage() {
       if (response.ok) {
         setActionSuccess('Booking accepted successfully');
         setTimeout(() => setActionSuccess(null), 2000);
+        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+        setLastUndoable({ bookingId, action: 'accept', at: Date.now() });
+        undoTimeoutRef.current = setTimeout(() => setLastUndoable(null), undoWindowMs);
         fetchBookings();
       } else {
         const result = await response.json();
@@ -156,6 +169,9 @@ export default function OwnerDashboardPage() {
       if (response.ok) {
         setActionSuccess('Booking rejected');
         setTimeout(() => setActionSuccess(null), 2000);
+        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+        setLastUndoable({ bookingId, action: 'reject', at: Date.now() });
+        undoTimeoutRef.current = setTimeout(() => setLastUndoable(null), undoWindowMs);
         fetchBookings();
       } else {
         const result = await response.json();
@@ -167,6 +183,84 @@ export default function OwnerDashboardPage() {
       setProcessingBookingId(null);
     }
   };
+
+  const handleUndoAccept = useCallback(
+    async (bookingId: string) => {
+      if (processingBookingId) return;
+      setProcessingBookingId(bookingId);
+      setActionError(null);
+      setLastUndoable(null);
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = null;
+      }
+      try {
+        const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
+        const headers: Record<string, string> = {};
+        if (csrfToken) headers['x-csrf-token'] = csrfToken;
+        const res = await fetch(`/api/bookings/${bookingId}/undo-accept`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setActionSuccess(UI_CONTEXT.REVERTED_TO_PENDING);
+          setTimeout(() => setActionSuccess(null), 2000);
+          setBookings((prev) =>
+            prev.map((b) => (b.id === bookingId ? { ...b, status: 'pending' as const } : b))
+          );
+          fetchBookings();
+        } else {
+          setActionError(json.error || 'Failed to undo');
+        }
+      } catch {
+        setActionError('Failed to undo');
+      } finally {
+        setProcessingBookingId(null);
+      }
+    },
+    [processingBookingId, fetchBookings]
+  );
+
+  const handleUndoReject = useCallback(
+    async (bookingId: string) => {
+      if (processingBookingId) return;
+      setProcessingBookingId(bookingId);
+      setActionError(null);
+      setLastUndoable(null);
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = null;
+      }
+      try {
+        const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
+        const headers: Record<string, string> = {};
+        if (csrfToken) headers['x-csrf-token'] = csrfToken;
+        const res = await fetch(`/api/bookings/${bookingId}/undo-reject`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setActionSuccess(UI_CONTEXT.REVERTED_TO_PENDING);
+          setTimeout(() => setActionSuccess(null), 2000);
+          setBookings((prev) =>
+            prev.map((b) => (b.id === bookingId ? { ...b, status: 'pending' as const } : b))
+          );
+          fetchBookings();
+        } else {
+          setActionError(json.error || 'Failed to undo');
+        }
+      } catch {
+        setActionError('Failed to undo');
+      } finally {
+        setProcessingBookingId(null);
+      }
+    },
+    [processingBookingId, fetchBookings]
+  );
 
   const handleCancel = async (bookingId: string) => {
     if (processingBookingId) return;
@@ -199,6 +293,13 @@ export default function OwnerDashboardPage() {
     }
   };
 
+  const canUndo = useCallback((b: BookingWithDetails) => {
+    if (b.status !== 'confirmed' && b.status !== 'rejected') return false;
+    if (b.undo_used_at) return false;
+    const windowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
+    return Date.now() - new Date(b.updated_at).getTime() < windowMs;
+  }, []);
+
   if (loading) return <OwnerDashboardSkeleton />;
   const filteredBookings = bookings.filter((booking) => {
     if (!searchTerm.trim()) return true;
@@ -215,6 +316,82 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
+      {actionError && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="shrink-0 p-1 rounded hover:bg-amber-100"
+            aria-label="Dismiss"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+      {actionSuccess && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {actionSuccess}
+        </div>
+      )}
+      {lastUndoable && (
+        <div
+          className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+            lastUndoable.action === 'accept'
+              ? 'border-emerald-200 bg-emerald-50'
+              : 'border-rose-200 bg-rose-50'
+          }`}
+        >
+          <span
+            className={
+              lastUndoable.action === 'accept'
+                ? 'text-emerald-800 font-medium'
+                : 'text-rose-900 font-medium'
+            }
+          >
+            {lastUndoable.action === 'accept' ? 'Accepted.' : 'Rejected.'}
+          </span>
+          {isUndoWindowOpen && (
+            <button
+              type="button"
+              onClick={() =>
+                lastUndoable.action === 'accept'
+                  ? handleUndoAccept(lastUndoable.bookingId)
+                  : handleUndoReject(lastUndoable.bookingId)
+              }
+              disabled={!!processingBookingId}
+              title={UI_CONTEXT.UNDO_LABEL}
+              className={`h-9 w-9 flex items-center justify-center rounded-lg disabled:opacity-50 ${
+                lastUndoable.action === 'accept'
+                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                  : 'bg-rose-100 text-rose-900 hover:bg-rose-200'
+              }`}
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
         <Stat label="Total Businesses" value={stats?.totalBusinesses ?? 0} />
         <Stat label="Total Bookings" value={stats?.totalBookings ?? 0} />
@@ -289,6 +466,9 @@ export default function OwnerDashboardPage() {
                       actionError={actionError}
                       actionSuccess={actionSuccess}
                       onRescheduled={fetchBookings}
+                      onUndoAccept={handleUndoAccept}
+                      onUndoReject={handleUndoReject}
+                      undoWindowMinutes={UNDO_ACCEPT_REJECT_WINDOW_MINUTES}
                     />
                   ))
                 )}
@@ -313,16 +493,13 @@ export default function OwnerDashboardPage() {
                         Date & Time
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Booking ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Business
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Status & actions
                       </th>
                     </tr>
                   </thead>
@@ -350,11 +527,6 @@ export default function OwnerDashboardPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-black">
-                            {booking.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-500 font-mono">
                             {booking.booking_id}
                           </span>
@@ -362,14 +534,17 @@ export default function OwnerDashboardPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex gap-2">
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className="flex flex-wrap items-center gap-2">
                             {booking.status === 'pending' && (
                               <>
+                                <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
+                                  Pending
+                                </span>
                                 <button
                                   onClick={() => handleAccept(booking.id)}
                                   disabled={processingBookingId === booking.id}
-                                  className="h-9 w-9 flex items-center justify-center bg-black text-white rounded-lg"
+                                  className="h-9 w-9 flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
                                   title="Accept"
                                 >
                                   {processingBookingId === booking.id ? (
@@ -385,12 +560,12 @@ export default function OwnerDashboardPage() {
                                         r="10"
                                         stroke="currentColor"
                                         strokeWidth="4"
-                                      ></circle>
+                                      />
                                       <path
                                         className="opacity-75"
                                         fill="currentColor"
                                         d="M4 12a8 8 0 018-8v8z"
-                                      ></path>
+                                      />
                                     </svg>
                                   ) : (
                                     <svg
@@ -411,7 +586,7 @@ export default function OwnerDashboardPage() {
                                 <button
                                   onClick={() => handleReject(booking.id)}
                                   disabled={processingBookingId === booking.id}
-                                  className="h-9 w-9 flex items-center justify-center bg-gray-200 text-gray-800 rounded-lg"
+                                  className="h-9 w-9 flex items-center justify-center bg-rose-900 text-white rounded-lg hover:bg-rose-800"
                                   title="Reject"
                                 >
                                   <svg
@@ -430,9 +605,88 @@ export default function OwnerDashboardPage() {
                                 </button>
                               </>
                             )}
-                            {booking.status === 'confirmed' && !booking.no_show && (
-                              <NoShowButton bookingId={booking.id} onMarked={fetchBookings} />
+                            {booking.status === 'confirmed' && (
+                              <>
+                                <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                  Accepted
+                                </span>
+                                {canUndo(booking) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUndoAccept(booking.id)}
+                                    disabled={processingBookingId === booking.id}
+                                    title={UI_CONTEXT.UNDO_LABEL}
+                                    className="h-9 w-9 flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 disabled:opacity-50"
+                                  >
+                                    <svg
+                                      className="h-5 w-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      viewBox="0 0 24 24"
+                                      aria-hidden
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                                {!booking.no_show && (
+                                  <NoShowButton bookingId={booking.id} onMarked={fetchBookings} />
+                                )}
+                              </>
                             )}
+                            {booking.status === 'rejected' && canUndo(booking) && (
+                              <>
+                                <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-900">
+                                  Rejected
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUndoReject(booking.id)}
+                                  disabled={processingBookingId === booking.id}
+                                  title={UI_CONTEXT.UNDO_LABEL}
+                                  className="h-9 w-9 flex items-center justify-center bg-rose-100 text-rose-900 rounded-lg hover:bg-rose-200 disabled:opacity-50"
+                                >
+                                  <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+                                    />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                            {(booking.status === 'rejected' && !canUndo(booking)) ||
+                            booking.status === 'cancelled' ||
+                            String(booking.status) === 'expired' ? (
+                              <span
+                                className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                  booking.status === 'rejected'
+                                    ? 'bg-rose-100 text-rose-900'
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {booking.status === 'rejected'
+                                  ? 'Rejected'
+                                  : booking.status === 'cancelled'
+                                    ? booking.cancelled_by === 'customer'
+                                      ? UI_CONTEXT.CANCELLED_BY_CUSTOMER
+                                      : 'Cancelled'
+                                    : 'Expired'}
+                              </span>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

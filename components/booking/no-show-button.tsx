@@ -21,9 +21,13 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
     setError(null);
 
     try {
+      const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const response = await fetch(`/api/bookings/${bookingId}/no-show`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include',
       });
 
       const result = await response.json();

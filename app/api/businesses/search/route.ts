@@ -6,6 +6,7 @@ import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { haversineDistance, validateCoordinates, validateRadius } from '@/lib/utils/geo';
+import { getAllowedCategoryValues } from '@/services/business-category.service';
 
 const searchRateLimit = enhancedRateLimit({
   maxRequests: 20,
@@ -14,8 +15,6 @@ const searchRateLimit = enhancedRateLimit({
   perUser: true,
   keyPrefix: 'geo_search',
 });
-
-const ALLOWED_CATEGORIES = ['salon', 'clinic', 'gym', 'tutor', 'repair', 'consultant'];
 
 export async function POST(request: NextRequest) {
   const clientIP = getClientIp(request);
@@ -79,7 +78,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('Location required', 400);
     }
 
-    if (filteredBody.category && !ALLOWED_CATEGORIES.includes(filteredBody.category)) {
+    const allowedCategories = await getAllowedCategoryValues();
+    if (
+      filteredBody.category &&
+      allowedCategories.length &&
+      !allowedCategories.includes(filteredBody.category)
+    ) {
       return errorResponse('Invalid category', 400);
     }
 
