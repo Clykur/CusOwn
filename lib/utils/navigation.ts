@@ -204,7 +204,7 @@ export const getSecureResourceUrlClient = async (
 export const ROUTES = {
   HOME: '/',
   SETUP: '/setup',
-  BOOKING: (bookingLink: string) => `/b/${bookingLink}`,
+  BOOKING: (bookingLink: string) => `/book/${bookingLink}`,
   BOOKING_STATUS: (bookingId: string) => `/booking/${bookingId}`,
   OWNER_DASHBOARD: (bookingLink: string) => `/owner/${bookingLink}`,
   OWNER_DASHBOARD_BASE: '/owner/dashboard',
@@ -234,6 +234,8 @@ export const ROUTES = {
   CUSTOMER_SALON_LIST: '/customer/categories/salon',
   CUSTOMER_PROFILE: '/customer/profile',
   PROFILE: '/profile',
+  /** After login from public booking; completes pending booking and redirects to booking details. */
+  BOOK_COMPLETE: '/book/complete',
   AUTH_LOGIN: (redirectTo?: string) =>
     redirectTo ? `/auth/login?redirect_to=${encodeURIComponent(redirectTo)}` : '/auth/login',
   SELECT_ROLE: (role?: string) => (role ? `/select-role?role=${role}` : '/select-role'),

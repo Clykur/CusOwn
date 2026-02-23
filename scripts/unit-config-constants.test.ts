@@ -68,7 +68,7 @@ export function runUnitConfigConstantsTests(): void {
   });
 
   runTest('should_constants_export_values', () => {
-    assert(BOOKING_LINK_PREFIX === '/b/', 'BOOKING_LINK_PREFIX');
+    assert(BOOKING_LINK_PREFIX === '/book/', 'BOOKING_LINK_PREFIX');
     assert(API_ROUTES.SALONS === '/api/salons', 'API_ROUTES.SALONS');
     assert(ROUTES.HOME === '/', 'ROUTES.HOME');
     assert(VALIDATION.SALON_NAME_MIN_LENGTH === 2, 'VALIDATION');
