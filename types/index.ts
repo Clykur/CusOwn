@@ -66,6 +66,18 @@ export type Salon = {
   updated_at: string;
 };
 
+/** Public business shape for QR booking: no owner_user_id, no owner_name. */
+export type PublicBusiness = {
+  id: string;
+  salon_name: string;
+  opening_time: string;
+  closing_time: string;
+  slot_duration: number;
+  booking_link: string;
+  address: string | null;
+  location: string | null;
+};
+
 export type Slot = {
   id: string;
   business_id: string;

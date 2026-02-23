@@ -11,24 +11,39 @@ const isProduction = (): boolean => {
   return appUrl ? !isLocalhost(appUrl) : false;
 };
 
+/** Production fallback when no env URL is set. Never use localhost in production. */
+const PRODUCTION_FALLBACK_BASE = 'https://cusown.clykur.com';
+
 export const getBaseUrl = (request?: NextRequest): string => {
   const isNode =
     typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+  const prod = isProduction();
 
-  // In production (server), prefer env URL first so QR codes and links always use the public URL
-  // even when request.nextUrl.origin is localhost (e.g. serverless/internal routing).
-  if (isNode && isProduction()) {
+  // In production, never use localhost. Prefer env so QR and links always use public URL
+  // (request.nextUrl.origin can be localhost in some serverless/internal routing).
+  if (prod) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (appUrl && !isLocalhost(appUrl)) return appUrl;
+    if (appUrl && !isLocalhost(appUrl)) return appUrl.replace(/\/$/, '') || appUrl;
     const vercelUrl = process.env.VERCEL_URL;
-    if (vercelUrl) return `https://${vercelUrl}`;
+    if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, '')}`;
+    if (request) {
+      const origin = request.nextUrl?.origin;
+      if (origin && !isLocalhost(origin)) return origin;
+      const host = request.headers.get('host');
+      if (host && !isLocalhost(host)) {
+        const protocol =
+          request.headers.get('x-forwarded-proto') ||
+          request.headers.get('x-forwarded-protocol') ||
+          'https';
+        return `${protocol}://${host}`;
+      }
+    }
+    return PRODUCTION_FALLBACK_BASE;
   }
 
   if (request) {
-    const origin = request.nextUrl.origin;
-    if (origin && !isLocalhost(origin)) {
-      return origin;
-    }
+    const origin = request.nextUrl?.origin;
+    if (origin && !isLocalhost(origin)) return origin;
     const host = request.headers.get('host');
     if (host && !isLocalhost(host)) {
       const protocol =
@@ -44,12 +59,9 @@ export const getBaseUrl = (request?: NextRequest): string => {
     if (appUrl) return appUrl;
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
-    return isProduction()
-      ? 'https://cusown.clykur.com'
-      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   }
 
-  // Browser environment - check for window object safely
   try {
     if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
       const win = globalThis as any;
@@ -58,12 +70,10 @@ export const getBaseUrl = (request?: NextRequest): string => {
       }
     }
   } catch {
-    // Ignore errors in Node.js environment
+    // ignore
   }
 
-  return isProduction()
-    ? 'https://cusown.clykur.com'
-    : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 };
 
 /** Canonical short URL for sharing (e.g. WhatsApp). Use /b/[bookingLink] only; no long query params. */

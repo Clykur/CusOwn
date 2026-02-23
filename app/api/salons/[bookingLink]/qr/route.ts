@@ -57,7 +57,7 @@ export async function GET(
         throw new Error('Failed to save QR code');
       }
 
-      const response = successResponse({ qr_code: qrCode });
+      const response = NextResponse.json(successResponse({ qr_code: qrCode }));
       setCacheHeaders(response, 86400, 172800);
       return response;
     } catch (qrError) {
