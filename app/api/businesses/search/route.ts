@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
   distance_km?: number;
 };
 
-let results: BusinessResult[] = businesses;
+let results: BusinessResult[] = businesses as BusinessResult[];
     const hasMore = results.length > limit;
 
     if (hasMore) {
