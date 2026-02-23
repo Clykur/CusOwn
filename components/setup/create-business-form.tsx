@@ -17,12 +17,15 @@ export type CreateBusinessFormProps = {
   showOnboardingProgress?: boolean;
   /** When true, render without full-page wrapper (for owner layout). */
   embedded?: boolean;
+  /** Called on successful business creation instead of navigating. When provided, the component will NOT auto-redirect. */
+  onSuccess?: (data: { bookingLink: string; bookingUrl: string; qrCode?: string }) => void;
 };
 
 export default function CreateBusinessForm({
   redirectAfterSuccess = ROUTES.OWNER_DASHBOARD_BASE,
   showOnboardingProgress = false,
   embedded = false,
+  onSuccess,
 }: CreateBusinessFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -132,7 +135,15 @@ export default function CreateBusinessForm({
         } catch (e) {
           console.warn('[SETUP] Could not notify other tabs:', e);
         }
-        router.push(ROUTES.OWNER_DASHBOARD(result.data.booking_link));
+        if (onSuccess) {
+          onSuccess({
+            bookingLink: result.data.booking_link,
+            bookingUrl: result.data.booking_url,
+            qrCode: result.data.qr_code || undefined,
+          });
+        } else {
+          router.push(ROUTES.OWNER_DASHBOARD(result.data.booking_link));
+        }
       } else {
         throw new Error(result.error || 'Failed to create business. Please try again.');
       }

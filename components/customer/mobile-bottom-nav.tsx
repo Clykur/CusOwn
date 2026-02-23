@@ -55,14 +55,14 @@ export default function CustomerMobileBottomNav({ sidebarOpen }: { sidebarOpen?:
 
   const isActive = (href: string) => {
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
-      return pathname === ROUTES.CUSTOMER_DASHBOARD || pathname?.startsWith('/booking/');
-    }
-    if (href === ROUTES.CUSTOMER_CATEGORIES)
       return (
-        pathname === ROUTES.CUSTOMER_CATEGORIES ||
-        pathname === ROUTES.CUSTOMER_SALON_LIST ||
+        pathname === ROUTES.CUSTOMER_DASHBOARD ||
+        pathname?.startsWith('/booking/') ||
         pathname?.startsWith('/b/')
       );
+    }
+    if (href === ROUTES.CUSTOMER_CATEGORIES)
+      return pathname === ROUTES.CUSTOMER_CATEGORIES || pathname === ROUTES.CUSTOMER_SALON_LIST;
     if (href === ROUTES.CUSTOMER_PROFILE) return pathname === ROUTES.CUSTOMER_PROFILE;
     if (href === ROUTES.CUSTOMER_SALON_LIST)
       return pathname === ROUTES.CUSTOMER_SALON_LIST || pathname?.startsWith('/salon/');

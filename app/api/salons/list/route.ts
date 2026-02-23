@@ -4,6 +4,7 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
+import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
 
 export async function GET(request: NextRequest) {
   const clientIP = getClientIp(request);
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
       .from('businesses')
       .select(
         'salon_name, booking_link, address, location, category, opening_time, closing_time, slot_duration'
-      )
-      .eq('suspended', false) // Only show active businesses
-      .order('salon_name', { ascending: true });
+      );
+    // Only show active, non-deleted businesses
+    query = applyActiveBusinessFilters(query).order('salon_name', { ascending: true });
 
     if (sanitizedLocation) {
       query = query.ilike('location', `%${sanitizedLocation}%`);

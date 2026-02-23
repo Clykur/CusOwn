@@ -150,9 +150,9 @@ export class UserService {
   }
 
   /**
-   * Get all businesses owned by user
+   * Get all businesses owned by user (excludes soft-deleted businesses)
    */
-  async getUserBusinesses(userId: string, includeSuspended = false) {
+  async getUserBusinesses(userId: string, includeSuspended = false, includeDeleted = false) {
     if (!supabaseAdmin) {
       console.warn('[USER_SERVICE] Supabase admin not configured, returning empty array');
       return [];
@@ -162,6 +162,11 @@ export class UserService {
 
     if (!includeSuspended) {
       query = query.eq('suspended', false);
+    }
+
+    // Filter out soft-deleted businesses unless explicitly requested
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -216,6 +221,77 @@ export class UserService {
 
     return data || [];
   }
+
+  /**
+   * Soft delete user account and all associated businesses.
+   * Data is retained for 30 days for admin/recovery purposes.
+   */
+  async softDeleteAccount(
+    userId: string,
+    reason: string = 'User requested account deletion'
+  ): Promise<{
+    user_id: string;
+    deleted_at: string;
+    permanent_deletion_at: string;
+    businesses_deleted: number;
+  }> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
+
+    // Call the database function that handles soft delete
+    const { data, error } = await supabaseAdmin.rpc('soft_delete_user_account', {
+      p_user_id: userId,
+      p_reason: reason,
+    });
+
+    if (error) {
+      console.error('[USER_SERVICE] Error soft deleting account:', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+      });
+      throw new Error(error.message || 'Failed to delete account');
+    }
+
+    return data;
+  }
+
+  /**
+   * Check if user account is soft-deleted
+   */
+  async isAccountDeleted(
+    userId: string
+  ): Promise<{ deleted: boolean; deletedAt?: string; permanentDeletionAt?: string }> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('user_profiles')
+      .select('deleted_at, permanent_deletion_at')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return { deleted: false };
+      throw new Error(error.message || 'Failed to check account status');
+    }
+
+    return {
+      deleted: data?.deleted_at !== null,
+      deletedAt: data?.deleted_at || undefined,
+      permanentDeletionAt: data?.permanent_deletion_at || undefined,
+    };
+  }
 }
 
 export const userService = new UserService();
+
+/** Soft delete response type */
+export interface SoftDeleteResult {
+  user_id: string;
+  deleted_at: string;
+  permanent_deletion_at: string;
+  businesses_deleted: number;
+}

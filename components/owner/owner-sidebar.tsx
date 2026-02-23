@@ -86,60 +86,22 @@ export default function OwnerSidebar({
         </svg>
       ),
     },
-    {
-      name: 'Create Business',
-      href: '/owner/setup',
-      requiresBusiness: false,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      ),
-    },
   ];
 
   const navigation =
     hasBusinesses === false ? navItems.filter((i) => !i.requiresBusiness) : navItems;
 
   // ===============================
-  // ✅ FIXED ACTIVE STATE (ONLY CHANGE)
+  // STRICT ACTIVE STATE LOGIC (EXACT MATCH ONLY)
   // ===============================
-  const isActive = (name: string) => {
-    // Dashboard
-    if (name === 'Dashboard') {
-      return cleanPath === '/owner/dashboard';
-    }
-
-    // My Businesses (list + individual business pages; exclude dashboard, setup, profile)
-    if (name === 'My Businesses') {
-      return (
-        cleanPath === '/owner/businesses' ||
-        (cleanPath.startsWith('/owner/') &&
-          cleanPath !== '/owner/dashboard' &&
-          cleanPath !== '/owner/setup' &&
-          cleanPath !== '/owner/profile')
-      );
-    }
-
-    // Create Business
-    if (name === 'Create Business') {
-      return cleanPath === '/owner/setup';
-    }
-
-    // Profile (bottom link uses OWNER_PROFILE)
-    if (name === 'Profile') {
-      return cleanPath === '/owner/profile';
-    }
-
-    return false;
-  };
+  const isActive = (href: string) => cleanPath === href;
 
   // ===============================
   // Render
   // ===============================
   return (
     <>
-      {/* Sidebar overlay for mobile */}
+      {/* Sidebar overlay for mobile/medium screens: hide sidebar below lg */}
       {sidebarOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -147,9 +109,9 @@ export default function OwnerSidebar({
         />
       )}
 
-      {/* Sidebar - UI aligned with admin sidebar */}
+      {/* Sidebar - only visible on desktop (lg and up) */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
+        className={`hidden lg:block fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
@@ -160,35 +122,12 @@ export default function OwnerSidebar({
               <h2 className="text-lg font-semibold tracking-tight text-slate-900">CusOwn</h2>
               <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
             </div>
-            {/* Close button shown inside sidebar on mobile to avoid overlap */}
-            <div className="lg:hidden">
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
-                aria-label="Close menu"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
           </div>
 
-          {/* Navigation - no loading bar; match admin sidebar style */}
+          {/* Navigation - match admin sidebar style */}
           <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
             {navigation.map((item) => {
-              const active = isActive(item.name);
-
+              const active = isActive(item.href);
               return (
                 <Link
                   key={item.name}

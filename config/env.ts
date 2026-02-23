@@ -20,6 +20,7 @@ export const env = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   },
   app: {
+    // Always use NEXT_PUBLIC_APP_URL for all environments. Fallback to localhost:3000 for dev only.
     baseUrl: normalizeAppBaseUrl(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   },
   cron: {

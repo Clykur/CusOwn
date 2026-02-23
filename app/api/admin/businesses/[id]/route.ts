@@ -149,6 +149,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     invalidateApiCacheByPrefix('GET|/api/admin/businesses');
     invalidateApiCacheByPrefix('GET|/api/admin/metrics');
+    // Invalidate public salon caches so status changes (suspend/unsuspend) are reflected immediately
+    invalidateApiCacheByPrefix('GET|/api/salons');
     return successResponse(updatedBusiness, 'Business updated successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
@@ -174,8 +176,23 @@ export async function DELETE(
       return errorResponse('Business not found', 404);
     }
 
-    // Delete business (cascade will handle related records)
-    const { error } = await supabase.from('businesses').delete().eq('id', id);
+    // Already soft-deleted? Return early.
+    if (business.deleted_at) {
+      return errorResponse('Business is already deleted', 409);
+    }
+
+    // Soft-delete: set deleted_at + 30-day permanent deletion window
+    const now = new Date().toISOString();
+    const permanentDeletionAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase
+      .from('businesses')
+      .update({
+        deleted_at: now,
+        permanent_deletion_at: permanentDeletionAt,
+        deletion_reason: 'Deleted by admin',
+        updated_at: now,
+      })
+      .eq('id', id);
 
     if (error) {
       return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
@@ -185,12 +202,14 @@ export async function DELETE(
     await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
       entityId: id,
       oldData: business,
-      description: `Business deleted: ${business.salon_name}`,
+      description: `Business soft-deleted: ${business.salon_name} (permanent deletion at ${permanentDeletionAt})`,
       request,
     });
 
     invalidateApiCacheByPrefix('GET|/api/admin/businesses');
     invalidateApiCacheByPrefix('GET|/api/admin/metrics');
+    // Invalidate public salon caches so deleted business disappears from customer pages
+    invalidateApiCacheByPrefix('GET|/api/salons');
     return successResponse(null, 'Business deleted successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

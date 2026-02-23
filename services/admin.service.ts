@@ -178,7 +178,7 @@ export class AdminService {
     const { data: businesses, error } = await supabase
       .from('businesses')
       .select(
-        'id, owner_user_id, salon_name, booking_link, address, location, suspended, created_at'
+        'id, owner_user_id, salon_name, booking_link, address, location, suspended, created_at, deleted_at, permanent_deletion_at, deletion_reason'
       )
       .order('created_at', { ascending: false });
 
@@ -385,6 +385,30 @@ export class AdminService {
     const supabase = requireSupabaseAdmin();
     const { error } = await supabase.auth.admin.deleteUser(userId);
     if (error) throw new Error(error.message || 'Failed to delete user');
+  }
+
+  /** Restore a soft-deleted user account (admin only). Must be within 30-day retention period. */
+  async restoreDeletedUser(
+    userId: string
+  ): Promise<{ user_id: string; restored_at: string; businesses_restored: number }> {
+    const supabase = requireSupabaseAdmin();
+    const { data, error } = await supabase.rpc('restore_deleted_user_account', {
+      p_user_id: userId,
+    });
+    if (error) throw new Error(error.message || 'Failed to restore user account');
+    return data;
+  }
+
+  /** Permanently delete expired soft-deleted records. Should be called by scheduled job. */
+  async cleanupExpiredRecords(): Promise<{
+    cleanup_time: string;
+    users_deleted: number;
+    businesses_deleted: number;
+  }> {
+    const supabase = requireSupabaseAdmin();
+    const { data, error } = await supabase.rpc('cleanup_expired_soft_deleted_records');
+    if (error) throw new Error(error.message || 'Failed to cleanup expired records');
+    return data;
   }
 
   /** Update admin-editable profile fields (admin_note, user_type). */

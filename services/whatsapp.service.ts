@@ -5,7 +5,11 @@ import { formatDate, formatTime } from '@/lib/utils/string';
 import { NextRequest } from 'next/server';
 
 // Import security functions (server-side only)
-const getSecureResourceUrl = (resourceType: 'accept' | 'reject', resourceId: string, baseUrl?: string): string => {
+const getSecureResourceUrl = (
+  resourceType: 'accept' | 'reject',
+  resourceId: string,
+  baseUrl?: string
+): string => {
   if (typeof window !== 'undefined') {
     throw new Error('getSecureResourceUrl can only be used server-side');
   }
@@ -40,11 +44,24 @@ export class WhatsAppService {
     );
 
     const baseUrl = getBaseUrl(request);
+    // Warn if running in production with localhost baseUrl
+    if (
+      typeof process !== 'undefined' &&
+      process.env &&
+      process.env.NODE_ENV === 'production' &&
+      baseUrl.includes('localhost')
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[WARNING] WhatsAppService: baseUrl is localhost in production. Set NEXT_PUBLIC_APP_URL to your production domain.'
+      );
+    }
     // Generate secure URLs with tokens for accept/reject actions
     const acceptUrl = getSecureResourceUrl('accept', booking.id, baseUrl);
     const rejectUrl = getSecureResourceUrl('reject', booking.id, baseUrl);
 
-    const messageWithLinks = `${message}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n*ACTION REQUIRED*\n\n` +
+    const messageWithLinks =
+      `${message}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n*ACTION REQUIRED*\n\n` +
       `🟢 *ACCEPT* - Confirm this booking:\n${acceptUrl}\n\n` +
       `🔴 *NOT AVAILABLE* - Reject this booking:\n${rejectUrl}`;
 
@@ -80,21 +97,32 @@ export class WhatsAppService {
     );
   }
 
-  generateRejectionMessage(booking: BookingWithDetails, salon: Salon, request?: NextRequest): string {
+  generateRejectionMessage(
+    booking: BookingWithDetails,
+    salon: Salon,
+    request?: NextRequest
+  ): string {
     const bookingUrl = getBookingUrl(salon.booking_link, request);
     return WHATSAPP_MESSAGE_TEMPLATES.REJECTION(booking.customer_name, bookingUrl);
   }
 
-  getConfirmationWhatsAppUrl(booking: BookingWithDetails, salon: Salon, request?: NextRequest): string {
+  getConfirmationWhatsAppUrl(
+    booking: BookingWithDetails,
+    salon: Salon,
+    request?: NextRequest
+  ): string {
     const message = this.generateConfirmationMessage(booking, salon);
     return this.getWhatsAppUrl(booking.customer_phone, message);
   }
 
-  getRejectionWhatsAppUrl(booking: BookingWithDetails, salon: Salon, request?: NextRequest): string {
+  getRejectionWhatsAppUrl(
+    booking: BookingWithDetails,
+    salon: Salon,
+    request?: NextRequest
+  ): string {
     const message = this.generateRejectionMessage(booking, salon, request);
     return this.getWhatsAppUrl(booking.customer_phone, message);
   }
 }
 
 export const whatsappService = new WhatsAppService();
-

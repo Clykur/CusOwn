@@ -6,6 +6,7 @@ import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { haversineDistance, validateCoordinates, validateRadius } from '@/lib/utils/geo';
+import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
 
 const searchRateLimit = enhancedRateLimit({
   maxRequests: 20,
@@ -97,8 +98,9 @@ export async function POST(request: NextRequest) {
 
     let query = supabaseAdmin
       .from('businesses')
-      .select('id, salon_name, location, category, latitude, longitude, area')
-      .eq('suspended', false);
+      .select('id, salon_name, location, category, latitude, longitude, area');
+    // Only show active, non-deleted businesses
+    query = applyActiveBusinessFilters(query);
 
     if (filteredBody.category) {
       query = query.eq('category', filteredBody.category);

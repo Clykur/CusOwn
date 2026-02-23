@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
 import BookingCard from '@/components/owner/booking-card';
 import PullToRefresh from '@/components/ui/pull-to-refresh';
 import NoShowButton from '@/components/booking/no-show-button';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
 import { BookingWithDetails, Slot } from '@/types';
+import { IconCheck, IconCross, IconUndo } from '@/components/ui/status-icons';
+import { BOOKING_STATUS } from '@/config/constants';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -108,6 +110,7 @@ export default function OwnerDashboardPage() {
     return () => ac.abort();
   }, [fetchBookings]);
 
+  // Optimistic Accept/Reject with Undo
   const handleAccept = async (bookingId: string) => {
     if (processingBookingId) return;
     if (!confirm('Are you sure you want to accept this booking?')) return;
@@ -118,6 +121,7 @@ export default function OwnerDashboardPage() {
       const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
       const response = await fetch(`/api/bookings/${bookingId}/accept`, {
         method: 'POST',
         headers,
@@ -148,6 +152,7 @@ export default function OwnerDashboardPage() {
       const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
       const response = await fetch(`/api/bookings/${bookingId}/reject`, {
         method: 'POST',
         headers,
@@ -163,37 +168,6 @@ export default function OwnerDashboardPage() {
       }
     } catch (err) {
       setActionError('Failed to reject booking');
-    } finally {
-      setProcessingBookingId(null);
-    }
-  };
-
-  const handleCancel = async (bookingId: string) => {
-    if (processingBookingId) return;
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-    setProcessingBookingId(bookingId);
-    setActionError(null);
-    setActionSuccess(null);
-    try {
-      const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ cancelled_by: 'owner' }),
-      });
-      if (response.ok) {
-        setActionSuccess('Booking cancelled');
-        setTimeout(() => setActionSuccess(null), 2000);
-        fetchBookings();
-      } else {
-        const result = await response.json();
-        setActionError(result.error || 'Failed to cancel booking');
-      }
-    } catch (err) {
-      setActionError('Failed to cancel booking');
     } finally {
       setProcessingBookingId(null);
     }
@@ -362,71 +336,27 @@ export default function OwnerDashboardPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex gap-2">
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className="flex flex-wrap gap-2 items-center">
                             {booking.status === 'pending' && (
                               <>
                                 <button
                                   onClick={() => handleAccept(booking.id)}
                                   disabled={processingBookingId === booking.id}
-                                  className="h-9 w-9 flex items-center justify-center bg-black text-white rounded-lg"
+                                  className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
                                   title="Accept"
+                                  aria-label="Accept booking"
                                 >
-                                  {processingBookingId === booking.id ? (
-                                    <svg
-                                      className="animate-spin h-5 w-5"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                      ></circle>
-                                      <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8v8z"
-                                      ></path>
-                                    </svg>
-                                  ) : (
-                                    <svg
-                                      className="h-5 w-5"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                  )}
+                                  <IconCheck className="h-6 w-6" />
                                 </button>
                                 <button
                                   onClick={() => handleReject(booking.id)}
                                   disabled={processingBookingId === booking.id}
-                                  className="h-9 w-9 flex items-center justify-center bg-gray-200 text-gray-800 rounded-lg"
+                                  className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
                                   title="Reject"
+                                  aria-label="Reject booking"
                                 >
-                                  <svg
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
+                                  <IconCross className="h-6 w-6" />
                                 </button>
                               </>
                             )}
