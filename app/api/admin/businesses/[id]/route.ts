@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       entityId: id,
       oldData: oldBusiness,
       newData: updatedBusiness,
-      description: `Business updated: ${changes.join(', ')}`,
+      actorRole: 'admin',
       request,
     });
 
@@ -181,11 +181,10 @@ export async function DELETE(
       return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
-    // Create audit log
     await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
       entityId: id,
       oldData: business,
-      description: `Business deleted: ${business.salon_name}`,
+      actorRole: 'admin',
       request,
     });
 

@@ -87,6 +87,48 @@ const navigation: NavItem[] = [
     ),
   },
   {
+    name: 'Cron Monitor',
+    href: getAdminDashboardUrl('cron-monitor'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: 'Auth Management',
+    href: getAdminDashboardUrl('auth-management'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l11.964-11.964A6 6 0 1121 9z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: 'Storage',
+    href: getAdminDashboardUrl('storage'),
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 19a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2h2a2 2 0 012 2v2h2a2 2 0 012 2zm0 0h2a2 2 0 002-2v-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2m-6-6a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z"
+        />
+      </svg>
+    ),
+  },
+  {
     name: 'Success Metrics',
     href: getAdminDashboardUrl('success-metrics'),
     icon: (

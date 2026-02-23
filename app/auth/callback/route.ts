@@ -66,8 +66,32 @@ export async function GET(request: NextRequest) {
       hasSession: !!data?.session,
       hasUser: !!data?.user,
     });
+    try {
+      const { authEventsService } = await import('@/services/auth-events.service');
+      const { getClientIp } = await import('@/lib/utils/security');
+      authEventsService.insert('login_failed', {
+        email: requestUrl.searchParams.get('email') ?? undefined,
+        ip: getClientIp(request),
+        userAgent: request.headers.get('user-agent') ?? undefined,
+      });
+    } catch {
+      // optional logging
+    }
     const msg = encodeURIComponent(error?.message || 'auth_failed');
     return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
+  }
+
+  try {
+    const { authEventsService } = await import('@/services/auth-events.service');
+    const { getClientIp } = await import('@/lib/utils/security');
+    authEventsService.insert('login_success', {
+      userId: data.user.id,
+      email: data.user.email ?? undefined,
+      ip: getClientIp(request),
+      userAgent: request.headers.get('user-agent') ?? undefined,
+    });
+  } catch {
+    // optional logging
   }
 
   console.log('[AUTH] callback: positive — session exchanged', {
@@ -96,7 +120,7 @@ export async function GET(request: NextRequest) {
     void import('@/services/audit.service').then(({ auditService }) =>
       auditService.createAuditLog(data.user.id, 'admin_login', 'user', {
         entityId: data.user.id,
-        description: 'Admin login',
+        actorRole: 'admin',
       })
     );
     return redirectToSuccess(ROUTES.ADMIN_DASHBOARD, baseUrl, cookiesToForward);

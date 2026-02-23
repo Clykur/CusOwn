@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
     try {
       await auditService.createAuditLog(user.id, 'role_changed', 'user', {
         entityId: user.id,
-        description: 'User roles updated',
-        oldData: { roles: previousRoles, user_type: currentType },
-        newData: { roles: newRoles, user_type: newType },
+        oldData: { user_type: currentType },
+        newData: { user_type: newType },
+        actorRole: currentType,
         request,
       });
     } catch (auditErr) {
