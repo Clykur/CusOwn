@@ -98,6 +98,46 @@ export async function POST(request: NextRequest) {
       return errorResponse('Customer phone is too long', 400);
     }
 
+    // --- Server-side business-hours & past-slot validation ---
+    const slotForValidation = await slotService.getSlotById(validatedData.slot_id);
+    if (!slotForValidation) {
+      return errorResponse(ERROR_MESSAGES.SLOT_NOT_FOUND, 404);
+    }
+    if (slotForValidation.business_id !== validatedData.salon_id) {
+      return errorResponse('Slot does not belong to this salon', 400);
+    }
+    {
+      const BUSINESS_CLOSE_HOUR = 21;
+      const BUSINESS_OPEN_HOUR = 10;
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const slotDate = slotForValidation.date;
+
+      // Reject if slot date is in the past
+      if (slotDate < todayStr) {
+        return errorResponse('Cannot book a slot in the past', 400);
+      }
+
+      const [startH, startM] = slotForValidation.start_time.split(':').map(Number);
+      const [endH, endM] = slotForValidation.end_time.split(':').map(Number);
+
+      // Reject if slot is outside business hours (10 AM – 9 PM)
+      if (startH < BUSINESS_OPEN_HOUR || endH * 60 + endM > BUSINESS_CLOSE_HOUR * 60) {
+        return errorResponse('This slot is outside business hours (10:00 AM – 9:00 PM)', 400);
+      }
+
+      // For today: reject if slot start time has already passed or shop is closed
+      if (slotDate === todayStr) {
+        if (now.getHours() >= BUSINESS_CLOSE_HOUR) {
+          return errorResponse('The shop is closed for today. Please book for tomorrow.', 400);
+        }
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        if (startH * 60 + startM <= currentMinutes) {
+          return errorResponse('This slot has already passed. Please select a future slot.', 400);
+        }
+      }
+    }
+
     const user = await getServerUser(request);
     const customerUserId = user?.id;
 

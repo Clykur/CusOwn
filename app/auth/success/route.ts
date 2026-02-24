@@ -17,7 +17,8 @@ function isAllowedPath(to: string): boolean {
     path.startsWith('/owner') ||
     path.startsWith('/customer') ||
     path.startsWith('/setup') ||
-    path.startsWith('/profile')
+    path.startsWith('/profile') ||
+    path.startsWith('/book')
   );
 }
 

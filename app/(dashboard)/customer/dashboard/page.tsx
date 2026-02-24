@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 
 import { ROUTES } from '@/lib/utils/navigation';
@@ -25,6 +25,8 @@ export default function CustomerDashboardPage() {
   const [slotsMap, setSlotsMap] = useState<Record<string, any[]>>({});
   const [secureBookingUrls, setSecureBookingUrls] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
+  const lastRefetchRef = useRef(0);
+  const MIN_REFETCH_INTERVAL = 3000; // 3s debounce
 
   /* ----------------------------------
      FETCH BOOKINGS (STABLE CALLBACK)
@@ -96,10 +98,17 @@ export default function CustomerDashboardPage() {
      AUTO REFRESH ON FOCUS / VISIBILITY
   ---------------------------------- */
   useEffect(() => {
-    const handleFocus = () => refetchBookings();
+    const debouncedRefetch = () => {
+      const now = Date.now();
+      if (now - lastRefetchRef.current < MIN_REFETCH_INTERVAL) return;
+      lastRefetchRef.current = now;
+      refetchBookings();
+    };
+
+    const handleFocus = () => debouncedRefetch();
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        refetchBookings();
+        debouncedRefetch();
       }
     };
 

@@ -14,6 +14,7 @@ interface BookingCardProps {
   actionError: string | null;
   actionSuccess: string | null;
   onRescheduled?: () => void;
+  onNoShowMarked?: (id: string) => void;
   onUndoAccept?: (id: string) => void;
   onUndoReject?: (id: string) => void;
   undoWindowMinutes?: number;
@@ -27,6 +28,7 @@ export default function BookingCard({
   actionError,
   actionSuccess,
   onRescheduled,
+  onNoShowMarked,
   onUndoAccept,
   onUndoReject,
   undoWindowMinutes = 5,
@@ -209,7 +211,10 @@ export default function BookingCard({
 
           {booking.status === 'confirmed' && !booking.no_show && (
             <div className="w-full">
-              <NoShowButton bookingId={booking.id} onMarked={onRescheduled} />
+              <NoShowButton
+                bookingId={booking.id}
+                onMarked={onNoShowMarked ? () => onNoShowMarked(booking.id) : onRescheduled}
+              />
             </div>
           )}
           {canUndo && booking.status === 'confirmed' && onUndoAccept && (

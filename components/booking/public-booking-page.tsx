@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,6 +18,104 @@ import { logError } from '@/lib/utils/error-handler';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingPageSkeleton } from '@/components/ui/skeleton';
 
+const PENDING_BOOKING_KEY = 'pendingBooking';
+
+/** Business hours: 10:00 AM – 9:00 PM (21:00). No slots outside this window. */
+const BUSINESS_OPEN_HOUR = 10; // 10:00 AM
+const BUSINESS_CLOSE_HOUR = 21; // 9:00 PM
+
+/** Get local today string YYYY-MM-DD without timezone offset issues. */
+function getLocalTodayStr(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/** Returns true if the selected date is today (local). */
+function isToday(dateStr: string): boolean {
+  return dateStr === getLocalTodayStr();
+}
+
+/** Returns true if business is currently closed (past 9 PM today). */
+function isAfterBusinessHours(): boolean {
+  const now = new Date();
+  return now.getHours() >= BUSINESS_CLOSE_HOUR;
+}
+
+/**
+ * Filter slots based on business-hours rules.
+ * - Remove slots outside 10 AM–9 PM
+ * - For today: remove slots whose start_time has already passed
+ * - For today after 9 PM: return empty (all expired)
+ * - For future dates: show full working-hour slots
+ */
+function filterSlotsByBusinessHours(slots: Slot[], selectedDate: string): Slot[] {
+  // 1. Always filter out slots outside business hours (10 AM – 9 PM)
+  let filtered = slots.filter((slot) => {
+    const [startH] = slot.start_time.split(':').map(Number);
+    const [endH, endM] = slot.end_time.split(':').map(Number);
+    const endMinutes = endH * 60 + endM;
+    // Slot must start at or after opening AND end at or before closing
+    return startH >= BUSINESS_OPEN_HOUR && endMinutes <= BUSINESS_CLOSE_HOUR * 60;
+  });
+
+  // 2. For today only, apply time-based expiry
+  if (isToday(selectedDate)) {
+    // After 9 PM: No slots available at all
+    if (isAfterBusinessHours()) return [];
+
+    // During business hours: only show slots that haven't started yet
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    filtered = filtered.filter((slot) => {
+      const [h, m] = slot.start_time.split(':').map(Number);
+      return h * 60 + m > currentMinutes;
+    });
+  }
+
+  return filtered;
+}
+
+type PendingBookingData = {
+  businessSlug: string;
+  selectedSlotId: string;
+  selectedDate: string;
+  customerName: string;
+  customerPhone: string;
+  savedAt: number;
+};
+
+function savePendingBooking(data: PendingBookingData): void {
+  try {
+    localStorage.setItem(PENDING_BOOKING_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage may be unavailable (private browsing, quota)
+  }
+}
+
+function loadPendingBooking(): PendingBookingData | null {
+  try {
+    const raw = localStorage.getItem(PENDING_BOOKING_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as PendingBookingData;
+    // Expire after 30 minutes
+    if (Date.now() - data.savedAt > 30 * 60 * 1000) {
+      localStorage.removeItem(PENDING_BOOKING_KEY);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingBooking(): void {
+  try {
+    localStorage.removeItem(PENDING_BOOKING_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 type PublicBookingPageProps = { businessSlug: string };
 
 export default function PublicBookingPage({ businessSlug }: PublicBookingPageProps) {
@@ -28,7 +126,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalTodayStr());
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [success, setSuccess] = useState<{
@@ -38,10 +136,84 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   } | null>(null);
   const [validatingSlot, setValidatingSlot] = useState(false);
   const [slotValidationError, setSlotValidationError] = useState<string | null>(null);
+  const [restoredFromPending, setRestoredFromPending] = useState(false);
+  const midnightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slotRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Counter to force re-render when time changes (minute tick / midnight)
+  const [, setTimeTick] = useState(0);
 
   useEffect(() => {
     getCSRFToken().catch(console.error);
   }, []);
+
+  // Midnight reset: when the day rolls over, update the date and re-render
+  useEffect(() => {
+    const scheduleNextMidnight = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 1, 0); // 1 second past midnight
+      const msUntilMidnight = tomorrow.getTime() - now.getTime();
+
+      midnightTimerRef.current = setTimeout(() => {
+        // Reset to new today
+        setSelectedDate(getLocalTodayStr());
+        setSelectedSlot(null);
+        setTimeTick((t) => t + 1);
+        // Schedule next midnight
+        scheduleNextMidnight();
+      }, msUntilMidnight);
+    };
+
+    scheduleNextMidnight();
+    return () => {
+      if (midnightTimerRef.current) clearTimeout(midnightTimerRef.current);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-filter slots every minute for today so expired slots disappear without hard refresh
+  useEffect(() => {
+    if (!isToday(selectedDate)) {
+      if (slotRefreshTimerRef.current) clearInterval(slotRefreshTimerRef.current);
+      return;
+    }
+    slotRefreshTimerRef.current = setInterval(() => {
+      setTimeTick((t) => t + 1);
+      // If selected slot is now expired, deselect it
+      if (selectedSlot) {
+        const now = new Date();
+        const [h, m] = selectedSlot.start_time.split(':').map(Number);
+        if (h * 60 + m <= now.getHours() * 60 + now.getMinutes() || isAfterBusinessHours()) {
+          setSelectedSlot(null);
+        }
+      }
+    }, 60_000); // every minute
+    return () => {
+      if (slotRefreshTimerRef.current) clearInterval(slotRefreshTimerRef.current);
+    };
+  }, [selectedDate, selectedSlot]);
+
+  // Restore form data from localStorage after login redirect
+  const restorePendingBooking = useCallback(
+    (loadedSlots: Slot[]) => {
+      const pending = loadPendingBooking();
+      if (!pending || pending.businessSlug !== businessSlug) return;
+
+      if (pending.customerName) setCustomerName(pending.customerName);
+      if (pending.customerPhone) setCustomerPhone(pending.customerPhone);
+      if (pending.selectedDate) setSelectedDate(pending.selectedDate);
+
+      if (pending.selectedSlotId && loadedSlots.length > 0) {
+        const matchedSlot = loadedSlots.find(
+          (s) => s.id === pending.selectedSlotId && s.status === 'available'
+        );
+        if (matchedSlot) setSelectedSlot(matchedSlot);
+      }
+
+      setRestoredFromPending(true);
+    },
+    [businessSlug]
+  );
 
   useEffect(() => {
     if (!businessSlug) return;
@@ -67,6 +239,16 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     };
   }, [businessSlug]);
 
+  // Set initial date — prefer pending booking date if available
+  useEffect(() => {
+    const pending = loadPendingBooking();
+    if (pending?.businessSlug === businessSlug && pending.selectedDate) {
+      setSelectedDate(pending.selectedDate);
+    } else {
+      setSelectedDate(getLocalTodayStr());
+    }
+  }, [businessSlug]);
+
   useEffect(() => {
     if (!business || !selectedDate) return;
     let cancelled = false;
@@ -78,6 +260,12 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
         if (cancelled) return;
         if (result?.success && result?.data) {
           setSlots(result.data);
+
+          // Restore from pending booking if returning from login
+          if (!restoredFromPending) {
+            restorePendingBooking(result.data);
+          }
+
           if (selectedSlot) {
             const updated = result.data.find((s: Slot) => s.id === selectedSlot.id);
             if (!updated || updated.status !== 'available') {
@@ -92,11 +280,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     return () => {
       cancelled = true;
     };
-  }, [business, selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
-  }, []);
+  }, [business, selectedDate, restoredFromPending, restorePendingBooking]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSlotSelect = async (slot: Slot) => {
     if (slot.status === 'booked' || slot.status === 'reserved') {
@@ -142,7 +326,31 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     setSubmitting(true);
     setError(null);
     setSlotValidationError(null);
+
     try {
+      // Check authentication via server endpoint (httpOnly cookies aren't visible to client JS)
+      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+      const sessionData = await sessionRes.json();
+      const isAuthenticated = sessionData?.success && sessionData?.data?.user;
+
+      if (!isAuthenticated) {
+        // Save form data to localStorage so it persists across login redirect
+        savePendingBooking({
+          businessSlug,
+          selectedSlotId: selectedSlot.id,
+          selectedDate,
+          customerName: customerName.trim(),
+          customerPhone: phoneDigits,
+          savedAt: Date.now(),
+        });
+
+        // Redirect to login with redirect back to this booking page
+        const bookingPath = `/book/${businessSlug}`;
+        router.push(ROUTES.AUTH_LOGIN(bookingPath) + '&role=customer');
+        return;
+      }
+
+      // User is authenticated — proceed with booking creation
       const verifyRes = await fetch(`/api/slots/${selectedSlot.id}`);
       const verifyResult = await verifyRes.json();
       if (!verifyResult?.success || verifyResult?.data?.status !== 'available') {
@@ -180,6 +388,8 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
         throw new Error(result?.error || 'Failed to create booking');
       }
       if (result?.success && result?.data) {
+        // Clear pending booking data after successful creation
+        clearPendingBooking();
         router.push(ROUTES.BOOKING_STATUS(result.data.booking.booking_id));
         return;
       }
@@ -196,21 +406,14 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     }
   };
 
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const todayStr = today.toISOString().split('T')[0];
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  const minTime = new Date(today.getTime() + 30 * 60000);
-  const getFilteredSlots = () => {
-    if (!selectedDate || selectedDate !== todayStr) return slots;
-    return slots.filter((slot) => {
-      const [h, m] = slot.start_time.split(':').map(Number);
-      const t = new Date();
-      t.setHours(h, m, 0, 0);
-      return t >= minTime;
-    });
-  };
+  const todayStr = getLocalTodayStr();
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowStr = `${tomorrowDate.getFullYear()}-${String(tomorrowDate.getMonth() + 1).padStart(2, '0')}-${String(tomorrowDate.getDate()).padStart(2, '0')}`;
+
+  // Business-hours aware slot filtering
+  const filteredSlots = filterSlotsByBusinessHours(slots, selectedDate);
+  const isTodayClosed = isToday(selectedDate) && isAfterBusinessHours();
 
   if (loading) return <BookingPageSkeleton />;
   if (error && !business) {
@@ -316,12 +519,17 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
                 {UI_CUSTOMER.LABEL_SELECT_TIME}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                {slots.length === 0 ? (
+                {isTodayClosed ? (
+                  <p className="col-span-full text-slate-500 text-center py-4">
+                    No slots available for today. The shop is closed after 9:00 PM. Please select
+                    tomorrow.
+                  </p>
+                ) : filteredSlots.length === 0 ? (
                   <p className="col-span-full text-slate-500 text-center py-4">
                     {UI_CUSTOMER.SLOTS_NONE}
                   </p>
                 ) : (
-                  getFilteredSlots().map((slot) => {
+                  filteredSlots.map((slot) => {
                     const isSelected = selectedSlot?.id === slot.id;
                     const isBooked = slot.status === 'booked';
                     return (

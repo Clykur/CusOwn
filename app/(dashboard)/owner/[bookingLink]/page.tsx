@@ -293,9 +293,17 @@ export default function OwnerDashboardPage() {
         body: JSON.stringify({ holiday_date: newHolidayDate, holiday_name: newHolidayName }),
       });
       if (response.ok) {
+        const result = await response.json();
         setNewHolidayDate('');
         setNewHolidayName('');
-        fetchDowntime();
+        // Optimistic append using response data or fallback
+        const newItem = result.data || {
+          id: crypto.randomUUID(),
+          holiday_date: newHolidayDate,
+          holiday_name: newHolidayName,
+          created_at: new Date().toISOString(),
+        };
+        setHolidays((prev) => [...prev, newItem]);
       }
     } catch (err) {
       alert('Failed to add holiday');
@@ -323,10 +331,22 @@ export default function OwnerDashboardPage() {
         }),
       });
       if (response.ok) {
+        const result = await response.json();
+        const savedStart = newClosureStart;
+        const savedEnd = newClosureEnd;
+        const savedReason = newClosureReason;
         setNewClosureStart('');
         setNewClosureEnd('');
         setNewClosureReason('');
-        fetchDowntime();
+        // Optimistic append using response data or fallback
+        const newItem = result.data || {
+          id: crypto.randomUUID(),
+          start_date: savedStart,
+          end_date: savedEnd,
+          reason: savedReason,
+          created_at: new Date().toISOString(),
+        };
+        setClosures((prev) => [...prev, newItem]);
       }
     } catch (err) {
       alert('Failed to add closure');

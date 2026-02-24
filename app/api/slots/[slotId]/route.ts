@@ -57,6 +57,32 @@ export async function GET(
     // Public can view available/reserved slots (for booking flow)
     // Booked slots require ownership/admin access (checked above)
 
+    // Business-hours validation: mark slot as unavailable if it's in the past or outside hours
+    {
+      const BUSINESS_CLOSE_HOUR = 21;
+      const BUSINESS_OPEN_HOUR = 10;
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const slotDate = slot.date;
+      const [startH, startM] = slot.start_time.split(':').map(Number);
+      const [endH, endM] = slot.end_time.split(':').map(Number);
+
+      const isOutsideHours =
+        startH < BUSINESS_OPEN_HOUR || endH * 60 + endM > BUSINESS_CLOSE_HOUR * 60;
+      const isPast = slotDate < todayStr;
+      const isTodayExpired =
+        slotDate === todayStr &&
+        (now.getHours() >= BUSINESS_CLOSE_HOUR ||
+          startH * 60 + startM <= now.getHours() * 60 + now.getMinutes());
+
+      if (slot.status === 'available' && (isOutsideHours || isPast || isTodayExpired)) {
+        const expiredSlot = { ...slot, status: 'expired' as const };
+        const response = successResponse(expiredSlot);
+        setNoCacheHeaders(response);
+        return response;
+      }
+    }
+
     const response = successResponse(slot);
     setNoCacheHeaders(response);
     return response;

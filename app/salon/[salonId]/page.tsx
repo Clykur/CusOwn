@@ -341,6 +341,13 @@ export default function SalonDetailPage() {
           whatsappUrl: result.data.whatsapp_url,
         });
         setSuccess({ whatsappUrl: result.data.whatsapp_url });
+        // Optimistically mark the booked slot as unavailable
+        if (selectedSlot) {
+          setSlots((prev) =>
+            prev.map((s) => (s.id === selectedSlot.id ? { ...s, status: 'booked' as const } : s))
+          );
+          setSelectedSlot(null);
+        }
         if (result.data.whatsapp_url) {
           setTimeout(() => {
             window.open(result.data.whatsapp_url, '_blank');
