@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server';
 import { cache } from 'react';
 
 export const getCachedBusiness = cache(async (businessId: string) => {
@@ -9,8 +8,15 @@ export const getCachedBusinessByLink = cache(async (bookingLink: string) => {
   return null;
 });
 
-export const setCacheHeaders = (response: Response, maxAge: number = 60, staleWhileRevalidate: number = 300): void => {
-  response.headers.set('Cache-Control', `public, s-maxage=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`);
+export const setCacheHeaders = (
+  response: Response,
+  maxAge: number = 60,
+  staleWhileRevalidate: number = 300
+): void => {
+  response.headers.set(
+    'Cache-Control',
+    `public, s-maxage=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`
+  );
 };
 
 export const setNoCacheHeaders = (response: Response): void => {

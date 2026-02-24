@@ -2,7 +2,6 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { slotService } from './slot.service';
 import { bookingService } from './booking.service';
 import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
-import { emitSlotReleased } from '@/lib/events/slot-events';
 
 export interface RescheduleInput {
   bookingId: string;

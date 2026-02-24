@@ -1,15 +1,6 @@
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { env } from '@/config/env';
 
-interface AbusePattern {
-  userId?: string;
-  ipAddress: string;
-  pattern: 'rapid_reserve_expire' | 'multiple_failed_payments' | 'excessive_bookings';
-  count: number;
-  windowStart: Date;
-  windowEnd: Date;
-}
-
 export class AbuseDetectionService {
   async detectSlotHoarding(userId: string | null, ipAddress: string): Promise<boolean> {
     const supabaseAdmin = requireSupabaseAdmin();
@@ -28,7 +19,7 @@ export class AbuseDetectionService {
     }
 
     const expiredCount = recentReservations.filter(
-      s => s.reserved_until && new Date(s.reserved_until) < new Date()
+      (s) => s.reserved_until && new Date(s.reserved_until) < new Date()
     ).length;
 
     return expiredCount >= 3;

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { salonService } from '@/services/salon.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID, validateSalonToken } from '@/lib/utils/security';
@@ -73,7 +73,6 @@ export async function GET(
       // Additional security: Validate request headers and token
       const referer = request.headers.get('referer');
       const origin = request.headers.get('origin');
-      const userAgent = request.headers.get('user-agent') || 'unknown';
 
       // Validate token with time-based validation
       console.log(

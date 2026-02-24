@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { ERROR_MESSAGES, PHONE_DIGITS, SUCCESS_MESSAGES } from '@/config/constants';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import {
@@ -60,7 +59,6 @@ export function ProfilePageContent({
   fromOwner = false,
 }: ProfilePageContentProps) {
   const router = useRouter();
-  const setupHref = fromOwner ? ROUTES.OWNER_SETUP : ROUTES.SETUP;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -300,9 +298,7 @@ export function ProfilePageContent({
     );
   }
   const handleMobileSignOut = () => {
-    window.location.href = `/api/auth/signout?redirect_to=${encodeURIComponent(
-      ROUTES.SELECT_ROLE('owner')
-    )}`;
+    window.location.href = `/api/auth/signout?redirect_to=${encodeURIComponent(ROUTES.HOME)}`;
   };
   if (!profileData) {
     return embedded ? <OwnerProfileSkeleton /> : <ProfileSkeleton />;

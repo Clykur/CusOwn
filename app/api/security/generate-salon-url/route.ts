@@ -1,16 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSecureSalonUrl, isValidUUID } from '@/lib/utils/security';
 import { env } from '@/config/env';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 
 // Rate limit: 50 requests per minute per IP
-const strictRateLimit = enhancedRateLimit({ maxRequests: 50, windowMs: 60000, perIP: true, keyPrefix: 'secure_url_gen' });
+const strictRateLimit = enhancedRateLimit({
+  maxRequests: 50,
+  windowMs: 60000,
+  perIP: true,
+  keyPrefix: 'secure_url_gen',
+});
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log('[URL_GEN] Starting secure URL generation request');
-  
+
   try {
     // Apply rate limiting
     console.log('[URL_GEN] Checking rate limits...');
@@ -33,7 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     const { salonId } = body;
-    console.log('[URL_GEN] Received salonId:', salonId ? `${salonId.substring(0, 8)}...` : 'missing');
+    console.log(
+      '[URL_GEN] Received salonId:',
+      salonId ? `${salonId.substring(0, 8)}...` : 'missing'
+    );
 
     if (!salonId || typeof salonId !== 'string') {
       console.error('[URL_GEN] Validation failed: Salon ID is missing or invalid type');
@@ -62,7 +70,7 @@ export async function POST(request: NextRequest) {
     console.log('[URL_GEN] Processing URL path...');
     const urlPath = secureUrl.replace(/^https?:\/\/[^/]+/, ''); // Remove base URL if present
     console.log('[URL_GEN] URL path:', urlPath.substring(0, 80) + '...');
-    
+
     // Extract and validate token
     console.log('[URL_GEN] Extracting token from URL...');
     let urlObj: URL;
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest) {
       console.error('[URL_GEN] Failed to parse URL:', urlParseError, 'URL:', urlPath);
       throw urlParseError;
     }
-    
+
     if (!token) {
       console.error('[URL_GEN] Token validation failed: Token is missing');
       return errorResponse('Failed to generate secure token', 500);
@@ -85,7 +93,7 @@ export async function POST(request: NextRequest) {
       console.error('[URL_GEN] Token validation failed: Invalid token length', {
         expected: 64,
         actual: token.length,
-        tokenPreview: token.substring(0, 20) + '...'
+        tokenPreview: token.substring(0, 20) + '...',
       });
       return errorResponse('Failed to generate secure token', 500);
     }
@@ -96,9 +104,11 @@ export async function POST(request: NextRequest) {
     console.log('[URL_GEN] Token expires at:', expiresAt.toISOString());
 
     const duration = Date.now() - startTime;
-    console.log(`[URL_GEN] Successfully generated secure URL in ${duration}ms for salon: ${salonId.substring(0, 8)}...`);
+    console.log(
+      `[URL_GEN] Successfully generated secure URL in ${duration}ms for salon: ${salonId.substring(0, 8)}...`
+    );
 
-    return successResponse({ 
+    return successResponse({
       url: urlPath,
       expiresAt: expiresAt.toISOString(),
       // Note: Tokens are valid for 24 hours

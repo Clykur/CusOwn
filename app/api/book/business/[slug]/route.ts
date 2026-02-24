@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (rateLimitResponse) return rateLimitResponse;
 
     const { slug } = await params;
-    const clientIP = getClientIp(request);
 
     if (!slug || typeof slug !== 'string') {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);

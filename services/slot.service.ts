@@ -1,20 +1,13 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { generateTimeSlots } from '@/lib/utils/time';
 import { Slot } from '@/types';
 import {
   ERROR_MESSAGES,
   DAYS_TO_GENERATE_SLOTS,
   SLOT_STATUS,
-  SLOT_RESERVATION_TIMEOUT_MINUTES,
   SLOT_GENERATION_WINDOW_DAYS,
 } from '@/config/constants';
 import { downtimeService } from './downtime.service';
-import {
-  slotTemplateCache,
-  slotPoolManager,
-  dateSlotOptimizer,
-  generateOptimizedSlots
-} from './slot-optimizer.service';
+import { slotTemplateCache, slotPoolManager, dateSlotOptimizer } from './slot-optimizer.service';
 
 // Ensure we're using the constant
 const INITIAL_SLOT_DAYS = DAYS_TO_GENERATE_SLOTS;
@@ -46,7 +39,7 @@ export class SlotService {
 
       const dayOfWeek = targetDate.getDay();
       const specialHours = await downtimeService.getBusinessSpecialHours(salonId);
-      const daySpecialHours = specialHours.find(sh => sh.day_of_week === dayOfWeek);
+      const daySpecialHours = specialHours.find((sh) => sh.day_of_week === dayOfWeek);
 
       let openingTime = config.opening_time;
       let closingTime = config.closing_time;
@@ -102,10 +95,16 @@ export class SlotService {
       }
     }
 
-    console.log(`✅ Generated ${slotsToCreate.length} slots for business ${salonId} (${INITIAL_SLOT_DAYS} days)`);
+    console.log(
+      `✅ Generated ${slotsToCreate.length} slots for business ${salonId} (${INITIAL_SLOT_DAYS} days)`
+    );
   }
 
-  async generateSlotsForDate(salonId: string, date: string, config: SalonTimeConfig): Promise<void> {
+  async generateSlotsForDate(
+    salonId: string,
+    date: string,
+    config: SalonTimeConfig
+  ): Promise<void> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
@@ -113,7 +112,9 @@ export class SlotService {
     // Validate config
     if (!config.opening_time || !config.closing_time || !config.slot_duration) {
       console.error('Invalid slot generation config:', { salonId, date, config });
-      throw new Error('Invalid slot generation configuration: missing opening_time, closing_time, or slot_duration');
+      throw new Error(
+        'Invalid slot generation configuration: missing opening_time, closing_time, or slot_duration'
+      );
     }
 
     const isClosed = await downtimeService.isBusinessClosed(salonId, date);
@@ -135,14 +136,16 @@ export class SlotService {
 
     const dayOfWeek = new Date(date + 'T00:00:00').getDay();
     const specialHours = await downtimeService.getBusinessSpecialHours(salonId);
-    const daySpecialHours = specialHours.find(sh => sh.day_of_week === dayOfWeek);
+    const daySpecialHours = specialHours.find((sh) => sh.day_of_week === dayOfWeek);
 
     let openingTime = config.opening_time;
     let closingTime = config.closing_time;
 
     if (daySpecialHours) {
       if (daySpecialHours.is_closed) {
-        console.log(`Business ${salonId} is closed on day ${dayOfWeek} (${date}), skipping slot generation`);
+        console.log(
+          `Business ${salonId} is closed on day ${dayOfWeek} (${date}), skipping slot generation`
+        );
         return;
       }
       if (daySpecialHours.opening_time) {
@@ -182,10 +185,7 @@ export class SlotService {
     }
 
     // Insert slots - ensure they're actually written to database
-    const { error, data } = await supabaseAdmin
-      .from('slots')
-      .insert(slotsToCreate)
-      .select('id');
+    const { error, data } = await supabaseAdmin.from('slots').insert(slotsToCreate).select('id');
 
     if (error) {
       console.error('Error inserting slots:', error);
@@ -197,7 +197,9 @@ export class SlotService {
       throw new Error('Slot insertion failed - no data returned');
     }
 
-    console.log(`✅ Generated ${slotsToCreate.length} slots for ${salonId} on ${date} (${data.length} inserted)`);
+    console.log(
+      `✅ Generated ${slotsToCreate.length} slots for ${salonId} on ${date} (${data.length} inserted)`
+    );
   }
 
   async getAvailableSlots(
@@ -237,7 +239,6 @@ export class SlotService {
       if (!supabaseAdmin) {
         throw new Error('Database not configured');
       }
-      const today = new Date(normalizedDate + 'T00:00:00');
       const missingDates = await dateSlotOptimizer.getMissingDates(
         salonId,
         normalizedDate,
@@ -258,22 +259,21 @@ export class SlotService {
 
       // Batch generate missing dates using pool manager
       if (missingDates.length > 0) {
-        const generationRequests = missingDates.map(date => ({
+        const generationRequests = missingDates.map((date) => ({
           businessId: salonId,
           date,
           config: salonConfig,
         }));
 
-        await slotPoolManager.batchGenerateSlots(
-          generationRequests,
-          async (bid, date, cfg) => {
-            await slotPoolManager.queueGeneration(bid, date, cfg, async (b, d, c) => {
-              await this.generateSlotsForDate(b, d, c);
-            });
-          }
-        );
+        await slotPoolManager.batchGenerateSlots(generationRequests, async (bid, date, cfg) => {
+          await slotPoolManager.queueGeneration(bid, date, cfg, async (b, d, c) => {
+            await this.generateSlotsForDate(b, d, c);
+          });
+        });
 
-        console.log(`✅ Generated slots for ${missingDates.length} future dates: ${missingDates.join(', ')}`);
+        console.log(
+          `✅ Generated slots for ${missingDates.length} future dates: ${missingDates.join(', ')}`
+        );
       }
     }
 
@@ -359,7 +359,10 @@ export class SlotService {
     return data;
   }
 
-  async updateSlotStatus(slotId: string, status: typeof SLOT_STATUS[keyof typeof SLOT_STATUS]): Promise<void> {
+  async updateSlotStatus(
+    slotId: string,
+    status: (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS]
+  ): Promise<void> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
@@ -368,10 +371,7 @@ export class SlotService {
       throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
     }
 
-    const { error } = await supabaseAdmin
-      .from('slots')
-      .update({ status })
-      .eq('id', slotId);
+    const { error } = await supabaseAdmin.from('slots').update({ status }).eq('id', slotId);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -425,17 +425,13 @@ export class SlotService {
     } else if (slot.status === SLOT_STATUS.RESERVED && slot.reserved_until) {
       // Only update if reservation has expired
       const now = new Date().toISOString();
-      updateQuery = updateQuery
-        .eq('status', SLOT_STATUS.RESERVED)
-        .lt('reserved_until', now);
+      updateQuery = updateQuery.eq('status', SLOT_STATUS.RESERVED).lt('reserved_until', now);
     } else {
       // Invalid state, cannot reserve
       return false;
     }
 
-    const { data: updatedSlot, error } = await updateQuery
-      .select()
-      .single();
+    const { data: updatedSlot, error } = await updateQuery.select().single();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -461,15 +457,10 @@ export class SlotService {
     await emitSlotReserved(updatedSlot);
 
     try {
-      await auditService.createAuditLog(
-        null,
-        'slot_reserved',
-        'slot',
-        {
-          entityId: slotId,
-          description: `Slot reserved until ${reservedUntil.toISOString()}`,
-        }
-      );
+      await auditService.createAuditLog(null, 'slot_reserved', 'slot', {
+        entityId: slotId,
+        description: `Slot reserved until ${reservedUntil.toISOString()}`,
+      });
     } catch (auditError) {
       console.error('[AUDIT] Failed to log slot reservation:', auditError);
     }
@@ -512,15 +503,10 @@ export class SlotService {
       await emitSlotReleased(updatedSlot);
 
       try {
-        await auditService.createAuditLog(
-          null,
-          'slot_released',
-          'slot',
-          {
-            entityId: slotId,
-            description: `Slot released from ${slot.status} to available`,
-          }
-        );
+        await auditService.createAuditLog(null, 'slot_released', 'slot', {
+          entityId: slotId,
+          description: `Slot released from ${slot.status} to available`,
+        });
       } catch (auditError) {
         console.error('[AUDIT] Failed to log slot release:', auditError);
       }
@@ -586,15 +572,10 @@ export class SlotService {
       await emitSlotBooked(updatedSlot);
 
       try {
-        await auditService.createAuditLog(
-          null,
-          'slot_booked',
-          'slot',
-          {
-            entityId: slotId,
-            description: `Slot booked from ${slot.status}`,
-          }
-        );
+        await auditService.createAuditLog(null, 'slot_booked', 'slot', {
+          entityId: slotId,
+          description: `Slot booked from ${slot.status}`,
+        });
       } catch (auditError) {
         console.error('[AUDIT] Failed to log slot booking:', auditError);
       }
@@ -607,4 +588,3 @@ export class SlotService {
 }
 
 export const slotService = new SlotService();
-

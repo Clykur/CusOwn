@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
+import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
 
@@ -31,7 +31,6 @@ export default function OwnerSidebar({
   const { initialUser } = useOwnerSession();
   const [navigating, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
-  const loading = false;
 
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
@@ -180,8 +179,10 @@ export default function OwnerSidebar({
                   <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
                 </div>
               </Link>
-              <a
-                href={`/api/auth/signout?redirect_to=${encodeURIComponent(ROUTES.SELECT_ROLE('owner'))}`}
+              <button
+                onClick={() => {
+                  window.location.href = '/api/auth/signout?redirect_to=%2F';
+                }}
                 className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign out"
               >
@@ -193,7 +194,7 @@ export default function OwnerSidebar({
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-              </a>
+              </button>
             </div>
           </div>
         </div>

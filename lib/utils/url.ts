@@ -28,8 +28,6 @@ const isProduction = (): boolean => {
 const PRODUCTION_FALLBACK_BASE = 'https://cusown.clykur.com';
 
 export const getBaseUrl = (request?: NextRequest): string => {
-  const isNode =
-    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
   const prod = isProduction();
 
   // In production, never use localhost. Prefer env so QR and links always use public URL

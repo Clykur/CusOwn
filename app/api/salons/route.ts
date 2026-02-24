@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { salonService } from '@/services/salon.service';
 import { validateCreateSalon, validateTimeRange } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/response';
@@ -10,7 +10,7 @@ import { userService } from '@/services/user.service';
 import { getUserFriendlyError } from '@/lib/utils/error-handler';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
-import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
+import { SUCCESS_MESSAGES } from '@/config/constants';
 import { auditService } from '@/services/audit.service';
 import { getAllowedCategoryValues } from '@/services/business-category.service';
 

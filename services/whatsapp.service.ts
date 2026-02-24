@@ -1,4 +1,4 @@
-import { WHATSAPP_MESSAGE_TEMPLATES, ROUTES } from '@/config/constants';
+import { WHATSAPP_MESSAGE_TEMPLATES } from '@/config/constants';
 import { BookingWithDetails, Salon } from '@/types';
 import { getBookingUrl, getBaseUrl } from '@/lib/utils/url';
 import { formatDate, formatTime } from '@/lib/utils/string';

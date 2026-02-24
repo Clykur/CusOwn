@@ -6,9 +6,8 @@ import BookingCard from '@/components/owner/booking-card';
 import PullToRefresh from '@/components/ui/pull-to-refresh';
 import NoShowButton from '@/components/booking/no-show-button';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
-import { BookingWithDetails, Slot } from '@/types';
-import { IconCheck, IconCross, IconUndo } from '@/components/ui/status-icons';
-import { BOOKING_STATUS } from '@/config/constants';
+import { BookingWithDetails } from '@/types';
+import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constants';
 
 interface DashboardStats {
@@ -24,7 +23,6 @@ export default function OwnerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
-  const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -266,37 +264,6 @@ export default function OwnerDashboardPage() {
     },
     [processingBookingId, fetchBookings]
   );
-
-  const handleCancel = async (bookingId: string) => {
-    if (processingBookingId) return;
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-    setProcessingBookingId(bookingId);
-    setActionError(null);
-    setActionSuccess(null);
-    try {
-      const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ cancelled_by: 'owner' }),
-      });
-      if (response.ok) {
-        setActionSuccess('Booking cancelled');
-        setTimeout(() => setActionSuccess(null), 2000);
-        fetchBookings();
-      } else {
-        const result = await response.json();
-        setActionError(result.error || 'Failed to cancel booking');
-      }
-    } catch (err) {
-      setActionError('Failed to cancel booking');
-    } finally {
-      setProcessingBookingId(null);
-    }
-  };
 
   const canUndo = useCallback((b: BookingWithDetails) => {
     if (b.status !== 'confirmed' && b.status !== 'rejected') return false;
@@ -540,9 +507,7 @@ export default function OwnerDashboardPage() {
                           <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium">
-
                           <div className="flex flex-wrap gap-2 items-center">
-
                             {booking.status === 'pending' && (
                               <>
                                 <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
@@ -551,20 +516,16 @@ export default function OwnerDashboardPage() {
                                 <button
                                   onClick={() => handleAccept(booking.id)}
                                   disabled={processingBookingId === booking.id}
-
                                   className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
                                   title="Accept"
                                   aria-label="Accept booking"
                                 >
-
                                   <IconCheck className="h-6 w-6" />
-
                                 </button>
                                 <button
                                   onClick={() => handleReject(booking.id)}
                                   disabled={processingBookingId === booking.id}
                                   className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
-
                                   title="Reject"
                                   aria-label="Reject booking"
                                 >

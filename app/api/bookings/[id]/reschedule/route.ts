@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { rescheduleService } from '@/services/reschedule.service';
 import { bookingService } from '@/services/booking.service';
 import { notificationService } from '@/services/notification.service';

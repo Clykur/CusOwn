@@ -17,8 +17,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   if (sidebarOpen) return null;
 
   // Extract booking link from pathname if it's a specific business dashboard (exclude '/owner/dashboard')
-  const bookingLinkMatch = pathname?.match(/^\/owner\/(?!dashboard$)([^\/]+)$/);
-  const bookingLink = bookingLinkMatch ? bookingLinkMatch[1] : undefined;
   const tabParam = searchParams?.get('tab') ?? null;
 
   const isSetup = pathname === ROUTES.SETUP || pathname === ROUTES.OWNER_SETUP;

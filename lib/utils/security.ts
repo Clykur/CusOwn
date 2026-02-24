@@ -1,5 +1,4 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import type { NextRequest } from 'next/server';
 import { env } from '@/config/env';
 import { getBaseUrl } from '@/lib/utils/url';
 

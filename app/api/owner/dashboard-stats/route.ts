@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Get all businesses for the user
     const businesses = await userService.getUserBusinesses(user.id);
-    
+
     if (businesses.length === 0) {
       return successResponse({
         totalBusinesses: 0,
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const businessIds = businesses.map(b => b.id);
+    const businessIds = businesses.map((b) => b.id);
 
     // Get all bookings across all businesses
     if (!supabaseAdmin) {
@@ -40,7 +40,9 @@ export async function GET(request: NextRequest) {
 
     const { data: bookings, error } = await supabaseAdmin
       .from('bookings')
-      .select('id, status, no_show, created_at, business_id, booking_id, customer_name, customer_phone')
+      .select(
+        'id, status, no_show, created_at, business_id, booking_id, customer_name, customer_phone'
+      )
       .in('business_id', businessIds)
       .order('created_at', { ascending: false });
 
@@ -51,18 +53,18 @@ export async function GET(request: NextRequest) {
 
     const allBookings = bookings || [];
     const totalBookings = allBookings.length;
-    const confirmedBookings = allBookings.filter(b => b.status === 'confirmed').length;
-    const pendingBookings = allBookings.filter(b => b.status === 'pending').length;
-    const rejectedBookings = allBookings.filter(b => b.status === 'rejected').length;
-    const cancelledBookings = allBookings.filter(b => b.status === 'cancelled').length;
-    const noShowCount = allBookings.filter(b => b.no_show === true).length;
+    const confirmedBookings = allBookings.filter((b) => b.status === 'confirmed').length;
+    const pendingBookings = allBookings.filter((b) => b.status === 'pending').length;
+    const rejectedBookings = allBookings.filter((b) => b.status === 'rejected').length;
+    const cancelledBookings = allBookings.filter((b) => b.status === 'cancelled').length;
+    const noShowCount = allBookings.filter((b) => b.no_show === true).length;
 
     const conversionRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
     const cancellationRate = totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
     const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
     // Get recent bookings (last 10)
-    const recentBookings = allBookings.slice(0, 10).map(booking => ({
+    const recentBookings = allBookings.slice(0, 10).map((booking) => ({
       id: booking.id,
       booking_id: booking.booking_id,
       status: booking.status,
