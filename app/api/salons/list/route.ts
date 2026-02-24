@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp } from '@/lib/utils/security';

@@ -114,7 +114,7 @@ export default function CustomerSalonListPage() {
   }, [selectedLocation, fetchSalons]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20 md:pb-12">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1 relative">

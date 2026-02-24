@@ -1,13 +1,11 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { paymentService } from '@/services/payment.service';
 import { bookingService } from '@/services/booking.service';
-import { slotService } from '@/services/slot.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
-import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
+import { ERROR_MESSAGES, BOOKING_STATUS } from '@/config/constants';
 
 const verifyRateLimit = enhancedRateLimit({
   maxRequests: 20,
@@ -17,8 +15,6 @@ const verifyRateLimit = enhancedRateLimit({
 });
 
 export async function POST(request: NextRequest) {
-  const clientIP = getClientIp(request);
-
   try {
     const rateLimitResponse = await verifyRateLimit(request);
     if (rateLimitResponse) {

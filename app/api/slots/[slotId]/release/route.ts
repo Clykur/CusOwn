@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { slotService } from '@/services/slot.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
+import { ERROR_MESSAGES } from '@/config/constants';
 import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 

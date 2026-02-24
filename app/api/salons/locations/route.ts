@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { successResponse, errorResponse } from '@/lib/utils/response';
+import { successResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';

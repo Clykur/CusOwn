@@ -1,7 +1,7 @@
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { generateSlug, generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateSalonInput, Salon } from '@/types';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
+import { ERROR_MESSAGES } from '@/config/constants';
 import { slotService } from './slot.service';
 import { cache } from 'react';
 

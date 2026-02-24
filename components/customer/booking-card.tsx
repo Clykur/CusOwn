@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { UI_CUSTOMER } from '@/config/constants';
@@ -10,8 +9,6 @@ interface CustomerBookingCardProps {
 }
 
 export default function CustomerBookingCard({ booking }: CustomerBookingCardProps) {
-  const [expanded] = useState(false);
-
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
 
   const getStatusConfig = (status: string) => {

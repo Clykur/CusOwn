@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { env } from '@/config/env';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { successResponse, errorResponse } from '@/lib/utils/response';
+import { successResponse } from '@/lib/utils/response';
 
 /**
  * Debug endpoint to check authentication status
@@ -32,14 +32,17 @@ export async function GET(request: NextRequest) {
     // Check Authorization header
     const authHeader = request.headers.get('authorization');
     debugInfo.headers.authorization = authHeader ? `${authHeader.substring(0, 20)}...` : 'missing';
-    
+
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       debugInfo.authMethods.push('Bearer token found in header');
-      
+
       try {
         if (supabaseAdmin) {
-          const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+          const {
+            data: { user },
+            error,
+          } = await supabaseAdmin.auth.getUser(token);
           if (error) {
             debugInfo.errors.push(`Bearer token validation error: ${error.message}`);
           } else if (user) {
@@ -52,7 +55,9 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (error) {
-        debugInfo.errors.push(`Bearer token check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        debugInfo.errors.push(
+          `Bearer token check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
 
@@ -65,16 +70,21 @@ export async function GET(request: NextRequest) {
       const supabaseToken = cookieStore.get(accessTokenKey)?.value;
 
       debugInfo.cookies = {
-        'sb-access-token': sessionAccessToken ? `${sessionAccessToken.substring(0, 20)}...` : 'missing',
+        'sb-access-token': sessionAccessToken
+          ? `${sessionAccessToken.substring(0, 20)}...`
+          : 'missing',
         [accessTokenKey]: supabaseToken ? `${supabaseToken.substring(0, 20)}...` : 'missing',
-        allCookies: Array.from(cookieStore.getAll().map(c => c.name)),
+        allCookies: Array.from(cookieStore.getAll().map((c) => c.name)),
       };
 
       if (sessionAccessToken) {
         debugInfo.authMethods.push('sb-access-token cookie found');
         try {
           if (supabaseAdmin) {
-            const { data: { user }, error } = await supabaseAdmin.auth.getUser(sessionAccessToken);
+            const {
+              data: { user },
+              error,
+            } = await supabaseAdmin.auth.getUser(sessionAccessToken);
             if (error) {
               debugInfo.errors.push(`Session cookie validation error: ${error.message}`);
             } else if (user) {
@@ -89,7 +99,9 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          debugInfo.errors.push(`Session cookie check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          debugInfo.errors.push(
+            `Session cookie check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
 
@@ -97,7 +109,10 @@ export async function GET(request: NextRequest) {
         debugInfo.authMethods.push(`Supabase cookie (${accessTokenKey}) found`);
         try {
           if (supabaseAdmin) {
-            const { data: { user }, error } = await supabaseAdmin.auth.getUser(supabaseToken);
+            const {
+              data: { user },
+              error,
+            } = await supabaseAdmin.auth.getUser(supabaseToken);
             if (error) {
               debugInfo.errors.push(`Supabase cookie validation error: ${error.message}`);
             } else if (user) {
@@ -112,11 +127,15 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          debugInfo.errors.push(`Supabase cookie check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          debugInfo.errors.push(
+            `Supabase cookie check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
     } catch (cookieError) {
-      debugInfo.errors.push(`Cookie check failed: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`);
+      debugInfo.errors.push(
+        `Cookie check failed: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`
+      );
     }
 
     // If we have a user, try to get their profile
@@ -127,7 +146,7 @@ export async function GET(request: NextRequest) {
           .select('*')
           .eq('id', debugInfo.user.id)
           .single();
-        
+
         if (profileError) {
           debugInfo.errors.push(`Profile fetch error: ${profileError.message}`);
         } else {
@@ -138,7 +157,9 @@ export async function GET(request: NextRequest) {
           };
         }
       } catch (error) {
-        debugInfo.errors.push(`Profile check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        debugInfo.errors.push(
+          `Profile check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     }
 
@@ -147,14 +168,18 @@ export async function GET(request: NextRequest) {
       authenticated: !!debugInfo.user,
       hasProfile: !!debugInfo.user?.profile,
       isAdmin: debugInfo.user?.profile?.is_admin || false,
-      authMethodUsed: debugInfo.authMethods.length > 0 ? debugInfo.authMethods[debugInfo.authMethods.length - 1] : 'none',
+      authMethodUsed:
+        debugInfo.authMethods.length > 0
+          ? debugInfo.authMethods[debugInfo.authMethods.length - 1]
+          : 'none',
       hasErrors: debugInfo.errors.length > 0,
     };
 
     return successResponse(debugInfo, 'Debug information retrieved');
   } catch (error) {
-    debugInfo.errors.push(`Debug endpoint error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    debugInfo.errors.push(
+      `Debug endpoint error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
     return successResponse(debugInfo, 'Debug information retrieved (with errors)');
   }
 }
-

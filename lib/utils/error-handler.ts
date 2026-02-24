@@ -107,7 +107,6 @@ export const logError = (error: unknown, context?: string): void => {
 
   if (context && typeof window === 'undefined') {
     // Server-side error logging
-    const errorObj = error instanceof Error ? error : new Error(String(error));
     // Performance monitoring can be added here if needed
   }
 };

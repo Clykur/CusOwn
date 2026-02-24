@@ -143,40 +143,6 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     setError(null);
     setSlotValidationError(null);
     try {
-      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
-      const sessionData = await sessionRes.json();
-      const isLoggedIn = !!sessionData?.data?.user;
-
-      if (!isLoggedIn) {
-        const verifyRes = await fetch(`/api/slots/${selectedSlot.id}`);
-        const verifyResult = await verifyRes.json();
-        if (!verifyResult?.success || verifyResult?.data?.status !== 'available') {
-          setSelectedSlot(null);
-          const r = await fetch(`${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`);
-          const j = await r.json();
-          if (j?.success) setSlots(j.data);
-          throw new Error('This slot is no longer available. Please select another.');
-        }
-        const setPendingRes = await fetch(API_ROUTES.BOOK_SET_PENDING, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            salon_id: business.id,
-            slot_id: selectedSlot.id,
-            customer_name: customerName.trim(),
-            customer_phone: phoneDigits,
-          }),
-        });
-        const setPendingResult = await setPendingRes.json();
-        if (!setPendingResult?.success) {
-          throw new Error(setPendingResult?.error || UI_CUSTOMER.SIGN_IN_TO_COMPLETE_BOOKING);
-        }
-        const loginUrl = ROUTES.AUTH_LOGIN(ROUTES.BOOK_COMPLETE) + '&role=customer';
-        window.location.href = loginUrl;
-        return;
-      }
-
       const verifyRes = await fetch(`/api/slots/${selectedSlot.id}`);
       const verifyResult = await verifyRes.json();
       if (!verifyResult?.success || verifyResult?.data?.status !== 'available') {

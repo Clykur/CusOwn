@@ -70,13 +70,6 @@ export default function BookingCard({
     }
   };
 
-  const statusLabel =
-    booking.status === 'cancelled' && booking.cancelled_by === 'customer'
-      ? UI_CONTEXT.CANCELLED_BY_CUSTOMER
-      : booking.status === 'cancelled'
-        ? 'Cancelled'
-        : booking.status;
-
   const isProcessing = processingId === booking.id;
   // Accept/Reject should be disabled if processing (parent disables via prop)
   const canUndo =
@@ -123,8 +116,6 @@ export default function BookingCard({
               </button>
             </>
           )}
-
-          {/* Undo button removed */}
         </div>
       </div>
 
@@ -196,9 +187,7 @@ export default function BookingCard({
               <button
                 onClick={() => onAccept(booking.id)}
                 disabled={isProcessing}
-
                 className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
-
                 title="Accept"
                 aria-label="Accept booking"
               >
@@ -209,9 +198,7 @@ export default function BookingCard({
               <button
                 onClick={() => onReject(booking.id)}
                 disabled={isProcessing}
-
                 className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
-
                 title="Reject"
                 aria-label="Reject booking"
               >
@@ -227,7 +214,6 @@ export default function BookingCard({
           )}
           {canUndo && booking.status === 'confirmed' && onUndoAccept && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-emerald-700">Accepted</span>
               <button
                 type="button"
                 onClick={() => onUndoAccept(booking.id)}
@@ -254,7 +240,6 @@ export default function BookingCard({
           )}
           {canUndo && booking.status === 'rejected' && onUndoReject && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-rose-800">Rejected</span>
               <button
                 type="button"
                 onClick={() => onUndoReject(booking.id)}

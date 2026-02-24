@@ -45,12 +45,14 @@ export default function AuthButton({ user = null, profile }: AuthButtonProps) {
         >
           My Dashboard
         </button>
-        <a
-          href="/api/auth/signout"
+        <button
+          onClick={() => {
+            window.location.href = '/api/auth/signout?redirect_to=%2F';
+          }}
           className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
         >
           Sign Out
-        </a>
+        </button>
       </div>
     );
   }
@@ -69,12 +71,14 @@ export default function AuthButton({ user = null, profile }: AuthButtonProps) {
       >
         Book Appointment
       </button>
-      <a
-        href="/api/auth/signout"
+      <button
+        onClick={() => {
+          window.location.href = '/api/auth/signout?redirect_to=%2F';
+        }}
         className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
       >
         Sign Out
-      </a>
+      </button>
     </div>
   );
 }

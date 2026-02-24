@@ -10,7 +10,6 @@ import { logError } from '@/lib/utils/error-handler';
 import SalonCard from '@/components/salon/salon-card';
 import { SalonCardSkeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
-import { Header } from '@/components/layout/header';
 
 const ITEMS_PER_PAGE = 12;
 

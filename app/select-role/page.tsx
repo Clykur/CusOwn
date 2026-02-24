@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { isAdmin } from '@/lib/supabase/auth';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
@@ -18,7 +17,7 @@ import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import RoleCard from '@/components/onboarding/role-card';
 import CreateBusinessForm from '@/components/setup/create-business-form';
 import { SelectRoleSkeleton } from '@/components/ui/skeleton';
-import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { getCSRFToken } from '@/lib/utils/csrf-client';
 
 function SelectRoleContent() {
   const router = useRouter();

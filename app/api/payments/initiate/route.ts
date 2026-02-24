@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getClientIp, isValidUUID } from '@/lib/utils/security';
+import { isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { bookingService } from '@/services/booking.service';
 import { slotService } from '@/services/slot.service';
@@ -18,8 +18,6 @@ const initiateRateLimit = enhancedRateLimit({
 });
 
 export async function POST(request: NextRequest) {
-  const clientIP = getClientIp(request);
-
   try {
     const rateLimitResponse = await initiateRateLimit(request);
     if (rateLimitResponse) {

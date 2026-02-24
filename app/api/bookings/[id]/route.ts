@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getClientIp, isValidUUID, validateResourceToken } from '@/lib/utils/security';
+import { isValidUUID, validateResourceToken } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline';
 import { userService } from '@/services/user.service';
@@ -11,8 +11,6 @@ import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 const ROUTE = 'GET /api/bookings/[id]';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const clientIP = getClientIp(request);
-
   try {
     await bookingService.runLazyExpireIfNeeded();
 

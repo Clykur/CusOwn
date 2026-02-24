@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { noShowService } from '@/services/no-show.service';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const businessId = searchParams.get('business_id');
-    const startDate = searchParams.get('start_date') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate =
+      searchParams.get('start_date') ||
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
 
     if (!businessId || !isValidUUID(businessId)) {
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userBusinesses = await userService.getUserBusinesses(user.id);
-    const hasAccess = userBusinesses.some(b => b.id === businessId);
+    const hasAccess = userBusinesses.some((b) => b.id === businessId);
 
     if (!hasAccess) {
       return errorResponse('Access denied', 403);

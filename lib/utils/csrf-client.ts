@@ -3,7 +3,6 @@
  * Fetches CSRF token from server and includes it in requests
  */
 
-const CSRF_TOKEN_HEADER = 'x-csrf-token';
 let cachedToken: string | null = null;
 
 /**
@@ -19,7 +18,7 @@ export const getCSRFToken = async (): Promise<string | null> => {
     // Try to read from cookie first
     if (typeof document !== 'undefined') {
       const cookies = document.cookie.split(';');
-      const csrfCookie = cookies.find(c => c.trim().startsWith('csrf-token='));
+      const csrfCookie = cookies.find((c) => c.trim().startsWith('csrf-token='));
       if (csrfCookie) {
         const token = csrfCookie.split('=')[1]?.trim() || null;
         if (token) {
@@ -45,7 +44,7 @@ export const getCSRFToken = async (): Promise<string | null> => {
   } catch (error) {
     console.error('Error fetching CSRF token:', error);
   }
-  
+
   return null;
 };
 

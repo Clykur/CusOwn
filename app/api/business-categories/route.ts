@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { getBusinessCategories } from '@/services/business-category.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
