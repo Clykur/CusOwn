@@ -20,6 +20,7 @@ interface DashboardStats {
 export default function OwnerDashboardPage() {
   const { initialUser } = useOwnerSession();
   const [loading, setLoading] = useState(true);
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);

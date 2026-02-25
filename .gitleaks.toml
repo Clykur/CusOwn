@@ -1,0 +1,19 @@
+title = "CusOwn Secret Detection Rules"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow harmless placeholders and docs examples"
+regexes = [
+  '''placeholder[-_a-zA-Z0-9]*''',
+  '''example[-_a-zA-Z0-9]*''',
+  '''localhost(:[0-9]+)?''',
+  '''test-secret''',
+]
+paths = [
+  '''docs/''',
+  '''README.md''',
+  '''scripts/''',
+]
+

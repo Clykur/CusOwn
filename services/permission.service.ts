@@ -97,9 +97,46 @@ export async function getUserPermissionSet(userId: string): Promise<Set<string>>
 }
 
 /**
+ * Check if user is in admin_users table (by email). Used for admin:access.
+ */
+async function isEmailInAdminUsers(
+  supabase: ReturnType<typeof requireSupabaseAdmin>,
+  email: string
+): Promise<boolean> {
+  if (!email?.trim()) return false;
+  const normalized = email.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('id')
+    .eq('is_admin', true)
+    .eq('email', normalized)
+    .maybeSingle();
+  if (!error && data) return true;
+  const { data: fallback, error: fallbackError } = await supabase
+    .from('admin_users')
+    .select('id')
+    .eq('is_admin', true)
+    .ilike('email', normalized)
+    .maybeSingle();
+  if (fallbackError) return false;
+  return !!fallback;
+}
+
+/**
  * O(1) permission check: user has permission if name is in their permission set.
+ * For admin:access, also grants access if user's email is in admin_users table.
  */
 export async function hasPermission(userId: string, permissionName: string): Promise<boolean> {
+  if (permissionName === PERMISSIONS.ADMIN_ACCESS) {
+    try {
+      const supabase = requireSupabaseAdmin();
+      const { data } = await supabase.auth.admin.getUserById(userId);
+      const email = data?.user?.email;
+      if (email && (await isEmailInAdminUsers(supabase, email))) return true;
+    } catch {
+      // Fall through to role-based check
+    }
+  }
   const set = await getUserPermissionSet(userId);
   return set.has(permissionName);
 }

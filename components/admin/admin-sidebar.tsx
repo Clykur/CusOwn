@@ -167,6 +167,7 @@ function getTabFromSearch(search: string): string {
 
 function AdminSidebarContent() {
   const pathname = usePathname();
+  const safePathname = pathname ?? '';
   const router = useRouter();
   const { session } = useAdminSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -179,7 +180,7 @@ function AdminSidebarContent() {
     'User';
 
   useEffect(() => {
-    if (pathname !== '/admin/dashboard') return;
+    if (safePathname !== '/admin/dashboard') return;
     const readFromWindow = () =>
       setDashboardTab(
         typeof window !== 'undefined' ? getTabFromSearch(window.location.search) : 'overview'
@@ -195,17 +196,17 @@ function AdminSidebarContent() {
       window.removeEventListener(ADMIN_TAB_EVENT, handler);
       window.removeEventListener('popstate', readFromWindow);
     };
-  }, [pathname]);
+  }, [safePathname]);
 
   const { prefetchTab } = useAdminPrefetch();
   const getTabFromHref = (href: string) =>
     href.includes('?tab=') ? (href.split('tab=')[1]?.split('&')[0] ?? null) : null;
 
   const isActive = (href: string) => {
-    if (pathname.startsWith('/admin/bookings') && href.includes('tab=bookings')) return true;
-    if (pathname.startsWith('/admin/users') && href.includes('tab=users')) return true;
-    if (!href.startsWith('/admin/dashboard')) return pathname === href;
-    if (pathname !== '/admin/dashboard') return false;
+    if (safePathname.startsWith('/admin/bookings') && href.includes('tab=bookings')) return true;
+    if (safePathname.startsWith('/admin/users') && href.includes('tab=users')) return true;
+    if (!href.startsWith('/admin/dashboard')) return safePathname === href;
+    if (safePathname !== '/admin/dashboard') return false;
     const hrefTab = href.includes('?tab=') ? href.split('tab=')[1]?.split('&')[0] : 'overview';
     return dashboardTab === hrefTab;
   };

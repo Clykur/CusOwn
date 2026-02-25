@@ -3,7 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { UI_BOOKING_STATE, UI_CONTEXT, UI_CUSTOMER, UI_ERROR_CONTEXT } from '@/config/constants';
+import {
+  UI_BOOKING_STATE,
+  UI_CONTEXT,
+  UI_CUSTOMER,
+  UI_ERROR_CONTEXT,
+  ERROR_MESSAGES,
+  CANCELLATION_MIN_HOURS_BEFORE,
+} from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import RescheduleButton from '@/components/booking/reschedule-button';
 import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
@@ -13,7 +20,7 @@ import { supabaseAuth } from '@/lib/supabase/auth';
 
 export default function BookingStatusPage() {
   const params = useParams();
-  const bookingId = params.bookingId as string;
+  const bookingId = typeof params?.bookingId === 'string' ? params.bookingId : '';
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +29,8 @@ export default function BookingStatusPage() {
   const [salonSecureUrl, setSalonSecureUrl] = useState<string>('');
   const [secureBookingUrls, setSecureBookingUrls] = useState<Map<string, string>>(new Map());
   const [refreshingStatus, setRefreshingStatus] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const [whatsappMessage, setWhatsappMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Pre-fetch CSRF token
@@ -123,6 +132,17 @@ export default function BookingStatusPage() {
             .then((url) => setSalonSecureUrl(url))
             .catch(() => {});
         }
+
+        // Request server-derived WhatsApp link (no query params used)
+        try {
+          const wRes = await fetch(`/api/bookings/${result.data.booking_id}/whatsapp`, {
+            credentials: 'include',
+          });
+          const wj = await wRes.json();
+          if (wj?.success && wj?.data?.whatsapp_url) setWhatsappUrl(wj.data.whatsapp_url);
+        } catch (e) {
+          // ignore — non-fatal
+        }
       }
     } catch (err) {
       if (!silent) setError(err instanceof Error ? err.message : 'Failed to load booking');
@@ -145,6 +165,7 @@ export default function BookingStatusPage() {
 
   const handleCancel = async () => {
     if (cancelling) return;
+    if (isCancellationTooLate) return;
     if (!confirm('Are you sure you want to cancel this booking?')) return;
 
     setCancelling(true);
@@ -241,7 +262,26 @@ export default function BookingStatusPage() {
 
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
 
-  const canCancel = booking.status === 'confirmed' || booking.status === 'pending';
+  const canCancelByStatus = booking.status === 'confirmed' || booking.status === 'pending';
+  const appointmentDateTime = (() => {
+    if (!booking?.slot?.date || !booking?.slot?.start_time) return null;
+    const startTimeRaw = String(booking.slot.start_time);
+    const startTime = startTimeRaw.includes('T')
+      ? new Date(startTimeRaw)
+      : new Date(`${booking.slot.date}T${startTimeRaw}`);
+    const timeMs = startTime.getTime();
+    if (!Number.isFinite(timeMs)) return null;
+    return startTime;
+  })();
+  const msUntilAppointment = appointmentDateTime
+    ? appointmentDateTime.getTime() - Date.now()
+    : Number.POSITIVE_INFINITY;
+  const minCancellationWindowMs = CANCELLATION_MIN_HOURS_BEFORE * 60 * 60 * 1000;
+  const isCancellationTooLate =
+    canCancelByStatus &&
+    Number.isFinite(msUntilAppointment) &&
+    msUntilAppointment < minCancellationWindowMs;
+  const canCancel = canCancelByStatus;
 
   return (
     <div className="w-full pb-24 flex flex-col gap-8">
@@ -264,6 +304,17 @@ export default function BookingStatusPage() {
             >
               {refreshingStatus ? 'Refreshing…' : 'Refresh status'}
             </button>
+            {whatsappUrl && (
+              <div className="w-full mt-3">
+                <button
+                  type="button"
+                  onClick={() => window.open(whatsappUrl, '_blank')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800"
+                >
+                  Open WhatsApp
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -446,11 +497,15 @@ export default function BookingStatusPage() {
             <button
               type="button"
               onClick={handleCancel}
-              disabled={cancelling}
+              disabled={cancelling || isCancellationTooLate}
+              title={isCancellationTooLate ? ERROR_MESSAGES.CANCELLATION_TOO_LATE : undefined}
               className="w-full bg-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cancelling ? 'Cancelling...' : 'Cancel Booking'}
             </button>
+            {isCancellationTooLate && (
+              <p className="text-sm text-slate-500">{ERROR_MESSAGES.CANCELLATION_TOO_LATE}</p>
+            )}
             {booking.slot && booking.salon && availableSlots.length > 0 && !booking.no_show && (
               <div className="flex justify-center">
                 <RescheduleButton

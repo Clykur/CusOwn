@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getClientIp } from '@/lib/utils/security';
+import { getClientIp } from '@/lib/security/client-ip.security';
 import {
   TOKEN_BUCKET_CAPACITY,
   TOKEN_BUCKET_REFILL_PER_SEC,
@@ -71,9 +71,7 @@ function refill(
 }
 
 function recordRateLimitBlock(): void {
-  import('@/lib/monitoring/metrics').then(({ metricsService }) => {
-    void metricsService.increment('api.rate_limit_blocks');
-  });
+  // Intentionally no-op in middleware runtime (Edge-safe path).
 }
 
 /** Lightweight identifier for rate limit without calling Supabase (avoids Auth 429). */

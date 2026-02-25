@@ -22,7 +22,8 @@ export default function OwnerSidebar({
   setSidebarOpen?: (v: boolean) => void;
 }) {
   const pathname = usePathname();
-  const cleanPath = pathname.split('?')[0];
+  const safePathname = pathname ?? '';
+  const cleanPath = safePathname.split('?')[0];
 
   // Support lifted state from parent (OwnerLayout) or fallback to internal state
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
@@ -38,7 +39,7 @@ export default function OwnerSidebar({
 
   useEffect(() => {
     setNavigating(null);
-  }, [pathname]);
+  }, [safePathname]);
 
   // Load business list for nav state only; user from layout.
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function OwnerSidebar({
     return () => {
       cancelled = true;
     };
-  }, [pathname, initialUser?.id]);
+  }, [safePathname, initialUser?.id]);
 
   // ===============================
   // Navigation items (UNCHANGED)
@@ -83,6 +84,19 @@ export default function OwnerSidebar({
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeWidth={2} d="M4 21V3h16v18M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Analytics',
+      href: '/owner/analytics',
+      requiresBusiness: true,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeWidth={2}
+            d="M11 17a1 1 0 01-1-1V7a1 1 0 012 0v9a1 1 0 01-1 1zM7 20a1 1 0 01-1-1v-6a1 1 0 012 0v6a1 1 0 01-1 1zM15 14a1 1 0 01-1-1V3a1 1 0 012 0v10a1 1 0 01-1 1zM19 12a1 1 0 01-1-1V9a1 1 0 012 0v2a1 1 0 01-1 1z"
+          />
         </svg>
       ),
     },
@@ -117,13 +131,19 @@ export default function OwnerSidebar({
         (cleanPath.startsWith('/owner/') &&
           cleanPath !== '/owner/dashboard' &&
           cleanPath !== '/owner/setup' &&
-          cleanPath !== '/owner/profile')
+          cleanPath !== '/owner/profile' &&
+          !cleanPath.startsWith('/owner/analytics'))
       );
     }
 
     // Create Business
     if (name === 'Create Business') {
       return cleanPath === '/owner/setup';
+    }
+
+    // Analytics
+    if (name === 'Analytics') {
+      return cleanPath === '/owner/analytics';
     }
 
     // Profile (bottom link uses OWNER_PROFILE)
@@ -194,7 +214,7 @@ export default function OwnerSidebar({
                   key={item.name}
                   href={item.href}
                   onClick={(e) => {
-                    if (item.href !== pathname) {
+                    if (item.href !== safePathname) {
                       setNavigating(item.href);
                       setSidebarOpen(false);
                     } else {

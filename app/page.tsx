@@ -15,9 +15,9 @@ export default function Home() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const error = searchParams.get('error');
-    const errorCode = searchParams.get('error_code');
-    const errorDesc = searchParams.get('error_description');
+    const error = searchParams?.get('error');
+    const errorCode = searchParams?.get('error_code');
+    const errorDesc = searchParams?.get('error_description');
     if (error || errorCode === 'bad_oauth_state' || errorDesc) {
       const msg = errorDesc || error || 'Sign-in was cancelled or expired. Please try again.';
       router.replace(
@@ -68,7 +68,7 @@ export default function Home() {
             {/* CTA Buttons */}
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
-                onClick={() => router.push(ROUTES.SELECT_ROLE('owner'))}
+                onClick={() => router.push('/api/auth/login?role=owner')}
                 className="group relative bg-black text-white hover:bg-gray-900 px-10 py-5 text-base font-semibold rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto min-w-[200px]"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
@@ -251,7 +251,7 @@ export default function Home() {
                 </li>
               </ul>
               <button
-                onClick={() => router.push(ROUTES.SELECT_ROLE('owner'))}
+                onClick={() => router.push('/api/auth/login?role=owner')}
                 className="w-full bg-black text-white hover:bg-gray-800 px-8 py-4 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
               >
                 Start Your Business Page
@@ -326,7 +326,7 @@ export default function Home() {
                 </li>
               </ul>
               <button
-                onClick={() => router.push(ROUTES.SELECT_ROLE('customer'))}
+                onClick={() => router.push('/api/auth/login?role=customer')}
                 className="w-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 text-base font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 bg-transparent"
               >
                 Book an Appointment

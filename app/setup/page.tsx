@@ -47,7 +47,7 @@ export default function SetupPage() {
   );
 
   const searchParams = useSearchParams();
-  const fromOnboarding = searchParams.get('from') === 'onboarding';
+  const fromOnboarding = searchParams?.get('from') === 'onboarding';
   const [showOnboardingProgress, setShowOnboardingProgress] = useState(false);
 
   useEffect(() => {

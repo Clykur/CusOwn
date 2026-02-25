@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-
-const DEV = process.env.NODE_ENV === 'development';
 import OwnerSidebar from '@/components/owner/owner-sidebar';
 import MobileBottomNav from '@/components/owner/mobile-bottom-nav';
 import OwnerHeader from '@/components/owner/owner-header';
@@ -30,22 +28,13 @@ export default function OwnerLayoutShell({
   requireClientAuthCheck = false,
 }: OwnerLayoutShellProps) {
   const pathname = usePathname();
+  const safePathname = pathname ?? '';
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientUser, setClientUser] = useState<OwnerInitialUser | null>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
   /** When true, session was missing after client check; user stays in flow until they click Sign in or Logout. */
   const [sessionMissing, setSessionMissing] = useState(false);
-
-  useEffect(() => {
-    if (DEV && typeof window !== 'undefined') {
-      console.log('[AUTH_FLOW] Owner dashboard shell mounted', {
-        pathname,
-        hasInitialUser: !!initialUser?.id,
-        requireClientAuthCheck,
-      });
-    }
-  }, [pathname, initialUser?.id, requireClientAuthCheck]);
 
   useEffect(() => {
     if (!requireClientAuthCheck) return;
@@ -111,17 +100,17 @@ export default function OwnerLayoutShell({
     );
   }
 
-  const isDashboard = pathname === '/owner/dashboard';
-  const isProfile = pathname === '/owner/profile';
-  const isCreateBusiness = pathname === '/owner/setup';
-  const isBusinesses = pathname === '/owner/businesses';
+  const isDashboard = safePathname === '/owner/dashboard';
+  const isProfile = safePathname === '/owner/profile';
+  const isCreateBusiness = safePathname === '/owner/setup';
+  const isBusinesses = safePathname === '/owner/businesses';
   const isBusinessDetail =
-    pathname.startsWith('/owner/') &&
-    pathname !== '/owner/dashboard' &&
-    pathname !== '/owner/setup' &&
-    pathname !== '/owner/businesses' &&
-    pathname !== '/owner/profile' &&
-    pathname.split('/').filter(Boolean).length === 2;
+    safePathname.startsWith('/owner/') &&
+    safePathname !== '/owner/dashboard' &&
+    safePathname !== '/owner/setup' &&
+    safePathname !== '/owner/businesses' &&
+    safePathname !== '/owner/profile' &&
+    safePathname.split('/').filter(Boolean).length === 2;
   const isOwnerMainArea =
     isDashboard || isCreateBusiness || isBusinesses || isBusinessDetail || isProfile;
   const mainSpacing = '';

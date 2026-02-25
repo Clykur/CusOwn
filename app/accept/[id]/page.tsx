@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { API_ROUTES, UI_BOOKING_STATE, UI_IDEMPOTENT, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
+import {
+  API_ROUTES,
+  UI_BOOKING_STATE,
+  UI_IDEMPOTENT,
+  UI_CONTEXT,
+  UI_ERROR_CONTEXT,
+} from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { ROUTES } from '@/lib/utils/navigation';
@@ -12,7 +18,7 @@ import { AcceptRejectSkeleton } from '@/components/ui/skeleton';
 export default function AcceptPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = typeof params?.id === 'string' ? params.id : '';
   const [booking, setBooking] = useState<BookingWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -32,7 +38,7 @@ export default function AcceptPage() {
         // Extract token from URL if present
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        
+
         // Build URL with token if available
         let url = `${API_ROUTES.BOOKINGS}/${id}`;
         if (token) {
@@ -68,7 +74,7 @@ export default function AcceptPage() {
     try {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {};
-      
+
       if (csrfToken) {
         headers['x-csrf-token'] = csrfToken;
       }
@@ -76,7 +82,7 @@ export default function AcceptPage() {
       // Include token from URL if present
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
-      
+
       let url = `${API_ROUTES.BOOKINGS}/${id}/accept`;
       if (token) {
         url += `?token=${encodeURIComponent(token)}`;
@@ -123,7 +129,12 @@ export default function AcceptPage() {
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Unable to load</h2>
           <p className="text-gray-600 mb-8">{UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}</p>
-          <a href={ROUTES.HOME} className="inline-block bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900">Go home</a>
+          <a
+            href={ROUTES.HOME}
+            className="inline-block bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900"
+          >
+            Go home
+          </a>
         </div>
       </div>
     );
@@ -134,13 +145,24 @@ export default function AcceptPage() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Accepted!</h2>
           <p className="text-gray-600 mb-6">
-            The confirmation message has been opened in WhatsApp. The customer will be notified automatically.
+            The confirmation message has been opened in WhatsApp. The customer will be notified
+            automatically.
           </p>
           {success.whatsappUrl && (
             <a
@@ -185,9 +207,13 @@ export default function AcceptPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{isExpired ? UI_BOOKING_STATE.EXPIRED : UI_BOOKING_STATE.CANCELLED}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {isExpired ? UI_BOOKING_STATE.EXPIRED : UI_BOOKING_STATE.CANCELLED}
+          </h2>
           <p className="text-gray-600 mb-8">
-            {isExpired ? 'This request is no longer valid. The customer can book a new slot.' : 'This booking was cancelled and can no longer be confirmed.'}
+            {isExpired
+              ? 'This request is no longer valid. The customer can book a new slot.'
+              : 'This booking was cancelled and can no longer be confirmed.'}
           </p>
         </div>
       </div>
@@ -200,7 +226,10 @@ export default function AcceptPage() {
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Already confirmed</h2>
           <p className="text-gray-600 mb-6">{UI_IDEMPOTENT.ALREADY_CONFIRMED}</p>
-          <button onClick={() => router.push(ROUTES.HOME)} className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900">
+          <button
+            onClick={() => router.push(ROUTES.HOME)}
+            className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900"
+          >
             Done
           </button>
         </div>
@@ -238,7 +267,9 @@ export default function AcceptPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <p className="text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">{UI_CONTEXT.SECURE_ACTION_LINK}</p>
+        <p className="text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">
+          {UI_CONTEXT.SECURE_ACTION_LINK}
+        </p>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm Booking</h2>
 
         <div className="space-y-4 mb-6">
@@ -306,4 +337,3 @@ export default function AcceptPage() {
     </div>
   );
 }
-

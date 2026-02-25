@@ -112,6 +112,27 @@ export async function GET(request: NextRequest) {
     // ignore
   }
 
+  if (profile?.user_type !== 'admin' && data.user.email) {
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase/server');
+      const email = String(data.user.email).trim().toLowerCase();
+      if (supabaseAdmin) {
+        const { data: adminRow } = await supabaseAdmin
+          .from('admin_users')
+          .select('id, is_admin')
+          .eq('email', email)
+          .eq('is_admin', true)
+          .maybeSingle();
+        if (adminRow) {
+          await userService.updateUserType(data.user.id, 'admin');
+          profile = await userService.getUserProfile(data.user.id);
+        }
+      }
+    } catch {
+      // ignore sync errors
+    }
+  }
+
   if (profile?.user_type === 'admin') {
     console.log('[AUTH] callback: positive — redirect admin', {
       userId: data.user.id.substring(0, 8) + '...',

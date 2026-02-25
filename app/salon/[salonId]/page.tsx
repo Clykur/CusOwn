@@ -22,7 +22,7 @@ export default function SalonDetailPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const salonId = params.salonId as string;
+  const salonId = typeof params?.salonId === 'string' ? params.salonId : '';
   const [salon, setSalon] = useState<Salon | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function SalonDetailPage() {
         const isUUID = isValidUUID(salonId);
 
         // Get token from URL params with proper decoding
-        const tokenParam = searchParams.get('token');
+        const tokenParam = searchParams?.get('token');
         let token = tokenParam ? decodeURIComponent(tokenParam) : null;
 
         // Only generate secure URLs for UUIDs (not booking links)
@@ -128,7 +128,7 @@ export default function SalonDetailPage() {
           setError(null);
           // Canonical booking entry: redirect to /b/[bookingLink] only (one mental model)
           if (data.booking_link) {
-            const tokenParam = searchParams.get('token');
+            const tokenParam = searchParams?.get('token');
             const q = tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : '';
             router.replace(`/b/${data.booking_link}${q}`);
             return;

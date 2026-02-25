@@ -15,26 +15,37 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const businessId = searchParams.get('business_id');
-    const startDate = searchParams.get('start_date') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const startDate =
+      searchParams.get('start_date') ||
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
 
-    if (!businessId || !isValidUUID(businessId)) {
+    if (!businessId || (businessId !== 'all' && !isValidUUID(businessId))) {
       return errorResponse('Valid business ID is required', 400);
     }
 
     const userBusinesses = await userService.getUserBusinesses(user.id);
-    const hasAccess = userBusinesses.some(b => b.id === businessId);
+    const userBusinessIds = userBusinesses.map((business) => business.id);
+    const hasAccess =
+      businessId === 'all' ? userBusinessIds.length > 0 : userBusinessIds.includes(businessId);
 
     if (!hasAccess) {
       return errorResponse('Access denied', 403);
     }
 
-    const csv = await analyticsService.exportAnalyticsCSV(businessId, startDate, endDate);
+    const csv =
+      businessId === 'all'
+        ? await analyticsService.exportAnalyticsCSVForBusinesses(
+            userBusinessIds,
+            startDate,
+            endDate
+          )
+        : await analyticsService.exportAnalyticsCSV(businessId, startDate, endDate);
 
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="analytics-${businessId}-${startDate}-${endDate}.csv"`,
+        'Content-Disposition': `attachment; filename="analytics-${businessId === 'all' ? 'all-businesses' : businessId}-${startDate}-${endDate}.csv"`,
       },
     });
   } catch (error) {
