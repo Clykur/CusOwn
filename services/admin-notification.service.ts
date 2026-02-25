@@ -1,6 +1,5 @@
 import { whatsappService } from './whatsapp.service';
-import { requireSupabaseAdmin } from '@/lib/supabase/server';
-import { getBookingUrl, getBaseUrl } from '@/lib/utils/url';
+import { getBaseUrl } from '@/lib/utils/url';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { NextRequest } from 'next/server';
 import { ROUTES } from '@/lib/utils/navigation';
@@ -28,11 +27,7 @@ export class AdminNotificationService {
     return whatsappUrl;
   }
 
-  async notifyCustomer(
-    bookingId: string,
-    message: string,
-    request?: NextRequest
-  ): Promise<string> {
+  async notifyCustomer(bookingId: string, message: string, request?: NextRequest): Promise<string> {
     const { requireSupabaseAdmin } = await import('@/lib/supabase/server');
     const supabase = requireSupabaseAdmin();
 
@@ -58,12 +53,14 @@ export class AdminNotificationService {
     const baseUrl = getBaseUrl(request);
     const bookingUrl = `${baseUrl}/owner/dashboard`;
 
-    return `🔔 *BUSINESS UPDATE NOTIFICATION*\n\n` +
+    return (
+      `🔔 *BUSINESS UPDATE NOTIFICATION*\n\n` +
       `Hello! Your business *${businessName}* has been updated by our admin team.\n\n` +
-      `*Changes Made:*\n${changes.map(c => `• ${c}`).join('\n')}\n\n` +
+      `*Changes Made:*\n${changes.map((c) => `• ${c}`).join('\n')}\n\n` +
       `*View Your Dashboard:*\n${bookingUrl}\n\n` +
       `If you have any questions, please contact support.\n\n` +
-      `Thank you! 🙏`;
+      `Thank you! 🙏`
+    );
   }
 
   generateBookingUpdateMessage(
@@ -80,7 +77,8 @@ export class AdminNotificationService {
 
     let statusMessage = '';
     if (status === 'confirmed') {
-      statusMessage = `✅ *Your booking has been confirmed!*\n\n` +
+      statusMessage =
+        `✅ *Your booking has been confirmed!*\n\n` +
         `Dear *${customerName}*,\n\n` +
         `Your appointment at *${businessName}* has been confirmed by our team.\n\n` +
         `*Appointment Details:*\n` +
@@ -88,36 +86,35 @@ export class AdminNotificationService {
         `🕐 Time: *${time}*\n\n` +
         `We look forward to seeing you!\n`;
     } else if (status === 'rejected' || status === 'cancelled') {
-      statusMessage = `❌ *Booking Update*\n\n` +
+      statusMessage =
+        `❌ *Booking Update*\n\n` +
         `Dear *${customerName}*,\n\n` +
         `Your booking at *${businessName}* has been ${status === 'cancelled' ? 'cancelled' : 'rejected'}.\n\n` +
         `*Original Booking:*\n` +
         `📆 Date: *${date}*\n` +
         `🕐 Time: *${time}*\n\n`;
-      
+
       if (reason) {
         statusMessage += `*Reason:* ${reason}\n\n`;
       }
 
-      statusMessage += `*Book a New Slot:*\n${bookingUrl}\n\n` +
-        `We apologize for any inconvenience.\n`;
+      statusMessage +=
+        `*Book a New Slot:*\n${bookingUrl}\n\n` + `We apologize for any inconvenience.\n`;
     }
 
     return statusMessage + `Thank you! 🙏`;
   }
 
-  generateUserUpdateMessage(
-    userName: string,
-    changes: string[]
-  ): string {
-    return `🔔 *ACCOUNT UPDATE NOTIFICATION*\n\n` +
+  generateUserUpdateMessage(userName: string, changes: string[]): string {
+    return (
+      `🔔 *ACCOUNT UPDATE NOTIFICATION*\n\n` +
       `Hello *${userName}*,\n\n` +
       `Your account has been updated by our admin team.\n\n` +
-      `*Changes Made:*\n${changes.map(c => `• ${c}`).join('\n')}\n\n` +
+      `*Changes Made:*\n${changes.map((c) => `• ${c}`).join('\n')}\n\n` +
       `If you have any questions, please contact support.\n\n` +
-      `Thank you! 🙏`;
+      `Thank you! 🙏`
+    );
   }
 }
 
 export const adminNotificationService = new AdminNotificationService();
-

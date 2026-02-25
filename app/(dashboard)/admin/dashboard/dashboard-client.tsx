@@ -23,11 +23,7 @@ import { adminFetch } from '@/lib/utils/admin-fetch.client';
 import {
   AdminDashboardSkeleton,
   AdminAnalyticsSkeleton,
-  AuditLogsSkeleton,
-  BookingsSkeleton,
-  BusinessesSkeleton,
   OverviewSkeleton,
-  UsersSkeleton,
   UsersTableBodySkeleton,
 } from '@/components/ui/skeleton';
 import { ROUTES, getAdminDashboardUrl } from '@/lib/utils/navigation';
@@ -41,7 +37,6 @@ import {
   PointElement,
   LineElement,
   BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -1068,8 +1063,6 @@ function BusinessesTab({ page: controlledPage, onPageChange }: ListTabPageProps 
                               (b.location || '').toLowerCase().includes(q)
                           )
                         : businesses;
-                      const totalItems = filtered.length;
-                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
                       const start = (page - 1) * TABLE_PAGE_SIZE;
                       const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
                       return paginated.map((business) => (
@@ -1356,8 +1349,6 @@ function UsersTab({ page: controlledPage, onPageChange }: ListTabPageProps = {})
                               (u.user_type || '').toLowerCase().includes(q)
                           )
                         : users;
-                      const totalItems = filtered.length;
-                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
                       const start = (page - 1) * TABLE_PAGE_SIZE;
                       const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
                       return paginated.map((user) => (
@@ -1622,8 +1613,6 @@ function BookingsTab({ page: controlledPage, onPageChange }: ListTabPageProps = 
                                 : false)
                           )
                         : bookings;
-                      const totalItems = filtered.length;
-                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
                       const start = (page - 1) * TABLE_PAGE_SIZE;
                       const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
                       return paginated.map((booking) => (
@@ -1881,7 +1870,6 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     hasFilters,
   ]);
 
-  const sentenceCase = (s: string) => (s.length ? s[0].toUpperCase() + s.slice(1) : s);
   const humanAction = (action: string) =>
     action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -2241,8 +2229,6 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                             );
                           })
                         : logs;
-                      const totalItems = filtered.length;
-                      const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
                       const start = (page - 1) * TABLE_PAGE_SIZE;
                       const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
                       return paginated.map((log, idx) => (

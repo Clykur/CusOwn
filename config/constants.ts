@@ -187,7 +187,10 @@ export const SUCCESS_MESSAGES = {
   USER_BLOCKED: 'User blocked successfully',
   USER_UNBLOCKED: 'User unblocked successfully',
   USER_DELETED: 'User deleted successfully',
-  BOOKING_REVERTED_TO_PENDING: 'Booking reverted to pending',
+  ACCOUNT_DELETED:
+    'Your account and associated business data have been removed from the platform. For administrative and recovery purposes, your data will be securely stored for up to 30 days before being permanently deleted.',
+  ACCOUNT_RESTORED: 'Account restored successfully',
+ BOOKING_REVERTED_TO_PENDING: 'Booking reverted to pending',
 } as const;
 
 /** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */

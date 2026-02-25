@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getSecureResourceUrl, isValidUUID } from '@/lib/utils/security';
 import { env } from '@/config/env';
 import { successResponse, errorResponse } from '@/lib/utils/response';

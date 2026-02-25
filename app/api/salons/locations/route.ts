@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { successResponse, errorResponse } from '@/lib/utils/response';
+import { successResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
+import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
 
 export async function GET() {
   try {
@@ -17,10 +18,11 @@ export async function GET() {
         { status: 500 }
       );
     }
-    
-    const { data, error } = await supabaseAdmin
-      .from('businesses')
-      .select('location');
+
+    // Only include locations from active, non-deleted businesses
+    let query = supabaseAdmin.from('businesses').select('location');
+    query = applyActiveBusinessFilters(query);
+    const { data, error } = await query;
 
     if (error) {
       console.error('[Locations API] Database error:', error);
@@ -59,4 +61,3 @@ export async function GET() {
     );
   }
 }
-

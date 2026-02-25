@@ -10,20 +10,22 @@ export interface UPIPaymentParams {
 }
 
 export function generateUPIPaymentLink(params: UPIPaymentParams): string {
-  const { amountCents, paymentId, bookingId, customerName, transactionId } = params;
-  
+  const { amountCents, bookingId, customerName, transactionId } = params;
+
   const amountRupees = (amountCents / 100).toFixed(2);
   const merchantVpa = env.payment.upiMerchantVpa;
   const merchantName = env.payment.upiMerchantName;
-  
+
   if (!merchantVpa) {
     throw new Error('UPI merchant VPA not configured');
   }
 
-  const transactionNote = encodeURIComponent(`Booking ${bookingId.substring(0, 8)} - ${customerName}`);
-  
+  const transactionNote = encodeURIComponent(
+    `Booking ${bookingId.substring(0, 8)} - ${customerName}`
+  );
+
   const upiLink = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountRupees}&cu=INR&tn=${transactionNote}&tr=${transactionId}`;
-  
+
   return upiLink;
 }
 
@@ -58,11 +60,8 @@ export function verifyUPIWebhookSignature(
     const hmac = createHmac('sha256', secret);
     hmac.update(payload);
     const expectedSignature = hmac.digest('hex');
-    
-    return timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
     return false;
   }
@@ -90,9 +89,8 @@ export function parseUPIWebhookPayload(body: any): {
       return null;
     }
 
-    const amountCents = typeof amount === 'number' 
-      ? Math.round(amount * 100) 
-      : parseInt(String(amount), 10);
+    const amountCents =
+      typeof amount === 'number' ? Math.round(amount * 100) : parseInt(String(amount), 10);
 
     const normalizedStatus = status.toLowerCase();
     if (normalizedStatus !== 'success' && normalizedStatus !== 'failed') {

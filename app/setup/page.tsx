@@ -11,7 +11,7 @@ import {
   BUSINESS_CATEGORIES_FALLBACK,
 } from '@/config/constants';
 import { CreateSalonInput } from '@/types';
-import { handleApiError, logError } from '@/lib/utils/error-handler';
+import { logError } from '@/lib/utils/error-handler';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
@@ -66,8 +66,6 @@ export default function SetupPage() {
 
     const { getUserState } = await import('@/lib/utils/user-state');
     const stateResult = await getUserState(sessionUser.id);
-
-    const isOwner = stateResult.businessCount >= 1;
 
     /**
      * RULES:

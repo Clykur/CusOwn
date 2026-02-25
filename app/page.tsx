@@ -6,13 +6,51 @@ import Image from 'next/image';
 import { ROUTES } from '@/lib/utils/navigation';
 import { PublicHeader } from '@/components/layout/public-header';
 
+/** Read cusown_user_role cookie. */
+function getUserRoleCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const m = document.cookie.match(/(?:^|;\s*)cusown_user_role=([^;]*)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+function getDashboardForRole(role: string): string {
+  switch (role) {
+    case 'admin':
+      return '/admin/dashboard';
+    case 'owner':
+      return '/owner/dashboard';
+    default:
+      return '/customer/dashboard';
+  }
+}
+
 /**
  * Public landing page. No auth required; zero client session fetch.
  * Redirects to login with error message when OAuth fails and user lands on /?error=...
+ * Redirects authenticated users (detected via role cookie) to their dashboard.
  */
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // If user is authenticated (role cookie present), redirect to dashboard.
+  // This catches bfcache restores when back-button brings them here.
+  useEffect(() => {
+    const role = getUserRoleCookie();
+    if (role) {
+      router.replace(getDashboardForRole(role));
+      return;
+    }
+    // Also handle bfcache page restoration (persisted pages)
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        const r = getUserRoleCookie();
+        if (r) window.location.replace(getDashboardForRole(r));
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [router]);
 
   useEffect(() => {
     const error = searchParams?.get('error');

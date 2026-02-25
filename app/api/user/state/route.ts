@@ -3,7 +3,7 @@
  * Uses getServerUser + getUserState; no client-side auth.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { getUserState } from '@/lib/utils/user-state';
 import { errorResponse, successResponse } from '@/lib/utils/response';

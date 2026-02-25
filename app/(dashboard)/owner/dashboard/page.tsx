@@ -6,7 +6,8 @@ import BookingCard from '@/components/owner/booking-card';
 import PullToRefresh from '@/components/ui/pull-to-refresh';
 import NoShowButton from '@/components/booking/no-show-button';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
-import { BookingWithDetails, Slot } from '@/types';
+import { BookingWithDetails } from '@/types';
+import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constants';
 
 interface DashboardStats {
@@ -23,7 +24,6 @@ export default function OwnerDashboardPage() {
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
-  const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -119,6 +119,7 @@ export default function OwnerDashboardPage() {
     return () => ac.abort();
   }, [fetchBookings]);
 
+  // Optimistic Accept/Reject with Undo
   const handleAccept = async (bookingId: string) => {
     if (processingBookingId) return;
     if (!confirm('Are you sure you want to accept this booking?')) return;
@@ -129,6 +130,7 @@ export default function OwnerDashboardPage() {
       const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
       const response = await fetch(`/api/bookings/${bookingId}/accept`, {
         method: 'POST',
         headers,
@@ -162,6 +164,7 @@ export default function OwnerDashboardPage() {
       const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
       const response = await fetch(`/api/bookings/${bookingId}/reject`, {
         method: 'POST',
         headers,
@@ -262,37 +265,6 @@ export default function OwnerDashboardPage() {
     },
     [processingBookingId, fetchBookings]
   );
-
-  const handleCancel = async (bookingId: string) => {
-    if (processingBookingId) return;
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-    setProcessingBookingId(bookingId);
-    setActionError(null);
-    setActionSuccess(null);
-    try {
-      const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ cancelled_by: 'owner' }),
-      });
-      if (response.ok) {
-        setActionSuccess('Booking cancelled');
-        setTimeout(() => setActionSuccess(null), 2000);
-        fetchBookings();
-      } else {
-        const result = await response.json();
-        setActionError(result.error || 'Failed to cancel booking');
-      }
-    } catch (err) {
-      setActionError('Failed to cancel booking');
-    } finally {
-      setProcessingBookingId(null);
-    }
-  };
 
   const canUndo = useCallback((b: BookingWithDetails) => {
     if (b.status !== 'confirmed' && b.status !== 'rejected') return false;
@@ -536,7 +508,7 @@ export default function OwnerDashboardPage() {
                           <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium">
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex flex-wrap gap-2 items-center">
                             {booking.status === 'pending' && (
                               <>
                                 <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
@@ -545,64 +517,20 @@ export default function OwnerDashboardPage() {
                                 <button
                                   onClick={() => handleAccept(booking.id)}
                                   disabled={processingBookingId === booking.id}
-                                  className="h-9 w-9 flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                                  className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
                                   title="Accept"
+                                  aria-label="Accept booking"
                                 >
-                                  {processingBookingId === booking.id ? (
-                                    <svg
-                                      className="animate-spin h-5 w-5"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                      />
-                                      <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8v8z"
-                                      />
-                                    </svg>
-                                  ) : (
-                                    <svg
-                                      className="h-5 w-5"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                  )}
+                                  <IconCheck className="h-6 w-6" />
                                 </button>
                                 <button
                                   onClick={() => handleReject(booking.id)}
                                   disabled={processingBookingId === booking.id}
-                                  className="h-9 w-9 flex items-center justify-center bg-rose-900 text-white rounded-lg hover:bg-rose-800"
+                                  className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
                                   title="Reject"
+                                  aria-label="Reject booking"
                                 >
-                                  <svg
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
+                                  <IconCross className="h-6 w-6" />
                                 </button>
                               </>
                             )}

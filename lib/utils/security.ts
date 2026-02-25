@@ -1,19 +1,9 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import type { NextRequest } from 'next/server';
 import { env } from '@/config/env';
 import { getBaseUrl } from '@/lib/utils/url';
 
-/** Get client IP from request (Next 14/15 compatible; ip may be untyped in Next 15). */
-export const getClientIp = (request: NextRequest | undefined): string => {
-  if (!request) return 'unknown';
-  const req = request as NextRequest & { ip?: string };
-  if (req.ip) return req.ip;
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  const real = request.headers.get('x-real-ip');
-  if (real) return real;
-  return 'unknown';
-};
+// Re-export edge-compatible helpers so existing imports keep working
+export { getClientIp } from '@/lib/utils/edge-helpers';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

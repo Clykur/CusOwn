@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
-import { setCacheHeaders, setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 

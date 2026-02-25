@@ -166,12 +166,13 @@ export async function resolveUserAndRedirect(
     redirectUrl = new URL(ROUTES.SELECT_ROLE(), baseUrl).toString();
   }
 
-  // Customer scope: do not redirect to /setup; let them stay on customer dashboard.
+  // Customer scope: do not redirect to onboarding; let them stay on customer dashboard.
   if (
     requireScope === 'customer' &&
     permissions.canAccessCustomer &&
     redirectUrl &&
-    new URL(redirectUrl).pathname === ROUTES.SETUP
+    (new URL(redirectUrl).pathname === ROUTES.SETUP ||
+      new URL(redirectUrl).pathname === '/select-role')
   ) {
     redirectUrl = null;
   }
@@ -187,9 +188,14 @@ export async function resolveUserAndRedirect(
     redirectUrl = redirectUrl ?? new URL(state.redirectUrl ?? ROUTES.HOME, baseUrl).toString();
   }
   if (requireScope === 'owner' && !permissions.canAccessOwner) {
-    const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl);
-    selectRoleUrl.searchParams.set('error', 'not_owner');
-    redirectUrl = selectRoleUrl.toString();
+    // Owner with no business → send to onboarding flow instead of error page
+    if (state.canAccessSetup && (state.userType === 'owner' || state.userType === 'both')) {
+      redirectUrl = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl).toString();
+    } else {
+      const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl);
+      selectRoleUrl.searchParams.set('error', 'not_owner');
+      redirectUrl = selectRoleUrl.toString();
+    }
   }
   if (requireScope === 'customer' && !permissions.canAccessCustomer) {
     const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('customer'), baseUrl);

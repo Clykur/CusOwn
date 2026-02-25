@@ -17,20 +17,19 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   if (sidebarOpen) return null;
 
   // Extract booking link from pathname if it's a specific business dashboard (exclude '/owner/dashboard')
-  const bookingLinkMatch = pathname?.match(/^\/owner\/(?!dashboard$)([^\/]+)$/);
-  const bookingLink = bookingLinkMatch ? bookingLinkMatch[1] : undefined;
   const tabParam = searchParams?.get('tab') ?? null;
 
   const isSetup = pathname === ROUTES.SETUP || pathname === ROUTES.OWNER_SETUP;
-  const isProfile = pathname === ROUTES.PROFILE || pathname === ROUTES.OWNER_PROFILE;
+  const isProfile =
+    pathname === ROUTES.OWNER_PROFILE ||
+    pathname === '/owner/profile' ||
+    pathname?.startsWith('/owner/profile');
 
   // Determine a single active tab value. Priority: explicit `tab` query -> businesses route -> business instance -> dashboard -> others
   let activeTab: string | null = null;
   if (tabParam) {
     activeTab = tabParam;
-  } else if (pathname === '/owner/businesses') {
-    activeTab = 'businesses';
-  } else if (bookingLink && pathname?.startsWith(`/owner/${bookingLink}`)) {
+  } else if (pathname === '/owner/businesses' || pathname?.startsWith('/owner/businesses')) {
     activeTab = 'businesses';
   } else if (pathname === ROUTES.OWNER_DASHBOARD_BASE || pathname?.startsWith('/owner/dashboard')) {
     activeTab = 'dashboard';
@@ -80,20 +79,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
       ),
     },
     {
-      name: 'Create',
-      href: ROUTES.OWNER_SETUP,
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      ),
-      activeIcon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 4v16m8-8H4" />
-        </svg>
-      ),
-    },
-    {
       name: 'Profile',
       href: ROUTES.OWNER_PROFILE,
       icon: (
@@ -116,7 +101,12 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
 
   const isActive = (href: string) => {
     if (href === ROUTES.OWNER_SETUP || href === ROUTES.SETUP) return activeTab === 'create';
-    if (href === ROUTES.OWNER_PROFILE || href === ROUTES.PROFILE) return activeTab === 'profile';
+    if (href === ROUTES.OWNER_PROFILE || href === '/owner/profile' || href === pathname)
+      return (
+        activeTab === 'profile' ||
+        pathname === '/owner/profile' ||
+        pathname?.startsWith('/owner/profile')
+      );
 
     // hrefs for dashboard tabs use ?tab=...
     const tabMatch = href.match(/\?tab=(.+)$/);

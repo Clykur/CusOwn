@@ -5,7 +5,6 @@ import { paymentService } from '@/services/payment.service';
 import { verifyUPIWebhookSignature, parseUPIWebhookPayload } from '@/lib/utils/upi-payment';
 import { createHash } from 'crypto';
 import { env } from '@/config/env';
-import { ERROR_MESSAGES } from '@/config/constants';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */

@@ -10,14 +10,17 @@ let supabaseAdminInstance: SupabaseClient | null = null;
 const createSupabaseAdmin = (): SupabaseClient | null => {
   // Check environment variables directly to ensure they're loaded
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || env.supabase.url?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || env.supabase.serviceRoleKey?.trim();
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || env.supabase.serviceRoleKey?.trim();
 
   if (!url || !serviceRoleKey || url === '' || serviceRoleKey === '') {
     // Only warn in development and if we're actually missing values
     // Check if we're in Node.js environment (not browser)
-    const isNode = typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
-    if (process.env.NODE_ENV === 'development' && isNode) {
-      console.warn('⚠️  Supabase credentials not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local');
+    const isServer = typeof window === 'undefined';
+    if (process.env.NODE_ENV === 'development' && isServer) {
+      console.warn(
+        '⚠️  Supabase credentials not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local'
+      );
     }
     return null;
   }
@@ -65,4 +68,3 @@ export const requireSupabaseAdmin = (): SupabaseClient => {
   }
   return supabaseAdmin;
 };
-

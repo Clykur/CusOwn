@@ -227,21 +227,6 @@ export default function BookingStatusPage() {
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-black text-white';
-      case 'pending':
-        return 'bg-gray-200 text-black';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'cancelled':
-        return 'bg-gray-300 text-black';
-      default:
-        return 'bg-gray-200 text-black';
-    }
-  };
-
   const getStatusMessage = (status: string) => {
     if (status === 'confirmed' && booking.no_show) return UI_BOOKING_STATE.NO_SHOW;
     switch (status) {

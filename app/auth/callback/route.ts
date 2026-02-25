@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
   const selectedRole = pendingRoleCookie ?? roleFromQuery;
 
   let profile: Awaited<ReturnType<typeof userService.getUserProfile>> = null;
+  let isNewUser = false;
   try {
     profile = await userService.getUserProfile(data.user.id);
   } catch {
@@ -151,6 +152,7 @@ export async function GET(request: NextRequest) {
     const fullName = data.user.user_metadata?.full_name ?? data.user.email?.split('@')[0] ?? null;
 
     if (!profile) {
+      isNewUser = true;
       const initialRole = selectedRole ?? 'customer';
       profile = await userService.upsertUserProfile(data.user.id, {
         full_name: fullName,
@@ -176,8 +178,8 @@ export async function GET(request: NextRequest) {
     const { getUserState } = await import('@/lib/utils/user-state');
     const stateResult = await getUserState(data.user.id);
     const stateRedirect = stateResult.redirectUrl;
-    // Do not send customer intent to setup: getUserState may return /setup for "both, no business"
-    if (stateRedirect && !(stateRedirect === ROUTES.SETUP && selectedRole === 'customer')) {
+    // Do not send customer intent to onboarding: getUserState may return /select-role for "both, no business"
+    if (stateRedirect && !(stateRedirect.includes('/select-role') && selectedRole === 'customer')) {
       console.log('[AUTH] callback: positive — redirect from getUserState', {
         userId: data.user.id.substring(0, 8) + '...',
         redirectUrl: stateRedirect,
@@ -200,6 +202,14 @@ export async function GET(request: NextRequest) {
     return redirectToSuccess(ROUTES.CUSTOMER_DASHBOARD, baseUrl, cookiesToForward);
   }
   if (profile?.user_type === 'owner' || profile?.user_type === 'both') {
+    // New owner (first login, no business yet) → onboarding, not dashboard
+    if (isNewUser) {
+      console.log('[AUTH] callback: positive — redirect new owner to onboarding', {
+        userId: data.user.id.substring(0, 8) + '...',
+        target: 'select-role?role=owner',
+      });
+      return redirectToSuccess(ROUTES.SELECT_ROLE('owner'), baseUrl, cookiesToForward);
+    }
     console.log('[AUTH] callback: positive — redirect owner/both', {
       userId: data.user.id.substring(0, 8) + '...',
       target: 'owner_dashboard',
@@ -210,11 +220,11 @@ export async function GET(request: NextRequest) {
     return redirectToSuccess(ROUTES.ADMIN_DASHBOARD, baseUrl, cookiesToForward);
   }
   if (selectedRole === 'owner') {
-    console.log('[AUTH] callback: positive — redirect setup (new owner)', {
+    console.log('[AUTH] callback: positive — redirect onboarding (new owner)', {
       userId: data.user.id.substring(0, 8) + '...',
-      target: 'setup',
+      target: 'select-role?role=owner',
     });
-    return redirectToSuccess(ROUTES.SETUP, baseUrl, cookiesToForward);
+    return redirectToSuccess(ROUTES.SELECT_ROLE('owner'), baseUrl, cookiesToForward);
   }
   console.log('[AUTH] callback: positive — redirect customer (default)', {
     userId: data.user.id.substring(0, 8) + '...',

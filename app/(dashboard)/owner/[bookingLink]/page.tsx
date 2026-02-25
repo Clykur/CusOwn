@@ -138,7 +138,7 @@ export default function OwnerDashboardPage() {
         if (!response.ok) {
           // Handle authentication/authorization errors
           if (response.status === 401) {
-            // Not authenticated - redirect to login
+            // Not authenticated - redirect to landing (middleware will handle)
             window.location.href = '/auth/login';
             return;
           }
@@ -437,21 +437,6 @@ export default function OwnerDashboardPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-black text-white';
-      case 'pending':
-        return 'bg-gray-200 text-black';
-      case 'rejected':
-        return 'bg-gray-300 text-black';
-      case 'cancelled':
-        return 'bg-gray-100 text-black';
-      default:
-        return 'bg-gray-100 text-black';
-    }
   };
 
   if (loading) {

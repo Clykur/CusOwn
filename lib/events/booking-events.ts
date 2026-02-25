@@ -1,5 +1,5 @@
 import { eventBus } from './event-bus';
-import { Booking, BookingWithDetails } from '@/types';
+import { BookingWithDetails } from '@/types';
 
 export type BookingCreatedEvent = { booking: BookingWithDetails };
 export type BookingConfirmedEvent = { booking: BookingWithDetails };
@@ -18,6 +18,9 @@ export const emitBookingRejected = async (booking: BookingWithDetails): Promise<
   await eventBus.emit<BookingRejectedEvent>('booking:rejected', { booking });
 };
 
-export const emitBookingCancelled = async (booking: BookingWithDetails, cancelledBy: string): Promise<void> => {
+export const emitBookingCancelled = async (
+  booking: BookingWithDetails,
+  cancelledBy: string
+): Promise<void> => {
   await eventBus.emit<BookingCancelledEvent>('booking:cancelled', { booking, cancelledBy });
 };

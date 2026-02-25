@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/utils/navigation';
-import { UI_CUSTOMER } from '@/config/constants';
 
 const AdminSidebar = dynamic(
   () => import('@/components/admin/admin-sidebar').then((m) => m.default),
@@ -125,37 +124,6 @@ export default function UniversalSidebar() {
   }, [cleanPath, sidebarType]);
 
   if (loading || !sidebarType) return null;
-
-  const getMobileHeaderTitle = () => {
-    // Owner base dashboard
-    if (cleanPath === ROUTES.OWNER_DASHBOARD_BASE) {
-      return 'Owner Dashboard';
-    }
-
-    // Owner dynamic business dashboard (/owner/{bookingLink})
-    if (cleanPath.startsWith('/owner/') && cleanPath !== '/owner/businesses') {
-      return 'Owner Dashboard';
-    }
-
-    // Owner businesses list
-    if (cleanPath === '/owner/businesses') {
-      return 'My Businesses';
-    }
-
-    if (cleanPath === ROUTES.SETUP) return 'Create Business';
-    if (cleanPath === ROUTES.PROFILE) return 'Profile';
-
-    // Customer (generic, multi-service)
-    if (cleanPath === ROUTES.CUSTOMER_DASHBOARD) return UI_CUSTOMER.NAV_MY_ACTIVITY;
-    if (cleanPath === ROUTES.CUSTOMER_CATEGORIES) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
-    if (cleanPath === ROUTES.CATEGORIES) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
-    if (cleanPath === ROUTES.SALON_LIST) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
-    if (cleanPath === ROUTES.CUSTOMER_SALON_LIST) return UI_CUSTOMER.NAV_EXPLORE_SERVICES;
-    if (cleanPath.startsWith('/salon/')) return UI_CUSTOMER.CATEGORY_CTA;
-    if (cleanPath.startsWith('/booking/')) return UI_CUSTOMER.HEADER_BOOKING_DETAILS;
-
-    return null;
-  };
 
   return (
     <>

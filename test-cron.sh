@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test script for cron jobs
-# Usage: ./test-cron.sh [reminders|expire|cleanup|health]
+# Usage: ./test-cron.sh [reminders|expire|cleanup|cleanup-accounts|health]
 
 CRON_SECRET="${CRON_SECRET:-your-random-secret-key-here}"
 BASE_URL="${BASE_URL:-http://localhost:3000}"
@@ -25,6 +25,12 @@ case "$1" in
       -H "Authorization: Bearer ${CRON_SECRET}" \
       -H "Content-Type: application/json"
     ;;
+  cleanup-accounts)
+    echo "Testing deleted accounts cleanup cron job..."
+    curl -X POST "${BASE_URL}/api/cron/cleanup-deleted-accounts" \
+      -H "Authorization: Bearer ${CRON_SECRET}" \
+      -H "Content-Type: application/json"
+    ;;
   health)
     echo "Testing health check cron job..."
     curl -X GET "${BASE_URL}/api/cron/health-check" \
@@ -32,7 +38,7 @@ case "$1" in
       -H "Content-Type: application/json"
     ;;
   *)
-    echo "Usage: $0 [reminders|expire|cleanup|health]"
+    echo "Usage: $0 [reminders|expire|cleanup|cleanup-accounts|health]"
     echo ""
     echo "Set CRON_SECRET and BASE_URL environment variables:"
     echo "  export CRON_SECRET='your-secret-here'"

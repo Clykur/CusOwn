@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClientIp } from '@/lib/utils/security';
-import { supabaseAdmin } from '@/lib/supabase/server';
 
 interface RateLimitEntry {
   key: string;

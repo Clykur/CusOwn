@@ -6,8 +6,6 @@
 
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 
-const RESOURCE_TYPE = 'permission';
-
 /** role_id -> Set(permission_name). Built from role_permissions + permissions; refreshed by TTL. */
 let rolePermissionsMap: Map<string, Set<string>> | null = null;
 /** Last time the role-permissions map was built (ms). Used for TTL refresh. */

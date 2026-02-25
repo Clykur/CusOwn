@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
-import { Header } from '@/components/layout/header';
 
 export default function CategoriesPage() {
   return (

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
+import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
 
@@ -32,7 +32,6 @@ export default function OwnerSidebar({
   const { initialUser } = useOwnerSession();
   const [navigating, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
-  const loading = false;
 
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
@@ -116,7 +115,7 @@ export default function OwnerSidebar({
     hasBusinesses === false ? navItems.filter((i) => !i.requiresBusiness) : navItems;
 
   // ===============================
-  // ✅ FIXED ACTIVE STATE (ONLY CHANGE)
+  // STRICT ACTIVE STATE LOGIC (EXACT MATCH ONLY)
   // ===============================
   const isActive = (name: string) => {
     // Dashboard
@@ -159,7 +158,7 @@ export default function OwnerSidebar({
   // ===============================
   return (
     <>
-      {/* Sidebar overlay for mobile */}
+      {/* Sidebar overlay for mobile/medium screens: hide sidebar below lg */}
       {sidebarOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -167,9 +166,9 @@ export default function OwnerSidebar({
         />
       )}
 
-      {/* Sidebar - UI aligned with admin sidebar */}
+      {/* Sidebar - only visible on desktop (lg and up) */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
+        className={`hidden lg:block fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
@@ -180,35 +179,12 @@ export default function OwnerSidebar({
               <h2 className="text-lg font-semibold tracking-tight text-slate-900">CusOwn</h2>
               <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
             </div>
-            {/* Close button shown inside sidebar on mobile to avoid overlap */}
-            <div className="lg:hidden">
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
-                aria-label="Close menu"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
           </div>
 
-          {/* Navigation - no loading bar; match admin sidebar style */}
+          {/* Navigation - match admin sidebar style */}
           <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
             {navigation.map((item) => {
-              const active = isActive(item.name);
-
+              const active = isActive(item.href);
               return (
                 <Link
                   key={item.name}
@@ -261,8 +237,10 @@ export default function OwnerSidebar({
                   <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
                 </div>
               </Link>
-              <a
-                href={`/api/auth/signout?redirect_to=${encodeURIComponent(ROUTES.SELECT_ROLE('owner'))}`}
+              <button
+                onClick={() => {
+                  window.location.href = '/api/auth/signout?redirect_to=%2F';
+                }}
                 className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign out"
               >
@@ -274,7 +252,7 @@ export default function OwnerSidebar({
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                   />
                 </svg>
-              </a>
+              </button>
             </div>
           </div>
         </div>

@@ -242,15 +242,13 @@ async function computeUserState(
 
     // S3: Owner, no business
     if (userType === 'owner' && businessCount === 0) {
-      // Check if we're already on setup page to provide context-aware message
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
       const result = {
         state: 'S3' as const,
         authenticated: true,
         profileExists: true,
         userType: 'owner' as const,
         businessCount: 0,
-        redirectUrl: ROUTES.SETUP, // MANDATORY REDIRECT
+        redirectUrl: ROUTES.SELECT_ROLE('owner'), // Onboarding flow handles setup inline
         reason: 'owner_no_business',
         canAccessOwnerDashboard: false, // CRITICAL: Cannot access without business
         canAccessCustomerDashboard: false,
@@ -306,7 +304,7 @@ async function computeUserState(
         profileExists: true,
         userType: 'both' as const,
         businessCount: 0,
-        redirectUrl: ROUTES.SETUP, // MANDATORY REDIRECT for owner access
+        redirectUrl: ROUTES.SELECT_ROLE('owner'), // Onboarding flow handles setup inline
         reason: 'both_no_business',
         canAccessOwnerDashboard: false, // CRITICAL: Cannot access without business
         canAccessCustomerDashboard: true,

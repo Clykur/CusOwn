@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { validateCSRFToken } from '@/lib/security/csrf';
 
 /**
  * GET /api/user/profile
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Get user profile
     const profile = await userService.getUserProfile(user.id);
-    
+
     // Get additional account data
     let businessCount = 0;
     let bookingCount = 0;
@@ -26,7 +27,11 @@ export async function GET(request: NextRequest) {
 
     if (profile) {
       // Get business count if owner
-      if (profile.user_type === 'owner' || profile.user_type === 'both' || profile.user_type === 'admin') {
+      if (
+        profile.user_type === 'owner' ||
+        profile.user_type === 'both' ||
+        profile.user_type === 'admin'
+      ) {
         try {
           businesses = await userService.getUserBusinesses(user.id);
           businessCount = businesses.length;
@@ -37,7 +42,11 @@ export async function GET(request: NextRequest) {
       }
 
       // Get booking count if customer
-      if (profile.user_type === 'customer' || profile.user_type === 'both' || profile.user_type === 'admin') {
+      if (
+        profile.user_type === 'customer' ||
+        profile.user_type === 'both' ||
+        profile.user_type === 'admin'
+      ) {
         try {
           const bookings = await userService.getUserBookings(user.id);
           bookingCount = bookings.length;
@@ -60,14 +69,14 @@ export async function GET(request: NextRequest) {
         businessCount,
         bookingCount,
       },
-      businesses: businesses.map(b => ({
+      businesses: businesses.map((b) => ({
         id: b.id,
         salon_name: b.salon_name,
         booking_link: b.booking_link,
         location: b.location || null,
         created_at: b.created_at,
       })),
-      recentBookings: recentBookings.map(b => ({
+      recentBookings: recentBookings.map((b) => ({
         id: b.id,
         booking_id: b.booking_id,
         status: b.status,
@@ -124,6 +133,52 @@ export async function PATCH(request: NextRequest) {
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile';
+    return errorResponse(message, 500);
+  }
+}
+
+/**
+ * DELETE /api/user/profile
+ * Soft delete user account and all associated businesses.
+ * Data is retained for 30 days for admin/recovery purposes.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getServerUser(request);
+    if (!user) {
+      return errorResponse('Authentication required', 401);
+    }
+
+    // Verify CSRF token for state-changing operation
+    const csrfValid = await validateCSRFToken(request);
+    if (!csrfValid) {
+      return errorResponse('Invalid CSRF token', 403);
+    }
+
+    // Get optional reason from request body
+    let reason = 'User requested account deletion';
+    try {
+      const body = await request.json();
+      if (body.reason && typeof body.reason === 'string') {
+        reason = body.reason.substring(0, 500); // Limit reason length
+      }
+    } catch {
+      // Body is optional
+    }
+
+    // Soft delete the account
+    const result = await userService.softDeleteAccount(user.id, reason);
+
+    const response = successResponse({
+      ...result,
+      message:
+        'Your account and associated business data have been removed from the platform. For administrative and recovery purposes, your data will be securely stored for up to 30 days before being permanently deleted.',
+    });
+    setNoCacheHeaders(response);
+    return response;
+  } catch (error) {
+    console.error('[PROFILE_API] Delete error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to delete account';
     return errorResponse(message, 500);
   }
 }

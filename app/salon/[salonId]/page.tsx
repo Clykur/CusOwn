@@ -5,16 +5,14 @@ import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigat
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { API_ROUTES, ERROR_MESSAGES } from '@/config/constants';
+import { API_ROUTES } from '@/config/constants';
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime, formatPhoneNumber } from '@/lib/utils/string';
-import { isSlotTimePassed, isTimeInRange } from '@/lib/utils/time';
-import { whatsappService } from '@/services/whatsapp.service';
-import { handleApiError, logError } from '@/lib/utils/error-handler';
+import { isTimeInRange } from '@/lib/utils/time';
+import { logError } from '@/lib/utils/error-handler';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { isValidUUID } from '@/lib/utils/security';
-import Breadcrumb from '@/components/ui/breadcrumb';
 import { RedirectSkeleton } from '@/components/ui/skeleton';
 
 export default function SalonDetailPage() {
