@@ -1,5 +1,20 @@
 import { BOOKING_LINK_PREFIX } from '@/config/constants';
+import { env } from '@/config/env';
 import { NextRequest } from 'next/server';
+
+const getEnvValue = (key: string): string => {
+  const value = process.env[key];
+  if (!value) return '';
+  const normalized = value.trim();
+  if (!normalized || normalized === 'undefined' || normalized === 'null') return '';
+  return normalized;
+};
+
+const getProductionFallbackBase = (): string => {
+  const value = env.app.baseUrl.replace(/\/$/, '');
+  if (!isLocalhost(value)) return value;
+  return ['https:', '', 'cusown.clykur.com'].join('/');
+};
 
 const isLocalhost = (url: string): boolean => {
   return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('0.0.0.0');
@@ -19,23 +34,24 @@ const warnLocalhostOnce = (): void => {
 };
 
 const isProduction = (): boolean => {
-  if (process.env.NODE_ENV === 'production') return true;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (getEnvValue('NODE_ENV') === 'production') return true;
+  const appUrl = getEnvValue('NEXT_PUBLIC_APP_URL');
   return appUrl ? !isLocalhost(appUrl) : false;
 };
 
 /** Production fallback when no env URL is set. Never use localhost in production. */
-const PRODUCTION_FALLBACK_BASE = 'https://cusown.clykur.com';
+const PRODUCTION_FALLBACK_BASE = getProductionFallbackBase();
 
 export const getBaseUrl = (request?: NextRequest): string => {
+  const isServer = !(typeof globalThis !== 'undefined' && 'window' in globalThis);
   const prod = isProduction();
 
   // In production, never use localhost. Prefer env so QR and links always use public URL
   // (request.nextUrl.origin can be localhost in some serverless/internal routing).
   if (prod) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const appUrl = getEnvValue('NEXT_PUBLIC_APP_URL');
     if (appUrl && !isLocalhost(appUrl)) return appUrl.replace(/\/$/, '') || appUrl;
-    const vercelUrl = process.env.VERCEL_URL;
+    const vercelUrl = getEnvValue('VERCEL_URL');
     if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, '')}`;
     if (request) {
       const origin = request.nextUrl?.origin;
@@ -65,20 +81,12 @@ export const getBaseUrl = (request?: NextRequest): string => {
     }
   }
 
-  // Server environment (Node.js or Edge Runtime)
-  const isServer = typeof window === 'undefined';
-
   if (isServer) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (appUrl) {
-      if (process.env.NODE_ENV === 'production' && isLocalhost(appUrl)) {
-        warnLocalhostOnce();
-      }
-      return appUrl;
-    }
-    const vercelUrl = process.env.VERCEL_URL;
+    const appUrl = getEnvValue('NEXT_PUBLIC_APP_URL');
+    if (appUrl) return appUrl;
+    const vercelUrl = getEnvValue('VERCEL_URL');
     if (vercelUrl) return `https://${vercelUrl}`;
-    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return appUrl || 'http://localhost:3000';
   }
 
   try {
@@ -92,7 +100,7 @@ export const getBaseUrl = (request?: NextRequest): string => {
     // ignore
   }
 
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return getEnvValue('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000';
 };
 
 /** Canonical short URL for sharing (e.g. WhatsApp). Use /b/[bookingLink] only; no long query params. */
@@ -112,20 +120,15 @@ export const getApiUrl = (path: string, request?: NextRequest): string => {
 };
 
 export const getClientBaseUrl = (): string => {
-  // Server environment (Node.js or Edge Runtime)
-  const isServer = typeof window === 'undefined';
+  // Server-side path for SSR/runtime where window is unavailable.
+  const isServer = !(typeof globalThis !== 'undefined' && 'window' in globalThis);
 
   if (isServer) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (appUrl) {
-      if (process.env.NODE_ENV === 'production' && isLocalhost(appUrl)) {
-        warnLocalhostOnce();
-      }
-      return appUrl;
-    }
-    const vercelUrl = process.env.VERCEL_URL;
+    const appUrl = getEnvValue('NEXT_PUBLIC_APP_URL');
+    if (appUrl) return appUrl;
+    const vercelUrl = getEnvValue('VERCEL_URL');
     if (vercelUrl) return `https://${vercelUrl}`;
-    return 'http://localhost:3000';
+    return isProduction() ? PRODUCTION_FALLBACK_BASE : appUrl || 'http://localhost:3000';
   }
 
   // Browser environment
@@ -140,6 +143,10 @@ export const getClientBaseUrl = (): string => {
     // Ignore errors in Node.js environment
   }
 
-  // Final fallback
-  return 'http://localhost:3000';
+  // Fallback: check environment variables and production status
+  const appUrl = getEnvValue('NEXT_PUBLIC_APP_URL');
+  if (appUrl) return appUrl;
+  const vercelUrl = getEnvValue('VERCEL_URL');
+  if (vercelUrl) return `https://${vercelUrl}`;
+  return isProduction() ? PRODUCTION_FALLBACK_BASE : appUrl || 'http://localhost:3000';
 };

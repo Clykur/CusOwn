@@ -9,7 +9,7 @@ import { getCSRFToken } from '@/lib/utils/csrf-client';
 export default function EditBusinessPage() {
   const router = useRouter();
   const params = useParams();
-  const businessId = params.id as string;
+  const businessId = typeof params?.id === 'string' ? params.id : '';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -2,8 +2,13 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Silence "multiple lockfiles" warning by pinning the tracing root to this project.
-  outputFileTracingRoot: path.resolve(__dirname),
+  // Allow strict/CI builds to use an isolated dist directory
+  // so dev `.next` artifacts cannot interfere with production builds.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Keep console logs in development, strip noisy logs in production bundles.
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
   // Disabled to avoid double-mount/render storms that trigger repeated GET /admin/dashboard.
   reactStrictMode: false,
   // Disable static optimization for better dev experience
@@ -15,7 +20,15 @@ const nextConfig = {
   },
   // Keep Supabase server-only out of client bundles; avoid custom splitChunks
   // so server and client chunk paths stay in sync (fixes vendor-chunks/@supabase.js ENOENT).
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Prevent intermittent ENOENT on .next/cache/*.pack.gz during dev
+    // by using in-memory cache instead of filesystem pack cache.
+    if (dev) {
+      config.cache = {
+        type: 'memory',
+      };
+    }
+
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
@@ -28,18 +41,46 @@ const nextConfig = {
   // Resolve @supabase on server via Node (avoids broken vendor chunk path in server bundle).
   serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com",
+      "frame-src 'self' https://api.razorpay.com",
+      "form-action 'self'",
+      'upgrade-insecure-requests',
+    ].join('; ');
+
     return [
       {
         // Apply security headers to all routes except static assets
         source: '/:path*',
         headers: [
           {
+            key: 'Content-Security-Policy',
+            value: csp,
+          },
+          {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
           {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
             key: 'X-Frame-Options',
             value: 'DENY',
+          },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'camera=(), microphone=(), geolocation=(), payment=(self), usb=(), accelerometer=(), gyroscope=()',
           },
           {
             key: 'X-XSS-Protection',
@@ -48,6 +89,14 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-site',
           },
         ],
       },

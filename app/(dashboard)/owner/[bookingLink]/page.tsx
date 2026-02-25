@@ -8,21 +8,20 @@ import { API_ROUTES, ERROR_MESSAGES, SLOT_DURATIONS, VALIDATION } from '@/config
 import { Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
-import AnalyticsDashboard from '@/components/analytics/analytics-dashboard';
-import { getCSRFToken } from '@/lib/utils/csrf-client';
+import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { Toast } from '@/components/ui/toast';
 
 export default function OwnerDashboardPage() {
   const params = useParams();
   const router = useRouter();
-  const bookingLink = params.bookingLink as string;
+  const bookingLink = typeof params?.bookingLink === 'string' ? params.bookingLink : '';
   const [salon, setSalon] = useState<Salon | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'slots' | 'downtime' | 'analytics'>('slots');
+  const [activeTab, setActiveTab] = useState<'slots' | 'downtime'>('slots');
   const [holidays, setHolidays] = useState<any[]>([]);
   const [closures, setClosures] = useState<any[]>([]);
   const [newHolidayDate, setNewHolidayDate] = useState('');
@@ -467,25 +466,30 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/owner/businesses"
-          className="lg:hidden flex items-center justify-center p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <svg
-            className="w-6 h-6 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <div className="space-y-2">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-500">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+                return;
+              }
+              router.push('/owner/businesses');
+            }}
+            className="inline-flex items-center rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </Link>
+            ← Back
+          </button>
+          <span>/</span>
+          <Link href="/owner/businesses" className="hover:text-slate-900 transition-colors">
+            Businesses
+          </Link>
+          <span>/</span>
+          <span className="max-w-[14rem] truncate font-medium text-slate-900 sm:max-w-[24rem]">
+            {salon.salon_name}
+          </span>
+        </nav>
 
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate leading-tight">
           {salon.salon_name}
@@ -765,19 +769,9 @@ export default function OwnerDashboardPage() {
           >
             Downtime
           </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
-              activeTab === 'analytics'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Analytics
-          </button>
         </div>
 
-        <div className={`${activeTab === 'analytics' ? 'p-4 sm:p-6' : 'p-4 lg:p-6'}`}>
+        <div className="p-4 lg:p-6">
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
             <input
@@ -1026,7 +1020,9 @@ export default function OwnerDashboardPage() {
             </div>
           ) : (
             <div className="w-full">
-              <AnalyticsDashboard businessId={salon.id} />
+              <p className="text-sm text-gray-600">
+                Analytics has moved to the Owner Dashboard (Analytics tab).
+              </p>
             </div>
           )}
         </div>

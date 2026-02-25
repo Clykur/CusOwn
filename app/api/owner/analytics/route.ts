@@ -22,12 +22,14 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
     const type = searchParams.get('type') || 'overview';
 
-    if (!businessId || !isValidUUID(businessId)) {
+    if (!businessId || (businessId !== 'all' && !isValidUUID(businessId))) {
       return errorResponse('Valid business ID is required', 400);
     }
 
     const userBusinesses = await userService.getUserBusinesses(user.id);
-    const hasAccess = userBusinesses.some((b) => b.id === businessId);
+    const userBusinessIds = userBusinesses.map((business) => business.id);
+    const hasAccess =
+      businessId === 'all' ? userBusinessIds.length > 0 : userBusinessIds.includes(businessId);
 
     if (!hasAccess) {
       return errorResponse('Access denied', 403);
@@ -36,13 +38,33 @@ export async function GET(request: NextRequest) {
     let data;
 
     if (type === 'overview') {
-      data = await analyticsService.getBookingAnalytics(businessId, startDate, endDate);
+      data =
+        businessId === 'all'
+          ? await analyticsService.getBookingAnalyticsForBusinesses(
+              userBusinessIds,
+              startDate,
+              endDate
+            )
+          : await analyticsService.getBookingAnalytics(businessId, startDate, endDate);
     } else if (type === 'daily') {
-      data = await analyticsService.getDailyAnalytics(businessId, startDate, endDate);
+      data =
+        businessId === 'all'
+          ? await analyticsService.getDailyAnalyticsForBusinesses(
+              userBusinessIds,
+              startDate,
+              endDate
+            )
+          : await analyticsService.getDailyAnalytics(businessId, startDate, endDate);
     } else if (type === 'peak-hours') {
-      data = await analyticsService.getPeakHours(businessId, startDate, endDate);
+      data =
+        businessId === 'all'
+          ? await analyticsService.getPeakHoursForBusinesses(userBusinessIds, startDate, endDate)
+          : await analyticsService.getPeakHours(businessId, startDate, endDate);
     } else if (type === 'retention') {
-      data = await analyticsService.getCustomerRetention(businessId);
+      data =
+        businessId === 'all'
+          ? await analyticsService.getCustomerRetentionForBusinesses(userBusinessIds)
+          : await analyticsService.getCustomerRetention(businessId);
     } else {
       return errorResponse('Invalid analytics type', 400);
     }

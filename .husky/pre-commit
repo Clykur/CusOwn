@@ -1,5 +1,3 @@
 #!/bin/sh
-# Pre-commit: auto-format staged files (Prettier + ESLint --fix), then typecheck. Blocks commit on failure.
 set -e
-npx lint-staged --config config/quality/lint-staged.config.js
-npm run type-check
+npm run precommit:strict

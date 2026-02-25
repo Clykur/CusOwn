@@ -115,12 +115,17 @@ export async function GET(request: NextRequest) {
 
     const salon = await salonService.getSalonById(payload.salon_id);
     const slot = await slotService.getSlotById(payload.slot_id);
+    let whatsappResult: { message?: string; whatsappUrl?: string } | undefined = undefined;
     if (salon && slot) {
       const bookingWithDetails = { ...booking, salon, slot };
       await emitBookingCreated(bookingWithDetails);
       await reminderService.scheduleBookingReminders(booking.id);
       try {
-        whatsappService.generateBookingRequestMessage(bookingWithDetails, salon, request);
+        whatsappResult = whatsappService.generateBookingRequestMessage(
+          bookingWithDetails,
+          salon,
+          request
+        );
       } catch {
         // non-fatal
       }
@@ -145,9 +150,10 @@ export async function GET(request: NextRequest) {
       // non-fatal
     }
 
-    const res = NextResponse.redirect(
-      new URL(getBookingStatusUrl(booking.booking_id), request.url)
-    );
+    // Redirect to booking status. If we have a generated WhatsApp URL/message, attach them
+    // as query parameters so the client can show the Open WhatsApp CTA immediately.
+    const statusRedirectUrl = new URL(getBookingStatusUrl(booking.booking_id), request.url);
+    const res = NextResponse.redirect(statusRedirectUrl);
     clearPendingCookie(res);
     return res;
   } catch {

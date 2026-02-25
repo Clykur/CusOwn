@@ -119,8 +119,8 @@ function parsePageParam(value: string | null): number {
 function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = normalizeTab(searchParams.get('tab') ?? undefined);
-  const currentPage = parsePageParam(searchParams.get('page'));
+  const activeTab = normalizeTab(searchParams?.get('tab') ?? undefined);
+  const currentPage = parsePageParam(searchParams?.get('page') ?? null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -156,7 +156,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
     };
   } | null>(null);
 
-  const toastParam = searchParams.get('toast');
+  const toastParam = searchParams?.get('toast');
   useEffect(() => {
     if (toastParam === 'user_deleted' && activeTab === 'users') {
       setUsersToastMessage(SUCCESS_MESSAGES.USER_DELETED);

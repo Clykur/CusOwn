@@ -243,7 +243,11 @@ export const getSecureResourceUrl = (
   baseUrl?: string
 ): string => {
   const token = generateResourceToken(resourceType, resourceId);
-  const url = baseUrl || getBaseUrl();
+  let url = baseUrl || getBaseUrl();
+  // In production, avoid returning localhost from getBaseUrl() (serverless/internal routing can expose localhost).
+  if (process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(url)) {
+    url = (process.env.NEXT_PUBLIC_APP_URL || 'https://cusown.clykur.com').replace(/\/$/, '');
+  }
   const encodedToken = encodeURIComponent(token);
   const urlPatterns: Record<ResourceType, string> = {
     salon: `/salon/${resourceId}?token=${encodedToken}`,

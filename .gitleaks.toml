@@ -1,0 +1,24 @@
+title = "CusOwn Secret Detection Rules"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow harmless placeholders, docs, baseline and build artifacts (no secrets in code)"
+regexes = [
+  '''placeholder[-_a-zA-Z0-9]*''',
+  '''example[-_a-zA-Z0-9]*''',
+  '''localhost(:[0-9]+)?''',
+  '''test-secret''',
+]
+paths = [
+  '''.secrets.baseline''',
+  '''env.template''',
+  '''tsconfig.tsbuildinfo''',
+  '''docs/''',
+  '''README.md''',
+  '''scripts/''',
+  '''.github/''',
+  '''test-cron.sh''',
+]
+

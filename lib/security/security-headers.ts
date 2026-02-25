@@ -15,7 +15,8 @@ function getCspConnectSrc(): string {
   parts.push(
     'https://*.supabase.co',
     'https://accounts.google.com',
-    'https://va.vercel-scripts.com'
+    'https://va.vercel-scripts.com',
+    'https://vercel.live'
   );
   return parts.join(' ');
 }
@@ -27,7 +28,12 @@ function getCspFrameSrc(): string {
 
 /** script-src: self, inline/eval for Next, Vercel Analytics. */
 function getCspScriptSrc(): string {
-  return "'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com";
+  return "'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://vercel.live";
+}
+
+/** script-src-elem: explicit script element sources to avoid fallback issues. */
+function getCspScriptSrcElem(): string {
+  return "'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live";
 }
 
 /** style-src: self and inline for CSS-in-JS. */
@@ -53,6 +59,7 @@ export function getSecurityHeaders(): Record<string, string> {
     `connect-src ${getCspConnectSrc()}`,
     `frame-src ${getCspFrameSrc()}`,
     `script-src ${getCspScriptSrc()}`,
+    `script-src-elem ${getCspScriptSrcElem()}`,
     `style-src ${getCspStyleSrc()}`,
     `img-src ${getCspImgSrc()}`,
     "base-uri 'self'",

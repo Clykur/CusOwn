@@ -19,11 +19,11 @@ function buildLoginUrl(redirectTo: string, role: 'owner' | 'customer' | null): s
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const error = searchParams.get('error');
-  const redirectFrom = searchParams.get('redirect_from');
+  const error = searchParams?.get('error');
+  const redirectFrom = searchParams?.get('redirect_from');
 
-  const redirectTo = searchParams.get('redirect_to') || '/';
-  const role = searchParams.get('role') as 'owner' | 'customer' | null;
+  const redirectTo = searchParams?.get('redirect_to') || '/';
+  const role = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
   const loginUrl = buildLoginUrl(redirectTo, role);
 
   useEffect(() => {

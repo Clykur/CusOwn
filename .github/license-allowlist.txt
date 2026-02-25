@@ -1,7 +1,9 @@
 # Allowed dependency licenses (one SPDX id per line). Pipeline fails on any other license.
 # Override via env: LICENSE_ALLOWLIST in workflow (comma-separated).
 # GPL, AGPL are disallowed by default. LGPL allowed for native deps (e.g. sharp).
+# Apache covers Apache* as reported by license-checker (e.g. @tremor/react).
 MIT
+Apache
 Apache-2.0
 BSD-2-Clause
 BSD-3-Clause

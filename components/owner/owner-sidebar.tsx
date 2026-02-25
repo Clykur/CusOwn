@@ -22,7 +22,8 @@ export default function OwnerSidebar({
   setSidebarOpen?: (v: boolean) => void;
 }) {
   const pathname = usePathname();
-  const cleanPath = pathname.split('?')[0];
+  const safePathname = pathname ?? '';
+  const cleanPath = safePathname.split('?')[0];
 
   // Support lifted state from parent (OwnerLayout) or fallback to internal state
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
@@ -37,7 +38,7 @@ export default function OwnerSidebar({
 
   useEffect(() => {
     setNavigating(null);
-  }, [pathname]);
+  }, [safePathname]);
 
   // Load business list for nav state only; user from layout.
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function OwnerSidebar({
     return () => {
       cancelled = true;
     };
-  }, [pathname, initialUser?.id]);
+  }, [safePathname, initialUser?.id]);
 
   // ===============================
   // Navigation items (UNCHANGED)
@@ -85,6 +86,29 @@ export default function OwnerSidebar({
         </svg>
       ),
     },
+    {
+      name: 'Analytics',
+      href: '/owner/analytics',
+      requiresBusiness: true,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeWidth={2}
+            d="M11 17a1 1 0 01-1-1V7a1 1 0 012 0v9a1 1 0 01-1 1zM7 20a1 1 0 01-1-1v-6a1 1 0 012 0v6a1 1 0 01-1 1zM15 14a1 1 0 01-1-1V3a1 1 0 012 0v10a1 1 0 01-1 1zM19 12a1 1 0 01-1-1V9a1 1 0 012 0v2a1 1 0 01-1 1z"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: 'Create Business',
+      href: '/owner/setup',
+      requiresBusiness: false,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      ),
+    },
   ];
 
   const navigation =
@@ -93,7 +117,41 @@ export default function OwnerSidebar({
   // ===============================
   // STRICT ACTIVE STATE LOGIC (EXACT MATCH ONLY)
   // ===============================
-  const isActive = (href: string) => cleanPath === href;
+  const isActive = (name: string) => {
+    // Dashboard
+    if (name === 'Dashboard') {
+      return cleanPath === '/owner/dashboard';
+    }
+
+    // My Businesses (list + individual business pages; exclude dashboard, setup, profile)
+    if (name === 'My Businesses') {
+      return (
+        cleanPath === '/owner/businesses' ||
+        (cleanPath.startsWith('/owner/') &&
+          cleanPath !== '/owner/dashboard' &&
+          cleanPath !== '/owner/setup' &&
+          cleanPath !== '/owner/profile' &&
+          !cleanPath.startsWith('/owner/analytics'))
+      );
+    }
+
+    // Create Business
+    if (name === 'Create Business') {
+      return cleanPath === '/owner/setup';
+    }
+
+    // Analytics
+    if (name === 'Analytics') {
+      return cleanPath === '/owner/analytics';
+    }
+
+    // Profile (bottom link uses OWNER_PROFILE)
+    if (name === 'Profile') {
+      return cleanPath === '/owner/profile';
+    }
+
+    return false;
+  };
 
   // ===============================
   // Render
@@ -132,7 +190,7 @@ export default function OwnerSidebar({
                   key={item.name}
                   href={item.href}
                   onClick={(e) => {
-                    if (item.href !== pathname) {
+                    if (item.href !== safePathname) {
                       setNavigating(item.href);
                       setSidebarOpen(false);
                     } else {

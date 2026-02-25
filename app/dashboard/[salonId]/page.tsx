@@ -14,7 +14,7 @@ import { RedirectSkeleton } from '@/components/ui/skeleton';
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
-  const salonId = params.salonId as string;
+  const salonId = typeof params?.salonId === 'string' ? params.salonId : '';
   useEffect(() => {
     if (!salonId) {
       router.replace(ROUTES.OWNER_DASHBOARD_BASE);

@@ -17,7 +17,7 @@ export default function OwnerBusinessesPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const deleted = searchParams.get('deleted');
+    const deleted = searchParams?.get('deleted');
     if (deleted === '1') {
       setToastMessage('Business deleted successfully');
       router.replace('/owner/businesses', { scroll: false });

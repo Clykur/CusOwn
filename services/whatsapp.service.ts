@@ -1,4 +1,5 @@
-import { WHATSAPP_MESSAGE_TEMPLATES } from '@/config/constants';
+import { WHATSAPP_MESSAGE_TEMPLATES, ROUTES } from '@/config/constants';
+import { env } from '@/config/env';
 import { BookingWithDetails, Salon } from '@/types';
 import { getBookingUrl, getBaseUrl } from '@/lib/utils/url';
 import { formatDate, formatTime } from '@/lib/utils/string';
@@ -43,18 +44,14 @@ export class WhatsAppService {
       booking.booking_id
     );
 
-    const baseUrl = getBaseUrl(request);
-    // Warn if running in production with localhost baseUrl
+    let baseUrl = getBaseUrl(request);
+    const preferredBaseUrl = env.app.baseUrl.replace(/\/$/, '');
+    // Avoid localhost links when a non-local configured app base URL is available.
     if (
-      typeof process !== 'undefined' &&
-      process.env &&
-      process.env.NODE_ENV === 'production' &&
-      baseUrl.includes('localhost')
+      /localhost|127\.0\.0\.1/.test(baseUrl) &&
+      !/localhost|127\.0\.0\.1/.test(preferredBaseUrl)
     ) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        '[WARNING] WhatsAppService: baseUrl is localhost in production. Set NEXT_PUBLIC_APP_URL to your production domain.'
-      );
+      baseUrl = preferredBaseUrl;
     }
     // Generate secure URLs with tokens for accept/reject actions
     const acceptUrl = getSecureResourceUrl('accept', booking.id, baseUrl);

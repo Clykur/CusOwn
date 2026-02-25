@@ -13,6 +13,10 @@
 /.next/
 /out/
 
+# Additional Next build artifacts (some CI or custom scripts output a .next-build folder)
+.next-build/
+.next-build
+
 # production
 /build
 
@@ -29,6 +33,22 @@ yarn-error.log*
 .env.production
 .env*.local
 .env
+.env.*
+!.env.example
+
+# secrets and credentials
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+*.kdbx
+*secret*.json
+*credentials*.json
+secrets/
+keys/
 
 # vercel
 .vercel

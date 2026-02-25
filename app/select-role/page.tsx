@@ -22,8 +22,9 @@ import { getCSRFToken } from '@/lib/utils/csrf-client';
 function SelectRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const urlRole = searchParams.get('role') as 'owner' | 'customer' | null;
-  const accessError = searchParams.get('error') as keyof typeof ROLE_ACCESS_ERRORS | null;
+  const urlRole = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
+  const accessError =
+    (searchParams?.get('error') as keyof typeof ROLE_ACCESS_ERRORS | null) ?? null;
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<'owner' | 'customer' | null>(urlRole);
   const [user, setUser] = useState<any>(null);
@@ -205,7 +206,7 @@ function SelectRoleContent() {
   const steps = ['Choose Role', 'Complete Setup', 'Get Started'];
 
   const handleRoleSelect = (role: 'owner' | 'customer') => {
-    console.log('[Role Select] Setting role to:', role);
+    // Always allow role selection - update state immediately
     setSelectedRole(role);
     if (typeof window !== 'undefined') {
       const newUrl = new URL(window.location.href);
