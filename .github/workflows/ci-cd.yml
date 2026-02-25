@@ -96,6 +96,7 @@ jobs:
     name: Dependency Review
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    continue-on-error: true # Passes when Dependency graph is disabled in repo settings
     permissions:
       contents: read
       pull-requests: write
