@@ -24,6 +24,10 @@ jobs:
     name: Validate (lint/type/test/build/security)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -47,6 +51,7 @@ jobs:
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
       - name: Custom security + quality validation
         run: node scripts/validate-security-and-quality.js
@@ -98,6 +103,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Dependency review
-        uses: actions/dependency-review-action@7e6b1fb378796ce0ac6b961db57fdd88f5f8b3b8
+        uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
