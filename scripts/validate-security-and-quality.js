@@ -136,8 +136,11 @@ function getFileContent(filePath) {
     if (staged != null) return staged;
   }
   const abs = path.resolve(ROOT, filePath);
-  if (!fs.existsSync(abs) || fs.statSync(abs).isDirectory()) return null;
-  return fs.readFileSync(abs, 'utf8');
+  try {
+    return fs.readFileSync(abs, 'utf8');
+  } catch {
+    return null;
+  }
 }
 
 function validateHardcodedUrls(filePath, line, lineNumber, failures) {

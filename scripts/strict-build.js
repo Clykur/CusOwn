@@ -18,8 +18,10 @@ function ensureManifestPlaceholders() {
   fs.mkdirSync(nextServerDir, { recursive: true });
   for (const manifestName of manifestPlaceholders) {
     const target = path.join(nextServerDir, manifestName);
-    if (!fs.existsSync(target)) {
-      fs.writeFileSync(target, '{}');
+    try {
+      fs.writeFileSync(target, '{}', { flag: 'wx' });
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
     }
   }
 }
