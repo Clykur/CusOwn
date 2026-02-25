@@ -38,7 +38,7 @@ permissions:
   actions: read
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '22'
   NODE_OPTIONS: '--max-old-space-size=4096'
   CI: true
   # Audit level: high | critical. Override via repo variable NPM_AUDIT_LEVEL.
