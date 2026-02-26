@@ -35,25 +35,18 @@ export async function GET(request: NextRequest) {
     }
   }
   if (!to || !to.startsWith('/') || to.includes('//') || to.startsWith('/auth/')) {
-    console.log('[AUTH] success: invalid or missing to param', { to: to || null });
     return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
   }
 
   if (!isAllowedPath(to)) {
-    console.log('[AUTH] success: to not allowed', { to });
     return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
   }
 
   const user = await getServerUser(request);
   if (!user) {
-    console.log('[AUTH] success: no session on intermediate request, redirect to login');
     return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
   }
 
   const targetUrl = new URL(to, baseUrl).toString();
-  console.log('[AUTH] success: redirecting to target', {
-    userId: user.id.substring(0, 8) + '...',
-    to,
-  });
   return NextResponse.redirect(targetUrl, 303);
 }
