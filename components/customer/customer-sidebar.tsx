@@ -6,41 +6,28 @@ import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT, UI_CUSTOMER } from '@/config/constants';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
+import ActivityIcon from '@/src/icons/activity.svg';
+import ExploreIcon from '@/src/icons/explore.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
+import LogoutIcon from '@/src/icons/logout.svg';
+import CloseIcon from '@/src/icons/close.svg';
 
 interface NavItem {
   name: string;
   href: string;
-  icon: React.ReactNode;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 const navigation: NavItem[] = [
   {
     name: UI_CUSTOMER.NAV_MY_ACTIVITY,
     href: ROUTES.CUSTOMER_DASHBOARD,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-        />
-      </svg>
-    ),
+    icon: ActivityIcon,
   },
   {
     name: UI_CUSTOMER.NAV_EXPLORE_SERVICES,
     href: ROUTES.CUSTOMER_CATEGORIES,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-        />
-      </svg>
-    ),
+    icon: ExploreIcon,
   },
 ];
 
@@ -64,14 +51,19 @@ export default function CustomerSidebar({
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
+    // My Activity: customer dashboard + booking status pages
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
       return pathname === ROUTES.CUSTOMER_DASHBOARD || pathname?.startsWith('/booking/');
     }
+    // Explore Services: categories, salon lists, salon detail, business pages, booking flow
     if (href === ROUTES.CUSTOMER_CATEGORIES)
       return (
         pathname === ROUTES.CUSTOMER_CATEGORIES ||
+        pathname?.startsWith('/customer/categories/') ||
         pathname === ROUTES.CUSTOMER_SALON_LIST ||
-        pathname?.startsWith('/b/')
+        pathname?.startsWith('/salon/') ||
+        pathname?.startsWith('/b/') ||
+        pathname?.startsWith('/book/')
       );
     if (href === ROUTES.CUSTOMER_PROFILE) return pathname === ROUTES.CUSTOMER_PROFILE;
     return false;
@@ -103,19 +95,7 @@ export default function CustomerSidebar({
                 className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
                 aria-label="Close menu"
               >
-                <svg
-                  className="w-5 h-5 text-gray-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <CloseIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -133,12 +113,15 @@ export default function CustomerSidebar({
                   }}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150 ${
                     active
-                      ? 'border-l-2 border-slate-900 bg-slate-200/60 font-medium text-slate-900'
+                      ? 'border-l-2 border-indigo-600 bg-indigo-50 font-medium text-indigo-600'
                       : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
                   }`}
                 >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-5 [&>svg]:w-5">
-                    {item.icon}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                    <item.icon
+                      aria-hidden="true"
+                      className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
+                    />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
                 </Link>
@@ -154,14 +137,7 @@ export default function CustomerSidebar({
                 onClick={() => setSidebarOpen(false)}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="truncate text-sm font-medium text-slate-900">
@@ -177,14 +153,7 @@ export default function CustomerSidebar({
                 className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign out"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
+                <LogoutIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
               </button>
             </div>
           </div>

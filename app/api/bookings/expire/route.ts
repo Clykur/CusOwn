@@ -23,4 +23,3 @@ export async function POST(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

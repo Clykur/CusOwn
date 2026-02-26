@@ -7,6 +7,7 @@ import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
 import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
+import ChevronLeftIcon from '@/src/icons/chevron-left.svg';
 
 /** Admin user detail page: view user, edit admin note (description for future reference), optional user_type. */
 export default function AdminUserDetailPage() {
@@ -228,14 +229,7 @@ export default function AdminUserDetailPage() {
           onClick={() => router.push(usersUrl)}
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors mb-5"
         >
-          <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          <ChevronLeftIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
           Back to Users
         </button>
         <div className="flex flex-wrap items-center gap-3">

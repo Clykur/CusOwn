@@ -18,6 +18,8 @@ import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import CheckIcon from '@/src/icons/check.svg';
+import LinkIcon from '@/src/icons/link.svg';
 import { formatPhoneNumber } from '@/lib/utils/string';
 
 export type CreateBusinessFormProps = {
@@ -230,19 +232,7 @@ export default function CreateBusinessForm({
       <>
         <div className="text-center mb-6 md:mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
-            <svg
-              className="w-10 h-10 md:w-12 md:h-12 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            <CheckIcon className="w-10 h-10 md:w-12 md:h-12 text-green-600" aria-hidden="true" />
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
             🎉 Business Created Successfully!
@@ -254,19 +244,7 @@ export default function CreateBusinessForm({
         <div className="space-y-4 md:space-y-6">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 rounded-xl p-4 md:p-6">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-              <svg
-                className="w-5 h-5 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                />
-              </svg>
+              <LinkIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
               Your Booking Link
             </label>
             <div className="flex gap-3">

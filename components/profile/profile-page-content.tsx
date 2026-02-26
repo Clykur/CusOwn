@@ -12,6 +12,7 @@ import {
 import { formatDate } from '@/lib/utils/string';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { OwnerProfileSkeleton, ProfileSkeleton } from '@/components/ui/skeleton';
+import CheckIcon from '@/src/icons/check.svg';
 
 interface ProfileData {
   id: string;
@@ -100,7 +101,6 @@ export function ProfilePageContent({
         }
 
         const result = await response.json();
-        console.log('[PROFILE] API response:', { success: result.success, hasData: !!result.data });
 
         if (result.success && result.data) {
           setProfileData(result.data);
@@ -485,19 +485,7 @@ export function ProfilePageContent({
       {deleteMessage ? (
         <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-6">
           <div className="flex items-start gap-3">
-            <svg
-              className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            <CheckIcon className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <h3 className="text-lg font-semibold text-emerald-800 mb-2">Account Deleted</h3>
               <p className="text-sm text-emerald-700">{deleteMessage}</p>

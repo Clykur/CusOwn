@@ -11,6 +11,8 @@ import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { supabaseAuth } from '@/lib/supabase/auth';
 import { Toast } from '@/components/ui/toast';
+import DownloadIcon from '@/src/icons/download.svg';
+import CreateBusinessIcon from '@/src/icons/create-business.svg';
 
 export default function OwnerDashboardPage() {
   const params = useParams();
@@ -218,7 +220,19 @@ export default function OwnerDashboardPage() {
         credentials: 'include',
       });
       const result = await response.json();
-      if (result.success && result.data) setSlots(result.data);
+      if (result.success) {
+        const normalizedSlots = Array.isArray(result.data)
+          ? result.data
+          : Array.isArray(result.data?.slots)
+            ? result.data.slots
+            : [];
+
+        if (!Array.isArray(result.data) && !Array.isArray(result.data?.slots) && result.data) {
+          console.error('[OWNER_DASHBOARD] Unexpected slots payload shape:', result.data);
+        }
+
+        setSlots(normalizedSlots);
+      }
     } catch (err) {
       logError(err, 'Slots Fetch');
     }
@@ -484,6 +498,8 @@ export default function OwnerDashboardPage() {
     );
   }
 
+  const slotList = Array.isArray(slots) ? slots : [];
+
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
       <div className="space-y-2">
@@ -545,14 +561,7 @@ export default function OwnerDashboardPage() {
                   onClick={downloadQRCode}
                   className="h-11 px-6 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
+                  <DownloadIcon className="w-5 h-5" aria-hidden="true" />
                   Download QR Code
                 </button>
               </div>
@@ -813,16 +822,16 @@ export default function OwnerDashboardPage() {
                     Available
                   </h3>
                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slots.filter((s) => s.status === 'available').length}
+                    {slotList.filter((s) => s.status === 'available').length}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slots.filter((s) => s.status === 'available').length === 0 ? (
+                  {slotList.filter((s) => s.status === 'available').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-gray-500">No available slots</p>
                     </div>
                   ) : (
-                    slots
+                    slotList
                       .filter((s) => s.status === 'available')
                       .map((slot) => (
                         <div
@@ -845,16 +854,16 @@ export default function OwnerDashboardPage() {
                     Reserved
                   </h3>
                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slots.filter((s) => s.status === 'reserved').length}
+                    {slotList.filter((s) => s.status === 'reserved').length}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slots.filter((s) => s.status === 'reserved').length === 0 ? (
+                  {slotList.filter((s) => s.status === 'reserved').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-gray-500">No reserved slots</p>
                     </div>
                   ) : (
-                    slots
+                    slotList
                       .filter((s) => s.status === 'reserved')
                       .map((slot) => (
                         <div
@@ -877,16 +886,16 @@ export default function OwnerDashboardPage() {
                     Booked
                   </h3>
                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slots.filter((s) => s.status === 'booked').length}
+                    {slotList.filter((s) => s.status === 'booked').length}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slots.filter((s) => s.status === 'booked').length === 0 ? (
+                  {slotList.filter((s) => s.status === 'booked').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-gray-500">No booked slots</p>
                     </div>
                   ) : (
-                    slots
+                    slotList
                       .filter((s) => s.status === 'booked')
                       .map((slot) => (
                         <div
@@ -935,14 +944,7 @@ export default function OwnerDashboardPage() {
                     disabled={!newHolidayDate}
                     className="w-full h-11 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
+                    <CreateBusinessIcon className="w-5 h-5" aria-hidden="true" />
                     Add Holiday
                   </button>
                 </div>
@@ -1006,14 +1008,7 @@ export default function OwnerDashboardPage() {
                     disabled={!newClosureStart || !newClosureEnd}
                     className="w-full h-11 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
+                    <CreateBusinessIcon className="w-5 h-5" aria-hidden="true" />
                     Add Closure
                   </button>
                 </div>

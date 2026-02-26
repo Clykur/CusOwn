@@ -3,159 +3,50 @@
 import { useState, useEffect, Suspense } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ReactNode;
-}
-
 import { getAdminDashboardUrl } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
 import { useAdminPrefetch } from '@/components/admin/admin-prefetch-context';
 import { useAdminSession } from '@/components/admin/admin-session-context';
+import DashboardIcon from '@/src/icons/dashboard.svg';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import UsersIcon from '@/src/icons/users.svg';
+import BookingsIcon from '@/src/icons/bookings.svg';
+import AuditLogsIcon from '@/src/icons/audit-logs.svg';
+import CronMonitorIcon from '@/src/icons/cron-monitor.svg';
+import AuthManagementIcon from '@/src/icons/auth-management.svg';
+import StorageIcon from '@/src/icons/storage.svg';
+import SuccessMetricsIcon from '@/src/icons/success-metrics.svg';
+import AnalyticsIcon from '@/src/icons/analytics.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
+import LogoutIcon from '@/src/icons/logout.svg';
+import MenuIcon from '@/src/icons/menu.svg';
+import CloseIcon from '@/src/icons/close.svg';
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
 
 const navigation: NavItem[] = [
-  {
-    name: 'Overview',
-    href: getAdminDashboardUrl(),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-        />
-      </svg>
-    ),
-  },
-  {
-    name: 'Businesses',
-    href: getAdminDashboardUrl('businesses'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-        />
-      </svg>
-    ),
-  },
-  {
-    name: 'Users',
-    href: getAdminDashboardUrl('users'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-        />
-      </svg>
-    ),
-  },
-  {
-    name: 'Bookings',
-    href: getAdminDashboardUrl('bookings'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    name: 'Audit Logs',
-    href: getAdminDashboardUrl('audit'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-        />
-      </svg>
-    ),
-  },
-  {
-    name: 'Cron Monitor',
-    href: getAdminDashboardUrl('cron-monitor'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-  },
+  { name: 'Overview', href: getAdminDashboardUrl(), icon: DashboardIcon },
+  { name: 'Businesses', href: getAdminDashboardUrl('businesses'), icon: BusinessesIcon },
+  { name: 'Users', href: getAdminDashboardUrl('users'), icon: UsersIcon },
+  { name: 'Bookings', href: getAdminDashboardUrl('bookings'), icon: BookingsIcon },
+  { name: 'Audit Logs', href: getAdminDashboardUrl('audit'), icon: AuditLogsIcon },
+  { name: 'Cron Monitor', href: getAdminDashboardUrl('cron-monitor'), icon: CronMonitorIcon },
   {
     name: 'Auth Management',
     href: getAdminDashboardUrl('auth-management'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l11.964-11.964A6 6 0 1121 9z"
-        />
-      </svg>
-    ),
+    icon: AuthManagementIcon,
   },
-  {
-    name: 'Storage',
-    href: getAdminDashboardUrl('storage'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M5 19a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2h2a2 2 0 012 2v2h2a2 2 0 012 2zm0 0h2a2 2 0 002-2v-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2m-6-6a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z"
-        />
-      </svg>
-    ),
-  },
+  { name: 'Storage', href: getAdminDashboardUrl('storage'), icon: StorageIcon },
   {
     name: 'Success Metrics',
     href: getAdminDashboardUrl('success-metrics'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-        />
-      </svg>
-    ),
+    icon: SuccessMetricsIcon,
   },
-  {
-    name: 'Analytics',
-    href: getAdminDashboardUrl('analytics'),
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M16 8v8m-4-4v4m-4-4v4M4 4v16"
-        />
-      </svg>
-    ),
-  },
+  { name: 'Analytics', href: getAdminDashboardUrl('analytics'), icon: AnalyticsIcon },
 ];
 
 const ADMIN_TAB_EVENT = 'admin-tab-change';
@@ -229,19 +120,7 @@ function AdminSidebarContent() {
               className="p-2.5 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow transition-all"
               aria-label="Open menu"
             >
-              <svg
-                className="w-6 h-6 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <MenuIcon className="w-6 h-6 text-gray-700" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -277,19 +156,7 @@ function AdminSidebarContent() {
                 className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
                 aria-label="Close menu"
               >
-                <svg
-                  className="w-5 h-5 text-gray-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <CloseIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -318,12 +185,15 @@ function AdminSidebarContent() {
                   }}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
                     active
-                      ? 'border-l-2 border-slate-900 bg-slate-200/60 font-medium text-slate-900'
+                      ? 'border-l-2 border-indigo-600 bg-indigo-50 font-medium text-indigo-600'
                       : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
                   }`}
                 >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-5 [&>svg]:w-5">
-                    {item.icon}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                    <item.icon
+                      aria-hidden="true"
+                      className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
+                    />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
                 </Link>
@@ -341,14 +211,7 @@ function AdminSidebarContent() {
                 onClick={() => setSidebarOpen(false)}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="truncate text-sm font-medium text-slate-900">
@@ -362,14 +225,7 @@ function AdminSidebarContent() {
                 className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign Out"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
+                <LogoutIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
               </a>
             </div>
           </div>

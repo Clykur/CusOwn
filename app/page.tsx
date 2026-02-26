@@ -5,6 +5,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { ROUTES } from '@/lib/utils/navigation';
 import { PublicHeader } from '@/components/layout/public-header';
+import ArrowRightIcon from '@/src/icons/arrow-right.svg';
+import ExploreIcon from '@/src/icons/explore.svg';
+import CheckIcon from '@/src/icons/check.svg';
+import ClockIcon from '@/src/icons/clock.svg';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
+import BookingsIcon from '@/src/icons/bookings.svg';
+import DashboardIcon from '@/src/icons/dashboard.svg';
+import ChevronRightIcon from '@/src/icons/chevron-right.svg';
+import CreateBusinessIcon from '@/src/icons/create-business.svg';
 
 /** Read cusown_user_role cookie. */
 function getUserRoleCookie(): string | null {
@@ -111,19 +121,10 @@ export default function Home() {
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   Get Started
-                  <svg
+                  <ArrowRightIcon
                     className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                 </span>
               </button>
               <button
@@ -132,19 +133,10 @@ export default function Home() {
               >
                 <span className="flex items-center justify-center gap-2">
                   Explore Businesses
-                  <svg
+                  <ExploreIcon
                     className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                 </span>
               </button>
             </div>
@@ -152,36 +144,12 @@ export default function Home() {
             {/* Trust Indicators */}
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-500">
               <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <CheckIcon className="w-5 h-5 text-gray-400" aria-hidden="true" />
                 <span>Free to start</span>
               </div>
               <div className="hidden sm:block w-1 h-1 bg-gray-300 rounded-full"></div>
               <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <ClockIcon className="w-5 h-5 text-gray-400" aria-hidden="true" />
                 <span>Set up in minutes</span>
               </div>
               <div className="hidden sm:block w-1 h-1 bg-gray-300 rounded-full"></div>
@@ -224,14 +192,7 @@ export default function Home() {
             {/* Business Owner Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-black text-white mb-6">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
+                <BusinessesIcon className="h-6 w-6" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">For Business Owners</h3>
               <p className="text-gray-600 mb-4">
@@ -240,51 +201,24 @@ export default function Home() {
               </p>
               <ul className="space-y-2 text-sm text-gray-600 mb-6">
                 <li className="flex items-start">
-                  <svg
+                  <CheckIcon
                     className="h-5 w-5 text-black mr-2 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <span>Simple setup with no technical knowledge required</span>
                 </li>
                 <li className="flex items-start">
-                  <svg
+                  <CheckIcon
                     className="h-5 w-5 text-black mr-2 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <span>Automated confirmations and customer communication</span>
                 </li>
                 <li className="flex items-start">
-                  <svg
+                  <CheckIcon
                     className="h-5 w-5 text-black mr-2 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <span>Clear dashboard to track bookings and availability</span>
                 </li>
               </ul>
@@ -299,14 +233,7 @@ export default function Home() {
             {/* Customer Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 hover:shadow-md transition-shadow">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-black text-white mb-6">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
+                <ProfileIcon className="h-6 w-6" aria-hidden="true" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">For Customers</h3>
               <p className="text-gray-600 mb-4">
@@ -315,51 +242,24 @@ export default function Home() {
               </p>
               <ul className="space-y-2 text-sm text-gray-600 mb-6">
                 <li className="flex items-start">
-                  <svg
+                  <CheckIcon
                     className="h-5 w-5 text-black mr-2 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <span>Browse and book in seconds, no account required</span>
                 </li>
                 <li className="flex items-start">
-                  <svg
+                  <CheckIcon
                     className="h-5 w-5 text-black mr-2 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <span>Instant confirmations via WhatsApp or email</span>
                 </li>
                 <li className="flex items-start">
-                  <svg
+                  <CheckIcon
                     className="h-5 w-5 text-black mr-2 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <span>Works seamlessly on mobile and desktop</span>
                 </li>
               </ul>
@@ -465,16 +365,7 @@ export default function Home() {
                 title: 'Online Slot Booking',
                 description:
                   'Customers can view and book available time slots in real-time, reducing phone calls and manual scheduling.',
-                icon: (
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                ),
+                icon: <BookingsIcon className="h-6 w-6" aria-hidden="true" />,
               },
               {
                 title: 'WhatsApp Confirmations',
@@ -510,16 +401,7 @@ export default function Home() {
                 title: 'Owner Dashboards',
                 description:
                   'Comprehensive dashboard to view all bookings, manage availability, and track your business performance.',
-                icon: (
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
-                  </svg>
-                ),
+                icon: <DashboardIcon className="h-6 w-6" aria-hidden="true" />,
               },
               {
                 title: 'Admin Oversight',
@@ -613,19 +495,10 @@ export default function Home() {
                     {index < 3 && (
                       <div className="hidden md:flex flex-1 items-center ml-4 mr-4">
                         <div className="flex-1 h-px bg-gray-300"></div>
-                        <svg
+                        <ChevronRightIcon
                           className="w-4 h-4 text-gray-400 mx-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
+                          aria-hidden="true"
+                        />
                         <div className="flex-1 h-px bg-gray-300"></div>
                       </div>
                     )}
@@ -707,16 +580,7 @@ export default function Home() {
                 title: 'Built for Real Businesses',
                 description:
                   'Created with input from service businesses to solve real-world booking challenges.',
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                    />
-                  </svg>
-                ),
+                icon: <BusinessesIcon className="w-6 h-6" aria-hidden="true" />,
               },
             ].map((item, index) => (
               <div
@@ -760,79 +624,29 @@ export default function Home() {
                 onClick={() => router.push(ROUTES.SELECT_ROLE('owner'))}
                 className="bg-white text-black hover:bg-gray-100 px-8 py-4 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 w-full sm:w-auto flex items-center justify-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <CreateBusinessIcon className="w-5 h-5" aria-hidden="true" />
                 Start Your Business Page
               </button>
               <button
                 onClick={() => router.push(ROUTES.CATEGORIES)}
                 className="border-2 border-white text-white hover:bg-white hover:text-black px-8 py-4 text-base font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 w-full sm:w-auto flex items-center justify-center gap-2 bg-transparent"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
+                <BookingsIcon className="w-5 h-5" aria-hidden="true" />
                 Book an Appointment
               </button>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
               <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <CheckIcon className="w-5 h-5 text-green-400" aria-hidden="true" />
                 <span>No credit card required</span>
               </div>
               <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <CheckIcon className="w-5 h-5 text-green-400" aria-hidden="true" />
                 <span>Set up in minutes</span>
               </div>
               <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <CheckIcon className="w-5 h-5 text-green-400" aria-hidden="true" />
                 <span>Works on mobile and desktop</span>
               </div>
             </div>

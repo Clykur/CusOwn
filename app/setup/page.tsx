@@ -17,6 +17,15 @@ import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import { SetupSkeleton } from '@/components/ui/skeleton';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import CheckIcon from '@/src/icons/check.svg';
+import LinkIcon from '@/src/icons/link.svg';
+import DownloadIcon from '@/src/icons/download.svg';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import InfoIcon from '@/src/icons/info.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
+import ClockIcon from '@/src/icons/clock.svg';
+import MapPinIcon from '@/src/icons/map-pin.svg';
+import ChevronRightIcon from '@/src/icons/chevron-right.svg';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -257,7 +266,6 @@ export default function SetupPage() {
       }
 
       const result = await response.json();
-      console.log('Business creation response:', result);
 
       if (result.success && result.data) {
         setSuccess({
@@ -323,19 +331,10 @@ export default function SetupPage() {
             <div className="bg-white rounded-2xl shadow-xl p-6 md:p-2 mt-4">
               <div className="text-center mb-6 md:mb-8">
                 <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
-                  <svg
+                  <CheckIcon
                     className="w-10 h-10 md:w-12 md:h-12 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                   🎉 Business Created Successfully!
@@ -348,19 +347,7 @@ export default function SetupPage() {
               <div className="space-y-4 md:space-y-6">
                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 rounded-xl p-4 md:p-6">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-                    <svg
-                      className="w-5 h-5 text-gray-700"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                      />
-                    </svg>
+                    <LinkIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
                     Your Booking Link
                   </label>
                   <div className="flex gap-3">
@@ -435,19 +422,7 @@ export default function SetupPage() {
                         }}
                         className="w-full bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-900 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                       >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                          />
-                        </svg>
+                        <DownloadIcon className="w-5 h-5" aria-hidden="true" />
                         Download QR Code
                       </button>
                     </div>
@@ -553,19 +528,7 @@ export default function SetupPage() {
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 mt-6 text-center">
             <div className="mb-8 flex justify-center">
               <div className="bg-black rounded-full p-6">
-                <svg
-                  className="w-12 h-12 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
+                <BusinessesIcon className="w-12 h-12 text-white" aria-hidden="true" />
               </div>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -608,79 +571,24 @@ export default function SetupPage() {
             </div>
             <div className="mt-8 bg-blue-50 border-l-4 border-blue-500 rounded-lg p-5 text-left">
               <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <InfoIcon className="w-5 h-5" aria-hidden="true" />
                 Why sign in?
               </p>
               <ul className="text-sm text-blue-800 space-y-2">
                 <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
                   Secure access to your dashboard
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
                   Manage multiple businesses
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
                   View booking history & analytics
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
                   Switch between owner and customer roles
                 </li>
               </ul>
@@ -715,19 +623,10 @@ export default function SetupPage() {
             <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
               <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
                 <div className="flex items-start gap-2 md:gap-3">
-                  <svg
+                  <InfoIcon
                     className="w-4 h-4 md:w-5 md:h-5 text-blue-600 mt-0.5 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   <p className="text-xs md:text-sm text-blue-800">
                     <strong className="font-semibold">Tip:</strong> You can create multiple
                     businesses later. Each business gets its own booking link and QR code.
@@ -740,19 +639,10 @@ export default function SetupPage() {
                   htmlFor="salon_name"
                   className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
                 >
-                  <svg
+                  <BusinessesIcon
                     className="w-4 h-4 md:w-5 md:h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                   Business Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -804,19 +694,7 @@ export default function SetupPage() {
                   htmlFor="owner_name"
                   className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
                 >
-                  <svg
-                    className="w-4 h-4 md:w-5 md:h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  <ProfileIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-600" aria-hidden="true" />
                   Owner Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -866,19 +744,7 @@ export default function SetupPage() {
 
               <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
                 <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-3">
-                  <svg
-                    className="w-4 h-4 md:w-5 md:h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
+                  <ClockIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-600" aria-hidden="true" />
                   Business Hours <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -927,19 +793,7 @@ export default function SetupPage() {
                   htmlFor="slot_duration"
                   className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
                 >
-                  <svg
-                    className="w-4 h-4 md:w-5 md:h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
+                  <ClockIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-600" aria-hidden="true" />
                   Appointment Duration <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -964,25 +818,7 @@ export default function SetupPage() {
                   htmlFor="location"
                   className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
                 >
-                  <svg
-                    className="w-4 h-4 md:w-5 md:h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                  <MapPinIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-600" aria-hidden="true" />
                   City / Area <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1042,19 +878,10 @@ export default function SetupPage() {
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <svg
+                    <InfoIcon
                       className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                      aria-hidden="true"
+                    />
                     <div className="flex-1">
                       <p className="text-red-800 font-medium">{error}</p>
                       {error.includes('/b/') && (
@@ -1064,19 +891,7 @@ export default function SetupPage() {
                             className="text-red-700 underline font-semibold hover:text-red-900 inline-flex items-center gap-1"
                           >
                             Go to Your Existing Business
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
+                            <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
                           </Link>
                         </div>
                       )}
@@ -1098,19 +913,7 @@ export default function SetupPage() {
                     </>
                   ) : (
                     <>
-                      <svg
-                        className="w-4 h-4 md:w-5 md:h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
+                      <CheckIcon className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
                       <span>Create My Booking Page</span>
                     </>
                   )}

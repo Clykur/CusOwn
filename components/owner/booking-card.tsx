@@ -5,6 +5,7 @@ import { formatDate, formatTime } from '@/lib/utils/string';
 import NoShowButton from '@/components/booking/no-show-button';
 import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import { UI_CONTEXT } from '@/config/constants';
+import UndoIcon from '@/src/icons/undo.svg';
 
 interface BookingCardProps {
   booking: any;
@@ -226,20 +227,7 @@ export default function BookingCard({
                 title={UI_CONTEXT.UNDO_LABEL}
                 className="h-9 w-9 flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 disabled:opacity-50"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                  />
-                </svg>
+                <UndoIcon className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           )}
@@ -252,20 +240,7 @@ export default function BookingCard({
                 title={UI_CONTEXT.UNDO_LABEL}
                 className="h-9 w-9 flex items-center justify-center bg-rose-100 text-rose-900 rounded-lg hover:bg-rose-200 disabled:opacity-50"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                  />
-                </svg>
+                <UndoIcon className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           )}

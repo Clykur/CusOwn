@@ -8,6 +8,7 @@ import { UI_CUSTOMER } from '@/config/constants';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
 import CustomerBookingCard from '@/components/customer/booking-card';
 import BookingCardSkeleton from '@/components/customer/booking-card.skeleton';
+import BookingsIcon from '@/src/icons/bookings.svg';
 import SummaryCardSkeleton from '@/components/customer/summary-card.skeleton';
 
 function StatCard({ label, value }: { label: string; value: number }) {
@@ -163,19 +164,7 @@ export default function CustomerDashboardPage() {
               {bookings.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                    <svg
-                      className="w-8 h-8 text-slate-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <BookingsIcon className="w-8 h-8 text-slate-400" aria-hidden="true" />
                   </div>
                   <p className="text-slate-500 mb-4">{UI_CUSTOMER.EMPTY_ACTIVITY}</p>
                   <Link

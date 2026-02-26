@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import ChevronLeftIcon from '@/src/icons/chevron-left.svg';
 
 export default function OwnerHeader({ title, subtitle }: { title?: string; subtitle?: string }) {
   const router = useRouter();
@@ -19,14 +20,7 @@ export default function OwnerHeader({ title, subtitle }: { title?: string; subti
               className="lg:hidden text-gray-700 hover:text-black"
               aria-label="Back"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
+              <ChevronLeftIcon className="w-6 h-6" aria-hidden="true" />
             </button>
           )}
 

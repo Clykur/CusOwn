@@ -1,12 +1,18 @@
 'use client';
 
+import CheckIcon from '@/src/icons/check.svg';
+
 interface OnboardingProgressProps {
   currentStep: number;
   totalSteps: number;
   steps: string[];
 }
 
-export default function OnboardingProgress({ currentStep, totalSteps, steps }: OnboardingProgressProps) {
+export default function OnboardingProgress({
+  currentStep,
+  totalSteps,
+  steps,
+}: OnboardingProgressProps) {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
@@ -31,8 +37,8 @@ export default function OnboardingProgress({ currentStep, totalSteps, steps }: O
               index < currentStep - 1
                 ? 'text-black'
                 : index === currentStep - 1
-                ? 'text-black font-semibold'
-                : 'text-gray-400'
+                  ? 'text-black font-semibold'
+                  : 'text-gray-400'
             }`}
           >
             <div
@@ -40,14 +46,12 @@ export default function OnboardingProgress({ currentStep, totalSteps, steps }: O
                 index < currentStep - 1
                   ? 'bg-black text-white'
                   : index === currentStep - 1
-                  ? 'bg-black text-white'
-                  : 'bg-gray-200 text-gray-400'
+                    ? 'bg-black text-white'
+                    : 'bg-gray-200 text-gray-400'
               }`}
             >
               {index < currentStep - 1 ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <CheckIcon className="w-5 h-5" aria-hidden="true" />
               ) : (
                 <span className="text-sm font-semibold">{index + 1}</span>
               )}

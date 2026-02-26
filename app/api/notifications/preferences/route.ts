@@ -33,23 +33,26 @@ export async function PUT(request: NextRequest) {
   try {
     const user = await getServerUser(request);
     const body = await request.json();
-    const { customer_phone, email_enabled, sms_enabled, whatsapp_enabled, email_address, phone_number } = body;
+    const {
+      customer_phone,
+      email_enabled,
+      sms_enabled,
+      whatsapp_enabled,
+      email_address,
+      phone_number,
+    } = body;
 
     if (!user && !customer_phone) {
       return errorResponse('Authentication or customer phone required', 401);
     }
 
-    await notificationService.updateNotificationPreferences(
-      user?.id,
-      customer_phone || undefined,
-      {
-        emailEnabled: email_enabled,
-        smsEnabled: sms_enabled,
-        whatsappEnabled: whatsapp_enabled,
-        emailAddress: email_address,
-        phoneNumber: phone_number,
-      }
-    );
+    await notificationService.updateNotificationPreferences(user?.id, customer_phone || undefined, {
+      emailEnabled: email_enabled,
+      smsEnabled: sms_enabled,
+      whatsappEnabled: whatsapp_enabled,
+      emailAddress: email_address,
+      phoneNumber: phone_number,
+    });
 
     const response = successResponse({ message: 'Preferences updated' });
     setNoCacheHeaders(response);

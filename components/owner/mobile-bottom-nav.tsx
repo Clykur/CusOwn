@@ -3,12 +3,15 @@
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
+import DashboardIcon from '@/src/icons/dashboard.svg';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import AnalyticsIcon from '@/src/icons/analytics.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
 
 interface NavItem {
   name: string;
   href: string;
-  icon: React.ReactNode;
-  activeIcon: React.ReactNode;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean }) {
@@ -25,90 +28,61 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
     pathname === '/owner/profile' ||
     pathname?.startsWith('/owner/profile');
 
-  // Determine a single active tab value. Priority: explicit `tab` query -> businesses route -> business instance -> dashboard -> others
+  const isAnalytics = pathname === '/owner/analytics' || pathname?.startsWith('/owner/analytics/');
+
+  // Determine a single active tab value. Priority: explicit `tab` query -> businesses route -> analytics -> business instance -> dashboard -> others
   let activeTab: string | null = null;
   if (tabParam) {
     activeTab = tabParam;
   } else if (pathname === '/owner/businesses' || pathname?.startsWith('/owner/businesses')) {
     activeTab = 'businesses';
+  } else if (isAnalytics) {
+    activeTab = 'analytics';
   } else if (pathname === ROUTES.OWNER_DASHBOARD_BASE || pathname?.startsWith('/owner/dashboard')) {
     activeTab = 'dashboard';
   } else if (isSetup) {
     activeTab = 'create';
   } else if (isProfile) {
     activeTab = 'profile';
+  } else if (pathname?.startsWith('/owner/')) {
+    // Individual business pages (/owner/[bookingLink]) fall under Businesses
+    activeTab = 'businesses';
   }
 
   const navigation: NavItem[] = [
     {
       name: 'Dashboard',
       href: `${ROUTES.OWNER_DASHBOARD_BASE}?tab=dashboard`,
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-          />
-        </svg>
-      ),
-      activeIcon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      ),
+      icon: DashboardIcon,
     },
     {
       name: 'Businesses',
       href: '/owner/businesses',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-          />
-        </svg>
-      ),
-      activeIcon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-      ),
+      icon: BusinessesIcon,
+    },
+    {
+      name: 'Analytics',
+      href: '/owner/analytics',
+      icon: AnalyticsIcon,
     },
     {
       name: 'Profile',
       href: ROUTES.OWNER_PROFILE,
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
-        </svg>
-      ),
-      activeIcon: (
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
+      icon: ProfileIcon,
     },
   ];
 
   const isActive = (href: string) => {
     if (href === ROUTES.OWNER_SETUP || href === ROUTES.SETUP) return activeTab === 'create';
-    if (href === ROUTES.OWNER_PROFILE || href === '/owner/profile' || href === pathname)
-      return (
-        activeTab === 'profile' ||
-        pathname === '/owner/profile' ||
-        pathname?.startsWith('/owner/profile')
-      );
+    if (href === ROUTES.OWNER_PROFILE || href === '/owner/profile') return activeTab === 'profile';
 
-    // hrefs for dashboard tabs use ?tab=...
+    // Analytics exact match
+    if (href === '/owner/analytics') return activeTab === 'analytics';
+
+    // Businesses: exact match or individual business pages
+    if (href === '/owner/businesses') return activeTab === 'businesses';
+
+    // Dashboard tabs use ?tab=...
     const tabMatch = href.match(/\?tab=(.+)$/);
     if (tabMatch) {
       return activeTab === tabMatch[1];
@@ -126,17 +100,23 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center justify-center flex-1 min-w-0 px-2 py-2 transition-colors relative ${
-                active ? 'text-black' : 'text-gray-500'
+              className={`flex flex-1 min-w-0 flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${
+                active ? 'text-indigo-600' : 'text-gray-500'
               }`}
             >
-              <span className="mb-1">{active ? item.activeIcon : item.icon}</span>
-              <span className={`text-xs font-medium ${active ? 'text-black' : 'text-gray-500'}`}>
+              <span className="flex items-center justify-center">
+                <item.icon
+                  aria-hidden="true"
+                  className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
+                />
+              </span>
+              <span
+                className={`text-xs font-medium leading-none ${
+                  active ? 'text-indigo-600' : 'text-gray-500'
+                }`}
+              >
                 {item.name}
               </span>
-              {active && (
-                <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-black rounded-full"></span>
-              )}
             </Link>
           );
         })}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import ChevronRightIcon from '@/src/icons/chevron-right.svg';
 
 interface BreadcrumbItem {
   label: string;
@@ -23,21 +24,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
 
         return (
           <div key={item.href} className="flex items-center gap-2">
-            {index > 0 && (
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            )}
+            {index > 0 && <ChevronRightIcon className="w-4 h-4 text-gray-400" aria-hidden="true" />}
             {isLast || isActive ? (
               <span className={`font-medium ${isActive ? 'text-black' : 'text-gray-600'}`}>
                 {item.label}

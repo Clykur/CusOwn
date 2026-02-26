@@ -17,6 +17,12 @@ import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingStatusSkeleton } from '@/components/ui/skeleton';
 import { supabaseAuth } from '@/lib/supabase/auth';
+import WarningIcon from '@/src/icons/warning.svg';
+import CheckIcon from '@/src/icons/check.svg';
+import ClockIcon from '@/src/icons/clock.svg';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import BookingsIcon from '@/src/icons/bookings.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
 
 export default function BookingStatusPage() {
   const params = useParams();
@@ -324,37 +330,11 @@ export default function BookingStatusPage() {
         >
           <div className="flex items-center gap-3">
             {isNoShow ? (
-              <svg
-                className="w-6 h-6 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+              <WarningIcon className="w-6 h-6 shrink-0" aria-hidden="true" />
             ) : booking.status === 'confirmed' ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+              <CheckIcon className="w-6 h-6" aria-hidden="true" />
             ) : booking.status === 'pending' ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <ClockIcon className="w-6 h-6" aria-hidden="true" />
             ) : null}
             <p className="font-bold text-lg">{getStatusMessage(booking.status)}</p>
           </div>
@@ -364,19 +344,7 @@ export default function BookingStatusPage() {
           {booking.salon && (
             <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
               <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-slate-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
+                <BusinessesIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
                 Business Details
               </h2>
               <div className="space-y-3">
@@ -405,19 +373,7 @@ export default function BookingStatusPage() {
           {booking.slot && (
             <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
               <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-slate-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
+                <BookingsIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
                 Appointment Details
               </h2>
               <div className="space-y-3">
@@ -438,19 +394,7 @@ export default function BookingStatusPage() {
 
         <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 mb-8">
           <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-slate-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
+            <ProfileIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
             Your Details
           </h2>
           <div className="grid gap-3 md:grid-cols-2">
@@ -520,14 +464,7 @@ export default function BookingStatusPage() {
             href={ROUTES.CUSTOMER_DASHBOARD}
             className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-slate-100 text-slate-800 font-semibold py-3 px-6 rounded-xl hover:bg-slate-200 transition-all"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
+            <BookingsIcon className="w-5 h-5" aria-hidden="true" />
             {UI_CUSTOMER.NAV_MY_ACTIVITY}
           </Link>
         </div>

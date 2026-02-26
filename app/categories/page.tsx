@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import ChevronRightIcon from '@/src/icons/chevron-right.svg';
+import CreateBusinessIcon from '@/src/icons/create-business.svg';
 
 export default function CategoriesPage() {
   return (
@@ -18,19 +21,10 @@ export default function CategoriesPage() {
             <Link href={ROUTES.SALON_LIST}>
               <div className="group relative overflow-hidden rounded-2xl bg-white p-8 shadow-lg transition-all hover:shadow-2xl cursor-pointer border-2 border-gray-200 hover:border-black transform hover:-translate-y-1">
                 <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-black group-hover:to-gray-800 transition-all">
-                  <svg
+                  <BusinessesIcon
                     className="h-10 w-10 text-gray-700 group-hover:text-white transition-colors"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                    />
-                  </svg>
+                    aria-hidden="true"
+                  />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-black">
                   Salon
@@ -41,19 +35,7 @@ export default function CategoriesPage() {
                 </p>
                 <div className="mt-6 flex items-center text-black font-semibold group-hover:translate-x-2 transition-transform">
                   <span>Explore Salons</span>
-                  <svg
-                    className="w-5 h-5 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  <ChevronRightIcon className="w-5 h-5 ml-2" aria-hidden="true" />
                 </div>
               </div>
             </Link>
@@ -61,19 +43,7 @@ export default function CategoriesPage() {
             {/* Placeholder for future categories */}
             <div className="group relative overflow-hidden rounded-2xl bg-gray-100 p-8 border-2 border-dashed border-gray-300 opacity-60">
               <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-200">
-                <svg
-                  className="h-10 w-10 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <CreateBusinessIcon className="h-10 w-10 text-gray-400" aria-hidden="true" />
               </div>
               <h3 className="text-2xl font-bold text-gray-400 mb-3">More Categories</h3>
               <p className="text-gray-500 leading-relaxed">
@@ -83,19 +53,7 @@ export default function CategoriesPage() {
 
             <div className="group relative overflow-hidden rounded-2xl bg-gray-100 p-8 border-2 border-dashed border-gray-300 opacity-60">
               <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-200">
-                <svg
-                  className="h-10 w-10 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <CreateBusinessIcon className="h-10 w-10 text-gray-400" aria-hidden="true" />
               </div>
               <h3 className="text-2xl font-bold text-gray-400 mb-3">More Categories</h3>
               <p className="text-gray-500 leading-relaxed">
