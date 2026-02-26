@@ -17,11 +17,26 @@ export type AuditActionType =
   | (typeof AUDIT_ACTIONS.USER)[number]
   | (typeof AUDIT_ACTIONS.PAYMENT)[number]
   | (typeof AUDIT_ACTIONS.SYSTEM)[number]
-  | (typeof AUDIT_ACTIONS.SLOT)[number];
+  | (typeof AUDIT_ACTIONS.SLOT)[number]
+  | (typeof AUDIT_ACTIONS.MEDIA)[number];
 
-export type AuditEntityType = 'business' | 'user' | 'booking' | 'system' | 'slot' | 'payment';
+export type AuditEntityType =
+  | 'business'
+  | 'user'
+  | 'booking'
+  | 'system'
+  | 'slot'
+  | 'payment'
+  | 'media';
 
-export type AuditActionGroup = 'booking' | 'business' | 'user' | 'payment' | 'system' | 'slot';
+export type AuditActionGroup =
+  | 'booking'
+  | 'business'
+  | 'user'
+  | 'payment'
+  | 'system'
+  | 'slot'
+  | 'media';
 
 export interface AuditLog {
   id: string;
@@ -261,6 +276,7 @@ export class AuditService {
         payment: 'payment',
         system: 'system',
         slot: 'slot',
+        media: 'media',
       };
       query = query.eq('entity_type', entityMap[filters.actionGroup]);
     }
@@ -345,6 +361,7 @@ export class AuditService {
         payment: 'payment',
         system: 'system',
         slot: 'slot',
+        media: 'media',
       };
       query = query.eq('entity_type', entityMap[filters.actionGroup]);
     }

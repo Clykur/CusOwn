@@ -44,6 +44,12 @@ export const API_ROUTES = {
   BOOK_SET_PENDING: '/api/book/set-pending',
   /** Complete pending booking after login (auth required). */
   BOOK_COMPLETE: '/api/book/complete',
+  /** Media: profile image upload (owner/customer). */
+  MEDIA_PROFILE: '/api/media/profile',
+  /** Media: business images (owner). */
+  MEDIA_BUSINESS: (businessId: string) => `/api/media/business/${businessId}`,
+  /** Media: signed URL for display. */
+  MEDIA_SIGNED_URL: '/api/media/signed-url',
 } as const;
 
 export const ROUTES = {
@@ -172,6 +178,13 @@ export const ERROR_MESSAGES = {
   BOOKING_NOT_REJECTED: 'Booking is not rejected',
   BOOKING_REVERT_FAILED: 'Booking could not be reverted',
   UNDO_ALREADY_USED: 'Undo can only be used once per booking',
+  MEDIA_FILE_TYPE_INVALID: 'File type is not allowed',
+  MEDIA_FILE_TOO_LARGE: 'File size exceeds the maximum allowed',
+  MEDIA_UPLOAD_FAILED: 'Upload failed. Please try again.',
+  MEDIA_NOT_FOUND: 'Image not found',
+  MEDIA_BUSINESS_ACCESS_DENIED: 'You do not have access to this business',
+  MEDIA_PROFILE_ACCESS_DENIED: 'You can only update your own profile image',
+  MEDIA_BUSINESS_MAX_IMAGES: 'Maximum number of business images reached',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -190,7 +203,10 @@ export const SUCCESS_MESSAGES = {
   ACCOUNT_DELETED:
     'Your account and associated business data have been removed from the platform. For administrative and recovery purposes, your data will be securely stored for up to 30 days before being permanently deleted.',
   ACCOUNT_RESTORED: 'Account restored successfully',
- BOOKING_REVERTED_TO_PENDING: 'Booking reverted to pending',
+  BOOKING_REVERTED_TO_PENDING: 'Booking reverted to pending',
+  MEDIA_UPLOADED: 'Image uploaded successfully',
+  MEDIA_DELETED: 'Image removed successfully',
+  PROFILE_IMAGE_UPDATED: 'Profile image updated successfully',
 } as const;
 
 /** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */
@@ -309,16 +325,7 @@ export const UI_ERROR_CONTEXT = {
   GENERIC: 'Something went wrong. Try again.',
 } as const;
 
-export const BOOKING_EXPIRY_HOURS = parseInt(process.env.BOOKING_EXPIRY_HOURS || '24', 10);
-export const REMINDER_24H_BEFORE_HOURS = parseInt(
-  process.env.REMINDER_24H_BEFORE_HOURS || '24',
-  10
-);
-export const REMINDER_2H_BEFORE_HOURS = parseInt(process.env.REMINDER_2H_BEFORE_HOURS || '2', 10);
-export const CANCELLATION_MIN_HOURS_BEFORE = parseInt(
-  process.env.CANCELLATION_MIN_HOURS_BEFORE || '2',
-  10
-);
+/** Booking/reminder/cancellation hours are on env.booking (config/env.ts). */
 
 /** Owner undo: 5 min window. Undo allowed only once per accept/reject and only within this period; after undo or expiry the undo button is hidden. */
 export const UNDO_ACCEPT_REJECT_WINDOW_MINUTES = 5;
@@ -344,6 +351,9 @@ export const RATE_LIMIT_BOOKING_MAX_PER_WINDOW = 10;
 /** Phase 5: Admin endpoints — per user + per IP. */
 export const RATE_LIMIT_ADMIN_WINDOW_MS = 60_000;
 export const RATE_LIMIT_ADMIN_MAX_PER_WINDOW = 100;
+/** Media upload: per user + per IP to prevent abuse. */
+export const RATE_LIMIT_MEDIA_UPLOAD_WINDOW_MS = 60_000;
+export const RATE_LIMIT_MEDIA_UPLOAD_MAX_PER_WINDOW = 30;
 
 /** Phase 5: Refund/cancellation policy (documentation; no product change). */
 export const REFUND_POLICY_NOTE = 'Refunds follow payment provider policy and business discretion.';
@@ -376,6 +386,7 @@ export const CRON_JOB_NAMES = [
   'send-reminders',
   'trim-metric-timings',
   'health-check',
+  'purge-soft-deleted-media',
 ] as const;
 export type CronJobName = (typeof CRON_JOB_NAMES)[number];
 
@@ -421,6 +432,7 @@ export const AUDIT_ACTIONS = {
     'cron_recovered',
   ],
   SLOT: ['slot_reserved', 'slot_released', 'slot_booked'],
+  MEDIA: ['media_uploaded', 'media_deleted'],
 } as const;
 
 export const AUDIT_SEVERITY = { INFO: 'info', WARNING: 'warning', CRITICAL: 'critical' } as const;
@@ -487,6 +499,69 @@ export const PENDING_BOOKING_TTL_SECONDS = 600; // 10 min
 
 /** Client: debounce Supabase auth refresh_token requests to avoid 429. */
 export const AUTH_REFRESH_DEBOUNCE_MS = 60_000; // 1 min
+
+/** Media: allowed image MIME types (no executables). */
+export const MEDIA_ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+] as const;
+export type MediaAllowedMimeType = (typeof MEDIA_ALLOWED_MIME_TYPES)[number];
+
+/** Media: max file size in bytes (10 MB). */
+export const MEDIA_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+/** Media: max business images per business. */
+export const MEDIA_MAX_BUSINESS_IMAGES = 20;
+/** Media: entity types for DB. */
+export const MEDIA_ENTITY_TYPES = ['business', 'profile'] as const;
+export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
+
+/** Media: idempotency resource types (must match DB). */
+export const MEDIA_IDEMPOTENCY_RESOURCE_PROFILE = 'media_profile';
+export const MEDIA_IDEMPOTENCY_RESOURCE_BUSINESS = 'media_business';
+
+/** Media: processing status for variants pipeline. */
+export const MEDIA_PROCESSING_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+} as const;
+
+/** Media: security log event types (anomaly detection). */
+export const MEDIA_SECURITY_EVENTS = {
+  UPLOAD_FAILED: 'upload_failed',
+  MIME_MISMATCH: 'mime_mismatch',
+  MAGIC_BYTE_REJECT: 'magic_byte_reject',
+  SIZE_ABUSE: 'size_abuse',
+  DUPLICATE_REJECT: 'duplicate_reject',
+  REPEATED_FAILURES: 'repeated_failures',
+  CIRCUIT_OPEN: 'circuit_open',
+} as const;
+
+/** Media: metrics names for observability. */
+export const METRICS_MEDIA_UPLOAD_SUCCESS = 'media.upload.success';
+export const METRICS_MEDIA_UPLOAD_FAILURE = 'media.upload.failure';
+export const METRICS_MEDIA_UPLOAD_DURATION_MS = 'media.upload.duration_ms';
+export const METRICS_MEDIA_SIGNED_URL_GENERATED = 'media.signed_url.generated';
+export const METRICS_MEDIA_SIGNED_URL_DURATION_MS = 'media.signed_url.duration_ms';
+export const METRICS_MEDIA_STORAGE_LATENCY_MS = 'media.storage.latency_ms';
+export const METRICS_MEDIA_PURGE_COUNT = 'media.purge.count';
+export const METRICS_MEDIA_ORPHAN_CLEANUP_COUNT = 'media.orphan_cleanup.count';
+
+/** Media: circuit breaker — failures in window before opening. */
+export const MEDIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 10;
+export const MEDIA_CIRCUIT_BREAKER_WINDOW_MS = 60_000;
+export const MEDIA_CIRCUIT_BREAKER_COOLDOWN_MS = 120_000;
+
+/** Media: signed URL short TTL (seconds) for strict mode. */
+export const MEDIA_SIGNED_URL_TTL_SHORT_SECONDS = 300;
+/** Media: default retention days for soft-deleted before hard purge. */
+export const MEDIA_RETENTION_DAYS_SOFT_DELETED = 30;
+
+/** Media: cache-control for signed URL responses (CDN/client). */
+export const MEDIA_CACHE_CONTROL_HEADER = 'private, max-age=3600, stale-while-revalidate=86400';
 
 /** Role names stored in DB (roles.name) and in user_roles. No "both" - use multiple roles. */
 export const ROLES = ['customer', 'owner', 'admin'] as const;

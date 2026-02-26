@@ -190,3 +190,53 @@ export type AdminSystemMetrics = {
   cronExpireBookingsLastRun: string | null;
   cronExpireBookingsOk: boolean;
 };
+
+/** Media record (DB). */
+export type Media = {
+  id: string;
+  entity_type: 'business' | 'profile';
+  entity_id: string;
+  storage_path: string;
+  bucket_name: string;
+  content_type: string;
+  size_bytes: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  content_hash?: string | null;
+  etag?: string | null;
+  processing_status?: string | null;
+  variants?: MediaVariants | null;
+  content_type_resolved?: string | null;
+  recompressed_at?: string | null;
+  purged_at?: string | null;
+};
+
+/** Variants metadata (thumbnail, medium, large). */
+export type MediaVariants = {
+  thumbnail?: { path: string; width?: number; height?: number };
+  medium?: { path: string; width?: number; height?: number };
+  large?: { path: string; width?: number; height?: number };
+};
+
+/** Media list item (no internal path; optional etag for cache). */
+export type MediaListItem = Pick<
+  Media,
+  | 'id'
+  | 'entity_type'
+  | 'entity_id'
+  | 'content_type'
+  | 'size_bytes'
+  | 'sort_order'
+  | 'created_at'
+  | 'etag'
+  | 'variants'
+>;
+
+/** Upload response: media record + optional signed URL. */
+export type MediaUploadResponse = {
+  media: MediaListItem;
+  signedUrl?: string;
+  expiresAt?: string;
+};

@@ -9,8 +9,8 @@ import {
   UI_CUSTOMER,
   UI_ERROR_CONTEXT,
   ERROR_MESSAGES,
-  CANCELLATION_MIN_HOURS_BEFORE,
 } from '@/config/constants';
+import { env } from '@/config/env';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import RescheduleButton from '@/components/booking/reschedule-button';
 import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
@@ -274,7 +274,7 @@ export default function BookingStatusPage() {
   const msUntilAppointment = appointmentDateTime
     ? appointmentDateTime.getTime() - Date.now()
     : Number.POSITIVE_INFINITY;
-  const minCancellationWindowMs = CANCELLATION_MIN_HOURS_BEFORE * 60 * 60 * 1000;
+  const minCancellationWindowMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
   const isCancellationTooLate =
     canCancelByStatus &&
     Number.isFinite(msUntilAppointment) &&
