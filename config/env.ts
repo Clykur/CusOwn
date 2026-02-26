@@ -43,6 +43,16 @@ const envSchema = z.object({
   REMINDER_24H_BEFORE_HOURS: z.string().default('24'),
   REMINDER_2H_BEFORE_HOURS: z.string().default('2'),
   CANCELLATION_MIN_HOURS_BEFORE: z.string().default('2'),
+  /** Storage bucket for uploads (business + profile images). */
+  UPLOAD_STORAGE_BUCKET: z.string().min(1).default('uploads'),
+  /** Media: retention days for soft-deleted media before hard purge. */
+  MEDIA_RETENTION_DAYS: z.string().default('30'),
+  /** Media: signed URL short TTL (seconds) when strict/single-use mode. */
+  MEDIA_SIGNED_URL_TTL_SHORT: z.string().default('300'),
+  /** Media: enable EXIF strip and recompression on upload. */
+  MEDIA_STRIP_EXIF: z.string().default('true'),
+  /** Media: enable magic-byte validation (reject MIME mismatch). */
+  MEDIA_VALIDATE_MAGIC_BYTES: z.string().default('true'),
 });
 
 const rawEnv = envSchema.parse(process.env);
@@ -104,6 +114,15 @@ export const env = {
     reminder24hBeforeHours: parseInt(rawEnv.REMINDER_24H_BEFORE_HOURS, 10),
     reminder2hBeforeHours: parseInt(rawEnv.REMINDER_2H_BEFORE_HOURS, 10),
     cancellationMinHoursBefore: parseInt(rawEnv.CANCELLATION_MIN_HOURS_BEFORE, 10),
+  },
+  upload: {
+    storageBucket: rawEnv.UPLOAD_STORAGE_BUCKET,
+  },
+  media: {
+    retentionDays: parseInt(rawEnv.MEDIA_RETENTION_DAYS, 10),
+    signedUrlTtlShortSeconds: parseInt(rawEnv.MEDIA_SIGNED_URL_TTL_SHORT, 10),
+    stripExif: rawEnv.MEDIA_STRIP_EXIF === 'true',
+    validateMagicBytes: rawEnv.MEDIA_VALIDATE_MAGIC_BYTES === 'true',
   },
 } as const;
 

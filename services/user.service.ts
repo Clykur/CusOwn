@@ -8,6 +8,7 @@ export interface UserProfile {
   user_type: UserType;
   full_name: string | null;
   phone_number: string | null;
+  profile_media_id?: string | null;
   created_at: string;
   updated_at: string;
 }

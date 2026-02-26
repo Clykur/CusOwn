@@ -14,6 +14,12 @@ CREATE INDEX IF NOT EXISTS idx_business_categories_active_order
   ON public.business_categories(is_active, sort_order, label)
   WHERE is_active = true;
 
+ALTER TABLE public.business_categories ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can read business_categories"
+  ON public.business_categories FOR SELECT
+  USING (true);
+
 COMMENT ON TABLE public.business_categories IS 'Available business types for create-business; list is dynamic, not hardcoded.';
 
 -- Seed initial categories (ignore if already present)
