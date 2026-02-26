@@ -3,8 +3,9 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const nodeCommand = process.platform === 'win32' ? 'node.exe' : 'node';
+const isWindows = process.platform === 'win32';
+const command = 'npx';
+const nodeCommand = process.execPath || (isWindows ? 'node.exe' : 'node');
 const rootDir = process.cwd();
 const strictDistDir = '.next-build';
 const nextServerDir = path.join(rootDir, strictDistDir, 'server');
@@ -32,6 +33,7 @@ function runNextBuild() {
     env: { ...process.env, NEXT_DIST_DIR: strictDistDir },
     stdio: ['inherit', 'pipe', 'pipe'],
     encoding: 'utf8',
+    shell: isWindows,
   });
   const stdout = result.stdout || '';
   const stderr = result.stderr || '';
