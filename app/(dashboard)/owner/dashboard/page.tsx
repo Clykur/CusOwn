@@ -37,6 +37,17 @@ export default function OwnerDashboardPage() {
   } | null>(null);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const midnightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Return local YYYY-MM-DD (not UTC) */
+  const getLocalTodayStr = useCallback(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
+
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
   const isUndoWindowOpen = lastUndoable ? Date.now() - lastUndoable.at < undoWindowMs : false;
 
@@ -66,7 +77,7 @@ export default function OwnerDashboardPage() {
   const fetchBookings = useCallback(
     async (signal?: AbortSignal) => {
       try {
-        const date = selectedDate || new Date().toISOString().split('T')[0];
+        const date = selectedDate || getLocalTodayStr();
 
         const bizRes = await fetch('/api/owner/businesses', {
           credentials: 'include',
@@ -106,12 +117,30 @@ export default function OwnerDashboardPage() {
         if ((err as Error)?.name !== 'AbortError') console.error('Failed to fetch bookings', err);
       }
     },
-    [selectedDate]
+    [selectedDate, getLocalTodayStr]
   );
 
+  // Initialise to local today & schedule midnight refresh
   useEffect(() => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
-  }, []);
+    setSelectedDate(getLocalTodayStr());
+
+    const scheduleMidnightRefresh = () => {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const msUntilMidnight = tomorrow.getTime() - now.getTime();
+
+      midnightTimerRef.current = setTimeout(() => {
+        setSelectedDate(getLocalTodayStr());
+        scheduleMidnightRefresh(); // re-schedule for the next midnight
+      }, msUntilMidnight + 500); // +500 ms buffer
+    };
+
+    scheduleMidnightRefresh();
+
+    return () => {
+      if (midnightTimerRef.current) clearTimeout(midnightTimerRef.current);
+    };
+  }, [getLocalTodayStr]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -131,6 +160,16 @@ export default function OwnerDashboardPage() {
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
+      // Optimistic update
+      const prevBookings = bookings;
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingId
+            ? { ...b, status: 'confirmed' as const, updated_at: new Date().toISOString() }
+            : b
+        )
+      );
+
       const response = await fetch(`/api/bookings/${bookingId}/accept`, {
         method: 'POST',
         headers,
@@ -142,8 +181,9 @@ export default function OwnerDashboardPage() {
         if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
         setLastUndoable({ bookingId, action: 'accept', at: Date.now() });
         undoTimeoutRef.current = setTimeout(() => setLastUndoable(null), undoWindowMs);
-        fetchBookings();
       } else {
+        // Rollback on failure
+        setBookings(prevBookings);
         const result = await response.json();
         setActionError(result.error || 'Failed to accept booking');
       }
@@ -165,6 +205,16 @@ export default function OwnerDashboardPage() {
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
+      // Optimistic update
+      const prevBookings = bookings;
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingId
+            ? { ...b, status: 'rejected' as const, updated_at: new Date().toISOString() }
+            : b
+        )
+      );
+
       const response = await fetch(`/api/bookings/${bookingId}/reject`, {
         method: 'POST',
         headers,
@@ -176,8 +226,9 @@ export default function OwnerDashboardPage() {
         if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
         setLastUndoable({ bookingId, action: 'reject', at: Date.now() });
         undoTimeoutRef.current = setTimeout(() => setLastUndoable(null), undoWindowMs);
-        fetchBookings();
       } else {
+        // Rollback on failure
+        setBookings(prevBookings);
         const result = await response.json();
         setActionError(result.error || 'Failed to reject booking');
       }
@@ -202,6 +253,17 @@ export default function OwnerDashboardPage() {
         const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
         const headers: Record<string, string> = {};
         if (csrfToken) headers['x-csrf-token'] = csrfToken;
+        // Optimistic update
+        let prevSnapshot: BookingWithDetails[] = [];
+        setBookings((prev) => {
+          prevSnapshot = prev;
+          return prev.map((b) =>
+            b.id === bookingId
+              ? { ...b, status: 'pending' as const, updated_at: new Date().toISOString() }
+              : b
+          );
+        });
+
         const res = await fetch(`/api/bookings/${bookingId}/undo-accept`, {
           method: 'POST',
           headers,
@@ -211,11 +273,9 @@ export default function OwnerDashboardPage() {
         if (res.ok) {
           setActionSuccess(UI_CONTEXT.REVERTED_TO_PENDING);
           setTimeout(() => setActionSuccess(null), 2000);
-          setBookings((prev) =>
-            prev.map((b) => (b.id === bookingId ? { ...b, status: 'pending' as const } : b))
-          );
-          fetchBookings();
         } else {
+          // Rollback on failure
+          setBookings(prevSnapshot);
           setActionError(json.error || 'Failed to undo');
         }
       } catch {
@@ -224,7 +284,7 @@ export default function OwnerDashboardPage() {
         setProcessingBookingId(null);
       }
     },
-    [processingBookingId, fetchBookings]
+    [processingBookingId]
   );
 
   const handleUndoReject = useCallback(
@@ -241,6 +301,17 @@ export default function OwnerDashboardPage() {
         const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
         const headers: Record<string, string> = {};
         if (csrfToken) headers['x-csrf-token'] = csrfToken;
+        // Optimistic update
+        let prevSnapshot: BookingWithDetails[] = [];
+        setBookings((prev) => {
+          prevSnapshot = prev;
+          return prev.map((b) =>
+            b.id === bookingId
+              ? { ...b, status: 'pending' as const, updated_at: new Date().toISOString() }
+              : b
+          );
+        });
+
         const res = await fetch(`/api/bookings/${bookingId}/undo-reject`, {
           method: 'POST',
           headers,
@@ -250,11 +321,9 @@ export default function OwnerDashboardPage() {
         if (res.ok) {
           setActionSuccess(UI_CONTEXT.REVERTED_TO_PENDING);
           setTimeout(() => setActionSuccess(null), 2000);
-          setBookings((prev) =>
-            prev.map((b) => (b.id === bookingId ? { ...b, status: 'pending' as const } : b))
-          );
-          fetchBookings();
         } else {
+          // Rollback on failure
+          setBookings(prevSnapshot);
           setActionError(json.error || 'Failed to undo');
         }
       } catch {
@@ -263,8 +332,17 @@ export default function OwnerDashboardPage() {
         setProcessingBookingId(null);
       }
     },
-    [processingBookingId, fetchBookings]
+    [processingBookingId]
   );
+
+  const handleBookingRescheduled = useCallback(() => {
+    // Refetch bookings on reschedule since slot data changes
+    fetchBookings();
+  }, [fetchBookings]);
+
+  const handleNoShowMarked = useCallback((bookingId: string) => {
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, no_show: true } : b)));
+  }, []);
 
   const canUndo = useCallback((b: BookingWithDetails) => {
     if (b.status !== 'confirmed' && b.status !== 'rejected') return false;
@@ -438,7 +516,8 @@ export default function OwnerDashboardPage() {
                       processingId={processingBookingId}
                       actionError={actionError}
                       actionSuccess={actionSuccess}
-                      onRescheduled={fetchBookings}
+                      onRescheduled={handleBookingRescheduled}
+                      onNoShowMarked={handleNoShowMarked}
                       onUndoAccept={handleUndoAccept}
                       onUndoReject={handleUndoReject}
                       undoWindowMinutes={UNDO_ACCEPT_REJECT_WINDOW_MINUTES}
@@ -564,7 +643,10 @@ export default function OwnerDashboardPage() {
                                   </button>
                                 )}
                                 {!booking.no_show && (
-                                  <NoShowButton bookingId={booking.id} onMarked={fetchBookings} />
+                                  <NoShowButton
+                                    bookingId={booking.id}
+                                    onMarked={() => handleNoShowMarked(booking.id)}
+                                  />
                                 )}
                               </>
                             )}

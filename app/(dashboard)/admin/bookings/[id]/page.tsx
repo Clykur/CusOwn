@@ -85,7 +85,19 @@ export default function AdminBookingPage() {
 
       const data = await res.json();
       if (data.success) {
-        await loadBooking();
+        // Optimistic local state update
+        setBooking((prev: any) => ({
+          ...prev,
+          status:
+            action === 'accept' ? 'confirmed' : action === 'reject' ? 'rejected' : 'cancelled',
+          ...(action === 'cancel'
+            ? {
+                cancelled_at: new Date().toISOString(),
+                cancellation_reason: reason || 'Cancelled by admin',
+              }
+            : {}),
+          ...(action === 'reject' ? { cancellation_reason: reason || 'Rejected by admin' } : {}),
+        }));
       } else {
         setError(data.error || `Failed to ${action} booking`);
       }

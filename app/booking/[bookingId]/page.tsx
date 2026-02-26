@@ -189,7 +189,13 @@ export default function BookingStatusPage() {
         throw new Error(result.error || 'Failed to cancel booking');
       }
 
-      await fetchBooking();
+      // Optimistic state update
+      setBooking((prev: any) => ({
+        ...prev,
+        status: 'cancelled',
+        cancelled_by: 'customer',
+        cancelled_at: new Date().toISOString(),
+      }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to cancel booking');
       clearCSRFToken();
@@ -498,7 +504,10 @@ export default function BookingStatusPage() {
                   currentSlot={booking.slot}
                   businessId={booking.business_id}
                   availableSlots={availableSlots}
-                  onRescheduled={fetchBooking}
+                  onRescheduled={() => {
+                    // Refetch booking to get updated slot data after reschedule
+                    fetchBooking({ silent: true });
+                  }}
                   rescheduledBy="customer"
                 />
               </div>

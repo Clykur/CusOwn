@@ -173,14 +173,21 @@ export function ProfilePageContent({
       if (result.success) {
         setSaveMessage('Profile updated successfully');
         setEditMode(false);
-        // Refresh profile data (cookie auth)
-        const refreshResponse = await fetch('/api/user/profile', {
-          credentials: 'include',
+        // Optimistic local state update from form data
+        setProfileData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            profile: prev.profile
+              ? {
+                  ...prev.profile,
+                  full_name: formData.full_name || null,
+                  phone_number: formData.phone_number || null,
+                  updated_at: new Date().toISOString(),
+                }
+              : prev.profile,
+          };
         });
-        const refreshResult = await refreshResponse.json();
-        if (refreshResult.success && refreshResult.data) {
-          setProfileData(refreshResult.data);
-        }
         setTimeout(() => setSaveMessage(null), 3000);
       } else {
         setError(result.error || 'Failed to update profile');
@@ -276,7 +283,29 @@ export function ProfilePageContent({
         <p className="text-sm text-slate-500 mb-6">{error}</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetch('/api/user/profile', { credentials: 'include' })
+                .then((res) => res.json())
+                .then((result) => {
+                  if (result.success && result.data) {
+                    setProfileData(result.data);
+                    const rawPhone = result.data.profile?.phone_number || '';
+                    const phoneDigits = rawPhone.replace(/\D/g, '').slice(0, PHONE_DIGITS);
+                    setFormData({
+                      full_name: result.data.profile?.full_name || '',
+                      phone_number: phoneDigits,
+                    });
+                  } else {
+                    setError(result.error || 'Failed to load profile');
+                  }
+                })
+                .catch((err) => {
+                  setError(err instanceof Error ? err.message : 'Failed to load profile');
+                })
+                .finally(() => setLoading(false));
+            }}
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
           >
             Retry

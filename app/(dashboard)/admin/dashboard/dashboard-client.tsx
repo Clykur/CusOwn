@@ -453,8 +453,8 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                       });
                       const data = await res.json();
                       if (data.success) {
-                        alert('Admin status set! Please refresh the page.');
-                        window.location.reload();
+                        setAuthError(null);
+                        setAdminConfirmed(true);
                       } else {
                         alert('Failed to set admin status: ' + (data.error || 'Unknown error'));
                       }

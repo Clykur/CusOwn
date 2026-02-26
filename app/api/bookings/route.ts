@@ -4,6 +4,7 @@ import { whatsappService } from '@/services/whatsapp.service';
 import { salonService } from '@/services/salon.service';
 import { slotService } from '@/services/slot.service';
 import { reminderService } from '@/services/reminder.service';
+import { businessHoursService } from '@/services/business-hours.service';
 import { validateCreateBooking } from '@/lib/utils/validation';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID } from '@/lib/utils/security';
@@ -21,7 +22,6 @@ import { BookingWithDetails } from '@/types';
 import { auditService } from '@/services/audit.service';
 import { emitBookingCreated } from '@/lib/events/booking-events';
 import { metricsService } from '@/lib/monitoring/metrics';
-import { logBookingLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
@@ -40,23 +40,30 @@ export async function POST(request: NextRequest) {
     await bookingService.runLazyExpireIfNeeded();
 
     const rateLimitResponse = await bookingRateLimitEnhanced(request);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
+    if (rateLimitResponse) return rateLimitResponse;
 
     const supabase = requireSupabaseAdmin();
+
+    // ----------------------------
+    // IDEMPOTENCY CHECK
+    // ----------------------------
     const { data: idemRow } = await supabase.rpc('get_idempotency_booking', {
       p_key: idempotencyKey,
     });
+
     const idemRows = Array.isArray(idemRow) ? idemRow : idemRow ? [idemRow] : [];
-    const stored = idemRows[0] as { result_id: string; response_snapshot: unknown } | undefined;
+    const stored = idemRows[0] as { response_snapshot: unknown } | undefined;
     const snapshot = stored?.response_snapshot as { _in_progress?: string } | undefined;
+
     if (stored?.response_snapshot != null && snapshot?._in_progress !== 'true') {
       const response = NextResponse.json(stored.response_snapshot);
       setNoCacheHeaders(response);
       return response;
     }
 
+    // ----------------------------
+    // NONCE CHECK
+    // ----------------------------
     const requestId = request.headers.get('x-request-id');
     if (requestId) {
       if (!isValidUUID(requestId)) {
@@ -65,39 +72,61 @@ export async function POST(request: NextRequest) {
 
       const user = await getServerUser(request);
       const nonceExists = await checkNonce(requestId);
-      if (nonceExists) {
-        return errorResponse('Duplicate request', 409);
-      }
+      if (nonceExists) return errorResponse('Duplicate request', 409);
 
       await storeNonce(requestId, user?.id, clientIP);
     }
 
+    // ----------------------------
+    // BODY VALIDATION
+    // ----------------------------
     const body = await request.json();
-
     const { filterFields, validateStringLength } = await import('@/lib/security/input-filter');
-    const allowedFields: string[] = [
-      'salon_id',
-      'slot_id',
-      'customer_name',
-      'customer_phone',
-      'service_ids',
-    ];
-    const filteredBody = filterFields(body, allowedFields as (keyof typeof body)[]);
 
+    const allowedFields = ['salon_id', 'slot_id', 'customer_name', 'customer_phone', 'service_ids'];
+
+    const filteredBody = filterFields(body, allowedFields as (keyof typeof body)[]);
     const validatedData = validateCreateBooking(filteredBody);
 
     if (!isValidUUID(validatedData.salon_id) || !isValidUUID(validatedData.slot_id)) {
       return errorResponse('Invalid salon or slot ID', 400);
     }
 
-    // Additional length validation (defense in depth)
     if (!validateStringLength(validatedData.customer_name, 200)) {
-      return errorResponse('Customer name is too long', 400);
-    }
-    if (!validateStringLength(validatedData.customer_phone, 20)) {
-      return errorResponse('Customer phone is too long', 400);
+      return errorResponse('Customer name too long', 400);
     }
 
+    if (!validateStringLength(validatedData.customer_phone, 20)) {
+      return errorResponse('Customer phone too long', 400);
+    }
+
+    // ----------------------------
+    // SLOT FETCH
+    // ----------------------------
+    const slot = await slotService.getSlotById(validatedData.slot_id);
+    if (!slot) return errorResponse(ERROR_MESSAGES.SLOT_NOT_FOUND, 404);
+
+    if (slot.business_id !== validatedData.salon_id) {
+      return errorResponse('Slot does not belong to this salon', 400);
+    }
+
+    // ----------------------------
+    // BUSINESS HOURS VALIDATION
+    // ----------------------------
+    const validation = await businessHoursService.validateSlot(
+      validatedData.salon_id,
+      slot.date,
+      slot.start_time,
+      slot.end_time
+    );
+
+    if (!validation.valid) {
+      return errorResponse(validation.reason || 'Invalid slot', 400);
+    }
+
+    // ----------------------------
+    // ABUSE CHECK
+    // ----------------------------
     const user = await getServerUser(request);
     const customerUserId = user?.id;
 
@@ -106,27 +135,17 @@ export async function POST(request: NextRequest) {
       clientIP,
       'booking'
     );
+
     if (abuseCheck.blocked) {
-      console.warn(
-        `[ABUSE] Blocked booking attempt: ${abuseCheck.reason}, IP: ${clientIP}, User: ${customerUserId?.substring(0, 8) || 'anonymous'}...`
-      );
-      return errorResponse(abuseCheck.reason || 'Action blocked due to abuse detection', 429);
+      return errorResponse(abuseCheck.reason || 'Action blocked', 429);
     }
 
+    // ----------------------------
+    // CREATE BOOKING
+    // ----------------------------
     const serviceIds = Array.isArray(filteredBody.service_ids)
       ? filteredBody.service_ids
       : undefined;
-
-    if (serviceIds) {
-      if (serviceIds.length > 10) {
-        return errorResponse('Too many services', 400);
-      }
-      for (const serviceId of serviceIds) {
-        if (!isValidUUID(serviceId)) {
-          return errorResponse('Invalid service ID', 400);
-        }
-      }
-    }
 
     const params = await bookingService.prepareCreateBookingParams(
       validatedData,
@@ -152,107 +171,46 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    if (idemError) {
-      throw new Error(idemError.message || ERROR_MESSAGES.DATABASE_ERROR);
-    }
+    if (idemError) throw new Error(idemError.message);
 
     const row = Array.isArray(idemResult) ? idemResult[0] : idemResult;
-    const status = row?.status as string | undefined;
-    const responseSnapshot = row?.response_snapshot as unknown;
-    const createdBookingId = row?.booking_id as string | undefined;
+    const createdBookingId = row?.booking_id;
+    if (!createdBookingId) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
 
-    if (status === 'duplicate' && responseSnapshot != null) {
-      const response = NextResponse.json(responseSnapshot);
-      setNoCacheHeaders(response);
-      return response;
-    }
-    if (status === 'in_progress') {
-      return errorResponse('Duplicate request; try again shortly', 409);
-    }
-    if (status !== 'created' || !createdBookingId) {
-      throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
-    }
-
-    const bookingWithDetailsFromDb =
-      await bookingService.getBookingByUuidWithDetails(createdBookingId);
-    if (!bookingWithDetailsFromDb) {
-      throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
-    }
-    const booking = bookingWithDetailsFromDb;
+    const booking = await bookingService.getBookingByUuidWithDetails(createdBookingId);
+    if (!booking) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
 
     const salon = await salonService.getSalonById(validatedData.salon_id);
-    if (!salon) {
-      throw new Error(ERROR_MESSAGES.SALON_NOT_FOUND);
-    }
-    if (!salon.whatsapp_number) {
-      throw new Error('Salon WhatsApp number is not configured. Please contact the salon owner.');
-    }
-
-    const updatedSlot = await slotService.getSlotById(validatedData.slot_id);
-    if (!updatedSlot) {
-      throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
-    }
-    if (updatedSlot.business_id !== validatedData.salon_id) {
-      throw new Error('Slot does not belong to this salon');
-    }
+    if (!salon) throw new Error(ERROR_MESSAGES.SALON_NOT_FOUND);
 
     const bookingWithDetails: BookingWithDetails = {
       ...booking,
       salon,
-      slot: updatedSlot,
+      slot,
     };
 
     await emitBookingCreated(bookingWithDetails);
-    await metricsService.increment('bookings.created');
     await metricsService.increment(METRICS_BOOKING_CREATED);
-    logBookingLifecycle({
-      booking_id: booking.id,
-      slot_id: booking.slot_id,
-      action: 'booking_created',
-      actor: customerUserId ?? 'anonymous',
-      source: 'api',
-    });
-
-    let whatsappUrl: string;
-    let message: string;
-    try {
-      const result = whatsappService.generateBookingRequestMessage(
-        bookingWithDetails,
-        salon,
-        request
-      );
-      whatsappUrl = result.whatsappUrl;
-      message = result.message;
-    } catch (whatsappError) {
-      console.error('Error generating WhatsApp URL:', whatsappError);
-      throw new Error('Failed to generate WhatsApp link. Please contact the salon directly.');
-    }
-
     await reminderService.scheduleBookingReminders(booking.id);
 
-    if (user) {
-      try {
-        await auditService.createAuditLog(user.id, 'booking_created', 'booking', {
-          entityId: booking.id,
-          description: `Booking created for ${validatedData.customer_name}`,
-          request,
-        });
-      } catch (auditError) {
-        console.error('[SECURITY] Failed to create audit log:', auditError);
-      }
-    }
+    const whatsapp = whatsappService.generateBookingRequestMessage(
+      bookingWithDetails,
+      salon,
+      request
+    );
 
     const bookingStatusUrl = getBookingStatusUrl(booking.booking_id, request);
 
     const responsePayload = {
       data: {
         booking,
-        whatsapp_url: whatsappUrl,
-        message,
+        whatsapp_url: whatsapp.whatsappUrl,
+        message: whatsapp.message,
         booking_status_url: bookingStatusUrl,
       },
       message: SUCCESS_MESSAGES.BOOKING_CREATED,
     };
+
     await supabase.rpc('set_idempotency_booking_result', {
       p_key: idempotencyKey,
       p_result_id: booking.id,
@@ -261,9 +219,11 @@ export async function POST(request: NextRequest) {
 
     const response = successResponse(responsePayload.data, responsePayload.message);
     setNoCacheHeaders(response);
+
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+
     return errorResponse(message, 400);
   }
 }
