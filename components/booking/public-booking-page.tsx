@@ -21,10 +21,6 @@ import CheckIcon from '@/src/icons/check.svg';
 
 const PENDING_BOOKING_KEY = 'pendingBooking';
 
-/** Business hours: 10:00 AM – 9:00 PM (21:00). No slots outside this window. */
-const BUSINESS_OPEN_HOUR = 10; // 10:00 AM
-const BUSINESS_CLOSE_HOUR = 21; // 9:00 PM
-
 /** Get local today string YYYY-MM-DD without timezone offset issues. */
 function getLocalTodayStr(): string {
   const now = new Date();
@@ -36,35 +32,37 @@ function isToday(dateStr: string): boolean {
   return dateStr === getLocalTodayStr();
 }
 
-/** Returns true if business is currently closed (past 9 PM today). */
-function isAfterBusinessHours(): boolean {
+/** Returns true if business is currently closed (past closing hour today). */
+function isAfterBusinessHours(closeHour: number): boolean {
   const now = new Date();
-  return now.getHours() >= BUSINESS_CLOSE_HOUR;
+  return now.getHours() >= closeHour;
 }
 
 /**
- * Filter slots based on business-hours rules.
- * - Remove slots outside 10 AM–9 PM
+ * Filter slots based on the business's actual opening/closing hours.
+ * - Remove slots outside the business's configured hours
  * - For today: remove slots whose start_time has already passed
- * - For today after 9 PM: return empty (all expired)
+ * - For today after closing: return empty (all expired)
  * - For future dates: show full working-hour slots
  */
-function filterSlotsByBusinessHours(slots: Slot[], selectedDate: string): Slot[] {
-  // 1. Always filter out slots outside business hours (10 AM – 9 PM)
+function filterSlotsByBusinessHours(
+  slots: Slot[],
+  selectedDate: string,
+  openHour: number,
+  closeHour: number
+): Slot[] {
+  // 1. Always filter out slots outside the business's actual hours
   let filtered = slots.filter((slot) => {
     const [startH] = slot.start_time.split(':').map(Number);
     const [endH, endM] = slot.end_time.split(':').map(Number);
     const endMinutes = endH * 60 + endM;
-    // Slot must start at or after opening AND end at or before closing
-    return startH >= BUSINESS_OPEN_HOUR && endMinutes <= BUSINESS_CLOSE_HOUR * 60;
+    return startH >= openHour && endMinutes <= closeHour * 60;
   });
 
   // 2. For today only, apply time-based expiry
   if (isToday(selectedDate)) {
-    // After 9 PM: No slots available at all
-    if (isAfterBusinessHours()) return [];
+    if (isAfterBusinessHours(closeHour)) return [];
 
-    // During business hours: only show slots that haven't started yet
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     filtered = filtered.filter((slot) => {
@@ -123,6 +121,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const router = useRouter();
   const [business, setBusiness] = useState<PublicBusiness | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [closedMessage, setClosedMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +183,10 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
       if (selectedSlot) {
         const now = new Date();
         const [h, m] = selectedSlot.start_time.split(':').map(Number);
-        if (h * 60 + m <= now.getHours() * 60 + now.getMinutes() || isAfterBusinessHours()) {
+        const closeH = business?.closing_time
+          ? parseInt(business.closing_time.split(':')[0], 10)
+          : 24;
+        if (h * 60 + m <= now.getHours() * 60 + now.getMinutes() || isAfterBusinessHours(closeH)) {
           setSelectedSlot(null);
         }
       }
@@ -192,7 +194,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     return () => {
       if (slotRefreshTimerRef.current) clearInterval(slotRefreshTimerRef.current);
     };
-  }, [selectedDate, selectedSlot]);
+  }, [selectedDate, selectedSlot, business?.closing_time]);
 
   // Restore form data from localStorage after login redirect
   const restorePendingBooking = useCallback(
@@ -253,6 +255,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   useEffect(() => {
     if (!business || !selectedDate) return;
     let cancelled = false;
+    setClosedMessage(null);
     fetch(`${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`, {
       credentials: 'include',
     })
@@ -260,15 +263,25 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
       .then((result) => {
         if (cancelled) return;
         if (result?.success && result?.data) {
-          setSlots(result.data);
+          // Detect server-side closed / holiday state
+          if (result.data.closed) {
+            setClosedMessage(result.data.message || 'Shop is closed on this day.');
+            setSlots([]);
+            return;
+          }
+          setClosedMessage(null);
+          const loadedSlots: Slot[] = Array.isArray(result.data)
+            ? result.data
+            : (result.data.slots ?? []);
+          setSlots(loadedSlots);
 
           // Restore from pending booking if returning from login
           if (!restoredFromPending) {
-            restorePendingBooking(result.data);
+            restorePendingBooking(loadedSlots);
           }
 
           if (selectedSlot) {
-            const updated = result.data.find((s: Slot) => s.id === selectedSlot.id);
+            const updated = loadedSlots.find((s: Slot) => s.id === selectedSlot.id);
             if (!updated || updated.status !== 'available') {
               setSelectedSlot(null);
               if (updated?.status !== 'available')
@@ -302,7 +315,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
         if (business) {
           const r = await fetch(`${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`);
           const j = await r.json();
-          if (j?.success) setSlots(j.data);
+          if (j?.success) setSlots(Array.isArray(j.data) ? j.data : (j.data?.slots ?? []));
         }
       }
     } catch {
@@ -358,7 +371,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
         setSelectedSlot(null);
         const r = await fetch(`${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`);
         const j = await r.json();
-        if (j?.success) setSlots(j.data);
+        if (j?.success) setSlots(Array.isArray(j.data) ? j.data : (j.data?.slots ?? []));
         throw new Error('This slot is no longer available. Please select another.');
       }
       const csrfToken = await getCSRFToken();
@@ -384,7 +397,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
           setSelectedSlot(null);
           const r = await fetch(`${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`);
           const j = await r.json();
-          if (j?.success) setSlots(j.data);
+          if (j?.success) setSlots(Array.isArray(j.data) ? j.data : (j.data?.slots ?? []));
         }
         throw new Error(result?.error || 'Failed to create booking');
       }
@@ -400,7 +413,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
         setSelectedSlot(null);
         const r = await fetch(`${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`);
         const j = await r.json();
-        if (j?.success) setSlots(j.data);
+        if (j?.success) setSlots(Array.isArray(j.data) ? j.data : (j.data?.slots ?? []));
       }
     } finally {
       setSubmitting(false);
@@ -412,9 +425,22 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrowStr = `${tomorrowDate.getFullYear()}-${String(tomorrowDate.getMonth() + 1).padStart(2, '0')}-${String(tomorrowDate.getDate()).padStart(2, '0')}`;
 
+  // Parse business opening/closing hours for dynamic filtering
+  const businessOpenHour = business?.opening_time
+    ? parseInt(business.opening_time.split(':')[0], 10)
+    : 0;
+  const businessCloseHour = business?.closing_time
+    ? parseInt(business.closing_time.split(':')[0], 10)
+    : 24;
+
   // Business-hours aware slot filtering
-  const filteredSlots = filterSlotsByBusinessHours(slots, selectedDate);
-  const isTodayClosed = isToday(selectedDate) && isAfterBusinessHours();
+  const filteredSlots = filterSlotsByBusinessHours(
+    slots,
+    selectedDate,
+    businessOpenHour,
+    businessCloseHour
+  );
+  const isTodayClosed = isToday(selectedDate) && isAfterBusinessHours(businessCloseHour);
 
   if (loading) return <BookingPageSkeleton />;
   if (error && !business) {
@@ -508,10 +534,29 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
                 {UI_CUSTOMER.LABEL_SELECT_TIME}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                {isTodayClosed ? (
+                {closedMessage ? (
+                  <div className="col-span-full text-center py-6">
+                    <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm font-medium">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {closedMessage}
+                    </div>
+                  </div>
+                ) : isTodayClosed ? (
                   <p className="col-span-full text-slate-500 text-center py-4">
-                    No slots available for today. The shop is closed after 9:00 PM. Please select
-                    tomorrow.
+                    No slots available for today. The shop is closed after{' '}
+                    {business?.closing_time ? formatTime(business.closing_time) : 'closing time'}.
+                    Please select tomorrow.
                   </p>
                 ) : filteredSlots.length === 0 ? (
                   <p className="col-span-full text-slate-500 text-center py-4">

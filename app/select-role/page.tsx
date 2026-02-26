@@ -81,10 +81,16 @@ function SelectRoleContent() {
 
         /**
          * Auto-redirect when no ?role= param:
-         * - Owner with business → dashboard
+         * - "both" users → let them pick (no auto-redirect)
+         * - Owner with business → owner dashboard
          * - Customer → customer dashboard
          */
         if (!urlRole) {
+          if (state.userType === 'both') {
+            // Users with both roles should choose — don't auto-redirect
+            setLoading(false);
+            return;
+          }
           if (isOwner && hasBusiness) {
             router.replace(ROUTES.OWNER_DASHBOARD_BASE);
             return;

@@ -162,7 +162,8 @@ export default function BookingStatusPage() {
       const response = await fetch(`/api/slots?salon_id=${businessId}&date=${date}`);
       const result = await response.json();
       if (result.success && result.data) {
-        setAvailableSlots(result.data);
+        const slotsArr = Array.isArray(result.data) ? result.data : (result.data.slots ?? []);
+        setAvailableSlots(slotsArr);
       }
     } catch (err) {
       console.error('Failed to fetch slots:', err);

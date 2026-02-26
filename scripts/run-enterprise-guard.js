@@ -2,7 +2,7 @@
 const { spawnSync } = require('child_process');
 
 const isWindows = process.platform === 'win32';
-const npmCmd = 'npm';
+const npmCmd = isWindows ? 'npm.cmd' : 'npm';
 
 const checks = [
   ['run', 'lint:strict'],
