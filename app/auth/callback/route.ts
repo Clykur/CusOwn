@@ -178,8 +178,9 @@ export async function GET(request: NextRequest) {
     const { getUserState } = await import('@/lib/utils/user-state');
     const stateResult = await getUserState(data.user.id);
     const stateRedirect = stateResult.redirectUrl;
-    // Do not send customer intent to onboarding: getUserState may return /select-role for "both, no business"
-    if (stateRedirect && !(stateRedirect.includes('/select-role') && selectedRole === 'customer')) {
+    // When a role was explicitly selected, skip getUserState auto-redirect
+    // so the role-specific logic below can route to the correct dashboard.
+    if (stateRedirect && !selectedRole) {
       console.log('[AUTH] callback: positive — redirect from getUserState', {
         userId: data.user.id.substring(0, 8) + '...',
         redirectUrl: stateRedirect,

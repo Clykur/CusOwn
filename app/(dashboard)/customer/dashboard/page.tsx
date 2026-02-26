@@ -47,39 +47,62 @@ export default function CustomerDashboardPage() {
 
       const bookingsData = result.data || [];
 
-      const urlMap = new Map<string, string>();
-      for (const booking of bookingsData) {
-        try {
-          const { getSecureBookingStatusUrlClient } = await import('@/lib/utils/navigation');
-          urlMap.set(booking.booking_id, await getSecureBookingStatusUrlClient(booking.booking_id));
-        } catch {
-          urlMap.set(booking.booking_id, ROUTES.BOOKING_STATUS(booking.booking_id));
-        }
-      }
-      setSecureBookingUrls(urlMap);
-
-      const slotsResults = await Promise.all(
-        bookingsData
-          .filter((b: any) => b.slot && b.business_id)
-          .map(async (b: any) => {
-            try {
-              const res = await fetch(`/api/slots?salon_id=${b.business_id}&date=${b.slot.date}`, {
-                credentials: 'include',
-              });
-              const r = await res.json();
-              if (r.success) return { id: b.id, slots: r.data || [] };
-            } catch {}
-            return null;
-          })
-      );
-
-      const newSlotsMap: Record<string, any[]> = {};
-      slotsResults.forEach((r) => {
-        if (r) newSlotsMap[r.id] = r.slots;
-      });
-
-      setSlotsMap(newSlotsMap);
+      // Show bookings immediately — don't block on slots or URLs
       setBookings(bookingsData);
+      setLoading(false);
+
+      // Fetch secure URLs and slots in parallel in the background
+      const [urlMap] = await Promise.all([
+        // 1) Secure URLs — all in parallel
+        (async () => {
+          const map = new Map<string, string>();
+          await Promise.all(
+            bookingsData.map(async (booking: any) => {
+              try {
+                const { getSecureBookingStatusUrlClient } = await import('@/lib/utils/navigation');
+                map.set(
+                  booking.booking_id,
+                  await getSecureBookingStatusUrlClient(booking.booking_id)
+                );
+              } catch {
+                map.set(booking.booking_id, ROUTES.BOOKING_STATUS(booking.booking_id));
+              }
+            })
+          );
+          return map;
+        })(),
+
+        // 2) Slots — all in parallel
+        (async () => {
+          const slotsResults = await Promise.all(
+            bookingsData
+              .filter((b: any) => b.slot && b.business_id)
+              .map(async (b: any) => {
+                try {
+                  const res = await fetch(
+                    `/api/slots?salon_id=${b.business_id}&date=${b.slot.date}`,
+                    {
+                      credentials: 'include',
+                    }
+                  );
+                  const r = await res.json();
+                  if (r.success) {
+                    const slotsArr = Array.isArray(r.data) ? r.data : (r.data?.slots ?? []);
+                    return { id: b.id, slots: slotsArr };
+                  }
+                } catch {}
+                return null;
+              })
+          );
+          const newSlotsMap: Record<string, any[]> = {};
+          slotsResults.forEach((r) => {
+            if (r) newSlotsMap[r.id] = r.slots;
+          });
+          setSlotsMap(newSlotsMap);
+        })(),
+      ]);
+
+      setSecureBookingUrls(urlMap);
     } catch (err) {
       console.error('[CUSTOMER_DASHBOARD] Refetch failed:', err);
     } finally {

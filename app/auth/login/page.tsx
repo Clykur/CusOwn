@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/lib/utils/navigation';
 import { PublicHeader } from '@/components/layout/public-header';
 import BusinessesIcon from '@/src/icons/businesses.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
+const DEV = process.env.NODE_ENV === 'development';
 
 /** Build server auth URL: frontend only navigates; auth is done server-side via /api/auth/login. */
 function buildLoginUrl(redirectTo: string, role: 'owner' | 'customer' | null): string {
@@ -20,10 +21,27 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams?.get('error');
+  const redirectFrom = searchParams?.get('redirect_from');
 
   const redirectTo = searchParams?.get('redirect_to') || '/';
   const role = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
   const loginUrl = buildLoginUrl(redirectTo, role);
+
+  useEffect(() => {
+    if (!DEV) return;
+    console.log('[AUTH_FLOW] Login page loaded', {
+      redirect_to: redirectTo,
+      role,
+      error: error ? decodeURIComponent(error).slice(0, 50) : null,
+      redirect_from: redirectFrom ?? null,
+    });
+  }, [redirectTo, role, error, redirectFrom]);
+
+  const handleClickLogin = () => {
+    if (DEV) {
+      console.log('[AUTH_FLOW] User clicked Continue with Google — navigating to', loginUrl);
+    }
+  };
 
   const getRoleContext = () => {
     if (role === 'owner') {
@@ -71,6 +89,7 @@ function LoginContent() {
 
           <a
             href={loginUrl}
+            onClick={handleClickLogin}
             className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

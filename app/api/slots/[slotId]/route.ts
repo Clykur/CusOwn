@@ -7,6 +7,8 @@ import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 
+import { salonService } from '@/services/salon.service';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slotId: string }> }
@@ -59,20 +61,23 @@ export async function GET(
 
     // Business-hours validation: mark slot as unavailable if it's in the past or outside hours
     {
-      const BUSINESS_CLOSE_HOUR = 21;
-      const BUSINESS_OPEN_HOUR = 10;
+      // Look up the salon's actual hours instead of using hardcoded values
+      const salon = slot.business_id ? await salonService.getSalonById(slot.business_id) : null;
+      const openHour = salon?.opening_time ? parseInt(salon.opening_time.split(':')[0], 10) : 0;
+      const closeHour = salon?.closing_time ? parseInt(salon.closing_time.split(':')[0], 10) : 24;
+      const closeMinute = salon?.closing_time ? parseInt(salon.closing_time.split(':')[1], 10) : 0;
+      const closeMinutes = closeHour * 60 + closeMinute;
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const slotDate = slot.date;
       const [startH, startM] = slot.start_time.split(':').map(Number);
       const [endH, endM] = slot.end_time.split(':').map(Number);
 
-      const isOutsideHours =
-        startH < BUSINESS_OPEN_HOUR || endH * 60 + endM > BUSINESS_CLOSE_HOUR * 60;
+      const isOutsideHours = startH < openHour || endH * 60 + endM > closeMinutes;
       const isPast = slotDate < todayStr;
       const isTodayExpired =
         slotDate === todayStr &&
-        (now.getHours() >= BUSINESS_CLOSE_HOUR ||
+        (now.getHours() * 60 + now.getMinutes() >= closeMinutes ||
           startH * 60 + startM <= now.getHours() * 60 + now.getMinutes());
 
       if (slot.status === 'available' && (isOutsideHours || isPast || isTodayExpired)) {

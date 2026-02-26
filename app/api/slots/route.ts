@@ -6,7 +6,7 @@ import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { businessHoursService } from '@/services/business-hours.service';
-import { getISTDateString } from '@/lib/time/ist';
+import { getISTDateString, getISTDate, toMinutes } from '@/lib/time/ist';
 
 export async function GET(request: NextRequest) {
   const clientIP = getClientIp(request);
@@ -39,9 +39,20 @@ export async function GET(request: NextRequest) {
     const hours = await businessHoursService.getEffectiveHours(salonId, date);
 
     if (!hours || hours.isClosed) {
+      const isHoliday = hours && 'isHoliday' in hours && hours.isHoliday;
+      const holidayName = isHoliday && 'holidayName' in hours ? hours.holidayName : null;
+      let message: string;
+      if (isHoliday) {
+        message = holidayName
+          ? `Holiday today — ${holidayName}. Shop is closed.`
+          : 'Holiday today. Shop is closed.';
+      } else {
+        message = date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day';
+      }
       return successResponse({
         closed: true,
-        message: date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day',
+        isHoliday: !!isHoliday,
+        message,
         slots: [],
       });
     }
@@ -53,31 +64,53 @@ export async function GET(request: NextRequest) {
       slot_duration: salon.slot_duration,
     });
 
-    const slots = await slotService.getAvailableSlots(salonId, date, {
-      opening_time: salon.opening_time,
-      closing_time: salon.closing_time,
-      slot_duration: salon.slot_duration,
-    });
+    const slots = await slotService.getAvailableSlots(
+      salonId,
+      date,
+      {
+        opening_time: salon.opening_time,
+        closing_time: salon.closing_time,
+        slot_duration: salon.slot_duration,
+      },
+      { skipCleanup: true }
+    );
 
-    // Filter invalid slots (break time + past time)
-    const validSlots = [];
+    // Filter slots using already-fetched hours (no extra DB calls)
+    const todayStr = getISTDateString();
+    const now = getISTDate();
+    const open = toMinutes(hours.opening_time);
+    const close = toMinutes(hours.closing_time);
+    const breakStart = hours.break_start_time ? toMinutes(hours.break_start_time) : null;
+    const breakEnd = hours.break_end_time ? toMinutes(hours.break_end_time) : null;
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const isToday = date === todayStr;
 
-    for (const slot of slots || []) {
-      const check = await businessHoursService.validateSlot(
-        salonId,
-        slot.date,
-        slot.start_time,
-        slot.end_time
-      );
+    const validSlots = (slots || []).filter((slot) => {
+      const slotStart = toMinutes(slot.start_time);
+      const slotEnd = toMinutes(slot.end_time);
 
-      if (check.valid) {
-        validSlots.push(slot);
+      // Outside business hours
+      if (slotStart < open || slotEnd > close) return false;
+
+      // Overlaps break time
+      if (breakStart !== null && breakEnd !== null) {
+        if (slotStart < breakEnd && slotEnd > breakStart) return false;
       }
-    }
+
+      // Today: skip closed or already-passed slots
+      if (isToday) {
+        if (currentMinutes >= close) return false;
+        if (slotStart <= currentMinutes) return false;
+      }
+
+      return true;
+    });
 
     const response = successResponse({
       closed: false,
       slots: validSlots,
+      opening_time: hours.opening_time,
+      closing_time: hours.closing_time,
     });
 
     setNoCacheHeaders(response);

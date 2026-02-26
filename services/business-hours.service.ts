@@ -17,11 +17,22 @@ export class BusinessHoursService {
 
     if (holiday) {
       if (holiday.is_closed) {
-        return { isClosed: true };
+        return {
+          isClosed: true,
+          isHoliday: true,
+          holidayName: holiday.holiday_name || null,
+        };
+      }
+
+      // If holiday override exists but times are missing, treat as not configured
+      if (!holiday.opening_time || !holiday.closing_time) {
+        return null;
       }
 
       return {
         isClosed: false,
+        isHoliday: true,
+        holidayName: holiday.holiday_name || null,
         opening_time: holiday.opening_time,
         closing_time: holiday.closing_time,
         break_start_time: null,
@@ -43,6 +54,11 @@ export class BusinessHoursService {
 
     if (weekly.is_closed) {
       return { isClosed: true };
+    }
+
+    // If weekly hours exist but times are missing, treat as not configured
+    if (!weekly.opening_time || !weekly.closing_time) {
+      return null;
     }
 
     return {
@@ -70,6 +86,10 @@ export class BusinessHoursService {
     const hours = await this.getEffectiveHours(businessId, slotDate);
     if (!hours) return { valid: false, reason: 'Business hours not configured' };
     if (hours.isClosed) return { valid: false, reason: 'Business closed on this day' };
+
+    if (!hours.opening_time || !hours.closing_time) {
+      return { valid: false, reason: 'Business hours not fully configured' };
+    }
 
     const slotStart = toMinutes(startTime);
     const slotEnd = toMinutes(endTime);

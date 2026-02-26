@@ -11,7 +11,8 @@ export function getISTDateString(): string {
   return getISTDate().toISOString().split('T')[0];
 }
 
-export function toMinutes(time: string): number {
+export function toMinutes(time: string | null | undefined): number {
+  if (!time) return 0;
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
 }

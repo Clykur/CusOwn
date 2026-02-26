@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 const isWindows = process.platform === 'win32';
-const command = 'npx';
-const nodeCommand = process.execPath || (isWindows ? 'node.exe' : 'node');
+const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const nodeCommand = process.platform === 'win32' ? 'node.exe' : 'node';
 const rootDir = process.cwd();
 const strictDistDir = '.next-build';
 const nextServerDir = path.join(rootDir, strictDistDir, 'server');
