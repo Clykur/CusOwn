@@ -34,12 +34,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.warn('Supabase admin not configured, returning static sitemap only');
       return staticPages;
     }
-    
+
     const { data: salons, error } = await supabaseAdmin
       .from('businesses')
       .select('id, booking_link, updated_at')
       .limit(1000); // Limit to prevent too large sitemap
-    
+
     if (error) {
       console.error('Error fetching businesses for sitemap:', error);
       return staticPages;
@@ -62,4 +62,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticPages;
   }
 }
-

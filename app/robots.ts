@@ -9,16 +9,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: [
-          '/api/',
-          '/accept/',
-          '/reject/',
-          '/dashboard/',
-          '/setup',
-        ],
+        disallow: ['/api/', '/accept/', '/reject/', '/dashboard/', '/setup'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
-

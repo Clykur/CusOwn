@@ -21,8 +21,10 @@ export default function Error({
 
   const getContextMessage = () => {
     if (!pathname) return UI_ERROR_CONTEXT.GENERIC;
-    if (pathname.startsWith('/booking') || pathname.startsWith('/b/')) return UI_ERROR_CONTEXT.BOOKING_PAGE;
-    if (pathname.startsWith('/accept') || pathname.startsWith('/reject')) return UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE;
+    if (pathname.startsWith('/booking') || pathname.startsWith('/b/'))
+      return UI_ERROR_CONTEXT.BOOKING_PAGE;
+    if (pathname.startsWith('/accept') || pathname.startsWith('/reject'))
+      return UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE;
     if (pathname.includes('dashboard')) return UI_ERROR_CONTEXT.DASHBOARD_PAGE;
     return UI_ERROR_CONTEXT.GENERIC;
   };
@@ -49,4 +51,3 @@ export default function Error({
     </div>
   );
 }
-

@@ -18,6 +18,10 @@ import RoleCard from '@/components/onboarding/role-card';
 import CreateBusinessForm from '@/components/setup/create-business-form';
 import { SelectRoleSkeleton } from '@/components/ui/skeleton';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
+import CheckIcon from '@/src/icons/check.svg';
+import LinkIcon from '@/src/icons/link.svg';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
 
 function SelectRoleContent() {
   const router = useRouter();
@@ -233,19 +237,10 @@ function SelectRoleContent() {
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mt-8">
             <div className="text-center mb-6 md:mb-8">
               <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
-                <svg
+                <CheckIcon
                   className="w-10 h-10 md:w-12 md:h-12 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                  aria-hidden="true"
+                />
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                 🎉 Business Created Successfully!
@@ -258,19 +253,7 @@ function SelectRoleContent() {
             <div className="space-y-4 md:space-y-6">
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 rounded-xl p-4 md:p-6">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-                  <svg
-                    className="w-5 h-5 text-gray-700"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                    />
-                  </svg>
+                  <LinkIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
                   Your Booking Link
                 </label>
                 <div className="flex gap-3">
@@ -413,16 +396,7 @@ function SelectRoleContent() {
             title="Business Owner"
             description="Create your booking page and start accepting appointments from customers. Perfect for salons, clinics, and service businesses."
             helperText={UI_CONTEXT.ROLE_OWNER_HELPER}
-            icon={
-              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-            }
+            icon={<BusinessesIcon className="h-8 w-8" aria-hidden="true" />}
             features={[
               'Create unlimited booking pages',
               'Manage appointments & slots',
@@ -438,16 +412,7 @@ function SelectRoleContent() {
             title="Customer"
             description="Book appointments easily. Find services, select slots, and get instant confirmations via WhatsApp."
             helperText={UI_CONTEXT.ROLE_CUSTOMER_HELPER}
-            icon={
-              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            }
+            icon={<ProfileIcon className="h-8 w-8" aria-hidden="true" />}
             features={[
               'Browse available services',
               'Book appointments instantly',
@@ -463,19 +428,10 @@ function SelectRoleContent() {
         {user && (
           <div className="mb-8 bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <svg
+              <ProfileIcon
                 className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
+                aria-hidden="true"
+              />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
                   You&apos;re signed in as {user.email}

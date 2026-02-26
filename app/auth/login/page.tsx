@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/lib/utils/navigation';
 import { PublicHeader } from '@/components/layout/public-header';
-
-const DEV = process.env.NODE_ENV === 'development';
+import BusinessesIcon from '@/src/icons/businesses.svg';
+import ProfileIcon from '@/src/icons/profile.svg';
 
 /** Build server auth URL: frontend only navigates; auth is done server-side via /api/auth/login. */
 function buildLoginUrl(redirectTo: string, role: 'owner' | 'customer' | null): string {
@@ -20,58 +20,23 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams?.get('error');
-  const redirectFrom = searchParams?.get('redirect_from');
 
   const redirectTo = searchParams?.get('redirect_to') || '/';
   const role = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
   const loginUrl = buildLoginUrl(redirectTo, role);
-
-  useEffect(() => {
-    if (!DEV) return;
-    console.log('[AUTH_FLOW] Login page loaded', {
-      redirect_to: redirectTo,
-      role,
-      error: error ? decodeURIComponent(error).slice(0, 50) : null,
-      redirect_from: redirectFrom ?? null,
-    });
-  }, [redirectTo, role, error, redirectFrom]);
-
-  const handleClickLogin = () => {
-    if (DEV) {
-      console.log('[AUTH_FLOW] User clicked Continue with Google — navigating to', loginUrl);
-    }
-  };
 
   const getRoleContext = () => {
     if (role === 'owner') {
       return {
         title: 'Sign In to Create Your Business',
         description: 'Create your booking page and start accepting appointments from customers.',
-        icon: (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-            />
-          </svg>
-        ),
+        icon: <BusinessesIcon className="w-12 h-12" aria-hidden="true" />,
       };
     } else if (role === 'customer') {
       return {
         title: 'Sign In to Book Appointments',
         description: 'Access your bookings and book new appointments easily.',
-        icon: (
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
-        ),
+        icon: <ProfileIcon className="w-12 h-12" aria-hidden="true" />,
       };
     }
     return {
@@ -106,7 +71,6 @@ function LoginContent() {
 
           <a
             href={loginUrl}
-            onClick={handleClickLogin}
             className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

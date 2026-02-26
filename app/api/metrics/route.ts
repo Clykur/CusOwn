@@ -60,9 +60,10 @@ export async function GET(request: NextRequest) {
     const paymentFailureRate = paymentFailed / paymentTotal;
 
     const slotFetchTimings = await metricsService.getTimings('slots.fetch');
-    const avgSlotFetchTime = slotFetchTimings.length > 0
-      ? slotFetchTimings.reduce((a, b) => a + b, 0) / slotFetchTimings.length
-      : 0;
+    const avgSlotFetchTime =
+      slotFetchTimings.length > 0
+        ? slotFetchTimings.reduce((a, b) => a + b, 0) / slotFetchTimings.length
+        : 0;
 
     return successResponse({
       funnel: {

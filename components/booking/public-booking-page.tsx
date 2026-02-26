@@ -17,6 +17,7 @@ import { formatDate, formatTime } from '@/lib/utils/string';
 import { logError } from '@/lib/utils/error-handler';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingPageSkeleton } from '@/components/ui/skeleton';
+import CheckIcon from '@/src/icons/check.svg';
 
 const PENDING_BOOKING_KEY = 'pendingBooking';
 
@@ -433,19 +434,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
       <div className="w-full">
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
           <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            <CheckIcon className="w-8 h-8 text-white" aria-hidden="true" />
           </div>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">
             {UI_CUSTOMER.BOOKING_SENT_HEADING}

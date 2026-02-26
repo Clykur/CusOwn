@@ -5,6 +5,8 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
+import { businessHoursService } from '@/services/business-hours.service';
+import { getISTDateString } from '@/lib/time/ist';
 
 export async function GET(request: NextRequest) {
   const clientIP = getClientIp(request);
@@ -12,93 +14,77 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const salonId = searchParams.get('salon_id');
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const date = searchParams.get('date') || getISTDateString();
 
-    // SECURITY: Validate and sanitize query parameters
     if (!salonId) {
-      console.warn(`[SECURITY] Missing salon_id from IP: ${clientIP}`);
       return errorResponse('Salon ID is required', 400);
     }
 
-    // SECURITY: Validate UUID format
     const { isValidUUID } = await import('@/lib/utils/security');
     if (!isValidUUID(salonId)) {
-      console.warn(`[SECURITY] Invalid salon_id format from IP: ${clientIP}`);
       return errorResponse('Invalid salon ID', 400);
     }
 
-    // SECURITY: Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
-      console.warn(`[SECURITY] Invalid date format from IP: ${clientIP}`);
       return errorResponse('Invalid date format', 400);
     }
 
-    // Fetch salon config for lazy generation
     const salon = await salonService.getSalonById(salonId);
     if (!salon) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
-    // Validate salon has required time configuration
-    if (!salon.opening_time || !salon.closing_time || !salon.slot_duration) {
-      console.error('Salon missing time configuration:', {
-        salonId,
-        opening_time: salon.opening_time,
-        closing_time: salon.closing_time,
-        slot_duration: salon.slot_duration,
+    // Check business hours (holiday + weekly)
+    const hours = await businessHoursService.getEffectiveHours(salonId, date);
+
+    if (!hours || hours.isClosed) {
+      return successResponse({
+        closed: true,
+        message: date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day',
+        slots: [],
       });
-      return errorResponse(
-        'Salon time configuration is incomplete. Please update salon settings.',
-        400
-      );
     }
 
-    // Get slots with lazy generation (will generate if missing)
-    try {
-      console.log('Fetching slots for:', {
-        salonId,
-        date,
-        config: {
-          opening_time: salon.opening_time,
-          closing_time: salon.closing_time,
-          slot_duration: salon.slot_duration,
-        },
-      });
-
-      const slots = await slotService.getAvailableSlots(salonId, date, {
-        opening_time: salon.opening_time,
-        closing_time: salon.closing_time,
-        slot_duration: salon.slot_duration,
-      });
-
-      console.log('Slots fetched:', { count: slots?.length, firstFew: slots?.slice(0, 3) });
-
-      const response = successResponse(slots);
-      setNoCacheHeaders(response);
-      return response;
-    } catch (slotError) {
-      console.error('Error in getAvailableSlots:', {
-        error: slotError,
-        message: slotError instanceof Error ? slotError.message : 'Unknown error',
-        stack: slotError instanceof Error ? slotError.stack : undefined,
-        salonId,
-        date,
-        salonConfig: {
-          opening_time: salon.opening_time,
-          closing_time: salon.closing_time,
-          slot_duration: salon.slot_duration,
-        },
-      });
-      throw slotError;
-    }
-  } catch (error) {
-    console.error('Error fetching slots:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
+    // Generate slots if not exist
+    await slotService.generateSlotsForDate(salonId, date, {
+      opening_time: salon.opening_time,
+      closing_time: salon.closing_time,
+      slot_duration: salon.slot_duration,
     });
+
+    const slots = await slotService.getAvailableSlots(salonId, date, {
+      opening_time: salon.opening_time,
+      closing_time: salon.closing_time,
+      slot_duration: salon.slot_duration,
+    });
+
+    // Filter invalid slots (break time + past time)
+    const validSlots = [];
+
+    for (const slot of slots || []) {
+      const check = await businessHoursService.validateSlot(
+        salonId,
+        slot.date,
+        slot.start_time,
+        slot.end_time
+      );
+
+      if (check.valid) {
+        validSlots.push(slot);
+      }
+    }
+
+    const response = successResponse({
+      closed: false,
+      slots: validSlots,
+    });
+
+    setNoCacheHeaders(response);
+    return response;
+  } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+
     return errorResponse(message, 500);
   }
 }
@@ -169,10 +155,6 @@ export async function POST(request: NextRequest) {
       closing_time: salon.closing_time,
       slot_duration: salon.slot_duration,
     });
-
-    console.log(
-      `[SECURITY] Slots generated: IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}..., Date: ${date}, User: ${user.id.substring(0, 8)}...`
-    );
     return successResponse(null, SUCCESS_MESSAGES.SLOTS_GENERATED);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

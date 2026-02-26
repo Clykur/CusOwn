@@ -11,4 +11,3 @@ export async function GET(request: NextRequest) {
   redirect.search = url.search; // keep code/role/redirect_to/etc.
   return NextResponse.redirect(redirect);
 }
-

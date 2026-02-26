@@ -9,6 +9,9 @@ import { useOwnerSession } from '@/components/owner/owner-session-context';
 import { BookingWithDetails } from '@/types';
 import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constants';
+import CloseIcon from '@/src/icons/close.svg';
+import UndoIcon from '@/src/icons/undo.svg';
+import ExploreIcon from '@/src/icons/explore.svg';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -376,14 +379,7 @@ export default function OwnerDashboardPage() {
             className="shrink-0 p-1 rounded hover:bg-amber-100"
             aria-label="Dismiss"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <CloseIcon className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -425,20 +421,7 @@ export default function OwnerDashboardPage() {
                   : 'bg-rose-100 text-rose-900 hover:bg-rose-200'
               }`}
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                />
-              </svg>
+              <UndoIcon className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -462,19 +445,7 @@ export default function OwnerDashboardPage() {
                 onClick={() => setShowSearch((prev) => !prev)}
                 className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
               >
-                <svg
-                  className="h-4 w-4 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z"
-                  />
-                </svg>
+                <ExploreIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
               </button>
 
               <input
@@ -626,20 +597,7 @@ export default function OwnerDashboardPage() {
                                     title={UI_CONTEXT.UNDO_LABEL}
                                     className="h-9 w-9 flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 disabled:opacity-50"
                                   >
-                                    <svg
-                                      className="h-5 w-5"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                      aria-hidden
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                                      />
-                                    </svg>
+                                    <UndoIcon className="h-5 w-5" aria-hidden="true" />
                                   </button>
                                 )}
                                 {!booking.no_show && (
@@ -662,20 +620,7 @@ export default function OwnerDashboardPage() {
                                   title={UI_CONTEXT.UNDO_LABEL}
                                   className="h-9 w-9 flex items-center justify-center bg-rose-100 text-rose-900 rounded-lg hover:bg-rose-200 disabled:opacity-50"
                                 >
-                                  <svg
-                                    className="h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-                                    />
-                                  </svg>
+                                  <UndoIcon className="h-5 w-5" aria-hidden="true" />
                                 </button>
                               </>
                             )}

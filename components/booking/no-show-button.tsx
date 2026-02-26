@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import CloseIcon from '@/src/icons/close.svg';
 
 interface NoShowButtonProps {
   bookingId: string;
@@ -58,14 +59,7 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
           </>
         ) : (
           <>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <CloseIcon className="w-5 h-5" aria-hidden="true" />
             <span>Mark No-Show</span>
           </>
         )}

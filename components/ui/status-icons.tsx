@@ -1,57 +1,17 @@
 // Accessible SVG icons for booking status
 import React from 'react';
+import CheckSvg from '@/src/icons/check.svg';
+import CloseSvg from '@/src/icons/close.svg';
+import UndoSvg from '@/src/icons/undo.svg';
 
 export function IconCheck({ className = '', ...props }: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      className={className}
-      aria-label="Accepted"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  );
+  return <CheckSvg className={className} aria-label="Accepted" {...props} />;
 }
 
 export function IconCross({ className = '', ...props }: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      className={className}
-      aria-label="Rejected"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  );
+  return <CloseSvg className={className} aria-label="Rejected" {...props} />;
 }
 
 export function IconUndo({ className = '', ...props }: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      className={className}
-      aria-label="Undo"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M9 14l-4-4 4-4" />
-      <path d="M20 20v-2a8 8 0 00-8-8H5" />
-    </svg>
-  );
+  return <UndoSvg className={className} aria-label="Undo" {...props} />;
 }

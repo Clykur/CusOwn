@@ -1,5 +1,7 @@
 'use client';
 
+import CheckIcon from '@/src/icons/check.svg';
+
 interface RoleCardProps {
   title: string;
   description: string;
@@ -42,22 +44,20 @@ export default function RoleCard({
           Recommended
         </div>
       )}
-      <div className={`mb-4 flex h-16 w-16 items-center justify-center rounded-lg ${
-        selected ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'
-      }`}>
+      <div
+        className={`mb-4 flex h-16 w-16 items-center justify-center rounded-lg ${
+          selected ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'
+        }`}
+      >
         {icon}
       </div>
       <h3 className="text-2xl font-bold text-gray-900 mb-2">{title}</h3>
       <p className="text-gray-600 mb-4">{description}</p>
-      {helperText && (
-        <p className="text-sm text-gray-500 mb-3">{helperText}</p>
-      )}
+      {helperText && <p className="text-sm text-gray-500 mb-3">{helperText}</p>}
       <ul className="text-sm text-gray-600 space-y-2">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2">
-            <svg className="w-5 h-5 text-black mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckIcon className="w-5 h-5 text-black mt-0.5 flex-shrink-0" aria-hidden="true" />
             <span>{feature}</span>
           </li>
         ))}
@@ -65,9 +65,7 @@ export default function RoleCard({
       {selected && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex items-center gap-2 text-black font-semibold">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckIcon className="w-5 h-5" aria-hidden="true" />
             <span>Selected</span>
           </div>
         </div>

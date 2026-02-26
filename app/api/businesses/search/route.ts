@@ -131,18 +131,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-  type BusinessResult = {
-  id: any;
-  salon_name: any;
-  location: any;
-  category: any;
-  latitude: any;
-  longitude: any;
-  area?: any;
-  distance_km?: number;
-};
+    type BusinessResult = {
+      id: any;
+      salon_name: any;
+      location: any;
+      category: any;
+      latitude: any;
+      longitude: any;
+      area?: any;
+      distance_km?: number;
+    };
 
-let results: BusinessResult[] = businesses as BusinessResult[];
+    let results: BusinessResult[] = businesses as BusinessResult[];
     const hasMore = results.length > limit;
 
     if (hasMore) {
@@ -150,35 +150,33 @@ let results: BusinessResult[] = businesses as BusinessResult[];
     }
 
     // Distance filtering
-if (filteredBody.latitude && filteredBody.longitude) {
-  const radius = filteredBody.radius_km || 10;
+    if (filteredBody.latitude && filteredBody.longitude) {
+      const radius = filteredBody.radius_km || 10;
 
-  results = results
-    .map((business): BusinessResult | null => {
-      if (!business.latitude || !business.longitude) return null;
+      results = results
+        .map((business): BusinessResult | null => {
+          if (!business.latitude || !business.longitude) return null;
 
-      const distance = haversineDistance(
-        filteredBody.latitude!,
-        filteredBody.longitude!,
-        business.latitude,
-        business.longitude
-      );
+          const distance = haversineDistance(
+            filteredBody.latitude!,
+            filteredBody.longitude!,
+            business.latitude,
+            business.longitude
+          );
 
-      if (distance > radius) return null;
+          if (distance > radius) return null;
 
-      return {
-        ...business,
-        distance_km: Math.round(distance * 10) / 10,
-      };
-    })
-    .filter((b): b is BusinessResult => b !== null);
+          return {
+            ...business,
+            distance_km: Math.round(distance * 10) / 10,
+          };
+        })
+        .filter((b): b is BusinessResult => b !== null);
 
-  if (filteredBody.sort_by === 'distance') {
-    results.sort(
-      (a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0)
-    );
-  }
-}
+      if (filteredBody.sort_by === 'distance') {
+        results.sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
+      }
+    }
 
     const sanitized = results.map((business) => ({
       id: business.id,

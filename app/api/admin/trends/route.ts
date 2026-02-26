@@ -21,4 +21,3 @@ export async function GET(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

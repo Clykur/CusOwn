@@ -1,7 +1,7 @@
 /**
  * DEPRECATED: This cron job is no longer needed.
  * Slots are now generated lazily (on-demand) when customers request them.
- * 
+ *
  * This endpoint is kept for backward compatibility but can be disabled.
  * Consider using /api/cron/cleanup-reservations instead for maintenance.
  */
@@ -52,4 +52,3 @@ export async function POST(request: NextRequest) {
     return errorResponse(message, 500);
   }
 }
-

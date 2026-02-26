@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import CheckIcon from '@/src/icons/check.svg';
 
 const TOAST_DURATION_MS = 3500;
 
@@ -37,9 +38,7 @@ export function Toast({
     >
       {variant === 'success' && (
         <span className="inline-flex items-center gap-2">
-          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          <CheckIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
           {message}
         </span>
       )}

@@ -4,7 +4,11 @@ module.exports = {
     'prettier --check --config config/quality/prettier.config.js',
   ],
   '*.{js,jsx,ts,tsx}': (files) => {
-    const ignoredSuffixes = ['next.config.js', 'config/quality/lint-staged.config.js'];
+    const ignoredSuffixes = [
+      'next.config.js',
+      'config/quality/lint-staged.config.js',
+      'config/quality/prettier.config.js',
+    ];
     const lintableFiles = files.filter(
       (file) => !ignoredSuffixes.some((suffix) => file.endsWith(suffix))
     );

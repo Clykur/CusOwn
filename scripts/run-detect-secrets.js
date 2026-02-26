@@ -7,7 +7,21 @@ const MODE = process.argv.includes('--staged') ? 'staged' : 'repo';
 const BASELINE = path.resolve(ROOT, '.secrets.baseline');
 
 function resolvePythonCommand() {
+  const windowsCandidates = [
+    path.join(ROOT, '.venv', 'Scripts', 'python.exe'),
+    path.join(path.dirname(ROOT), '.venv', 'Scripts', 'python.exe'),
+    process.env.VIRTUAL_ENV ? path.join(process.env.VIRTUAL_ENV, 'Scripts', 'python.exe') : null,
+  ].filter(Boolean);
+
+  const unixCandidates = [
+    path.join(ROOT, '.venv', 'bin', 'python3'),
+    path.join(path.dirname(ROOT), '.venv', 'bin', 'python3'),
+    process.env.VIRTUAL_ENV ? path.join(process.env.VIRTUAL_ENV, 'bin', 'python3') : null,
+  ].filter(Boolean);
+
   const candidates = [
+    ...windowsCandidates.map((cmd) => ({ cmd, args: ['--version'] })),
+    ...unixCandidates.map((cmd) => ({ cmd, args: ['--version'] })),
     { cmd: 'python3', args: ['--version'] },
     { cmd: 'python', args: ['--version'] },
     { cmd: 'py', args: ['-3', '--version'] },

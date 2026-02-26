@@ -8,6 +8,7 @@ import { AdminCronMonitorTab } from '@/components/admin/admin-cron-monitor-tab';
 import { AdminAuthManagementTab } from '@/components/admin/admin-auth-management-tab';
 import { AdminStorageOverviewTab } from '@/components/admin/admin-storage-overview-tab';
 import { DashboardErrorBoundary } from '@/components/admin/dashboard-error-boundary';
+import CloseIcon from '@/src/icons/close.svg';
 import { AdminMetricCard } from '@/components/admin/admin-metric-card';
 import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
 import { useAdminSession } from '@/components/admin/admin-session-context';
@@ -832,19 +833,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                         className="shrink-0 rounded p-1 text-emerald-700 hover:bg-emerald-100 transition-colors"
                         aria-label="Dismiss"
                       >
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
+                        <CloseIcon className="h-4 w-4" aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -1353,10 +1342,12 @@ function UsersTab({ page: controlledPage, onPageChange }: ListTabPageProps = {})
                       const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
                       return paginated.map((user) => (
                         <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                          <td className="px-5 py-4 text-sm font-medium text-slate-900">
+                            {' '}
                             {user.full_name || 'N/A'}
                           </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
+                          <td className="px-5 py-4 text-sm text-slate-600 break-all max-w-[280px]">
+                            {' '}
                             {user.email}
                           </td>
                           <td className="px-5 py-4 whitespace-nowrap">
@@ -1563,7 +1554,7 @@ function BookingsTab({ page: controlledPage, onPageChange }: ListTabPageProps = 
         {bookings.length > 0 || loading ? (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
+              <table className="w-full table-auto divide-y divide-slate-200">
                 <thead className="bg-slate-100 border-b-2 border-slate-200">
                   <tr>
                     <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
@@ -1790,7 +1781,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<any>(null);
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   const hasFilters =
     filterSeverity !== '' ||
