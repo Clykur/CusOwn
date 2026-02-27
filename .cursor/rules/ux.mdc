@@ -1,0 +1,24 @@
+---
+description: UX — flows, copy, states, and backend truth (from cursor.directory + project)
+globs: app/**/*.tsx, components/**/*.tsx
+alwaysApply: false
+---
+
+# UX rules
+
+## Backend truth
+- Map backend state to UI using UI_BOOKING_STATE and UI_IDEMPOTENT from @/config/constants. Do not hardcode "confirmed", "cancelled", "expired".
+- Expired: when booking.status === 'cancelled' and cancelled_by === 'system', show explicit expired message (UI_BOOKING_STATE.EXPIRED).
+- Idempotent success: when API returns 200 and booking is already in target state, show success with UI_IDEMPOTENT.ALREADY_CONFIRMED / ALREADY_REJECTED, not an error.
+
+## States and actions
+- Handle loading, error (no booking), cancelled (expired vs user cancel), confirmed, rejected, and pending explicitly on accept/reject and booking status pages.
+- Disable submit buttons when processing or when action is not applicable. Do not reset processing until the request completes (success or error). Use aria-busy for accessibility.
+
+## Copy and messaging
+- Use ERROR_MESSAGES, SUCCESS_MESSAGES, UI_* from @/config/constants for user-facing strings. No raw inline strings for errors or success.
+- Do not promise guarantees we cannot honour (e.g. "100% uptime"). Prefer "designed to grow" over "built to scale". See docs/MARKETING_CLAIMS.md if present.
+
+## Forms and inputs
+- Validate on submit and show field-level errors. Use placeholders and labels from constants where defined.
+- For destructive actions (delete account, cancel booking), confirm or use a two-step flow where appropriate.

@@ -166,14 +166,39 @@ jobs:
             case "$pkg" in "$PROJECT_NAME"@*) continue ;; esac
             lic=$(jq -r ".\"$pkg\".licenses // \"UNKNOWN\"" licenses.json 2>/dev/null | tr -d '"' | head -1)
             [ -z "$lic" ] || [ "$lic" = "undefined" ] && lic="UNKNOWN"
-            # Normalize: strip * suffix (e.g. MIT* -> MIT), take first token if "X AND Y"
-            norm_lic=$(echo "$lic" | sed 's/\*$//' | cut -d' ' -f1)
+            # Normalize: strip parens and * suffix; for "X OR Y" / "X AND Y" check each token
+            lic_clean=$(echo "$lic" | tr -d '()' | sed 's/\*$//')
             allowed_match=false
-            while IFS= read -r a; do
-              [ -z "$a" ] && continue
-              anorm=$(echo "$a" | sed 's/\*$//')
-              if [ "$norm_lic" = "$anorm" ] || [ "$lic" = "$a" ]; then allowed_match=true; break; fi
-            done <<< "$ALLOWED"
+            if echo "$lic_clean" | grep -qE ' (OR|AND) '; then
+              if echo "$lic_clean" | grep -q ' OR '; then
+                for token in $(echo "$lic_clean" | sed 's/ OR / /g'); do
+                  token=$(echo "$token" | sed 's/^ *//;s/ *$//')
+                  while IFS= read -r a; do
+                    [ -z "$a" ] && continue
+                    if [ "$token" = "$(echo "$a" | sed 's/\*$//')" ]; then allowed_match=true; break 2; fi
+                  done <<< "$ALLOWED"
+                done
+              else
+                all_ok=true
+                for token in $(echo "$lic_clean" | sed 's/ AND / /g'); do
+                  token=$(echo "$token" | sed 's/^ *//;s/ *$//')
+                  tok_ok=false
+                  while IFS= read -r a; do
+                    [ -z "$a" ] && continue
+                    if [ "$token" = "$(echo "$a" | sed 's/\*$//')" ]; then tok_ok=true; break; fi
+                  done <<< "$ALLOWED"
+                  if [ "$tok_ok" = false ]; then all_ok=false; break; fi
+                done
+                [ "$all_ok" = true ] && allowed_match=true
+              fi
+            else
+              norm_lic=$(echo "$lic_clean" | cut -d' ' -f1)
+              while IFS= read -r a; do
+                [ -z "$a" ] && continue
+                anorm=$(echo "$a" | sed 's/\*$//')
+                if [ "$norm_lic" = "$anorm" ] || [ "$lic" = "$a" ]; then allowed_match=true; break; fi
+              done <<< "$ALLOWED"
+            fi
             if [ "$allowed_match" = false ]; then
               DISALLOWED="$DISALLOWED $pkg($lic)"
             fi
