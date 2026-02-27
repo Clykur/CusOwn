@@ -43,9 +43,11 @@ function getCspStyleSrc(): string {
 
 /** img-src: self, data, blob, Supabase storage. */
 function getCspImgSrc(): string {
-  return ["'self'", 'data:', 'blob:', SUPABASE_URL ? `${SUPABASE_URL.replace(/\/$/, '')}/*` : '']
-    .filter(Boolean)
-    .join(' ');
+  const parts = ["'self'", "data:", "blob:"];
+  if (SUPABASE_URL) {
+    parts.push(SUPABASE_URL.replace(/\/$/, '')); // NO /* here
+  }
+  return parts.join(" ");
 }
 
 /** default-src fallback. */

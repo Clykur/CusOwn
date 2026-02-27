@@ -138,7 +138,10 @@ export default function CustomerLayoutShell({
         <main className="flex-1 lg:ml-64 w-full">
           <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
             <div className="flex flex-col gap-8">
-              <CustomerHeader title={header.title} subtitle={header.subtitle} />
+              {/* Hide CustomerHeader for /customer/[slug] page */}
+              {pathname?.startsWith('/customer/') && pathname?.split('/').length === 3 ? null : (
+                <CustomerHeader title={header.title} subtitle={header.subtitle} />
+              )}
               {children}
             </div>
           </div>
