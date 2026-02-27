@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { API_ROUTES, ERROR_MESSAGES, SLOT_DURATIONS, VALIDATION } from '@/config/constants';
-import { Salon, Slot } from '@/types';
+import { MediaListItem, Salon, Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
@@ -47,12 +47,34 @@ export default function OwnerDashboardPage() {
   const [deleteSaving, setDeleteSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // --- Shop Photos state ---
+  const [shopPhotos, setShopPhotos] = useState<{ id: string; url: string }[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+
+  // Remove selected file from queue
+  const handleRemoveSelectedFile = (idx: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  // Upload queue: track file, status, abort controller
+  type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
+  interface UploadQueueItem {
+    file: File;
+    status: UploadStatus;
+    abortController?: AbortController;
+    error?: string;
+  }
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+
+  // Sync selectedFiles for compatibility (legacy code)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [deletingPhotoIds, setDeletingPhotoIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
   }, []);
-
-  // Auth: owner layout already verified session. API will return 401 if unauthenticated; we redirect only on 401 from fetchSalon.
 
   // Handle tab visibility changes - refresh data when tab becomes visible
   useEffect(() => {
@@ -286,6 +308,137 @@ export default function OwnerDashboardPage() {
 
     fetchDowntime();
   }, [salon, fetchDowntime]);
+
+  // --- Shop Photos: load, upload, delete ---
+  const loadBusinessPhotos = useCallback(async (businessId: string) => {
+    setPhotosLoading(true);
+    setPhotoError(null);
+    try {
+      const res = await fetch(API_ROUTES.MEDIA_BUSINESS(businessId), { credentials: 'include' });
+      const result = await res.json();
+      if (!res.ok || !result?.success) {
+        throw new Error(result?.error || ERROR_MESSAGES.LOADING_ERROR);
+      }
+      const items: MediaListItem[] = Array.isArray(result?.data?.items) ? result.data.items : [];
+      const withUrls = await Promise.all(
+        items.map(async (item) => {
+          try {
+            const signedRes = await fetch(
+              `${API_ROUTES.MEDIA_SIGNED_URL}?mediaId=${encodeURIComponent(item.id)}`,
+              { credentials: 'include' }
+            );
+            const signedResult = await signedRes.json();
+            if (!signedRes.ok || !signedResult?.success || !signedResult?.data?.url) return null;
+            return { id: item.id, url: signedResult.data.url as string };
+          } catch {
+            return null;
+          }
+        })
+      );
+      setShopPhotos(withUrls.filter((p): p is { id: string; url: string } => Boolean(p)));
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
+      setShopPhotos([]);
+    } finally {
+      setPhotosLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!salon?.id) return;
+    void loadBusinessPhotos(salon.id);
+  }, [salon?.id, loadBusinessPhotos]);
+
+  const handleUploadPhotos = async () => {
+    if (!salon?.id || uploadingPhotos || selectedFiles.length === 0) return;
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    for (const file of selectedFiles) {
+      if (!ALLOWED.has(file.type)) {
+        setPhotoError('Only JPG, PNG, and WEBP images are allowed.');
+        return;
+      }
+      if (file.size > MAX_SIZE) {
+        setPhotoError('Each image must be 5 MB or smaller.');
+        return;
+      }
+    }
+    setUploadingPhotos(true);
+    setPhotoError(null);
+    try {
+      const csrfToken = await getCSRFToken();
+      // Build auth headers matching the rest of this page's fetch pattern
+      const authHeaders: Record<string, string> = {};
+      if (csrfToken) authHeaders['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) {
+          authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      }
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadRes = await fetch(API_ROUTES.MEDIA_BUSINESS(salon.id), {
+          method: 'POST',
+          credentials: 'include',
+          headers: authHeaders,
+          body: formData,
+        });
+        const uploadResult = await uploadRes.json();
+        if (!uploadRes.ok || !uploadResult?.success) {
+          throw new Error(uploadResult?.error || uploadResult?.message || ERROR_MESSAGES.MEDIA_UPLOAD_FAILED);
+        }
+      }
+      setSelectedFiles([]);
+      const fileInput = document.getElementById('shop-photo-input') as HTMLInputElement | null;
+      if (fileInput) fileInput.value = '';
+      await loadBusinessPhotos(salon.id);
+      setToastMessage('Photos uploaded successfully');
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.MEDIA_UPLOAD_FAILED);
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!salon?.id) return;
+    if (!window.confirm('Delete this photo?')) return;
+    const previousPhotos = shopPhotos;
+    setDeletingPhotoIds((prev) => new Set(prev).add(photoId));
+    setPhotoError(null);
+    setShopPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+      }
+      const deleteRes = await fetch(`/api/media/${encodeURIComponent(photoId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers,
+      });
+      const deleteResult = await deleteRes.json();
+      if (!deleteRes.ok || !deleteResult?.success) {
+        throw new Error(deleteResult?.error || deleteResult?.message || ERROR_MESSAGES.UNEXPECTED_ERROR);
+      }
+    } catch (err) {
+      setShopPhotos(previousPhotos);
+      setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+    } finally {
+      setDeletingPhotoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(photoId);
+        return next;
+      });
+    }
+  };
 
   // Bookings actions removed: bookings have been migrated to owner dashboard
 
@@ -774,27 +927,166 @@ export default function OwnerDashboardPage() {
 
       {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
 
+      {/* Shop Photos – Upload & Gallery */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Shop Photos</h2>
+
+        {/* Upload section */}
+        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-medium text-slate-800 mb-2">Upload Shop Photos</h3>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <input
+              id="shop-photo-input"
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp"
+              disabled={uploadingPhotos}
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setSelectedFiles(files);
+                setUploadQueue(files.map((file) => ({ file, status: 'pending' })));
+              }}
+              className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-black file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-900"
+            />
+            <button
+              type="button"
+              onClick={() => void handleUploadPhotos()}
+              disabled={uploadingPhotos || selectedFiles.length === 0}
+              className="inline-flex items-center justify-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {uploadingPhotos ? (
+                <>
+                  <span className="animate-spin mr-2 inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  Uploading…
+                </>
+              ) : (
+                'Upload'
+              )}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">JPG, PNG, or WEBP · Max 5 MB each</p>
+          {/* Preview thumbnails for selected files */}
+          {selectedFiles.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {selectedFiles.map((file, idx) => {
+                const url = URL.createObjectURL(file);
+                return (
+                  <div key={file.name + file.size + idx} className="relative group overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <div className="relative h-40 w-full">
+                       <Image src={url} alt={file.name} className="object-cover w-full h-full rounded-lg" width={320} height={160} />
+                      {/* X button for removing image */}
+                      <button
+                        type="button"
+                        className="absolute top-2 right-2 rounded-lg bg-white/90 border border-slate-200 p-1.5 text-slate-600 opacity-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
+                        title="Remove image"
+                        onClick={() => handleRemoveSelectedFile(idx)}
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    {/* Status badge: Pending/Uploading/Success */}
+                    <div className="absolute bottom-2 left-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-slate-700 border border-slate-200">
+                      {uploadQueue[idx]?.status === 'uploading' ? 'Uploading…' : uploadQueue[idx]?.status === 'success' ? 'Uploaded' : uploadQueue[idx]?.status === 'error' ? 'Error' : 'Pending'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {photoError && (
+          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">
+            {photoError}
+          </div>
+        )}
+
+        {photosLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {(() => {
+              // Dynamically determine number of skeletons to show
+              // Use selectedFiles.length if files are being uploaded, else fallback to previous photo count or default 4
+              let skeletonCount = 4;
+              if (selectedFiles.length > 0) {
+                skeletonCount = selectedFiles.length;
+              } else if (shopPhotos.length > 0) {
+                skeletonCount = shopPhotos.length;
+              }
+              return Array.from({ length: skeletonCount }).map((_, i) => (
+                <div key={i} className="rounded-lg border border-gray-200 bg-white p-3 flex flex-col items-center justify-center h-40 skeleton-shimmer">
+                  <div className="h-28 w-full bg-gray-200 rounded mb-3" />
+                </div>
+              ));
+            })()}
+          </div>
+        ) : shopPhotos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+              <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              </svg>
+            </div>
+            <p className="text-sm text-slate-500">No shop photos yet. Upload your first photo above.</p>
+          </div>
+        ) : (
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+            {shopPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                className="relative group break-inside-avoid rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
+              >
+                <Image
+                  src={photo.url}
+                  alt="Shop photo"
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto"
+                  unoptimized
+                />
+
+                {/* Delete Button */}
+                <button
+                  type="button"
+                  onClick={() => void handleDeletePhoto(photo.id)}
+                  disabled={deletingPhotoIds.has(photo.id)}
+                  className="absolute top-2 right-2 z-10 rounded-lg bg-white/90 border border-slate-200 p-1.5 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete photo"
+                >
+                  {deletingPhotoIds.has(photo.id) ? (
+                    <span className="block h-4 w-4 animate-spin border-2 border-red-400 border-t-transparent rounded-full" />
+                  ) : (
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Tabs Section - Mobile Scrollable */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
         <div className="flex gap-1 bg-slate-100 p-1 border-b border-slate-200 overflow-x-auto">
           {/* Bookings tab removed from per-salon page; moved to owner dashboard */}
           <button
             onClick={() => setActiveTab('slots')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
-              activeTab === 'slots'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${activeTab === 'slots'
+              ? 'bg-white text-black shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
             Slots
           </button>
           <button
             onClick={() => setActiveTab('downtime')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
-              activeTab === 'downtime'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${activeTab === 'downtime'
+              ? 'bg-white text-black shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
             Downtime
           </button>

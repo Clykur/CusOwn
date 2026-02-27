@@ -10,10 +10,13 @@ import WarningIcon from '@/src/icons/warning.svg';
 import MapPinIcon from '@/src/icons/map-pin.svg';
 import BookingsIcon from '@/src/icons/bookings.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface CustomerBookingCardProps {
   booking: any;
 }
+
 
 export default function CustomerBookingCard({ booking }: CustomerBookingCardProps) {
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
@@ -77,31 +80,73 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
     booking.salon?.salon_name || booking.business?.salon_name || UI_CUSTOMER.PROVIDER_FALLBACK;
   const location = booking.salon?.location || booking.business?.location;
 
+  const [owner, setOwner] = React.useState<{ name: string; phone: string; profileImage: string } | null>(null);
+
+  React.useEffect(() => {
+    async function fetchOwner() {
+      // Always use salon id if available, fallback to business id
+      const salonId = booking.salon?.id;
+      const businessId = booking.business?.id;
+      const idToUse = salonId || businessId;
+      if (!idToUse) return;
+      try {
+        const res = await fetch(`/api/salons/${idToUse}`);
+        const result = await res.json();
+        if (result.success && result.data) {
+          setOwner({
+            name: result.data.owner_name || 'Owner',
+            phone: result.data.whatsapp_number || '',
+            profileImage: result.data.owner_image && result.data.owner_image !== ''
+              ? result.data.owner_image
+              : '/default-avatar.png',
+          });
+        }
+      } catch (err) {
+        setOwner(null);
+      }
+    }
+    fetchOwner();
+  }, [booking.salon?.id, booking.business?.id]);
+
   return (
+
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-sm">
       <div className="p-4 sm:p-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="bg-slate-100 border border-slate-200 rounded-lg p-2.5 flex-shrink-0">
-              {statusConfig.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-1 truncate">
-                {providerName}
-              </h3>
-              {location && (
-                <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                  <MapPinIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span className="truncate">{location}</span>
-                </div>
+        {/* Header Row: Salon Name left, Owner Info right */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 truncate leading-tight">
+              {providerName}
+            </h3>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Owner Profile Image */}
+            <Image
+              src={owner && owner.profileImage ? owner.profileImage : '/default-avatar.png'}
+              alt={owner && owner.name ? owner.name : 'Owner'}
+              className="w-8 h-8 rounded-full object-cover border border-gray-200"
+              width={32}
+              height={32}
+            />
+            {/* Owner Name */}
+            <span className="font-semibold text-base text-slate-900 truncate">
+              {owner && owner.name ? owner.name : 'Owner'}
+            </span>
+            {/* Phone Icon & Number */}
+            <div className="flex items-center text-gray-600 text-sm gap-1">
+              {owner && owner.phone ? (
+                <a
+                  href={`tel:${owner.phone}`}
+                  className="hover:text-blue-600 font-medium truncate"
+                  title="Call Owner"
+                >
+                  {owner.phone}
+                </a>
+              ) : (
+                <span className="text-sm text-slate-400">N/A</span>
               )}
             </div>
           </div>
-          <span
-            className={`${statusConfig.badge} px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide flex-shrink-0`}
-          >
-            {isNoShow ? 'No-show' : booking.status}
-          </span>
         </div>
 
         {booking.slot && (
@@ -155,3 +200,4 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
     </div>
   );
 }
+

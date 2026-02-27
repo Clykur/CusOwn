@@ -66,7 +66,7 @@ const nextConfig = {
       "object-src 'none'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https:",
+      "img-src 'self' data: blob: https://*.supabase.co https:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com",
       "frame-src 'self' https://api.razorpay.com",

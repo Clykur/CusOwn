@@ -9,6 +9,7 @@ import {
   getOwnerDashboardUrl,
   getSecureOwnerDashboardUrlClient,
 } from '@/lib/utils/navigation';
+import Image from 'next/image';
 import { formatDate } from '@/lib/utils/string';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { OwnerProfileSkeleton, ProfileSkeleton } from '@/components/ui/skeleton';
@@ -27,6 +28,10 @@ interface ProfileData {
     phone_number: string | null;
     created_at: string;
     updated_at: string;
+    profile_media_id?: string | null;
+    media: {
+      id: string | null;
+    } | null;
   } | null;
   statistics: {
     businessCount: number;
@@ -76,21 +81,19 @@ export function ProfilePageContent({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+  // Load profile data on mount
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    // Always fetch profile from API, not from session
     const fetchProfile = async () => {
-      const { user: sessionUser } = await getServerSessionClient();
-      if (!sessionUser) {
-        router.push(ROUTES.AUTH_LOGIN(ROUTES.PROFILE));
-        return;
-      }
-
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch('/api/user/profile', { credentials: 'include' });
-
+        const response = await fetch('/api/user/profile', { credentials: 'include', cache: 'no-store' });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('[PROFILE] API error:', response.status, errorData);
           if (response.status === 401) {
             router.push(ROUTES.AUTH_LOGIN(ROUTES.PROFILE));
             return;
@@ -99,18 +102,27 @@ export function ProfilePageContent({
           setLoading(false);
           return;
         }
-
         const result = await response.json();
-
         if (result.success && result.data) {
           setProfileData(result.data);
+          if (result.data.profile?.profile_media_id) {
+  try {
+    const res = await fetch(
+      `/api/media/signed-url?mediaId=${result.data.profile.profile_media_id}`,
+      { credentials: 'include' }
+    );
+    const data = await res.json();
+    if (data.success && data.data?.url) {
+      setProfileImageUrl(data.data.url);
+    }
+  } catch {}
+}
           const rawPhone = result.data.profile?.phone_number || '';
           const phoneDigits = rawPhone.replace(/\D/g, '').slice(0, PHONE_DIGITS);
           setFormData({
             full_name: result.data.profile?.full_name || '',
             phone_number: phoneDigits,
           });
-
           // Generate secure URLs for businesses
           if (result.data.businesses && result.data.businesses.length > 0) {
             const urlMap = new Map<string, string>();
@@ -119,24 +131,20 @@ export function ProfilePageContent({
                 const secureUrl = await getSecureOwnerDashboardUrlClient(business.booking_link);
                 urlMap.set(business.booking_link, secureUrl);
               } catch (err) {
-                console.warn('[PROFILE] Failed to generate secure URL for business:', err);
                 urlMap.set(business.booking_link, getOwnerDashboardUrl(business.booking_link));
               }
             }
             setSecureBusinessUrls(urlMap);
           }
         } else {
-          console.error('[PROFILE] API returned unsuccessful:', result);
           setError(result.error || 'Failed to load profile');
         }
       } catch (err) {
-        console.error('[PROFILE] Fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load profile');
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, [router]);
 
@@ -180,11 +188,11 @@ export function ProfilePageContent({
             ...prev,
             profile: prev.profile
               ? {
-                  ...prev.profile,
-                  full_name: formData.full_name || null,
-                  phone_number: formData.phone_number || null,
-                  updated_at: new Date().toISOString(),
-                }
+                ...prev.profile,
+                full_name: formData.full_name || null,
+                phone_number: formData.phone_number || null,
+                updated_at: new Date().toISOString(),
+              }
               : prev.profile,
           };
         });
@@ -196,6 +204,64 @@ export function ProfilePageContent({
       setError(err instanceof Error ? err.message : 'Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+  const handleProfileImageUpload = async (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Invalid file type');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be under 2MB');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setError(null);
+
+      const csrfToken = await getCSRFToken();
+
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      const response = await fetch('/api/media/profile', {
+        method: 'POST',
+        body: formDataUpload,
+        credentials: 'include',
+        headers: csrfToken ? { 'x-csrf-token': csrfToken } : undefined,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      // Defensive: ensure result.data.media.file_url exists
+      const newMedia = result.data && result.data.media ? result.data.media : null;
+
+      setProfileData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          profile: prev.profile
+            ? {
+              ...prev.profile,
+              media: newMedia,
+            }
+            : prev.profile,
+        };
+      });
+      // Optionally force a re-render by updating formData (if needed)
+      // setFormData((prev) => ({ ...prev }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -337,10 +403,35 @@ export function ProfilePageContent({
     <div className="space-y-8">
       {/* Account Information */}
       <section className="rounded-lg border border-slate-200 bg-white p-6">
-        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Account information</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Your profile and sign-in details</p>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
+          <div className="flex items-center gap-6">
+            <div className="relative flex flex-col items-center">
+<Image
+src={profileImageUrl || '/avatar-placeholder.png'}
+  alt="Profile Picture"
+  width={60}
+  height={60}
+  unoptimized
+/>
+              {editMode && (
+                <label className="absolute bottom-2 right-2 bg-slate-900 text-white text-xs px-2 py-1 rounded-full cursor-pointer shadow-md">
+                  {uploadingImage ? 'Uploading' : 'Change'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleProfileImageUpload(file);
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Account information</h3>
+              <p className="text-sm text-slate-500 mt-0.5">Your profile and sign-in details</p>
+            </div>
           </div>
           {!editMode && (
             <button
@@ -363,7 +454,6 @@ export function ProfilePageContent({
             {error}
           </div>
         )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
