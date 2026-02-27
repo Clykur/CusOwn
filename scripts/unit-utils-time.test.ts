@@ -296,9 +296,13 @@ export function runUnitUtilsTimeTests(): void {
     }
     if (slotDateForToday !== null) {
       const future = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-      const futureTime = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}:00`;
-      const result = isSlotInPast(slotDateForToday, futureTime);
-      assert(result === false, `Expected false when today and future time, got ${result}`);
+      // Skip assertion if adding 2 hours crosses midnight: future time would be next day,
+      // so slot (today, "HH:MM") could be earlier today and correctly in the past.
+      if (future.getDate() === now.getDate()) {
+        const futureTime = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}:00`;
+        const result = isSlotInPast(slotDateForToday, futureTime);
+        assert(result === false, `Expected false when today and future time, got ${result}`);
+      }
     }
   });
 
