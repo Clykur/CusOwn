@@ -311,6 +311,9 @@ export const UI_CUSTOMER = {
   LABEL_SELECT_TIME: 'Select Time',
   PLACEHOLDER_NAME: 'John Doe',
   PLACEHOLDER_PHONE: '10 digits',
+  /** Data URI for default avatar when no profile image (avoids 404 on missing /default-avatar.png). */
+  DEFAULT_AVATAR_DATA_URI:
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Ccircle fill='%23e5e7eb' cx='24' cy='24' r='24'/%3E%3Ccircle fill='%239ca3af' cx='24' cy='20' r='8'/%3E%3Cpath fill='%239ca3af' d='M12 40c0-6.6 5.4-12 12-12s12 5.4 12 12'/%3E%3C/svg%3E",
   SLOT_VERIFYING: 'Verifying...',
   SLOT_FULL: 'Full',
   SUBMIT_BOOKING: 'Send Booking Request',

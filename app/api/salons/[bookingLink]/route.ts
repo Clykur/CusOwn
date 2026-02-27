@@ -1,11 +1,13 @@
 import { NextRequest } from 'next/server';
 import { salonService } from '@/services/salon.service';
+import { mediaService } from '@/services/media.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID, validateSalonToken } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { getServerUser } from '@/lib/supabase/server-auth';
+import { env } from '@/config/env';
 
 // Strict rate limiting for salon access: 30 requests per minute per IP
 const salonAccessRateLimit = enhancedRateLimit({
@@ -70,44 +72,12 @@ export async function GET(
         return errorResponse('Invalid access token format', 403);
       }
 
-      // Additional security: Validate request headers and token
-      const referer = request.headers.get('referer');
-      const origin = request.headers.get('origin');
-
-      // Validate token with time-based validation
-      console.log(
-        `[SALON_API] Validating token for salon ${bookingLink.substring(0, 8)}... from IP: ${clientIP}`
-      );
       const isValidToken = validateSalonToken(bookingLink, token);
-      console.log(`[SALON_API] Token validation result: ${isValidToken}`);
 
       if (!isValidToken) {
-        // Enhanced security logging with token preview for debugging
-        const tokenPreview =
-          token.length > 20
-            ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}`
-            : token;
-        console.warn(
-          `[SALON_API] Invalid token validation from IP: ${clientIP}, Salon: ${bookingLink.substring(0, 8)}..., Token length: ${token.length}, Token preview: ${tokenPreview}, Referer: ${referer || 'none'}`
-        );
-
-        // In development, provide more detailed error
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(
-            `[SALON_API] Token validation failed. Salon: ${bookingLink}, Token format valid: ${/^[0-9a-f]{64}$/i.test(token) || /^[0-9a-f]{32}$/i.test(token) || /^[0-9a-f]{16}$/i.test(token)}`
-          );
-        }
-
         return errorResponse(
           'Invalid or expired access token. Please use a valid booking link.',
           403
-        );
-      }
-
-      // Log successful access for security monitoring
-      if (process.env.NODE_ENV === 'development') {
-        console.log(
-          `[SECURITY] Valid salon access: IP: ${clientIP}, Salon: ${bookingLink.substring(0, 8)}..., Token length: ${token.length}, Origin: ${origin || 'none'}`
         );
       }
     }
@@ -163,7 +133,25 @@ export async function GET(
       }
     }
 
-    const response = successResponse(salon);
+    // Enrich with owner profile image for customer/owner UI (signed URL server-side)
+    let payload: typeof salon & { owner_image?: string } = { ...salon };
+    const ownerUserId = (salon as { owner_user_id?: string }).owner_user_id;
+    if (ownerUserId) {
+      try {
+        const profileMedia = await mediaService.getProfileMedia(ownerUserId);
+        if (profileMedia) {
+          const signed = await mediaService.createSignedUrl(
+            profileMedia.id,
+            env.security.signedUrlTtlSeconds
+          );
+          if (signed?.url) payload.owner_image = signed.url;
+        }
+      } catch {
+        // Omit owner_image on failure; owner_name still available
+      }
+    }
+
+    const response = successResponse(payload);
     setCacheHeaders(response, 300, 600);
     return response;
   } catch (error) {

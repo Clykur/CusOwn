@@ -40,9 +40,32 @@
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.25s ease-in-out infinite;
   }
+
+  /* Premium image placeholder: soft shine sweep */
+  .image-skeleton-shine {
+    background: linear-gradient(
+      110deg,
+      #f1f5f9 0%,
+      #f1f5f9 40%,
+      #e2e8f0 50%,
+      #f8fafc 60%,
+      #f1f5f9 100%
+    );
+    background-size: 200% 100%;
+    animation: image-skeleton-shine 1.8s ease-in-out infinite;
+  }
 }
 
 @keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes image-skeleton-shine {
   0% {
     background-position: 200% 0;
   }

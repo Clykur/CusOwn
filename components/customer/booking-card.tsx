@@ -17,7 +17,6 @@ interface CustomerBookingCardProps {
   booking: any;
 }
 
-
 export default function CustomerBookingCard({ booking }: CustomerBookingCardProps) {
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
 
@@ -80,7 +79,11 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
     booking.salon?.salon_name || booking.business?.salon_name || UI_CUSTOMER.PROVIDER_FALLBACK;
   const location = booking.salon?.location || booking.business?.location;
 
-  const [owner, setOwner] = React.useState<{ name: string; phone: string; profileImage: string } | null>(null);
+  const [owner, setOwner] = React.useState<{
+    name: string;
+    phone: string;
+    profileImage: string;
+  } | null>(null);
 
   React.useEffect(() => {
     async function fetchOwner() {
@@ -96,9 +99,10 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
           setOwner({
             name: result.data.owner_name || 'Owner',
             phone: result.data.whatsapp_number || '',
-            profileImage: result.data.owner_image && result.data.owner_image !== ''
-              ? result.data.owner_image
-              : '/default-avatar.png',
+            profileImage:
+              result.data.owner_image && result.data.owner_image !== ''
+                ? result.data.owner_image
+                : UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI,
           });
         }
       } catch (err) {
@@ -109,7 +113,6 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
   }, [booking.salon?.id, booking.business?.id]);
 
   return (
-
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-sm">
       <div className="p-4 sm:p-6">
         {/* Header Row: Salon Name left, Owner Info right */}
@@ -121,13 +124,24 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
           </div>
           <div className="flex items-center gap-3">
             {/* Owner Profile Image */}
-            <Image
-              src={owner && owner.profileImage ? owner.profileImage : '/default-avatar.png'}
-              alt={owner && owner.name ? owner.name : 'Owner'}
-              className="w-8 h-8 rounded-full object-cover border border-gray-200"
-              width={32}
-              height={32}
-            />
+            {owner?.profileImage && !owner.profileImage.startsWith('data:') ? (
+              <Image
+                src={owner.profileImage}
+                alt={owner?.name ?? 'Owner'}
+                className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                width={32}
+                height={32}
+              />
+            ) : (
+              <Image
+                src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
+                alt={owner?.name ?? 'Owner'}
+                className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                width={32}
+                height={32}
+                unoptimized
+              />
+            )}
             {/* Owner Name */}
             <span className="font-semibold text-base text-slate-900 truncate">
               {owner && owner.name ? owner.name : 'Owner'}
@@ -200,4 +214,3 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
     </div>
   );
 }
-

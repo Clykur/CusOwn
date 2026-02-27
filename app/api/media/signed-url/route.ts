@@ -11,7 +11,7 @@ import { mediaService } from '@/services/media.service';
 import { checkIsAdmin } from '@/lib/utils/admin';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { isValidUUID } from '@/lib/utils/security';
-import { ERROR_MESSAGES } from '@/config/constants';
+import { ERROR_MESSAGES, MEDIA_CACHE_CONTROL_HEADER } from '@/config/constants';
 import { env } from '@/config/env';
 
 const ROUTE = 'GET /api/media/signed-url';
@@ -54,10 +54,14 @@ export async function GET(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.MEDIA_UPLOAD_FAILED, 500);
     }
 
-    return successResponse({
+    const response = successResponse({
       url: result.url,
       expiresAt: result.expiresAt,
     });
+    if (media.entity_type === 'business') {
+      response.headers.set('Cache-Control', MEDIA_CACHE_CONTROL_HEADER);
+    }
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.UNEXPECTED_ERROR;
     return errorResponse(message, 500);

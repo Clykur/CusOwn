@@ -5,6 +5,18 @@ const nextConfig = {
   // Allow strict/CI builds to use an isolated dist directory
   // so dev `.next` artifacts cannot interfere with production builds.
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname:
+          (process.env.NEXT_PUBLIC_SUPABASE_URL &&
+            new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname) ||
+          'nlrmsamgpajuprldkpms.supabase.co',
+        pathname: '/storage/v1/**',
+      },
+    ],
+  },
   // Keep console logs in development, strip noisy logs in production bundles.
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
