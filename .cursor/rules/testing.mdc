@@ -1,0 +1,24 @@
+---
+description: Testing — unit, structure, fixtures (from cursor.directory + project)
+globs: scripts/**/*.test.ts, **/*.test.ts, __tests__/**/*
+alwaysApply: false
+---
+
+# Testing rules
+
+## Structure and style
+- Use descriptive test names: should_<unit>_<behavior>_when_<condition>. One logical assertion per test where practical.
+- Use the "function" keyword for test runners and helpers. Prefer named exports for test utilities. File names: kebab-case with .test.ts suffix.
+- Scripts under scripts/ use ts-node with --project scripts/tsconfig.json; use tsconfig-paths/register for @/ resolution when needed.
+
+## Unit tests
+- Test pure logic (utils, state machines, validation) without DB or network. Mock external APIs and Supabase when testing services.
+- Use constants and types from @/config/constants and @/types. Avoid hardcoded strings that duplicate ERROR_MESSAGES or SUCCESS_MESSAGES.
+- No console.log in production code paths; use structured logging or remove. Test scripts may use console for output (e.g. runUnitConfigConstantsTests).
+
+## Fixtures and data
+- Use minimal fixtures (IDs, names, dates) that satisfy schemas. Do not commit real PII or secrets. Prefer factories or small JSON fixtures in scripts/fixtures if needed.
+- For API journey tests, use existing patterns: getServerUser, supabaseAdmin, and env from config. Do not store credentials in repo.
+
+## Running tests
+- Unit tests: npm run test:unit (or scripts/run-unit-tests.ts). Lint and typecheck before pushing. See .cursor/rules/pre-push-and-ci-security.mdc for security-check and package-lock.

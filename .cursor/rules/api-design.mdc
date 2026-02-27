@@ -1,0 +1,31 @@
+---
+description: API design — robust, scalable, production-ready, secure (from cursor.directory + project)
+globs: app/api/**/*.ts, services/**/*.ts, lib/**/*.ts
+alwaysApply: false
+---
+
+# API design rules
+
+## Response shape
+- Use successResponse(data, message?) and errorResponse(error, status) from @/lib/utils/response. Response shape: { success, data?, error?, message? }.
+- Do not return raw NextResponse.json for success/error. Use ERROR_MESSAGES and SUCCESS_MESSAGES from @/config/constants for user-facing strings.
+
+## Order of operations (mutations)
+1. Lazy expire (booking flows): runLazyExpireIfNeeded at start of try when relevant.
+2. Rate limit: call rate limiter first; return 429 if it returns a response. Use enhancedRateLimit with perIP/perUser and keyPrefix from constants.
+3. Auth: getServerUser(request); return 401 if required and missing.
+4. Authorization: owner/admin/customer checks via userService, checkIsAdmin, or validateResourceToken. Do not expose data across tenants.
+5. Input: validate UUIDs with isValidUUID; filter body with filterFields/input-filter; validate coordinates, lengths, enums.
+6. Business logic via services; then successResponse or errorResponse.
+
+## Security
+- No unauthenticated state mutation unless explicitly public (e.g. book/set-pending, geo read-only). Cron endpoints require CRON_SECRET.
+- Validate and sanitize all inputs (query, body, path). Reject invalid IPs, coordinates, and oversized payloads. Use constants for limits (e.g. GEO_RATE_LIMIT_*, VALIDATION.*).
+- Do not log PII or full tokens. Use structured lifecycle logs with IDs only.
+
+## Idempotency and errors
+- For accept/reject/cancel: if already in target state return 200 with current state; if in conflicting terminal state return 409.
+- Catch blocks: const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR; return errorResponse(message, 500). Do not swallow errors.
+
+## External calls (e.g. geo, webhooks)
+- Use timeouts (AbortController) and validate responses. Cache when appropriate (setCacheHeaders). Rate limit proxy endpoints per IP. No API keys in client; proxy from server when needed.

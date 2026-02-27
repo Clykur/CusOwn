@@ -85,6 +85,7 @@
     "react-icons": "^5.5.0",
     "recharts": "^3.7.0",
     "sharp": "^0.34.5",
+    "swagger-ui-react": "^5.31.2",
     "tailwind-merge": "^2.0.0",
     "uuidv7": "^1.1.0",
     "zod": "^3.22.0"
@@ -95,6 +96,7 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/swagger-ui-react": "^5.18.0",
     "autoprefixer": "^10.4.0",
     "c8": "^10.0.0",
     "detect-secrets": "^1.0.6",

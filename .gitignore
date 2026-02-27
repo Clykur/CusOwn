@@ -53,6 +53,10 @@ keys/
 # vercel
 .vercel
 
+# CI / tooling artifacts (generated, do not commit)
+licenses.json
+audit.log
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

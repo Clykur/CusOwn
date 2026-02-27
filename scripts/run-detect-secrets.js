@@ -48,7 +48,9 @@ function getFileList() {
       (filePath) =>
         !filePath.startsWith('node_modules/') &&
         !filePath.startsWith('.next/') &&
-        filePath !== '.secrets.baseline'
+        filePath !== '.secrets.baseline' &&
+        filePath !== 'licenses.json' &&
+        filePath !== 'audit.log'
     );
 }
 

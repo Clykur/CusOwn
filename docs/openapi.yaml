@@ -1,0 +1,1698 @@
+openapi: 3.0.3
+info:
+  title: CusOwn API
+  description: |
+    Booking and business management API. Session auth is cookie-based; use browser login
+    then send cookies for protected routes. For state-changing requests (POST/PATCH/DELETE),
+    get a CSRF token from GET /api/csrf-token and send it in the `x-csrf-token` header.
+    Cron endpoints require `Authorization: Bearer <CRON_SECRET>`.
+
+    **View in browser:** When the app is running (or deployed), open `/docs` to view this spec in Swagger UI. No commands required—share the link with coworkers.
+  version: 1.0.0
+  contact:
+    name: CusOwn
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: /api
+    description: Relative path (e.g. behind reverse proxy)
+
+tags:
+  - name: Setup & Health
+  - name: Auth
+  - name: User
+  - name: Location
+  - name: Geo
+  - name: Book flow
+  - name: Salons
+  - name: Slots
+  - name: Bookings
+  - name: Businesses
+  - name: Media
+  - name: Payments
+  - name: Notifications
+  - name: Security
+  - name: Admin
+  - name: Owner
+  - name: Customer
+  - name: Cron
+  - name: Debug & Metrics
+
+security:
+  - cookieAuth: []
+  - csrfHeader: []
+
+paths:
+  /api/health:
+    get:
+      tags: [Setup & Health]
+      summary: Health check
+      description: Check application and database health.
+      security: []
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+                description: success, data with health status
+
+  /api/health/media:
+    get:
+      tags: [Setup & Health]
+      summary: Media health check
+      description: Check media subsystem (storage and media table).
+      security: []
+      responses:
+        '200':
+          description: Media checks (media_storage, media_table up/down)
+
+  /api/csrf-token:
+    get:
+      tags: [Setup & Health]
+      summary: Get CSRF token
+      description: Get a CSRF token for POST/PATCH/DELETE. Exempt for cron and webhooks.
+      security: []
+      responses:
+        '200':
+          description: Token in data.token; use header x-csrf-token
+
+  /api/auth/login:
+    get:
+      tags: [Auth]
+      summary: Login (OAuth redirect)
+      description: Start Google OAuth; redirects to Google. Use in browser to obtain session cookies.
+      security: []
+      parameters:
+        - name: role
+          in: query
+          schema: { type: string, enum: [owner, customer] }
+        - name: redirect_to
+          in: query
+          schema: { type: string, format: uri }
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+
+  /api/auth/set-pending-role:
+    post:
+      tags: [Auth]
+      summary: Set pending role
+      description: Set pending role before or after OAuth (e.g. owner/customer).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [owner, customer] }
+      responses:
+        '200':
+          description: Pending role set
+
+  /api/auth/session:
+    get:
+      tags: [Auth]
+      summary: Get session
+      description: Get current session (cookie-based).
+      responses:
+        '200':
+          description: Session data or unauthenticated
+
+  /api/auth/signout:
+    description: Sign out; returns { success true }. Session cookies required.
+    get:
+      tags: [Auth]
+      summary: Sign out (GET)
+      responses:
+        '200':
+          description: Signed out
+    post:
+      tags: [Auth]
+      summary: Sign out (POST)
+      responses:
+        '200':
+          description: Signed out
+
+  /api/user/state:
+    get:
+      tags: [User]
+      summary: User state
+      description: Get current user state (e.g. canAccessOwnerDashboard) for UI.
+      responses:
+        '200':
+          description: User state
+
+  /api/user/profile:
+    get:
+      tags: [User]
+      summary: Get profile
+      responses:
+        '200':
+          description: Current user profile
+    patch:
+      tags: [User]
+      summary: Update profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string, minLength: 2 }
+                phone_number: { type: string }
+      responses:
+        '200':
+          description: Updated profile
+    delete:
+      tags: [User]
+      summary: Delete account
+      description: Soft-delete current user. API accepts optional JSON body with reason (max 500 chars); some validators disallow requestBody on DELETE.
+      responses:
+        '200':
+          description: Account marked for deletion
+
+  /api/user/update-role:
+    post:
+      tags: [User]
+      summary: Update role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string, enum: [owner, customer] }
+      responses:
+        '200':
+          description: Role updated
+
+  /api/location:
+    get:
+      tags: [Location]
+      summary: Get location
+      description: Get location from cookie/DB (fresh &lt; 7 days). If missing, fallback to IP lookup once and set cookie.
+      security: []
+      responses:
+        '200':
+          description: data.location (city, region, country_code, lat, lon, source). May set Set-Cookie.
+
+  /api/location/set:
+    post:
+      tags: [Location]
+      summary: Set location
+      description: Persist location from client (e.g. after navigator.geolocation). Body lat/lon; server may reverse-geocode.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude: { type: number }
+                longitude: { type: number }
+                city: { type: string }
+                region: { type: string }
+                country_code: { type: string }
+                source: { type: string, enum: [gps, ip] }
+      responses:
+        '200':
+          description: Location persisted and cookie set
+
+  /api/geo/reverse-geocode:
+    get:
+      tags: [Geo]
+      summary: Reverse geocode
+      description: Convert coordinates to city/region/country. BigDataCloud fallback; rate-limited.
+      security: []
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema: { type: number }
+        - name: longitude
+          in: query
+          required: true
+          schema: { type: number }
+        - name: localityLanguage
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Location data
+
+  /api/geo/ip:
+    get:
+      tags: [Geo]
+      summary: IP geolocation
+      description: Get geolocation for client IP or optional ?ip=. Fallback only; prefer GET /location.
+      security: []
+      parameters:
+        - name: ip
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Location from IP
+
+  /api/book/business/{booking_link}:
+    get:
+      tags: [Book flow]
+      summary: Business by slug
+      description: Fetch business by booking_link (slug) for QR/public booking.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/BookingLink'
+      responses:
+        '200':
+          description: Public business data
+
+  /api/book/set-pending:
+    post:
+      tags: [Book flow]
+      summary: Set pending booking
+      description: Set pending booking cookie. Body salon_id, slot_id, customer_name, customer_phone, service_ids.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [salon_id, slot_id, customer_name, customer_phone]
+              properties:
+                salon_id: { type: string, format: uuid }
+                slot_id: { type: string, format: uuid }
+                customer_name: { type: string }
+                customer_phone: { type: string }
+                service_ids: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: Pending cookie set; booking context returned
+
+  /api/book/complete:
+    post:
+      tags: [Book flow]
+      summary: Complete booking
+      description: Complete booking using pending cookie (set by set-pending).
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Booking completed
+
+  /api/salons/list:
+    get:
+      tags: [Salons]
+      summary: List salons
+      security: []
+      responses:
+        '200':
+          description: List of salons
+
+  /api/salons/locations:
+    get:
+      tags: [Salons]
+      summary: Salon locations
+      security: []
+      parameters:
+        - name: location
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Salon locations
+
+  /api/salons/{booking_link}:
+    get:
+      tags: [Salons]
+      summary: Salon by booking link
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/BookingLink'
+      responses:
+        '200':
+          description: Salon data
+    post:
+      tags: [Salons]
+      summary: Create salon
+      description: Create a new salon/business. Owner session required.
+      parameters:
+        - $ref: '#/components/parameters/BookingLink'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                booking_link: { type: string }
+                address: { type: string }
+                whatsapp_number: { type: string }
+                slot_duration_minutes: { type: integer }
+      responses:
+        '200':
+          description: Created salon
+
+  /api/salons/{booking_link}/qr:
+    get:
+      tags: [Salons]
+      summary: Get QR code
+      description: Get QR code URL or data for salon booking link.
+      parameters:
+        - $ref: '#/components/parameters/BookingLink'
+      responses:
+        '200':
+          description: QR data or URL
+
+  /api/slots:
+    get:
+      tags: [Slots]
+      summary: Get slots
+      parameters:
+        - name: salon_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Available slots for date
+    post:
+      tags: [Slots]
+      summary: Create slots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                salon_id: { type: string, format: uuid }
+                date: { type: string, format: date }
+                slots: { type: array, items: { $ref: '#/components/schemas/SlotInput' } }
+      responses:
+        '200':
+          description: Slots created
+
+  /api/slots/{slot_id}:
+    get:
+      tags: [Slots]
+      summary: Get slot by ID
+      parameters:
+        - $ref: '#/components/parameters/SlotId'
+      responses:
+        '200':
+          description: Slot details
+    parameters:
+      - $ref: '#/components/parameters/SlotId'
+
+  /api/slots/{slot_id}/reserve:
+    post:
+      tags: [Slots]
+      summary: Reserve slot
+      parameters:
+        - $ref: '#/components/parameters/SlotId'
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Slot reserved
+
+  /api/slots/{slot_id}/release:
+    post:
+      tags: [Slots]
+      summary: Release slot
+      parameters:
+        - $ref: '#/components/parameters/SlotId'
+      responses:
+        '200':
+          description: Slot released
+
+  /api/bookings:
+    post:
+      tags: [Bookings]
+      summary: Create booking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                salon_id: { type: string, format: uuid }
+                slot_id: { type: string, format: uuid }
+                customer_name: { type: string }
+                customer_phone: { type: string }
+                service_ids: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: Booking created
+
+  /api/bookings/{booking_id}:
+    get:
+      tags: [Bookings]
+      summary: Get booking by ID
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+        - name: token
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Booking details
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+
+  /api/bookings/booking-id/{booking_id}:
+    get:
+      tags: [Bookings]
+      summary: Get booking by public booking ID
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Booking by public ID
+
+  /api/bookings/salon/{salon_id}:
+    get:
+      tags: [Bookings]
+      summary: List bookings for salon
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Bookings for salon
+
+  /api/bookings/{booking_id}/accept:
+    post:
+      tags: [Bookings]
+      summary: Accept booking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+        - name: token
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Booking accepted
+
+  /api/bookings/{booking_id}/reject:
+    post:
+      tags: [Bookings]
+      summary: Reject booking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+        - name: token
+          in: query
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200':
+          description: Booking rejected
+
+  /api/bookings/{booking_id}/cancel:
+    post:
+      tags: [Bookings]
+      summary: Cancel booking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200':
+          description: Booking cancelled
+
+  /api/bookings/{booking_id}/reschedule:
+    get:
+      tags: [Bookings]
+      summary: Get reschedule options
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Reschedule options
+    post:
+      tags: [Bookings]
+      summary: Reschedule booking
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slot_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Booking rescheduled
+
+  /api/bookings/{booking_id}/no-show:
+    post:
+      tags: [Bookings]
+      summary: Mark no-show
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Marked no-show
+
+  /api/bookings/{booking_id}/undo-accept:
+    post:
+      tags: [Bookings]
+      summary: Undo accept
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Accept undone
+
+  /api/bookings/{booking_id}/undo-reject:
+    post:
+      tags: [Bookings]
+      summary: Undo reject
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Reject undone
+
+  /api/bookings/{booking_id}/whatsapp:
+    get:
+      tags: [Bookings]
+      summary: Get WhatsApp link
+      description: Get pre-filled WhatsApp link for booking.
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: data.whatsapp_url
+
+  /api/bookings/expire:
+    post:
+      tags: [Cron]
+      summary: Expire bookings (cron)
+      description: Expire old pending bookings. Requires CRON_SECRET.
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: Expired bookings processed
+
+  /api/business-categories:
+    get:
+      tags: [Businesses]
+      summary: Business categories
+      description: List active business types (categories).
+      security: []
+      responses:
+        '200':
+          description: Array of { id, name, slug }
+
+  /api/businesses/search:
+    post:
+      tags: [Businesses]
+      summary: Search businesses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude: { type: number, nullable: true }
+                longitude: { type: number, nullable: true }
+                city: { type: string }
+                area: { type: string }
+                category: { type: string }
+      responses:
+        '200':
+          description: Search results
+
+  /api/businesses/{salon_id}/services:
+    get:
+      tags: [Businesses]
+      summary: Business services
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Services for business
+
+  /api/businesses/{salon_id}/downtime/holidays:
+    get:
+      tags: [Businesses]
+      summary: List holiday downtime
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Holiday downtime list
+    post:
+      tags: [Businesses]
+      summary: Add holiday downtime
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Holiday added
+
+  /api/businesses/{salon_id}/downtime/closures:
+    get:
+      tags: [Businesses]
+      summary: List closures
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Closures list
+    post:
+      tags: [Businesses]
+      summary: Add closure
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Closure added
+
+  /api/media/business/{salon_id}:
+    get:
+      tags: [Media]
+      summary: List business images
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 25 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      security: []
+      responses:
+        '200':
+          description: List of media
+    post:
+      tags: [Media]
+      summary: Upload business image
+      description: Multipart form-data, field 'file'. Optional Idempotency-Key header.
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Media created
+
+  /api/media/profile:
+    post:
+      tags: [Media]
+      summary: Upload profile image
+      description: Multipart form-data, field 'file'. Optional Idempotency-Key header.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: Profile image uploaded
+
+  /api/media/signed-url:
+    get:
+      tags: [Media]
+      summary: Get signed URL
+      parameters:
+        - name: mediaId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Short-lived signed URL
+
+  /api/media/{media_id}:
+    delete:
+      tags: [Media]
+      summary: Delete media
+      parameters:
+        - name: media_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Media soft-deleted
+
+  /api/payments/initiate:
+    post:
+      tags: [Payments]
+      summary: Initiate payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [booking_id, nonce]
+              properties:
+                booking_id: { type: string, format: uuid }
+                nonce: { type: string }
+      responses:
+        '200':
+          description: Payment initiated
+
+  /api/payments/verify:
+    post:
+      tags: [Payments]
+      summary: Verify payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_id: { type: string }
+                order_id: { type: string }
+      responses:
+        '200':
+          description: Verification result
+
+  /api/payments/create:
+    post:
+      tags: [Payments]
+      summary: Create payment record
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Payment record created
+
+  /api/payments/{payment_id}/status:
+    get:
+      tags: [Payments]
+      summary: Payment status
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Payment status
+
+  /api/payments/webhook/razorpay:
+    post:
+      tags: [Payments]
+      summary: Razorpay webhook
+      description: Called by Razorpay; signature verified. Do not call manually.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Webhook processed
+
+  /api/payments/webhook/upi:
+    post:
+      tags: [Payments]
+      summary: UPI webhook
+      description: Called by payment provider.
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200':
+          description: Webhook processed
+
+  /api/notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Get notification preferences
+      parameters:
+        - name: customer_phone
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Preferences
+    put:
+      tags: [Notifications]
+      summary: Update notification preferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customer_phone: { type: string }
+                email_enabled: { type: boolean }
+                sms_enabled: { type: boolean }
+                whatsapp_enabled: { type: boolean }
+                email_address: { type: string }
+                phone_number: { type: string }
+      responses:
+        '200':
+          description: Preferences updated
+
+  /api/notifications/history/{booking_id}:
+    get:
+      tags: [Notifications]
+      summary: Notification history by booking
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: History for booking
+
+  /api/security/generate-salon-url:
+    post:
+      tags: [Security]
+      summary: Generate signed salon URL
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                salonId: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Signed URL
+
+  /api/security/generate-resource-url:
+    post:
+      tags: [Security]
+      summary: Generate signed resource URL
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resourceType, resourceId]
+              properties:
+                resourceType: { type: string }
+                resourceId: { type: string }
+      responses:
+        '200':
+          description: Signed URL
+
+  /api/admin/check-status:
+    get:
+      tags: [Admin]
+      summary: Admin check (GET)
+      description: Check if current user is admin.
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Admin status
+    post:
+      tags: [Admin]
+      summary: Admin check (POST)
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: OK
+
+  /api/admin/bookings:
+    get:
+      tags: [Admin]
+      summary: List all bookings
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+        - name: business_id
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Bookings list
+
+  /api/admin/bookings/{booking_id}:
+    get:
+      tags: [Admin]
+      summary: Get booking by ID
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Booking details
+    patch:
+      tags: [Admin]
+      summary: Update booking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [pending, confirmed, rejected, cancelled] }
+                customer_name: { type: string }
+                customer_phone: { type: string }
+                cancellation_reason: { type: string }
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Booking updated
+    post:
+      tags: [Admin]
+      summary: Admin action on booking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [resend_notification] }
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Action applied
+    delete:
+      tags: [Admin]
+      summary: Delete booking (admin)
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Deleted
+
+  /api/admin/bookings/{booking_id}/lifecycle:
+    get:
+      tags: [Admin]
+      summary: Booking lifecycle
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Lifecycle data
+
+  /api/admin/audit-logs:
+    get:
+      tags: [Admin]
+      summary: Audit logs
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+        - name: admin_user_id
+          in: query
+          schema: { type: string }
+        - name: action_type
+          in: query
+          schema: { type: string }
+        - name: entity_type
+          in: query
+          schema: { type: string }
+        - name: entity_id
+          in: query
+          schema: { type: string }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Audit logs
+
+  /api/admin/businesses:
+    get:
+      tags: [Admin]
+      summary: List businesses
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Businesses list
+
+  /api/admin/businesses/{salon_id}:
+    get:
+      tags: [Admin]
+      summary: Get business by ID
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Business details
+    patch:
+      tags: [Admin]
+      summary: Update business
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags: [Admin]
+      summary: Delete business
+      parameters:
+        - name: salon_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Deleted
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      summary: List users
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Users list
+
+  /api/admin/users/{user_id}:
+    get:
+      tags: [Admin]
+      summary: Get user by ID
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: User details
+    patch:
+      tags: [Admin]
+      summary: Update user (admin)
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                admin_note: { type: string }
+                user_type: { type: string }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags: [Admin]
+      summary: Delete user (admin)
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Deleted
+
+  /api/admin/users/{user_id}/block:
+    post:
+      tags: [Admin]
+      summary: Block user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: User blocked
+
+  /api/admin/users/{user_id}/unblock:
+    post:
+      tags: [Admin]
+      summary: Unblock user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: User unblocked
+
+  /api/admin/metrics:
+    get:
+      tags: [Admin]
+      summary: Admin metrics
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Metrics data
+
+  /api/admin/system-metrics:
+    get:
+      tags: [Admin]
+      summary: System metrics
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: System metrics
+
+  /api/admin/revenue-metrics:
+    get:
+      tags: [Admin]
+      summary: Revenue metrics
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Revenue metrics
+
+  /api/admin/trends:
+    get:
+      tags: [Admin]
+      summary: Trends
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Trends data
+
+  /api/admin/booking-funnel:
+    get:
+      tags: [Admin]
+      summary: Booking funnel
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Funnel data
+
+  /api/admin/business-health:
+    get:
+      tags: [Admin]
+      summary: Business health
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Health data
+
+  /api/admin/export/bookings:
+    get:
+      tags: [Admin]
+      summary: Export bookings
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Export data
+
+  /api/admin/audit:
+    get:
+      tags: [Admin]
+      summary: Audit (filtered)
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+        - name: entity_type
+          in: query
+          schema: { type: string }
+        - name: action_type
+          in: query
+          schema: { type: string }
+        - name: user_id
+          in: query
+          schema: { type: string }
+        - name: business_id
+          in: query
+          schema: { type: string }
+        - name: start_date
+          in: query
+          schema: { type: string }
+        - name: end_date
+          in: query
+          schema: { type: string }
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Audit data
+
+  /api/admin/overview:
+    get:
+      tags: [Admin]
+      summary: Admin overview
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Overview data
+
+  /api/admin/storage-overview:
+    get:
+      tags: [Admin]
+      summary: Storage overview
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Storage data
+
+  /api/admin/cron-runs:
+    get:
+      tags: [Admin]
+      summary: Cron runs
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Cron runs list
+
+  /api/admin/auth/users:
+    get:
+      tags: [Admin]
+      summary: Auth users
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Auth users list
+
+  /api/admin/auth-events:
+    get:
+      tags: [Admin]
+      summary: Auth events
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Auth events list
+
+  /api/owner/businesses:
+    get:
+      tags: [Owner]
+      summary: Owner businesses
+      description: List businesses owned by current user.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Businesses list
+
+  /api/owner/dashboard-stats:
+    get:
+      tags: [Owner]
+      summary: Dashboard stats
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Dashboard stats
+
+  /api/owner/analytics:
+    get:
+      tags: [Owner]
+      summary: Owner analytics
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Analytics data
+
+  /api/owner/analytics/export:
+    get:
+      tags: [Owner]
+      summary: Analytics export
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Export data
+
+  /api/owner/no-show/analytics:
+    get:
+      tags: [Owner]
+      summary: No-show analytics
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: No-show data
+
+  /api/owner/businesses/{booking_link}:
+    patch:
+      tags: [Owner]
+      summary: Update own business by booking link
+      parameters:
+        - $ref: '#/components/parameters/BookingLink'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                salon_name: { type: string }
+                owner_name: { type: string }
+                address: { type: string }
+                whatsapp_number: { type: string }
+                slot_duration_minutes: { type: integer }
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Business updated
+    delete:
+      tags: [Owner]
+      summary: Delete own business
+      parameters:
+        - $ref: '#/components/parameters/BookingLink'
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Deleted
+
+  /api/customer/bookings:
+    get:
+      tags: [Customer]
+      summary: Customer bookings
+      description: List current customer's bookings.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Bookings list
+
+  /api/cron/expire-bookings:
+    post:
+      tags: [Cron]
+      summary: Cron expire bookings
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/expire-payments:
+    post:
+      tags: [Cron]
+      summary: Cron expire payments
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/cleanup-reservations:
+    post:
+      tags: [Cron]
+      summary: Cron cleanup reservations
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/generate-slots:
+    post:
+      tags: [Cron]
+      summary: Cron generate slots
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/send-reminders:
+    post:
+      tags: [Cron]
+      summary: Cron send reminders
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/trim-metric-timings:
+    post:
+      tags: [Cron]
+      summary: Cron trim metric timings
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/health-check:
+    get:
+      tags: [Cron]
+      summary: Cron health check (GET)
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Cron]
+      summary: Cron health check (POST)
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/cleanup-deleted-accounts:
+    post:
+      tags: [Cron]
+      summary: Cron cleanup deleted accounts
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/purge-soft-deleted-media:
+    post:
+      tags: [Cron]
+      summary: Cron purge soft-deleted media
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+  /api/cron/prune-idempotency:
+    post:
+      tags: [Cron]
+      summary: Cron prune idempotency
+      security:
+        - cronAuth: []
+      responses:
+        '200':
+          description: OK
+
+  /api/debug/auth:
+    get:
+      tags: [Debug & Metrics]
+      summary: Debug auth
+      description: Debug auth state. Development only.
+      security: []
+      responses:
+        '200':
+          description: Auth debug info
+
+  /api/metrics:
+    get:
+      tags: [Debug & Metrics]
+      summary: Metrics
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Metrics data
+
+  /api/metrics/success:
+    get:
+      tags: [Debug & Metrics]
+      summary: Metrics success
+      responses:
+        '200':
+          description: Success metrics
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sb-access-token
+      description: Session cookie (set by OAuth login)
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: x-csrf-token
+      description: CSRF token from GET /api/csrf-token
+    cronAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: CRON_SECRET
+      description: Set Authorization Bearer to CRON_SECRET from env
+    adminAuth:
+      type: apiKey
+      in: cookie
+      name: sb-access-token
+      description: Admin session (same as cookieAuth; admin role required)
+
+  parameters:
+    BookingId:
+      name: booking_id
+      in: path
+      required: true
+      schema: { type: string }
+    SlotId:
+      name: slot_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    BookingLink:
+      name: booking_link
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    ApiSuccess:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: {}
+        message: { type: string }
+    ApiError:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error: { type: string }
+    SlotInput:
+      type: object
+      properties:
+        start_time: { type: string }
+        end_time: { type: string }

@@ -2,17 +2,50 @@
   "info": {
     "name": "CusOwn API",
     "_postman_id": "cusown-api-full",
-    "description": "# CusOwn API – Postman Collection\n\n## How to use\n\n1. **Environment:** Select **CusOwn Local** and set `baseUrl` (e.g. `http://localhost:3000`) and `cron_secret` (from `.env.local`) for cron requests.\n\n2. **Testing order:** Run folders in order: **01 Setup** → **02 Auth** (or use browser login) → **03 User** → then **04 Salons**, **05 Slots**, **06 Bookings** as needed.\n\n3. **Session auth:** Protected routes need session cookies. Sign in at `http://localhost:3000/auth/login` in a browser, then in Postman either send cookies automatically (same domain) or copy the session cookies from DevTools → Application → Cookies.\n\n4. **CSRF:** For any POST/PUT/PATCH/DELETE (except cron and webhooks), run **01 Setup → Get CSRF token** first. The script saves the token; requests that need it use the `x-csrf-token` header.\n\n5. **Cron:** Use header `Authorization: Bearer {{cron_secret}}`; set `cron_secret` in the environment.\n\n6. **Variables:** Set `salon_id`, `slot_id`, `booking_id` in the collection or environment when testing flows. Some requests auto-save `booking_id` after create.",
+    "description": "# CusOwn API – Postman Collection\n\n## Folder order (01 → 19)\n\n01 Setup & Health | 02 Auth | 03 User | 04 Location | 05 Geo | 06 Book flow | 07 Salons | 08 Slots | 09 Bookings | 10 Businesses | 11 Media | 12 Payments | 13 Notifications | 14 Security | 15 Admin | 16 Owner | 17 Customer | 18 Cron | 19 Debug & Metrics\n\n## How to use\n\n1. **Environment:** Select **CusOwn Local** and set `baseUrl` (e.g. `http://localhost:3000`) and `cron_secret` (from `.env.local`) for cron requests.\n\n2. **Testing order:** Run folders in order: **01 Setup** → **02 Auth** (or use browser login) → **03 User** → **04 Location** / **05 Geo** if needed → **06 Book flow** → **07 Salons**, **08 Slots**, **09 Bookings** as needed.\n\n3. **Session auth:** Protected routes need session cookies. Sign in at `http://localhost:3000/auth/login` in a browser, then in Postman either send cookies automatically (same domain) or copy the session cookies from DevTools → Application → Cookies.\n\n4. **CSRF:** For any POST/PUT/PATCH/DELETE (except cron and webhooks), run **01 Setup → Get CSRF token** first. The script saves the token; requests that need it use the `x-csrf-token` header.\n\n5. **Cron:** Use header `Authorization: Bearer {{cron_secret}}`; set `cron_secret` in the environment.\n\n6. **Variables:** Set `baseUrl`, `cron_secret`, `salon_id`, `slot_id`, `booking_id`, `booking_link`, `payment_id`, `media_id`, `user_id` as needed. Some requests auto-save `booking_id` after create. See docs/MEDIA_UPLOAD_API.md for media uploads; docs/LOCATION_SYSTEM.md for location/geo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "csrf_token", "value": "" },
-    { "key": "booking_id", "value": "" },
-    { "key": "slot_id", "value": "" },
-    { "key": "salon_id", "value": "" },
-    { "key": "booking_link", "value": "" },
-    { "key": "payment_id", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "csrf_token",
+      "value": ""
+    },
+    {
+      "key": "booking_id",
+      "value": ""
+    },
+    {
+      "key": "slot_id",
+      "value": ""
+    },
+    {
+      "key": "salon_id",
+      "value": ""
+    },
+    {
+      "key": "booking_link",
+      "value": ""
+    },
+    {
+      "key": "payment_id",
+      "value": ""
+    },
+    {
+      "key": "media_id",
+      "value": ""
+    },
+    {
+      "key": "cron_secret",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -26,6 +59,15 @@
             "header": [],
             "url": "{{baseUrl}}/api/health",
             "description": "**Purpose:** Check application and database health.\n**Auth:** None.\n**Returns:** success, data with health status."
+          }
+        },
+        {
+          "name": "Health Media",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health/media",
+            "description": "**Purpose:** Check media subsystem health (storage and media table).\n**Auth:** None.\n**Returns:** success, data.checks.media_storage and data.checks.media_table (up/down)."
           }
         },
         {
@@ -71,10 +113,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"role\": \"customer\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"customer\"\n}"
+            },
             "url": "{{baseUrl}}/api/auth/set-pending-role",
             "description": "**Purpose:** Set pending role cookie before OAuth (used when role is in URL).\n**Auth:** None.\n**Body:** role (string) = owner | customer."
           }
@@ -101,7 +152,12 @@
           "name": "Sign out (POST)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/auth/signout",
             "description": "**Purpose:** Sign out; returns JSON { success: true }.\n**Auth:** Session cookies."
           }
@@ -135,8 +191,14 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -147,14 +209,45 @@
           }
         },
         {
+          "name": "User profile (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"User requested account deletion\"\n}"
+            },
+            "url": "{{baseUrl}}/api/user/profile",
+            "description": "**Purpose:** Soft-delete current user account and associated businesses. Data retained 30 days for admin/recovery.\n**Auth:** Session required.\n**Body:** reason (optional string, max 500 chars)."
+          }
+        },
+        {
           "name": "Update role",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"role\": \"owner\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"owner\"\n}"
+            },
             "url": "{{baseUrl}}/api/user/update-role",
             "description": "**Purpose:** Set user role to owner or customer.\n**Auth:** Session required.\n**Body:** role (string) = owner | customer."
           }
@@ -162,7 +255,127 @@
       ]
     },
     {
-      "name": "04 - Salons",
+      "name": "04 - Location",
+      "description": "User location: cookie/DB first; BigDataCloud IP only as fallback. See docs/LOCATION_SYSTEM.md.",
+      "item": [
+        {
+          "name": "Get location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/location",
+            "description": "**Purpose:** Get current location from cookie or DB (fresh < 7 days). If missing, falls back to IP lookup once and sets cookie.\n**Auth:** None. Optional session for DB persist.\n**Returns:** data.location (city, region, country_code, latitude, longitude, source). May set Set-Cookie."
+          }
+        },
+        {
+          "name": "Set location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 12.97,\n  \"longitude\": 77.59,\n  \"source\": \"gps\"\n}"
+            },
+            "url": "{{baseUrl}}/api/location/set",
+            "description": "**Purpose:** Persist location from client (e.g. after navigator.geolocation). Body: latitude, longitude, optional city, region, country_code, source (gps|ip). Server may reverse-geocode once.\n**Auth:** Optional. CSRF required."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Geo",
+      "description": "BigDataCloud fallback: reverse-geocode and IP lookup. Rate-limited; use Location APIs for user location.",
+      "item": [
+        {
+          "name": "Reverse geocode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/geo/reverse-geocode?latitude=12.97&longitude=77.59",
+            "description": "**Purpose:** Reverse-geocode coordinates to city/region/country. Use only when no stored location.\n**Auth:** None.\n**Query:** latitude, longitude (required), localityLanguage (optional)."
+          }
+        },
+        {
+          "name": "IP geolocation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/geo/ip",
+            "description": "**Purpose:** Get geolocation for client IP (or ?ip=). Fallback only; prefer GET /api/location.\n**Auth:** None.\n**Query:** ip (optional)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Book flow",
+      "description": "Public booking flow: get business by slug, set pending booking cookie, complete booking.",
+      "item": [
+        {
+          "name": "Book – Business by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/book/business/{{booking_link}}",
+            "description": "**Purpose:** Fetch business by booking_link (slug) for QR/public booking. No auth.\n**Auth:** None.\n**Path:** slug (booking_link)."
+          }
+        },
+        {
+          "name": "Book – Set pending",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salon_id\": \"{{salon_id}}\",\n  \"slot_id\": \"{{slot_id}}\",\n  \"customer_name\": \"Test\",\n  \"customer_phone\": \"+919876543210\",\n  \"service_ids\": []\n}"
+            },
+            "url": "{{baseUrl}}/api/book/set-pending",
+            "description": "**Purpose:** Set pending booking cookie. Body: salon_id, slot_id, customer_name, customer_phone, service_ids."
+          }
+        },
+        {
+          "name": "Book – Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/api/book/complete",
+            "description": "**Purpose:** Complete booking using pending cookie.\n**Auth:** None."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Salons",
       "description": "Salon listing, locations, and booking-link public data.",
       "item": [
         {
@@ -206,10 +419,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/salons",
             "description": "**Purpose:** Create a salon/business. Body fields per API.\n**Auth:** Required (owner/admin).\n**Body:** Check API for allowed fields."
           }
@@ -217,7 +439,7 @@
       ]
     },
     {
-      "name": "05 - Slots",
+      "name": "08 - Slots",
       "description": "Slots: get by salon/date, reserve, release. Set salon_id and slot_id in variables.",
       "item": [
         {
@@ -234,8 +456,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -258,7 +486,12 @@
           "name": "Reserve slot",
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/slots/{{slot_id}}/reserve",
             "description": "**Purpose:** Reserve a slot (holds it for booking).\n**Auth:** Optional (user or anonymous).\n**Path:** slot_id (UUID). Optional header: x-request-id (UUID) for idempotency."
           }
@@ -267,7 +500,12 @@
           "name": "Release slot",
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/slots/{{slot_id}}/release",
             "description": "**Purpose:** Release a reserved slot.\n**Auth:** Per implementation.\n**Path:** slot_id (UUID)."
           }
@@ -275,7 +513,7 @@
       ]
     },
     {
-      "name": "06 - Bookings",
+      "name": "09 - Bookings",
       "description": "Create and manage bookings. Use booking_id from Create booking or set it manually.",
       "item": [
         {
@@ -297,8 +535,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -339,7 +583,12 @@
           "name": "Accept booking",
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/bookings/{{booking_id}}/accept?token=",
             "description": "**Purpose:** Accept a pending booking (owner/admin or signed link).\n**Auth:** Owner/admin or query token (accept link).\n**Path:** id (UUID). Query: token (optional)."
           }
@@ -349,10 +598,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Optional reason\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Optional reason\"\n}"
+            },
             "url": "{{baseUrl}}/api/bookings/{{booking_id}}/reject?token=",
             "description": "**Purpose:** Reject a pending booking.\n**Auth:** Owner/admin or signed token.\n**Path:** id. Query: token (optional). Body: reason (optional)."
           }
@@ -361,7 +619,12 @@
           "name": "Cancel booking",
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/bookings/{{booking_id}}/cancel",
             "description": "**Purpose:** Cancel a booking. Idempotent if already cancelled.\n**Auth:** Customer (own), owner, or admin.\n**Path:** id (UUID)."
           }
@@ -371,8 +634,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -395,24 +664,81 @@
           "name": "No-show booking",
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/bookings/{{booking_id}}/no-show",
             "description": "**Purpose:** Mark booking as no-show.\n**Auth:** Owner/admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Undo accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/undo-accept",
+            "description": "**Purpose:** Undo a prior accept (revert confirmed → pending) within the configured time window. Allowed once per accept.\n**Auth:** Owner/admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Undo reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/undo-reject",
+            "description": "**Purpose:** Undo a prior reject (revert rejected → pending) within the configured time window. Allowed once per reject.\n**Auth:** Owner/admin.\n**Path:** id (UUID)."
+          }
+        },
+        {
+          "name": "Get WhatsApp link (booking)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{booking_id}}/whatsapp",
+            "description": "**Purpose:** Get WhatsApp pre-filled link for the booking (salon number + booking details). id is the public booking_id.\n**Auth:** None (public booking id).\n**Path:** id (booking_id string).\n**Returns:** data.whatsapp_url or null if no salon WhatsApp."
           }
         }
       ]
     },
     {
-      "name": "07 - Businesses",
-      "description": "Business search, services, and downtime (holidays/closures).",
+      "name": "10 - Businesses",
+      "description": "Business search, services, categories, and downtime (holidays/closures).",
       "item": [
+        {
+          "name": "Business categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/business-categories",
+            "description": "**Purpose:** List active business types (categories) for dropdowns. Data from business_categories table.\n**Auth:** None.\n**Returns:** Array of { id, name, slug } (or similar). Cached."
+          }
+        },
         {
           "name": "Business search",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -445,10 +771,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/businesses/{{salon_id}}/downtime/holidays",
             "description": "**Purpose:** Add holiday downtime. Body per API.\n**Path:** business id (UUID)."
           }
@@ -467,10 +802,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/businesses/{{salon_id}}/downtime/closures",
             "description": "**Purpose:** Add closure. Body per API.\n**Path:** business id (UUID)."
           }
@@ -478,7 +822,101 @@
       ]
     },
     {
-      "name": "08 - Payments",
+      "name": "11 - Media",
+      "description": "Profile and business images: upload (multipart), list, signed URL, delete. See docs/MEDIA_UPLOAD_API.md. Use Idempotency-Key header for uploads.",
+      "item": [
+        {
+          "name": "Media – List business images",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/media/business/{{salon_id}}?limit=25&offset=0",
+            "description": "**Purpose:** List media for a business (public for customer UI).\n**Auth:** None.\n**Query:** limit (default 25, max 100), offset (default 0).\n**Path:** businessId (UUID)."
+          }
+        },
+        {
+          "name": "Media – Upload profile image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/media/profile",
+            "description": "**Purpose:** Upload profile image (any authenticated user; applies to own profile).\n**Auth:** Session required.\n**Body:** multipart/form-data, field 'file' (image). Optional Idempotency-Key (UUID).\n**Rate limit:** Per user and per IP."
+          }
+        },
+        {
+          "name": "Media – Upload business image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/media/business/{{salon_id}}",
+            "description": "**Purpose:** Upload image for a business. Caller must own the business.\n**Auth:** Session required (owner/admin).\n**Body:** multipart/form-data, field 'file'. Optional Idempotency-Key.\n**Path:** businessId (UUID)."
+          }
+        },
+        {
+          "name": "Media – Get signed URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/media/signed-url?mediaId={{media_id}}",
+            "description": "**Purpose:** Get short-lived signed URL for a media record. Business media: public. Profile media: only profile owner or admin.\n**Auth:** For profile media, session required (owner or admin).\n**Query:** mediaId (UUID). Set media_id in variables."
+          }
+        },
+        {
+          "name": "Media – Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/media/{{media_id}}",
+            "description": "**Purpose:** Soft-delete media and remove from storage. Caller must own business (business media) or be profile owner (profile media).\n**Auth:** Session required.\n**Path:** mediaId (UUID)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Payments",
       "description": "Payment initiate, verify, create, status. Webhooks are called by providers.",
       "item": [
         {
@@ -486,8 +924,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -502,10 +946,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"payment_id\": \"\",\n  \"order_id\": \"\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_id\": \"\",\n  \"order_id\": \"\"\n}"
+            },
             "url": "{{baseUrl}}/api/payments/verify",
             "description": "**Purpose:** Verify payment status after provider callback. Body per provider (e.g. payment_id, order_id).\n**Auth:** Per implementation."
           }
@@ -515,10 +968,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"booking_id\": \"{{booking_id}}\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking_id\": \"{{booking_id}}\"\n}"
+            },
             "url": "{{baseUrl}}/api/payments/create",
             "description": "**Purpose:** Create payment record for a booking. Body per API.\n**Auth:** Required."
           }
@@ -536,8 +998,16 @@
           "name": "Webhook Razorpay (reference)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/payments/webhook/razorpay",
             "description": "**Purpose:** Razorpay webhook; called by Razorpay. Signature verified. Do not call manually unless testing with valid signature.\n**Auth:** Webhook signature."
           }
@@ -546,8 +1016,16 @@
           "name": "Webhook UPI (reference)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{}" },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/payments/webhook/upi",
             "description": "**Purpose:** UPI webhook; called by payment provider. Do not call manually unless testing.\n**Auth:** Webhook secret."
           }
@@ -555,7 +1033,7 @@
       ]
     },
     {
-      "name": "09 - Notifications",
+      "name": "13 - Notifications",
       "description": "Notification preferences and history.",
       "item": [
         {
@@ -572,8 +1050,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -595,7 +1079,7 @@
       ]
     },
     {
-      "name": "10 - Security",
+      "name": "14 - Security",
       "description": "Generate signed URLs for salon and resource access. CSRF exempt.",
       "item": [
         {
@@ -603,8 +1087,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -619,8 +1109,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -633,7 +1129,7 @@
       ]
     },
     {
-      "name": "11 - Admin",
+      "name": "15 - Admin",
       "description": "Admin-only endpoints. Require admin session (cookies).",
       "item": [
         {
@@ -650,10 +1146,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/admin/check-status",
             "description": "**Purpose:** Admin check with body. Body per API.\n**Auth:** Admin session."
           }
@@ -681,8 +1186,14 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -697,10 +1208,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"action\": \"resend_notification\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"resend_notification\"\n}"
+            },
             "url": "{{baseUrl}}/api/admin/bookings/{{booking_id}}",
             "description": "**Purpose:** Admin action on booking. action = resend_notification (for confirmed/rejected).\n**Auth:** Admin."
           }
@@ -746,10 +1266,19 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-csrf-token", "value": "{{csrf_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/admin/businesses/{{salon_id}}",
             "description": "**Purpose:** Update business. Body fields per API.\n**Auth:** Admin."
           }
@@ -758,7 +1287,12 @@
           "name": "Admin business (DELETE)",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "x-csrf-token", "value": "{{csrf_token}}" }],
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/admin/businesses/{{salon_id}}",
             "description": "**Purpose:** Delete (or suspend) business. Use with caution.\n**Auth:** Admin.\n**Path:** id (UUID)."
           }
@@ -834,11 +1368,138 @@
             "url": "{{baseUrl}}/api/admin/export/bookings?limit=100&offset=0",
             "description": "**Purpose:** Export bookings (e.g. CSV). Query: limit, offset, filters per API.\n**Auth:** Admin."
           }
+        },
+        {
+          "name": "Admin audit (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/audit?limit=20&offset=0&entity_type=&action_type=&user_id=&business_id=&start_date=&end_date=",
+            "description": "**Purpose:** Get audit logs with filters (entity_type, action_type, user_id, business_id, start_date, end_date).\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/overview",
+            "description": "**Purpose:** Admin dashboard overview metrics.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin storage overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/storage-overview",
+            "description": "**Purpose:** Storage usage/overview for admin.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin cron runs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/cron-runs",
+            "description": "**Purpose:** List cron run history (last runs, status).\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin auth users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/auth/users",
+            "description": "**Purpose:** List auth users (Supabase auth) for admin.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin auth events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/auth-events",
+            "description": "**Purpose:** List auth events (login/signup etc.) for admin.\n**Auth:** Admin."
+          }
+        },
+        {
+          "name": "Admin user by ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/admin/users/{{user_id}}",
+            "description": "**Purpose:** Get single user by ID (admin view). Set user_id in environment.\n**Auth:** Admin.\n**Path:** user id (UUID)."
+          }
+        },
+        {
+          "name": "Admin block user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{user_id}}/block",
+            "description": "**Purpose:** Block a user. Set user_id in environment.\n**Auth:** Admin.\n**Path:** user id (UUID)."
+          }
+        },
+        {
+          "name": "Admin unblock user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{user_id}}/unblock",
+            "description": "**Purpose:** Unblock a user. Set user_id in environment.\n**Auth:** Admin.\n**Path:** user id (UUID)."
+          }
+        },
+        {
+          "name": "Admin user by ID (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_note\": \"Optional note\",\n  \"user_type\": \"customer\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/users/{{user_id}}",
+            "description": "**Purpose:** Update admin user profile (admin_note, user_type). Set user_id in environment.\n**Auth:** Admin.\n**Body:** admin_note (string or null), user_type (string, e.g. customer)."
+          }
+        },
+        {
+          "name": "Admin user by ID (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/admin/users/{{user_id}}",
+            "description": "**Purpose:** Delete a user (admin). Cannot delete own account. Set user_id in environment.\n**Auth:** Admin.\n**Path:** user id (UUID)."
+          }
         }
       ]
     },
     {
-      "name": "12 - Owner",
+      "name": "16 - Owner",
       "description": "Owner dashboard and analytics. Requires owner session.",
       "item": [
         {
@@ -885,11 +1546,47 @@
             "url": "{{baseUrl}}/api/owner/no-show/analytics",
             "description": "**Purpose:** No-show analytics.\n**Auth:** Owner."
           }
+        },
+        {
+          "name": "Owner business by booking link (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salon_name\": \"\",\n  \"owner_name\": \"\",\n  \"address\": \"\",\n  \"whatsapp_number\": \"\",\n  \"slot_duration_minutes\": 30\n}"
+            },
+            "url": "{{baseUrl}}/api/owner/businesses/{{booking_link}}",
+            "description": "**Purpose:** Update own business by booking link. Only allowed fields (salon_name, owner_name, address, whatsapp_number, slot_duration_minutes, etc.).\n**Auth:** Owner (must own the business).\n**Path:** booking_link (slug)."
+          }
+        },
+        {
+          "name": "Owner business by booking link (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-csrf-token",
+                "value": "{{csrf_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/owner/businesses/{{booking_link}}",
+            "description": "**Purpose:** Delete (soft-delete) own business by booking link. Use with caution.\n**Auth:** Owner (must own the business).\n**Path:** booking_link (slug)."
+          }
         }
       ]
     },
     {
-      "name": "13 - Customer",
+      "name": "17 - Customer",
       "description": "Customer-scoped endpoints. Requires customer session.",
       "item": [
         {
@@ -904,14 +1601,19 @@
       ]
     },
     {
-      "name": "14 - Cron",
+      "name": "18 - Cron",
       "description": "Cron jobs. Require header: Authorization: Bearer {{cron_secret}}. Set cron_secret in environment.",
       "item": [
         {
           "name": "Cron expire bookings",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cron/expire-bookings",
             "description": "**Purpose:** Expire old pending bookings.\n**Auth:** CRON_SECRET (Bearer token)."
           }
@@ -920,7 +1622,12 @@
           "name": "Cron expire payments",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cron/expire-payments",
             "description": "**Purpose:** Expire old payments.\n**Auth:** CRON_SECRET."
           }
@@ -929,7 +1636,12 @@
           "name": "Cron cleanup reservations",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cron/cleanup-reservations",
             "description": "**Purpose:** Clean up expired slot reservations.\n**Auth:** CRON_SECRET."
           }
@@ -939,10 +1651,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{cron_secret}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": "{{baseUrl}}/api/cron/generate-slots",
             "description": "**Purpose:** Generate slots for upcoming dates. Body per API.\n**Auth:** CRON_SECRET."
           }
@@ -951,7 +1672,12 @@
           "name": "Cron send reminders",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cron/send-reminders",
             "description": "**Purpose:** Send booking reminders.\n**Auth:** CRON_SECRET."
           }
@@ -960,7 +1686,12 @@
           "name": "Cron trim metric timings",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cron/trim-metric-timings",
             "description": "**Purpose:** Trim old metric timings.\n**Auth:** CRON_SECRET."
           }
@@ -978,7 +1709,12 @@
           "name": "Cron health check (POST)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/cron/health-check",
             "description": "**Purpose:** Cron health check (POST).\n**Auth:** Per implementation."
           }
@@ -987,15 +1723,62 @@
           "name": "Bookings expire (manual/cron)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{cron_secret}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
             "url": "{{baseUrl}}/api/bookings/expire",
             "description": "**Purpose:** Same as cron/expire-bookings; expire old pending bookings.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron cleanup deleted accounts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/cron/cleanup-deleted-accounts",
+            "description": "**Purpose:** Clean up data for deleted auth accounts (orphan records).\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron purge soft-deleted media",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/cron/purge-soft-deleted-media",
+            "description": "**Purpose:** Hard-delete media records and storage objects that have been soft-deleted beyond retention.\n**Auth:** CRON_SECRET."
+          }
+        },
+        {
+          "name": "Cron prune idempotency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cron_secret}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/cron/prune-idempotency",
+            "description": "**Purpose:** Prune old idempotency keys/records to avoid unbounded growth.\n**Auth:** CRON_SECRET."
           }
         }
       ]
     },
     {
-      "name": "15 - Debug & Metrics",
+      "name": "19 - Debug & Metrics",
       "description": "Debug and metrics endpoints. Use only in development.",
       "item": [
         {

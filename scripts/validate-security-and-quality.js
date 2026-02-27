@@ -57,6 +57,8 @@ const ALLOWED_URL_HOSTS = new Set([
   'accounts.google.com',
   'va.vercel-scripts.com',
   '*.supabase.co',
+  'api.bigdatacloud.net', // Geo: BigDataCloud API (config/constants.ts)
+  'www.bigdatacloud.com', // Geo: BigDataCloud docs (lib/geo comment)
 ]);
 
 const RULES = [
