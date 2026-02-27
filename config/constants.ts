@@ -182,6 +182,10 @@ export const ERROR_MESSAGES = {
   MEDIA_FILE_TOO_LARGE: 'File size exceeds the maximum allowed',
   MEDIA_UPLOAD_FAILED: 'Upload failed. Please try again.',
   MEDIA_NOT_FOUND: 'Image not found',
+  GEO_INVALID_COORDINATES: 'Invalid latitude or longitude',
+  GEO_SERVICE_UNAVAILABLE: 'Location service is temporarily unavailable',
+  LOCATION_REQUIRED: 'Location is required',
+  LOCATION_INVALID: 'Invalid location data',
   MEDIA_BUSINESS_ACCESS_DENIED: 'You do not have access to this business',
   MEDIA_PROFILE_ACCESS_DENIED: 'You can only update your own profile image',
   MEDIA_BUSINESS_MAX_IMAGES: 'Maximum number of business images reached',
@@ -354,6 +358,24 @@ export const RATE_LIMIT_ADMIN_MAX_PER_WINDOW = 100;
 /** Media upload: per user + per IP to prevent abuse. */
 export const RATE_LIMIT_MEDIA_UPLOAD_WINDOW_MS = 60_000;
 export const RATE_LIMIT_MEDIA_UPLOAD_MAX_PER_WINDOW = 30;
+
+/** Geo: BigDataCloud free APIs (no API key). Rate limit per IP. */
+export const GEO_RATE_LIMIT_WINDOW_MS = 60_000;
+export const GEO_RATE_LIMIT_MAX_PER_WINDOW = 60;
+export const GEO_BIGDATACLOUD_BASE = 'https://api.bigdatacloud.net/data';
+/** Cache reverse-geocode and IP responses (seconds). */
+export const GEO_CACHE_MAX_AGE_SECONDS = 86400;
+
+/** User location: cookie name (signed, HTTP-only), max age 7 days, consider fresh if younger than this. */
+export const LOCATION_COOKIE_NAME = 'user_location';
+export const LOCATION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const LOCATION_FRESH_DAYS = 7;
+/** BigDataCloud: timeout (ms), max retries. */
+export const GEO_PROVIDER_TIMEOUT_MS = 3000;
+export const GEO_PROVIDER_MAX_RETRIES = 1;
+/** In-memory IP lookup cache: TTL (ms), max entries. */
+export const GEO_IP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+export const GEO_IP_CACHE_MAX_ENTRIES = 5000;
 
 /** Phase 5: Refund/cancellation policy (documentation; no product change). */
 export const REFUND_POLICY_NOTE = 'Refunds follow payment provider policy and business discretion.';

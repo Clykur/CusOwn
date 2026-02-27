@@ -53,6 +53,8 @@ const envSchema = z.object({
   MEDIA_STRIP_EXIF: z.string().default('true'),
   /** Media: enable magic-byte validation (reject MIME mismatch). */
   MEDIA_VALIDATE_MAGIC_BYTES: z.string().default('true'),
+  /** BigDataCloud geo APIs: optional key for higher limits / IP lookup when required. */
+  BIGDATACLOUD_API_KEY: z.string().optional(),
 });
 
 const rawEnv = envSchema.parse(process.env);
@@ -123,6 +125,9 @@ export const env = {
     signedUrlTtlShortSeconds: parseInt(rawEnv.MEDIA_SIGNED_URL_TTL_SHORT, 10),
     stripExif: rawEnv.MEDIA_STRIP_EXIF === 'true',
     validateMagicBytes: rawEnv.MEDIA_VALIDATE_MAGIC_BYTES === 'true',
+  },
+  geo: {
+    bigDataCloudApiKey: rawEnv.BIGDATACLOUD_API_KEY || '',
   },
 } as const;
 

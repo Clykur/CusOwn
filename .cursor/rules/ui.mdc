@@ -1,0 +1,31 @@
+---
+description: UI — components, styling, accessibility (from cursor.directory + project)
+globs: components/**/*.tsx, app/**/*.tsx
+alwaysApply: false
+---
+
+# UI rules
+
+## Code style
+- Write concise TypeScript; use functional components and declarative JSX.
+- Use descriptive names with auxiliary verbs (e.g. isLoading, hasError, canSubmit).
+- Prefer iteration and modularization over duplication. One main component per file; default export for page-level components.
+
+## Styling
+- Use TailwindCSS for utility-first styling. Prefer design tokens (e.g. spacing, colors) from the project’s Tailwind config.
+- Use semantic HTML (e.g. button, nav, main, section) where possible. Avoid div soup for landmarks.
+- Keep responsive breakpoints consistent (sm/md/lg) and mobile-first.
+
+## Accessibility
+- Use aria-busy on buttons during submit; aria-label for icon-only controls; aria-live for dynamic status.
+- Ensure focus management in modals and after async actions. Support keyboard navigation.
+- Disable submit buttons when processing or when action is not applicable; do not rely only on visual state.
+
+## Loading and states
+- Show loading skeletons or spinners for async data. Use the project’s Skeleton component where it exists.
+- Handle empty states with clear copy and a single primary CTA (e.g. “Explore services”, “Create business”).
+- Do not leave users on a blank or generic error when the state is known (use UI_BOOKING_STATE, UI_ERROR_CONTEXT from constants).
+
+## Imports and structure
+- Use path alias @/ for project root. Component file names: kebab-case (e.g. booking-card.tsx). Exports: PascalCase.
+- Structure: exported component first, then subcomponents, helpers, static content, types.

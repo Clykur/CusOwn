@@ -70,3 +70,9 @@ node_modules/.cache
 # cache directories
 node_modules/.cache
 .cache
+
+# Postman – do not push to GitHub (delete postman/ from repo on GitHub if already committed)
+postman/
+.postman/
+.CusOwn-API.postman_environment.json    
+.CusOwn-API.postman_collection.json
