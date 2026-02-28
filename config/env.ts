@@ -14,10 +14,10 @@ function normalizeAppBaseUrl(url: string): string {
   }
   return url;
 }
-const isTest = process.env.NODE_ENV === 'test';
+
 const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
-  NEXT_PUBLIC_SUPABASE_URL: isTest ? z.string().optional(): z.string().min(1),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().min(1),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).default('placeholder-anon-key'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).default('placeholder-service-role-key'),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
@@ -140,8 +140,6 @@ export const env = {
 } as const;
 
 export const validateEnv = (): void => {
-  if (env.nodeEnv === 'test') return;
-
   const required = [
     { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
     { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },
@@ -155,5 +153,4 @@ export const validateEnv = (): void => {
       `Missing required environment variables: ${missing.map(({ key }) => key).join(', ')}`
     );
   }
-};
 };
