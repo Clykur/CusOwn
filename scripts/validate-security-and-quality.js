@@ -60,6 +60,7 @@ const ALLOWED_URL_HOSTS = new Set([
   'api.bigdatacloud.net', // Geo: BigDataCloud API (config/constants.ts)
   'www.bigdatacloud.com', // Geo: BigDataCloud docs (lib/geo comment)
   'www.w3.org', // W3C SVG namespace in data URIs (config/constants.ts DEFAULT_AVATAR_DATA_URI)
+  'placeholder.supabase.co', // env default for unit tests/CI (config/env.ts)
 ]);
 
 const RULES = [
