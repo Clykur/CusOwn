@@ -23,8 +23,8 @@ export type ResourceType =
   | 'admin-booking';
 
 // Get secret for resource type (all use same secret for now, but can be separated)
-const getResourceSecret = (resourceType: ResourceType): string => {
-  return env.security.salonTokenSecret; // Using same secret for all resources
+const getResourceSecret = (resourceType: ResourceType): string | undefined => {
+  return env.security.salonTokenSecret;
 };
 
 // Generate secure token for any resource using HMAC with timestamp
@@ -49,7 +49,6 @@ export const generateResourceToken = (
   hmac.update(resourceType); // Scoped: no privilege escalation (accept token cannot be used for admin)
   hmac.update(resourceId);
   hmac.update(time.toString());
-  hmac.update(secret);
   return hmac.digest('hex');
 };
 
@@ -211,8 +210,7 @@ export const validateResourceToken = (
       return false;
     }
 
-    // Legacy support for 16/32 char tokens
-    // Legacy support for 16/32 char tokens (no timestamp, no double-secret)
+    // Legacy support for 16/32 char tokens (old format: HMAC(resourceType + resourceId))
     if (token.length === 16 || token.length === 32) {
       const hmac = createHmac('sha256', secret);
       hmac.update(resourceType);
@@ -221,7 +219,11 @@ export const validateResourceToken = (
 
       const expected = legacyToken.substring(0, token.length);
 
-      return timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expected, 'hex'));
+      try {
+        return timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expected, 'hex'));
+      } catch {
+        return false;
+      }
     }
 
     return false;

@@ -21,7 +21,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).default('placeholder-anon-key'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).default('placeholder-service-role-key'),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-  CRON_SECRET: z.string().default('test-cron-secret'),
+  CRON_SECRET: z.string().optional(),
   SALON_TOKEN_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -83,7 +83,11 @@ export const env = {
   },
   security: {
     get salonTokenSecret(): string {
-      return rawEnv.SALON_TOKEN_SECRET || rawEnv.CRON_SECRET;
+      return (
+        process.env.SALON_TOKEN_SECRET ||
+        process.env.CRON_SECRET ||
+        'default-secret-change-in-production'
+      );
     },
     razorpayWebhookSecret: rawEnv.RAZORPAY_WEBHOOK_SECRET || '',
     stripeWebhookSecret: rawEnv.STRIPE_WEBHOOK_SECRET || '',
