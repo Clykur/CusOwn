@@ -19,7 +19,12 @@ const transitions: PaymentStateTransition[] = [
   { from: 'processing', event: 'verify', to: 'completed', allowed: true },
   { from: 'processing', event: 'fail', to: 'failed', allowed: true },
   { from: 'completed', event: 'refund', to: 'refunded', allowed: true },
-  { from: 'completed', event: 'refund', to: 'partially_refunded', allowed: true },
+  {
+    from: 'completed',
+    event: 'refund',
+    to: 'partially_refunded',
+    allowed: true,
+  },
 ];
 
 export class PaymentStateMachine {

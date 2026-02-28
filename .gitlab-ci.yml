@@ -11,10 +11,10 @@ default:
     - npm ci --ignore-scripts --no-audit
 
 variables:
-  NODE_OPTIONS: "--max-old-space-size=4096"
-  CI: "true"
+  NODE_OPTIONS: '--max-old-space-size=4096'
+  CI: 'true'
   # Override in GitLab CI/CD variables: NPM_AUDIT_LEVEL (default high), LICENSE_ALLOWLIST (comma-separated).
-  NPM_AUDIT_LEVEL: "high"
+  NPM_AUDIT_LEVEL: 'high'
 
 stages:
   - security
@@ -126,7 +126,7 @@ lint:
 # -----------------------------------------------------------------------------
 build:
   stage: build
-  needs: ["lint", "gitleaks", "security-scan"]
+  needs: ['lint', 'gitleaks', 'security-scan']
   script:
     - npm run build
   artifacts:

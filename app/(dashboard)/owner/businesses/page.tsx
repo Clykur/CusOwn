@@ -28,14 +28,18 @@ export default function OwnerBusinessesPage() {
   useEffect(() => {
     const run = async () => {
       try {
-        const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+        const sessionRes = await fetch('/api/auth/session', {
+          credentials: 'include',
+        });
         const sessionJson = await sessionRes.json();
         if (!sessionRes.ok || !sessionJson?.data?.user) {
           router.replace(ROUTES.AUTH_LOGIN('/owner/businesses'));
           return;
         }
 
-        const res = await fetch('/api/owner/businesses', { credentials: 'include' });
+        const res = await fetch('/api/owner/businesses', {
+          credentials: 'include',
+        });
         const json = await res.json();
         setBusinesses(json.data || []);
       } finally {

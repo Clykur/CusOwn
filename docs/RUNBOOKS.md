@@ -3,11 +3,13 @@
 ## Runbook: Database Migration
 
 ### Prerequisites
+
 - Access to Supabase dashboard
 - Migration SQL file ready
 - Backup taken
 
 ### Steps
+
 1. **Backup Database**
    - Go to Supabase Dashboard → Database → Backups
    - Create manual backup
@@ -33,6 +35,7 @@
    - Verify data integrity
 
 ### Rollback Script
+
 ```sql
 -- Example rollback (adjust per migration)
 -- ALTER TABLE bookings DROP COLUMN IF EXISTS new_column;
@@ -43,11 +46,13 @@
 ## Runbook: Application Deployment
 
 ### Prerequisites
+
 - Code reviewed and approved
 - Tests passing
 - Environment variables configured
 
 ### Steps
+
 1. **Pre-Deployment**
    - Verify all tests pass
    - Check environment variables
@@ -78,11 +83,13 @@
 ## Runbook: High Error Rate
 
 ### Symptoms
+
 - Error rate > 5%
 - Multiple 500 errors
 - User complaints
 
 ### Steps
+
 1. **Identify Issue**
    - Check `/api/health` endpoint
    - Review error logs in Vercel
@@ -113,11 +120,13 @@
 ## Runbook: Database Performance Issues
 
 ### Symptoms
+
 - Slow API responses
 - Timeout errors
 - High database CPU
 
 ### Steps
+
 1. **Identify Slow Queries**
    - Check Supabase dashboard → Database → Query Performance
    - Identify slow queries (>1s)
@@ -142,11 +151,13 @@
 ## Runbook: Authentication Issues
 
 ### Symptoms
+
 - Users cannot login
 - OAuth failures
 - Token errors
 
 ### Steps
+
 1. **Check Supabase Auth**
    - Verify Supabase auth status
    - Check OAuth provider status
@@ -172,11 +183,13 @@
 ## Runbook: Rate Limiting Issues
 
 ### Symptoms
+
 - Legitimate users blocked
 - Too many 429 errors
 - Performance degradation
 
 ### Steps
+
 1. **Check Rate Limits**
    - Review rate limit configuration
    - Check rate limit store size
@@ -197,11 +210,13 @@
 ## Runbook: Security Incident
 
 ### Symptoms
+
 - Unauthorized access
 - Data breach
 - Suspicious activity
 
 ### Steps
+
 1. **Immediate Actions**
    - Isolate affected systems
    - Preserve logs
@@ -232,6 +247,7 @@
 ## Runbook: Backup and Restore
 
 ### Backup Procedure
+
 1. **Automatic Backups**
    - Supabase provides daily backups
    - Verify backup completion
@@ -242,6 +258,7 @@
    - Create manual backup
 
 ### Restore Procedure
+
 1. **Select Backup**
    - Go to Supabase Dashboard
    - Database → Backups
@@ -262,11 +279,13 @@
 ## Runbook: Cron Failure (expire-bookings)
 
 ### Symptoms
+
 - `cron.expire_bookings.last_run_ts` stale in health check
 - Pending bookings not expiring on time
 - Slots stuck with expired reservations
 
 ### Steps
+
 1. **Verify Cron Not Running**
    - Call `GET /api/health` and check `checks.cron_expire_bookings_last_run_ts`
    - If value is old (>2× cron interval), cron is not running
@@ -292,10 +311,12 @@
 ## Runbook: Double Booking Alert
 
 ### Symptoms
+
 - Report or alert: more than one confirmed booking for the same slot
 - Unique constraint violation on `idx_bookings_one_confirmed_per_slot`
 
 ### Steps
+
 1. **Confirm Violation**
    - Query: `SELECT slot_id, COUNT(*) FROM bookings WHERE status = 'confirmed' GROUP BY slot_id HAVING COUNT(*) > 1`
    - If rows returned, data inconsistency exists (should be prevented by DB constraint)
@@ -317,11 +338,13 @@
 ## Runbook: Payment Mismatch
 
 ### Symptoms
+
 - Payment marked succeeded in provider but not in app (or vice versa)
 - Customer charged but booking not updated (Phase 2+: payment and booking are decoupled; booking may stay pending)
 - Duplicate webhook processing or replay
 
 ### Steps
+
 1. **Gather Facts**
    - Booking ID and Payment ID from support/ticket
    - Check `payments` table: status, provider_ref, webhook_payload_hash

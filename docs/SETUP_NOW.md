@@ -14,11 +14,12 @@ Add these secrets:
 
 ```
 VERCEL_TOKEN          - Your Vercel API token
-VERCEL_ORG_ID         - Your Vercel organization ID  
+VERCEL_ORG_ID         - Your Vercel organization ID
 VERCEL_PROJECT_ID     - Your Vercel project ID
 ```
 
 **Optional but recommended:**
+
 ```
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -28,6 +29,7 @@ SUPABASE_SERVICE_ROLE_KEY
 ### 2. That's It!
 
 Once you have the Vercel secrets set, you can:
+
 - ✅ Push directly to `main`
 - ✅ Workflow will run automatically
 - ✅ Deploy to staging first, then production
@@ -35,6 +37,7 @@ Once you have the Vercel secrets set, you can:
 ## Current Workflow Behavior
 
 When you push to `main`:
+
 1. ✅ Runs linting (warnings won't block)
 2. ✅ Runs type checking
 3. ✅ Runs build

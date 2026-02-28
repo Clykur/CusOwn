@@ -130,7 +130,11 @@ export default function TrendCharts({
   dailyData: any[];
   peakHours: any[];
   services?: any[];
-  analytics?: { confirmedBookings?: number; rejectedBookings?: number; cancelledBookings?: number };
+  analytics?: {
+    confirmedBookings?: number;
+    rejectedBookings?: number;
+    cancelledBookings?: number;
+  };
 }) {
   const bookingsSeries = useMemo(
     () =>
@@ -147,7 +151,10 @@ export default function TrendCharts({
   const peak = useMemo(
     () =>
       peakHours && peakHours.length
-        ? peakHours.map((p) => ({ label: `${p.hour}:00`, value: p.bookingCount }))
+        ? peakHours.map((p) => ({
+            label: `${p.hour}:00`,
+            value: p.bookingCount,
+          }))
         : [],
     [peakHours]
   );
@@ -249,11 +256,17 @@ export default function TrendCharts({
 
 // helpers for placeholders
 function peakPlaceholder() {
-  return Array.from({ length: 6 }).map((_, i) => ({ label: `${8 + i}:00`, value: 0 }));
+  return Array.from({ length: 6 }).map((_, i) => ({
+    label: `${8 + i}:00`,
+    value: 0,
+  }));
 }
 
 function servicesPlaceholder() {
-  return Array.from({ length: 6 }).map((_, i) => ({ name: `Service ${i + 1}`, count: 0 }));
+  return Array.from({ length: 6 }).map((_, i) => ({
+    name: `Service ${i + 1}`,
+    count: 0,
+  }));
 }
 
 function analyticsParts(analytics?: {

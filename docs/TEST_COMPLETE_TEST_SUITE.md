@@ -3,6 +3,7 @@
 ## 📦 All Test Scripts Created
 
 ### ✅ Core Infrastructure
+
 1. **test-utils.ts** - Shared utilities, Supabase connection, test runner
 2. **run-all-tests.sh** - Master script to run all tests sequentially
 
@@ -35,6 +36,7 @@
 ## 🚀 How to Run
 
 ### Run All Tests (Recommended)
+
 ```bash
 npm run test:all
 ```
@@ -42,6 +44,7 @@ npm run test:all
 This runs all 8 user journey tests sequentially, simulating complete user flows from login to completion.
 
 ### Run Individual Tests
+
 ```bash
 npm run test:customer-journey    # Customer flow
 npm run test:owner-journey        # Owner flow
@@ -56,6 +59,7 @@ npm run test:error-scenarios      # Error handling
 ## 📋 Test Flow Structure
 
 Each test follows this pattern:
+
 1. **User logs in** (or gets authenticated)
 2. **User navigates** through the application
 3. **User performs actions** (browse, book, pay, manage)
@@ -66,6 +70,7 @@ Each test follows this pattern:
 ## ✅ What Gets Tested
 
 ### User Actions
+
 - ✅ Login/Authentication
 - ✅ Browsing businesses
 - ✅ Viewing slots
@@ -76,6 +81,7 @@ Each test follows this pattern:
 - ✅ Admin operations
 
 ### Security & Safety
+
 - ✅ Business suspension enforcement
 - ✅ Race condition prevention
 - ✅ State machine enforcement
@@ -115,12 +121,14 @@ Success Rate: 100.0%
 ## 🔧 Setup Requirements
 
 1. **Install Dependencies:**
+
    ```bash
    npm install -D ts-node dotenv
    ```
 
 2. **Environment Variables:**
    Create `.env.local`:
+
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -132,20 +140,21 @@ Success Rate: 100.0%
 
 ## 🎯 Test Coverage
 
-| Flow | Steps | Status |
-|------|-------|--------|
+| Flow             | Steps   | Status      |
+| ---------------- | ------- | ----------- |
 | Customer Journey | 7 steps | ✅ Complete |
-| Owner Journey | 5 steps | ✅ Complete |
-| Booking Flow | 4 steps | ✅ Complete |
-| Payment Flow | 3 steps | ✅ Complete |
-| Admin Journey | 3 steps | ✅ Complete |
-| Concurrent Ops | 1 step | ✅ Complete |
-| Slot Management | 2 steps | ✅ Complete |
-| Error Scenarios | 1 step | ✅ Complete |
+| Owner Journey    | 5 steps | ✅ Complete |
+| Booking Flow     | 4 steps | ✅ Complete |
+| Payment Flow     | 3 steps | ✅ Complete |
+| Admin Journey    | 3 steps | ✅ Complete |
+| Concurrent Ops   | 1 step  | ✅ Complete |
+| Slot Management  | 2 steps | ✅ Complete |
+| Error Scenarios  | 1 step  | ✅ Complete |
 
 ## 🧹 Automatic Cleanup
 
 All tests automatically:
+
 - ✅ Delete test bookings
 - ✅ Reset test slots
 - ✅ Remove test payments
@@ -162,6 +171,7 @@ All tests automatically:
 ## 🎉 Success!
 
 When all tests pass:
+
 - ✅ All user flows work correctly
 - ✅ Security measures are enforced
 - ✅ Race conditions are prevented

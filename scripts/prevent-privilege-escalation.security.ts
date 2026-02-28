@@ -63,7 +63,9 @@ async function main() {
   }
 
   // 5. POST accept without auth and without token (unauthenticated state mutation)
-  const r5 = await fetch(`${API_BASE}/api/bookings/${bookingId}/accept`, { method: 'POST' });
+  const r5 = await fetch(`${API_BASE}/api/bookings/${bookingId}/accept`, {
+    method: 'POST',
+  });
   if (r5.status === 401) {
     console.log(`  ✅ POST accept without auth: 401`);
     passed++;

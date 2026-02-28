@@ -36,19 +36,20 @@ All critical and high-priority security issues from the audit have been **FIXED*
 
 ## 🔒 ATTACK SCENARIOS PREVENTED
 
-| Attack | Status | Fix |
-|--------|--------|-----|
-| Double-booking race condition | ✅ **PREVENTED** | Atomic DB function |
-| Slot hoarding | ✅ **DETECTED & BLOCKED** | Abuse detection service |
-| Invalid state transitions | ✅ **PREVENTED** | State machine enforcement |
-| Suspended business operations | ✅ **PREVENTED** | Suspension checks everywhere |
-| Payment amount tampering | ✅ **ALREADY PREVENTED** | Server-side calculation |
+| Attack                        | Status                    | Fix                          |
+| ----------------------------- | ------------------------- | ---------------------------- |
+| Double-booking race condition | ✅ **PREVENTED**          | Atomic DB function           |
+| Slot hoarding                 | ✅ **DETECTED & BLOCKED** | Abuse detection service      |
+| Invalid state transitions     | ✅ **PREVENTED**          | State machine enforcement    |
+| Suspended business operations | ✅ **PREVENTED**          | Suspension checks everywhere |
+| Payment amount tampering      | ✅ **ALREADY PREVENTED**  | Server-side calculation      |
 
 ---
 
 ## 📦 DEPLOYMENT CHECKLIST
 
 ### 1. Run Database Migrations
+
 ```sql
 -- Run in order:
 1. database/migration_atomic_booking_creation.sql
@@ -57,6 +58,7 @@ All critical and high-priority security issues from the audit have been **FIXED*
 ```
 
 ### 2. Set Environment Variables
+
 ```bash
 # Required (already in env.ts)
 SLOT_EXPIRY_MINUTES=10
@@ -71,6 +73,7 @@ CANCELLATION_MIN_HOURS_BEFORE=2
 ```
 
 ### 3. Verify Configuration
+
 - All timeouts come from env (no hardcoded values)
 - State machines enforced in all services
 - Suspension checks in place
@@ -80,6 +83,7 @@ CANCELLATION_MIN_HOURS_BEFORE=2
 ## 🧪 TESTING RECOMMENDATIONS
 
 ### Critical Paths
+
 1. **Concurrent Booking Test**
    - Send 10 simultaneous requests for same slot
    - Expected: Only 1 booking succeeds
@@ -127,6 +131,7 @@ CANCELLATION_MIN_HOURS_BEFORE=2
 ## ✅ VERIFICATION
 
 All fixes have been:
+
 - ✅ Implemented with proper error handling
 - ✅ Using config-driven values (no hardcoded)
 - ✅ Enforcing state machines

@@ -10,6 +10,7 @@
 
 import { cache } from 'react';
 import { ROUTES } from './navigation';
+import { env } from '@/config/env';
 
 export type UserState =
   | 'S0' // Unauthenticated
@@ -178,7 +179,9 @@ async function computeUserState(
         if (context === 'client') {
           // Client-side: server-only auth via cookies
           try {
-            const response = await fetch('/api/owner/businesses', { credentials: 'include' });
+            const response = await fetch('/api/owner/businesses', {
+              credentials: 'include',
+            });
             if (response.ok) {
               const result = await response.json();
               if (result.success && Array.isArray(result.data)) {
@@ -189,9 +192,9 @@ async function computeUserState(
                 businesses = [];
               }
             } else {
-              if (process.env.NODE_ENV === 'development') {
+              if (env.nodeEnv === 'development') {
                 const errorText = await response.text();
-                console.warn(`[USER_STATE:${context}] API error:`, response.status, errorText);
+                // console.warn(`[USER_STATE:${context}] API error:`, response.status, errorText);
               }
               businesses = response.status === 401 || response.status === 403 ? [] : [];
             }
@@ -207,7 +210,7 @@ async function computeUserState(
         businessCount = businesses?.length || 0;
       } catch (error) {
         // If business check fails, assume no businesses (fail-safe)
-        console.error(`[USER_STATE:${context}] Failed to check businesses:`, error);
+        // console.error(`[USER_STATE:${context}] Failed to check businesses:`, error);
         businessCount = 0;
       }
     }
@@ -368,11 +371,11 @@ async function computeUserState(
     };
   } catch (error) {
     // Fail-safe: on error, treat as unauthenticated
-    console.error(`[USER_STATE:${context}] Error determining user state:`, {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    // console.error(`[USER_STATE:${context}] Error determining user state:`, {
+    //   error,
+    //   message: error instanceof Error ? error.message : 'Unknown error',
+    //   stack: error instanceof Error ? error.stack : undefined,
+    // });
     return {
       state: 'S0',
       authenticated: false,

@@ -1,4 +1,5 @@
 # Backend Security Hardening - Complete ✅
+
 **Date:** 2026-01-25  
 **Engineer:** Senior Backend Security Engineer
 
@@ -18,26 +19,27 @@
 
 **All Critical Routes Secured:**
 
-| Route | Method | Auth | Authorization | Status |
-|-------|--------|------|---------------|--------|
-| `/api/bookings/[id]/accept` | POST | ✅ | Owner/Admin + Token | ✅ |
-| `/api/bookings/[id]/reject` | POST | ✅ | Owner/Admin + Token | ✅ |
-| `/api/bookings/[id]/cancel` | POST | ✅ | Customer/Owner (verified) | ✅ |
-| `/api/bookings/[id]/reschedule` | POST | ✅ | Customer/Owner | ✅ |
-| `/api/bookings/[id]/no-show` | POST | ✅ | Owner | ✅ |
-| `/api/bookings/[id]` | GET | ✅ | Customer/Owner/Admin + Token | ✅ |
-| `/api/bookings/booking-id/[bookingId]` | GET | ✅ | Customer/Owner/Admin | ✅ |
-| `/api/bookings/salon/[salonId]` | GET | ✅ | Owner/Admin | ✅ |
-| `/api/bookings` | POST | ✅ | Public (intentional for booking flow) | ✅ |
-| `/api/salons` | POST | ✅ | **NOW REQUIRED** | ✅ |
-| `/api/slots` | POST | ✅ | **NOW REQUIRED (Owner/Admin)** | ✅ |
-| `/api/slots/[slotId]` | GET | ✅ | **NOW AUTHORIZED** | ✅ |
-| `/api/user/update-role` | POST | ✅ | **PREVENTS ADMIN ESCALATION** | ✅ |
-| `/api/admin/*` | ALL | ✅ | Admin | ✅ |
-| `/api/owner/*` | ALL | ✅ | Owner | ✅ |
-| `/api/customer/*` | ALL | ✅ | Customer | ✅ |
+| Route                                  | Method | Auth | Authorization                         | Status |
+| -------------------------------------- | ------ | ---- | ------------------------------------- | ------ |
+| `/api/bookings/[id]/accept`            | POST   | ✅   | Owner/Admin + Token                   | ✅     |
+| `/api/bookings/[id]/reject`            | POST   | ✅   | Owner/Admin + Token                   | ✅     |
+| `/api/bookings/[id]/cancel`            | POST   | ✅   | Customer/Owner (verified)             | ✅     |
+| `/api/bookings/[id]/reschedule`        | POST   | ✅   | Customer/Owner                        | ✅     |
+| `/api/bookings/[id]/no-show`           | POST   | ✅   | Owner                                 | ✅     |
+| `/api/bookings/[id]`                   | GET    | ✅   | Customer/Owner/Admin + Token          | ✅     |
+| `/api/bookings/booking-id/[bookingId]` | GET    | ✅   | Customer/Owner/Admin                  | ✅     |
+| `/api/bookings/salon/[salonId]`        | GET    | ✅   | Owner/Admin                           | ✅     |
+| `/api/bookings`                        | POST   | ✅   | Public (intentional for booking flow) | ✅     |
+| `/api/salons`                          | POST   | ✅   | **NOW REQUIRED**                      | ✅     |
+| `/api/slots`                           | POST   | ✅   | **NOW REQUIRED (Owner/Admin)**        | ✅     |
+| `/api/slots/[slotId]`                  | GET    | ✅   | **NOW AUTHORIZED**                    | ✅     |
+| `/api/user/update-role`                | POST   | ✅   | **PREVENTS ADMIN ESCALATION**         | ✅     |
+| `/api/admin/*`                         | ALL    | ✅   | Admin                                 | ✅     |
+| `/api/owner/*`                         | ALL    | ✅   | Owner                                 | ✅     |
+| `/api/customer/*`                      | ALL    | ✅   | Customer                              | ✅     |
 
 **Key Fixes:**
+
 - ✅ Cancel endpoint now verifies ownership (prevents privilege escalation)
 - ✅ Salon creation now requires authentication
 - ✅ Slot generation now requires owner/admin authentication
@@ -49,6 +51,7 @@
 ### ✅ TASK 2: INPUT VALIDATION & SANITIZATION
 
 **Implemented:**
+
 - ✅ Field filtering to prevent mass assignment (`lib/security/input-filter.ts`)
 - ✅ String length validation
 - ✅ Enum validation
@@ -57,6 +60,7 @@
 - ✅ Date/time format validation
 
 **Applied To:**
+
 - ✅ Booking creation
 - ✅ Booking updates (admin)
 - ✅ Business updates (admin)
@@ -70,6 +74,7 @@
 ### ✅ TASK 3: RATE LIMITING & ABUSE CONTROL
 
 **Implemented:**
+
 - ✅ Booking creation: 10 req/min (per user + IP)
 - ✅ Accept/reject: 10 req/min (per IP)
 - ✅ Slot reserve/release: 20 req/min (per IP)
@@ -84,6 +89,7 @@
 ### ✅ TASK 4: ACTION LINK HARDENING
 
 **Implemented:**
+
 - ✅ Accept/reject links tokenized (64-char HMAC-SHA256)
 - ✅ 24-hour expiration
 - ✅ Ownership verification at execution
@@ -97,18 +103,19 @@
 ### ✅ TASK 5: SUPABASE RLS HARDENING
 
 **Migrations Created:**
+
 - ✅ `database/migration_add_slots_rls.sql` - RLS policies for slots table
 - ✅ `database/migration_add_default_deny_rls.sql` - Explicit default DENY policies
 
 **RLS Status:**
 
-| Table | RLS Enabled | Policies | Status |
-|-------|-------------|----------|--------|
-| `user_profiles` | ✅ | Self-access + Admin | ✅ |
-| `businesses` | ✅ | Owner + Admin | ✅ |
-| `bookings` | ✅ | Customer + Owner + Admin | ✅ |
-| `slots` | ⚠️ | **Migration ready, needs execution** | ⚠️ |
-| `audit_logs` | ✅ | Admin-only | ✅ |
+| Table           | RLS Enabled | Policies                             | Status |
+| --------------- | ----------- | ------------------------------------ | ------ |
+| `user_profiles` | ✅          | Self-access + Admin                  | ✅     |
+| `businesses`    | ✅          | Owner + Admin                        | ✅     |
+| `bookings`      | ✅          | Customer + Owner + Admin             | ✅     |
+| `slots`         | ⚠️          | **Migration ready, needs execution** | ⚠️     |
+| `audit_logs`    | ✅          | Admin-only                           | ✅     |
 
 **Action Required:** Execute `database/migration_add_slots_rls.sql` in Supabase SQL editor.
 
@@ -117,6 +124,7 @@
 ### ✅ TASK 6: DATA EXPOSURE MINIMIZATION
 
 **Implemented:**
+
 - ✅ Public `/api/salons/list` - Removed: id, owner_name, created_at
 - ✅ Public endpoints filter sensitive fields
 - ✅ Internal UUIDs not exposed in public responses
@@ -128,6 +136,7 @@
 ### ✅ TASK 7: ERROR HANDLING & INFORMATION LEAKAGE
 
 **Implemented:**
+
 - ✅ Generic error messages
 - ✅ User-friendly error conversion
 - ✅ No stack traces in production
@@ -140,6 +149,7 @@
 ### ✅ TASK 8: LOGGING, AUDIT & FORENSICS
 
 **Implemented:**
+
 - ✅ Security logging for all unauthorized attempts
 - ✅ Audit logging for all mutations:
   - Booking created
@@ -159,6 +169,7 @@
 ### ✅ TASK 9: BACKGROUND JOB & CRON SAFETY
 
 **Implemented:**
+
 - ✅ Centralized cron authentication (`lib/security/cron-auth.ts`)
 - ✅ All cron jobs validate CRON_SECRET
 - ✅ Consistent error handling
@@ -171,6 +182,7 @@
 ## SECURED API ENDPOINTS SUMMARY
 
 ### Mutation Endpoints (All Secured)
+
 1. ✅ `/api/bookings` - POST (rate limited, input filtered)
 2. ✅ `/api/bookings/[id]/accept` - POST (tokenized, authorized, rate limited, audited)
 3. ✅ `/api/bookings/[id]/reject` - POST (tokenized, authorized, rate limited, audited)
@@ -185,6 +197,7 @@
 12. ✅ `/api/user/update-role` - POST (prevents admin escalation)
 
 ### Read Endpoints (All Secured)
+
 1. ✅ `/api/bookings/[id]` - GET (authorized + token support)
 2. ✅ `/api/bookings/booking-id/[bookingId]` - GET (authorized)
 3. ✅ `/api/bookings/salon/[salonId]` - GET (owner/admin only)
@@ -203,17 +216,20 @@
 ### Current RLS Enforcement
 
 **user_profiles:**
+
 - ✅ Users can only access their own profile
 - ✅ Admins can access all profiles
 - ✅ Default: DENY
 
 **businesses:**
+
 - ✅ Owners can access their own businesses
 - ✅ Admins can access all businesses
 - ✅ Public access only where owner_user_id IS NULL (backward compat)
 - ✅ Default: DENY
 
 **bookings:**
+
 - ✅ Customers can access their own bookings
 - ✅ Owners can access bookings for their businesses
 - ✅ Admins can access all bookings
@@ -221,6 +237,7 @@
 - ✅ Default: DENY
 
 **slots:**
+
 - ⚠️ **RLS migration ready but not executed**
 - ✅ Public can view available/reserved slots (for booking flow)
 - ✅ Owners can view/update slots for their businesses
@@ -228,6 +245,7 @@
 - ✅ Default: DENY
 
 **audit_logs:**
+
 - ✅ Admins can view all audit logs
 - ✅ System can insert audit logs
 - ✅ Default: DENY
@@ -265,6 +283,7 @@
 ## RESIDUAL RISKS
 
 ### Low Priority
+
 1. ⚠️ Action links are time-bound (24h) but not one-time use
    - **Impact**: Low (tokens expire, ownership verified)
    - **Mitigation**: Acceptable for business flow
@@ -278,6 +297,7 @@
    - **Mitigation**: Ownership verified for dashboard access
 
 ### Medium Priority
+
 1. ⚠️ RLS migration for slots table not executed
    - **Impact**: Medium (database-level protection missing)
    - **Action**: Execute `database/migration_add_slots_rls.sql`
@@ -291,6 +311,7 @@
 ## SECURITY CONFIDENCE: 8/10
 
 **Breakdown:**
+
 - API Auth/Authorization: 9/10 ✅
 - Input Validation: 8/10 ✅
 - Rate Limiting: 8/10 ✅
@@ -308,6 +329,7 @@
 ## FILES MODIFIED
 
 ### New Files
+
 - ✅ `lib/security/input-filter.ts` - Input field filtering
 - ✅ `lib/security/cron-auth.ts` - Centralized cron authentication
 - ✅ `database/migration_add_slots_rls.sql` - RLS policies for slots
@@ -315,6 +337,7 @@
 - ✅ `database/migration_update_audit_logs_actions.sql` - Extended action types
 
 ### Modified Files
+
 - ✅ `app/api/bookings/[id]/cancel/route.ts` - Authorization + audit
 - ✅ `app/api/bookings/[id]/accept/route.ts` - Audit logging
 - ✅ `app/api/bookings/[id]/reject/route.ts` - Audit logging
@@ -334,6 +357,7 @@
 ## NEXT STEPS
 
 ### 1. Execute RLS Migration (REQUIRED)
+
 ```sql
 -- Run in Supabase SQL Editor:
 -- 1. database/migration_add_slots_rls.sql
@@ -342,12 +366,14 @@
 ```
 
 ### 2. Test All Hardened Routes
+
 - Test authorization on all mutation endpoints
 - Test input validation (mass assignment prevention)
 - Test rate limiting
 - Verify audit logs are created
 
 ### 3. Monitor Security Logs
+
 - Review unauthorized access attempts
 - Monitor rate limit violations
 - Track audit log creation
@@ -372,6 +398,7 @@
 **Remaining Work:** Execute RLS migrations, monitor security logs
 
 All critical security vulnerabilities have been addressed. The system now enforces:
+
 - Server-side authentication and authorization
 - Input validation and sanitization
 - Rate limiting on all mutations

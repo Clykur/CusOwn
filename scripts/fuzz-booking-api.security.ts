@@ -75,7 +75,12 @@ async function main() {
     },
     {
       name: 'wrong types',
-      body: { salon_id: 123, slot_id: [], customer_name: 1, customer_phone: null },
+      body: {
+        salon_id: 123,
+        slot_id: [],
+        customer_name: 1,
+        customer_phone: null,
+      },
     },
     {
       name: 'huge name',

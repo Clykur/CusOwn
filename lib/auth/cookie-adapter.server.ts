@@ -60,7 +60,13 @@ export function normalizeCookieOptions(
  */
 export function createSecureSetAll(
   cookieSet: (name: string, value: string, options?: Record<string, unknown>) => void
-): (cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) => void {
+): (
+  cookiesToSet: {
+    name: string;
+    value: string;
+    options?: Record<string, unknown>;
+  }[]
+) => void {
   return (cookiesToSet) => {
     cookiesToSet.forEach(({ name, value, options }) => {
       const n = normalizeCookieOptions(name, value, options);

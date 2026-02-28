@@ -13,6 +13,8 @@ import Image from 'next/image';
 import { formatDate } from '@/lib/utils/string';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { OwnerProfileSkeleton, ProfileSkeleton } from '@/components/ui/skeleton';
+import { useOwnerSession } from '@/components/owner/owner-session-context';
+import { useCustomerSession } from '@/components/customer/customer-session-context';
 import CheckIcon from '@/src/icons/check.svg';
 
 interface ProfileData {
@@ -65,6 +67,8 @@ export function ProfilePageContent({
   fromOwner = false,
 }: ProfilePageContentProps) {
   const router = useRouter();
+  const { refreshSession: refreshOwnerSession } = useOwnerSession();
+  const { refreshSession: refreshCustomerSession } = useCustomerSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -84,6 +88,8 @@ export function ProfilePageContent({
   // Load profile data on mount
   const [uploadingImage, setUploadingImage] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const userType = profileData?.profile?.user_type;
+  const canShowProfileImageOnProfilePage = userType !== 'customer';
 
   useEffect(() => {
     // Always fetch profile from API, not from session
@@ -91,7 +97,10 @@ export function ProfilePageContent({
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('/api/user/profile', { credentials: 'include', cache: 'no-store' });
+        const response = await fetch('/api/user/profile', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           if (response.status === 401) {
@@ -105,18 +114,21 @@ export function ProfilePageContent({
         const result = await response.json();
         if (result.success && result.data) {
           setProfileData(result.data);
-          if (result.data.profile?.profile_media_id) {
-  try {
-    const res = await fetch(
-      `/api/media/signed-url?mediaId=${result.data.profile.profile_media_id}`,
-      { credentials: 'include' }
-    );
-    const data = await res.json();
-    if (data.success && data.data?.url) {
-      setProfileImageUrl(data.data.url);
-    }
-  } catch {}
-}
+          if (
+            result.data.profile?.user_type !== 'customer' &&
+            result.data.profile?.profile_media_id
+          ) {
+            try {
+              const res = await fetch(
+                `/api/media/signed-url?mediaId=${result.data.profile.profile_media_id}`,
+                { credentials: 'include' }
+              );
+              const data = await res.json();
+              if (data.success && data.data?.url) {
+                setProfileImageUrl(data.data.url);
+              }
+            } catch {}
+          }
           const rawPhone = result.data.profile?.phone_number || '';
           const phoneDigits = rawPhone.replace(/\D/g, '').slice(0, PHONE_DIGITS);
           setFormData({
@@ -166,7 +178,9 @@ export function ProfilePageContent({
 
     try {
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch('/api/user/profile', {
@@ -188,11 +202,11 @@ export function ProfilePageContent({
             ...prev,
             profile: prev.profile
               ? {
-                ...prev.profile,
-                full_name: formData.full_name || null,
-                phone_number: formData.phone_number || null,
-                updated_at: new Date().toISOString(),
-              }
+                  ...prev.profile,
+                  full_name: formData.full_name || null,
+                  phone_number: formData.phone_number || null,
+                  updated_at: new Date().toISOString(),
+                }
               : prev.profile,
           };
         });
@@ -207,6 +221,11 @@ export function ProfilePageContent({
     }
   };
   const handleProfileImageUpload = async (file: File) => {
+    if (!canShowProfileImageOnProfilePage) {
+      setError('Profile image is not available for customer-only accounts');
+      return;
+    }
+
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -243,6 +262,7 @@ export function ProfilePageContent({
 
       // Defensive: ensure result.data.media.file_url exists
       const newMedia = result.data && result.data.media ? result.data.media : null;
+      const newMediaId = (newMedia as { id?: string | null } | null)?.id ?? null;
 
       setProfileData((prev) => {
         if (!prev) return prev;
@@ -250,14 +270,32 @@ export function ProfilePageContent({
           ...prev,
           profile: prev.profile
             ? {
-              ...prev.profile,
-              media: newMedia,
-            }
+                ...prev.profile,
+                profile_media_id: newMediaId,
+                media: newMedia,
+              }
             : prev.profile,
         };
       });
-      // Optionally force a re-render by updating formData (if needed)
-      // setFormData((prev) => ({ ...prev }));
+
+      if (newMediaId) {
+        try {
+          const signedUrlRes = await fetch(
+            `/api/media/signed-url?mediaId=${encodeURIComponent(newMediaId)}`,
+            { credentials: 'include' }
+          );
+          if (signedUrlRes.ok) {
+            const signedUrlResult = await signedUrlRes.json();
+            setProfileImageUrl(signedUrlResult?.data?.url ?? null);
+          }
+        } catch {
+          setProfileImageUrl(null);
+        }
+      } else {
+        setProfileImageUrl(null);
+      }
+
+      await Promise.allSettled([refreshOwnerSession(), refreshCustomerSession()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -278,7 +316,9 @@ export function ProfilePageContent({
 
     try {
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch('/api/user/profile', {
@@ -403,31 +443,35 @@ export function ProfilePageContent({
     <div className="space-y-8">
       {/* Account Information */}
       <section className="rounded-lg border border-slate-200 bg-white p-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
-          <div className="flex items-center gap-6">
-            <div className="relative flex flex-col items-center">
-<Image
-src={profileImageUrl || '/avatar-placeholder.png'}
-  alt="Profile Picture"
-  width={60}
-  height={60}
-  unoptimized
-/>
-              {editMode && (
-                <label className="absolute bottom-2 right-2 bg-slate-900 text-white text-xs px-2 py-1 rounded-full cursor-pointer shadow-md">
-                  {uploadingImage ? 'Uploading' : 'Change'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleProfileImageUpload(file);
-                    }}
-                  />
-                </label>
-              )}
-            </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+          <div className="flex items-center flex-col sm:flex-row items-center gap-6">
+            {canShowProfileImageOnProfilePage && (
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 group">
+                <Image
+                  src={profileImageUrl || '/avatar-placeholder.png'}
+                  alt="Profile Picture"
+                  fill
+                  className="rounded-full object-cover border border-slate-200 shadow-sm"
+                  sizes="(max-width: 640px) 96px, 112px"
+                  unoptimized
+                />
+
+                {editMode && (
+                  <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white text-sm font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                    {uploadingImage ? 'Uploading...' : 'Change'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleProfileImageUpload(file);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Account information</h3>
               <p className="text-sm text-slate-500 mt-0.5">Your profile and sign-in details</p>

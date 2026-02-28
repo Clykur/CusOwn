@@ -60,7 +60,9 @@ export const csrfProtection = async (request: NextRequest): Promise<NextResponse
   // Cross-origin state-changing requests: reject (no token validation = no trust)
   if (!isSameOrigin && !isSameOriginReferer) {
     return NextResponse.json(
-      { error: 'Forbidden: cross-origin state-changing requests are not allowed' },
+      {
+        error: 'Forbidden: cross-origin state-changing requests are not allowed',
+      },
       { status: 403 }
     );
   }

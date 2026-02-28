@@ -8,30 +8,32 @@ PR Created → Security Scan → Lint/Type → Build → Staging → [Manual App
 
 ## 🔒 Security Checks
 
-| Check | Status | Action if Fails |
-|-------|--------|-----------------|
-| Secret Scanning | ✅ Required | Block merge |
-| Dependency Scan | ✅ Required | Block merge |
-| Lint & Type | ✅ Required | Block merge |
-| Build | ✅ Required | Block merge |
-| Staging Deploy | ✅ Required | Block production |
+| Check           | Status      | Action if Fails  |
+| --------------- | ----------- | ---------------- |
+| Secret Scanning | ✅ Required | Block merge      |
+| Dependency Scan | ✅ Required | Block merge      |
+| Lint & Type     | ✅ Required | Block merge      |
+| Build           | ✅ Required | Block merge      |
+| Staging Deploy  | ✅ Required | Block production |
 
 ## 📋 Branch Rules
 
-| Branch | Protection | Deployment |
-|--------|-----------|------------|
-| `main` | 🔒 Protected | Production (manual approval) |
-| `develop` | 🔒 Protected | Staging (automatic) |
-| Feature branches | ⚠️ No protection | Preview only |
+| Branch           | Protection       | Deployment                   |
+| ---------------- | ---------------- | ---------------------------- |
+| `main`           | 🔒 Protected     | Production (manual approval) |
+| `develop`        | 🔒 Protected     | Staging (automatic)          |
+| Feature branches | ⚠️ No protection | Preview only                 |
 
 ## 🔑 Required Secrets
 
 ### GitHub Secrets
+
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
 ### Application Secrets
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -49,19 +51,23 @@ PR Created → Security Scan → Lint/Type → Build → Staging → [Manual App
 ## 🚨 Emergency Procedures
 
 ### Rollback Deployment
+
 1. Go to Vercel Dashboard
 2. Select project → Deployments
 3. Find previous successful deployment
 4. Click "Promote to Production"
 
 ### Bypass Branch Protection
+
 ⚠️ **Only in emergencies**
+
 1. Go to Settings → Branches
 2. Temporarily disable protection
 3. Make necessary changes
 4. **Re-enable immediately**
 
 ### Secret Rotation
+
 1. Generate new secret
 2. Update in GitHub Secrets
 3. Update in Vercel Environment Variables

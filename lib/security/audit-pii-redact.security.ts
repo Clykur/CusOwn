@@ -34,7 +34,9 @@ function redactObject(obj: Record<string, unknown>): Record<string, unknown> {
  * Returns a copy of the payload with known PII keys redacted for compliance.
  * Use before passing oldData/newData to audit service.
  */
-export function redactPiiForAudit<T extends Record<string, unknown> | null | undefined>(payload: T): T {
+export function redactPiiForAudit<T extends Record<string, unknown> | null | undefined>(
+  payload: T
+): T {
   if (payload === null || payload === undefined) return payload;
   return redactObject({ ...payload }) as T;
 }

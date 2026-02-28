@@ -62,7 +62,11 @@ export const createServerClient = async () => {
       },
       setAll(cookiesToSet) {
         setAll(
-          cookiesToSet as { name: string; value: string; options?: Record<string, unknown> }[]
+          cookiesToSet as {
+            name: string;
+            value: string;
+            options?: Record<string, unknown>;
+          }[]
         );
       },
     },
@@ -138,9 +142,6 @@ export const getServerUser = async (request?: Request) => {
               const tokenHash = hashToken(token);
               const cached = getCachedAuthUser(tokenHash);
               if (cached) {
-                console.log('[AUTH] getServerUser: ok (Bearer, cached)', {
-                  userId: cached.id.substring(0, 8) + '...',
-                });
                 return cached;
               }
               const supabaseAdminForToken = await getSupabaseAdmin();
@@ -151,13 +152,9 @@ export const getServerUser = async (request?: Request) => {
                 } = await supabaseAdminForToken.auth.getUser(token);
                 if (!error && user) {
                   setCachedAuthUser(tokenHash, user);
-                  console.log('[AUTH] getServerUser: ok (Bearer)', {
-                    userId: user.id.substring(0, 8) + '...',
-                  });
                   return user;
                 }
               }
-              console.log('[AUTH] getServerUser: Bearer invalid, trying cookies');
               // Bearer invalid: fall through to try cookies
             }
           }
@@ -167,12 +164,7 @@ export const getServerUser = async (request?: Request) => {
         const cookieHeader =
           request?.headers.get('cookie') ?? request?.headers.get('x-middleware-cookie') ?? null;
         const hasCookieHeader = !!(cookieHeader && cookieHeader.length > 0);
-        if (process.env.NODE_ENV === 'development' && request) {
-          console.log('[AUTH] getServerUser: cookie check', {
-            hasCookieHeader,
-            cookieLength: cookieHeader?.length ?? 0,
-            hasSb: cookieHeader?.includes('sb-') ?? false,
-          });
+        if (env.nodeEnv === 'development' && request) {
         }
         const supabase = hasCookieHeader
           ? createServerClientFromCookieHeader(cookieHeader)
@@ -183,11 +175,6 @@ export const getServerUser = async (request?: Request) => {
           error: sessionError,
         } = await supabase.auth.getSession();
         if (sessionError || !session?.access_token) {
-          console.log('[AUTH] getServerUser: no session', {
-            hasError: !!sessionError,
-            error: sessionError?.message ?? null,
-            hadCookieHeader: hasCookieHeader,
-          });
           return null;
         }
         const {
@@ -195,29 +182,17 @@ export const getServerUser = async (request?: Request) => {
           error: userError,
         } = await supabaseAdmin.auth.getUser(session.access_token);
         if (!userError && user) {
-          console.log('[AUTH] getServerUser: ok (cookie)', {
-            userId: user.id.substring(0, 8) + '...',
-          });
           return user;
         }
-        console.log('[AUTH] getServerUser: getUser failed after session', {
-          hasError: !!userError,
-          error: userError?.message ?? null,
-        });
+
         return null;
       } catch (err) {
-        console.log('[AUTH] getServerUser: exception', {
-          message: err instanceof Error ? err.message : 'unknown',
-        });
         return null;
       }
     };
 
     return await Promise.race([authCheck(), timeout]);
   } catch (err) {
-    console.log('[AUTH] getServerUser: outer exception', {
-      message: err instanceof Error ? err.message : 'unknown',
-    });
     return null;
   }
 };
@@ -227,6 +202,7 @@ export type ServerUserProfileResult = {
   id: string;
   user_type: string;
   full_name: string | null;
+  profile_media_id?: string | null;
   created_at?: string;
   updated_at?: string;
 } | null;
@@ -238,48 +214,29 @@ export type ServerUserProfileResult = {
 export const getServerUserProfile = async (userId: string): Promise<ServerUserProfileResult> => {
   const cached = getCachedProfile(userId);
   if (cached !== null) {
-    console.log('[AUTH] getServerUserProfile: ok (cached)', {
-      userId: userId.substring(0, 8) + '...',
-      userType: (cached as ServerUserProfileResult)?.user_type ?? null,
-    });
     return cached as ServerUserProfileResult;
   }
 
   const supabaseAdmin = await getSupabaseAdmin();
   if (!supabaseAdmin) {
-    console.log('[AUTH] getServerUserProfile: no admin client', {
-      userId: userId.substring(0, 8) + '...',
-    });
     return null;
   }
 
   try {
     const { data, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, user_type, full_name, created_at, updated_at')
+      .select('id, user_type, full_name, profile_media_id, created_at, updated_at')
       .eq('id', userId)
       .single();
 
     if (error) {
-      console.log('[AUTH] getServerUserProfile: not found or error', {
-        userId: userId.substring(0, 8) + '...',
-        error: error.message,
-      });
       return null;
     }
     if (data) {
       setCachedProfile(userId, data);
-      console.log('[AUTH] getServerUserProfile: ok', {
-        userId: userId.substring(0, 8) + '...',
-        userType: data.user_type,
-      });
     }
     return data;
   } catch (err) {
-    console.log('[AUTH] getServerUserProfile: exception', {
-      userId: userId.substring(0, 8) + '...',
-      message: err instanceof Error ? err.message : 'unknown',
-    });
     return null;
   }
 };

@@ -7,6 +7,7 @@ This document describes the DSA-based slot generation optimization system that s
 ## Problem Statement
 
 Previously, slot generation was:
+
 - Generating slots individually for each business
 - Recalculating time slots for every request (even with same config)
 - Generating slots proactively for 7 days ahead
@@ -18,21 +19,32 @@ Previously, slot generation was:
 ### 1. Slot Template Cache (HashMap + LRU)
 
 **Data Structure**: `Map<string, SlotTemplate>`
+
 - **Key**: `"opening-closing-duration"` (e.g., `"09:00-18:00-30"`)
 - **Value**: Pre-computed time slots array
 - **Complexity**: O(1) lookup, O(n) generation only on cache miss
 
 **Benefits**:
+
 - Eliminates duplicate time slot calculations
 - Same config = instant cache hit
 - LRU eviction prevents memory bloat
 
 **Example**:
+
 ```typescript
 // First call: Generates and caches
-const slots1 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00', slot_duration: 30 });
+const slots1 = cache.getTemplate({
+  opening_time: '09:00',
+  closing_time: '18:00',
+  slot_duration: 30,
+});
 // Second call: Instant cache hit (O(1))
-const slots2 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00', slot_duration: 30 });
+const slots2 = cache.getTemplate({
+  opening_time: '09:00',
+  closing_time: '18:00',
+  slot_duration: 30,
+});
 ```
 
 ### 2. Slot Pool Manager
@@ -40,11 +52,13 @@ const slots2 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00',
 **Purpose**: Batch generate slots for multiple businesses efficiently
 
 **Features**:
+
 - Groups requests by config to maximize cache hits
 - Prevents duplicate concurrent generations
 - Queue system for sequential processing when needed
 
 **Algorithm**:
+
 1. Group requests by config key
 2. Get template once per config group (cache hit)
 3. Generate slots for all businesses in parallel
@@ -55,11 +69,13 @@ const slots2 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00',
 **Purpose**: Only generate slots for missing dates
 
 **Algorithm**:
+
 1. Check which dates already have slots (parallel queries)
 2. Only generate slots for missing dates
 3. Batch process missing dates
 
 **Benefits**:
+
 - Reduces unnecessary slot generation
 - Faster lazy loading
 - Lower database load
@@ -69,6 +85,7 @@ const slots2 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00',
 **Purpose**: Prevent duplicate concurrent slot generations
 
 **Implementation**:
+
 - Uses `Map<string, Promise<void>>` to track pending generations
 - Same business + date = reuse existing promise
 - Prevents race conditions and duplicate inserts
@@ -76,18 +93,21 @@ const slots2 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00',
 ## Performance Improvements
 
 ### Before Optimization
+
 - **Time Slot Calculation**: O(n) for every request
 - **Database Inserts**: Individual inserts per business/date
 - **Cache Hits**: 0% (no caching)
 - **Duplicate Generations**: High (concurrent requests)
 
 ### After Optimization
+
 - **Time Slot Calculation**: O(1) for cached configs (~90% cache hit rate)
 - **Database Inserts**: Batched inserts (100 slots per batch)
 - **Cache Hits**: ~70-90% (same configs reused)
 - **Duplicate Generations**: 0% (queue system prevents)
 
 ### Expected Reduction
+
 - **Slot Generation Load**: **70-90% reduction**
 - **Database Queries**: **60-80% reduction**
 - **Memory Usage**: Minimal (LRU cache with 100 item limit)
@@ -98,6 +118,7 @@ const slots2 = cache.getTemplate({ opening_time: '09:00', closing_time: '18:00',
 ### Automatic Integration
 
 The optimizer is automatically integrated into `SlotService`:
+
 - `generateInitialSlots()` - Uses template cache
 - `generateSlotsForDate()` - Uses template cache
 - `getAvailableSlots()` - Uses queue manager and date optimizer
@@ -105,18 +126,18 @@ The optimizer is automatically integrated into `SlotService`:
 ### Manual Usage (Advanced)
 
 ```typescript
-import { 
-  slotTemplateCache, 
-  slotPoolManager, 
+import {
+  slotTemplateCache,
+  slotPoolManager,
   dateSlotOptimizer,
-  generateOptimizedSlots 
+  generateOptimizedSlots,
 } from '@/services/slot-optimizer.service';
 
 // Get cached template
 const timeSlots = slotTemplateCache.getTemplate({
   opening_time: '09:00',
   closing_time: '18:00',
-  slot_duration: 30
+  slot_duration: 30,
 });
 
 // Batch generate for multiple businesses
@@ -162,6 +183,7 @@ console.log(`Cached configs: ${stats.keys.join(', ')}`);
 ### Performance Metrics
 
 The system logs:
+
 - Cache hits/misses
 - Batch generation counts
 - Missing date detection

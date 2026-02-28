@@ -17,6 +17,17 @@ interface CustomerBookingCardProps {
   booking: any;
 }
 
+interface SalonProfile {
+  id: string;
+  salon_name?: string;
+  location?: string;
+  owner_name?: string;
+  owner_image?: string;
+  whatsapp_number?: string;
+}
+
+const FETCH_CACHE: RequestCache = 'default';
+
 export default function CustomerBookingCard({ booking }: CustomerBookingCardProps) {
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
 
@@ -75,42 +86,50 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
   };
 
   const statusConfig = getStatusConfig(booking.status);
-  const providerName =
-    booking.salon?.salon_name || booking.business?.salon_name || UI_CUSTOMER.PROVIDER_FALLBACK;
-  const location = booking.salon?.location || booking.business?.location;
+  const [salonProfile, setSalonProfile] = useState<SalonProfile | null>(null);
 
-  const [owner, setOwner] = React.useState<{
-    name: string;
-    phone: string;
-    profileImage: string;
-  } | null>(null);
+  useEffect(() => {
+    const salonId = booking.salon?.id;
+    const businessId = booking.business?.id;
+    const idToUse = salonId || businessId;
+    if (!idToUse) return;
 
-  React.useEffect(() => {
-    async function fetchOwner() {
-      // Always use salon id if available, fallback to business id
-      const salonId = booking.salon?.id;
-      const businessId = booking.business?.id;
-      const idToUse = salonId || businessId;
-      if (!idToUse) return;
-      try {
-        const res = await fetch(`/api/salons/${idToUse}`);
-        const result = await res.json();
-        if (result.success && result.data) {
-          setOwner({
-            name: result.data.owner_name || 'Owner',
-            phone: result.data.whatsapp_number || '',
-            profileImage:
-              result.data.owner_image && result.data.owner_image !== ''
-                ? result.data.owner_image
-                : UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI,
-          });
+    let cancelled = false;
+
+    fetch(`/api/salons/${idToUse}`, { cache: FETCH_CACHE })
+      .then((res) => res.json())
+      .then((result: { success?: boolean; data?: SalonProfile }) => {
+        if (cancelled) return;
+        if (!result.success || !result.data) {
+          setSalonProfile(null);
+          return;
         }
-      } catch (err) {
-        setOwner(null);
-      }
-    }
-    fetchOwner();
+        const salonData = result.data;
+        setSalonProfile(salonData);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSalonProfile(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [booking.salon?.id, booking.business?.id]);
+
+  const providerName =
+    salonProfile?.salon_name ||
+    booking.salon?.salon_name ||
+    booking.business?.salon_name ||
+    UI_CUSTOMER.PROVIDER_FALLBACK;
+  const location = salonProfile?.location || booking.salon?.location || booking.business?.location;
+  const ownerName = salonProfile?.owner_name?.trim() ? salonProfile.owner_name : 'Owner';
+  const ownerPhone = salonProfile?.whatsapp_number || '';
+  const ownerImage =
+    salonProfile?.owner_image && salonProfile.owner_image !== ''
+      ? salonProfile.owner_image
+      : UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI;
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-sm">
@@ -121,13 +140,19 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 truncate leading-tight">
               {providerName}
             </h3>
+            {location && (
+              <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-600">
+                <MapPinIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="truncate">{location}</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {/* Owner Profile Image */}
-            {owner?.profileImage && !owner.profileImage.startsWith('data:') ? (
+            {ownerImage && !ownerImage.startsWith('data:') ? (
               <Image
-                src={owner.profileImage}
-                alt={owner?.name ?? 'Owner'}
+                src={ownerImage}
+                alt={ownerName}
                 className="w-8 h-8 rounded-full object-cover border border-gray-200"
                 width={32}
                 height={32}
@@ -135,7 +160,7 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
             ) : (
               <Image
                 src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
-                alt={owner?.name ?? 'Owner'}
+                alt={ownerName}
                 className="w-8 h-8 rounded-full object-cover border border-gray-200"
                 width={32}
                 height={32}
@@ -143,18 +168,16 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
               />
             )}
             {/* Owner Name */}
-            <span className="font-semibold text-base text-slate-900 truncate">
-              {owner && owner.name ? owner.name : 'Owner'}
-            </span>
+            <span className="font-semibold text-base text-slate-900 truncate">{ownerName}</span>
             {/* Phone Icon & Number */}
-            <div className="flex items-center text-gray-600 text-sm gap-1">
-              {owner && owner.phone ? (
+            <div className="flex items-center text-gray-600 text-sm gap-1 min-w-0">
+              {ownerPhone ? (
                 <a
-                  href={`tel:${owner.phone}`}
-                  className="hover:text-blue-600 font-medium truncate"
+                  href={`tel:${ownerPhone}`}
+                  className="hover:text-blue-600 font-medium truncate block max-w-[120px] sm:max-w-none"
                   title="Call Owner"
                 >
-                  {owner.phone}
+                  {ownerPhone}
                 </a>
               ) : (
                 <span className="text-sm text-slate-400">N/A</span>

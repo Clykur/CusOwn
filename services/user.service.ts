@@ -170,7 +170,9 @@ export class UserService {
       query = query.is('deleted_at', null);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', {
+      ascending: false,
+    });
 
     if (error) {
       console.error('[USER_SERVICE] Error fetching businesses:', {
@@ -261,9 +263,11 @@ export class UserService {
   /**
    * Check if user account is soft-deleted
    */
-  async isAccountDeleted(
-    userId: string
-  ): Promise<{ deleted: boolean; deletedAt?: string; permanentDeletionAt?: string }> {
+  async isAccountDeleted(userId: string): Promise<{
+    deleted: boolean;
+    deletedAt?: string;
+    permanentDeletionAt?: string;
+  }> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }

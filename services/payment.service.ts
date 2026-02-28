@@ -1,7 +1,12 @@
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { env } from '@/config/env';
-import { generateUPIPaymentLink, generateUPIQRCode, generateTransactionId, generatePaymentId } from '@/lib/utils/upi-payment';
+import {
+  generateUPIPaymentLink,
+  generateUPIQRCode,
+  generateTransactionId,
+  generatePaymentId,
+} from '@/lib/utils/upi-payment';
 import { paymentStateMachine } from '@/lib/state/payment-state-machine';
 import { auditService } from '@/services/audit.service';
 import { logPaymentLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
@@ -13,7 +18,15 @@ import {
 import { metricsService } from '@/lib/monitoring/metrics';
 
 export type PaymentProvider = 'razorpay' | 'stripe' | 'cash' | 'upi';
-export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'partially_refunded' | 'initiated' | 'expired';
+export type PaymentStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded'
+  | 'initiated'
+  | 'expired';
 
 export type Payment = {
   id: string;
@@ -90,14 +103,24 @@ export class PaymentService {
     try {
       await auditService.createAuditLog(null, 'payment_created', 'payment', {
         entityId: payment.id,
-        newData: { booking_id: bookingId, provider, amount_cents: amountCents, status: payment.status },
+        newData: {
+          booking_id: bookingId,
+          provider,
+          amount_cents: amountCents,
+          status: payment.status,
+        },
         description: `Payment created (${provider})`,
       });
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_created:', auditErr);
     }
     await metricsService.increment(METRICS_PAYMENT_CREATED);
-    logPaymentLifecycle({ payment_id: payment.id, booking_id: bookingId, action: 'payment_created', actor: 'user' });
+    logPaymentLifecycle({
+      payment_id: payment.id,
+      booking_id: bookingId,
+      action: 'payment_created',
+      actor: 'user',
+    });
 
     return payment;
   }
@@ -124,8 +147,18 @@ export class PaymentService {
       return currentPayment;
     }
 
-    const event = status === 'completed' ? 'verify' : status === 'failed' ? 'fail' : (status === 'refunded' || status === 'partially_refunded') ? 'refund' : null;
-    if (event && !paymentStateMachine.canTransition(currentPayment.status as PaymentStatus, event)) {
+    const event =
+      status === 'completed'
+        ? 'verify'
+        : status === 'failed'
+          ? 'fail'
+          : status === 'refunded' || status === 'partially_refunded'
+            ? 'refund'
+            : null;
+    if (
+      event &&
+      !paymentStateMachine.canTransition(currentPayment.status as PaymentStatus, event)
+    ) {
       throw new Error(`Invalid payment state transition: ${currentPayment.status} -> ${status}`);
     }
 
@@ -163,7 +196,14 @@ export class PaymentService {
       throw new Error('Payment not found');
     }
 
-    const auditAction = status === 'completed' ? 'payment_succeeded' : status === 'failed' ? 'payment_failed' : (status === 'refunded' || status === 'partially_refunded') ? 'payment_refunded' : null;
+    const auditAction =
+      status === 'completed'
+        ? 'payment_succeeded'
+        : status === 'failed'
+          ? 'payment_failed'
+          : status === 'refunded' || status === 'partially_refunded'
+            ? 'payment_refunded'
+            : null;
     if (auditAction) {
       try {
         await auditService.createAuditLog(null, auditAction, 'payment', {
@@ -177,10 +217,20 @@ export class PaymentService {
       }
       if (status === 'completed') {
         await metricsService.increment(METRICS_PAYMENT_SUCCEEDED);
-        logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_succeeded', actor: 'system' });
+        logPaymentLifecycle({
+          payment_id: paymentId,
+          booking_id: payment.booking_id,
+          action: 'payment_succeeded',
+          actor: 'system',
+        });
       } else if (status === 'failed') {
         await metricsService.increment(METRICS_PAYMENT_FAILED);
-        logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_failed', actor: 'system' });
+        logPaymentLifecycle({
+          payment_id: paymentId,
+          booking_id: payment.booking_id,
+          action: 'payment_failed',
+          actor: 'system',
+        });
       }
     }
 
@@ -304,14 +354,24 @@ export class PaymentService {
     try {
       await auditService.createAuditLog(null, 'payment_created', 'payment', {
         entityId: payment.id,
-        newData: { booking_id: bookingId, provider: 'upi', amount_cents: amountCents, status: 'initiated' },
+        newData: {
+          booking_id: bookingId,
+          provider: 'upi',
+          amount_cents: amountCents,
+          status: 'initiated',
+        },
         description: 'Payment created (upi)',
       });
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_created:', auditErr);
     }
     await metricsService.increment(METRICS_PAYMENT_CREATED);
-    logPaymentLifecycle({ payment_id: payment.id, booking_id: bookingId, action: 'payment_created', actor: 'user' });
+    logPaymentLifecycle({
+      payment_id: payment.id,
+      booking_id: bookingId,
+      action: 'payment_created',
+      actor: 'user',
+    });
 
     return payment;
   }
@@ -397,26 +457,32 @@ export class PaymentService {
     );
 
     try {
-      await auditService.createAuditLog(verifiedBy === 'system' ? null : verifiedBy, 'payment_succeeded', 'payment', {
-        entityId: paymentId,
-        oldData: { status: oldStatus },
-        newData: { status: 'completed' },
-        description: 'Payment verified',
-      });
+      await auditService.createAuditLog(
+        verifiedBy === 'system' ? null : verifiedBy,
+        'payment_succeeded',
+        'payment',
+        {
+          entityId: paymentId,
+          oldData: { status: oldStatus },
+          newData: { status: 'completed' },
+          description: 'Payment verified',
+        }
+      );
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_succeeded:', auditErr);
     }
     await metricsService.increment(METRICS_PAYMENT_SUCCEEDED);
-    logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_succeeded', actor: verifiedBy === 'system' ? 'system' : 'user' });
+    logPaymentLifecycle({
+      payment_id: paymentId,
+      booking_id: payment.booking_id,
+      action: 'payment_succeeded',
+      actor: verifiedBy === 'system' ? 'system' : 'user',
+    });
 
     return updatedPayment;
   }
 
-  async markPaymentFailed(
-    paymentId: string,
-    reason: string,
-    actorId?: string
-  ): Promise<Payment> {
+  async markPaymentFailed(paymentId: string, reason: string, actorId?: string): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data: payment } = await supabaseAdmin
@@ -494,7 +560,13 @@ export class PaymentService {
       console.error('[AUDIT] Failed to log payment_failed:', auditErr);
     }
     await metricsService.increment(METRICS_PAYMENT_FAILED);
-    logPaymentLifecycle({ payment_id: paymentId, booking_id: payment.booking_id, action: 'payment_failed', actor: actorId ? 'user' : 'system', reason });
+    logPaymentLifecycle({
+      payment_id: paymentId,
+      booking_id: payment.booking_id,
+      action: 'payment_failed',
+      actor: actorId ? 'user' : 'system',
+      reason,
+    });
 
     return updatedPayment;
   }

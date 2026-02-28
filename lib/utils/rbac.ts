@@ -15,7 +15,9 @@ export async function isCustomer(userId: string): Promise<boolean> {
   return profile?.user_type === 'customer' || profile?.user_type === 'both';
 }
 
-export async function getUserRole(userId: string): Promise<'admin' | 'owner' | 'customer' | 'both' | null> {
+export async function getUserRole(
+  userId: string
+): Promise<'admin' | 'owner' | 'customer' | 'both' | null> {
   const profile = await userService.getUserProfile(userId);
   return profile?.user_type || null;
 }

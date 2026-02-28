@@ -47,9 +47,17 @@ export const checkHealth = async (): Promise<HealthStatus> => {
 /** Media subsystem health: storage bucket reachable, media table readable. */
 export const checkMediaHealth = async (): Promise<{
   status: 'healthy' | 'unhealthy';
-  checks: { media_storage: 'up' | 'down'; media_table: 'up' | 'down'; timestamp: string };
+  checks: {
+    media_storage: 'up' | 'down';
+    media_table: 'up' | 'down';
+    timestamp: string;
+  };
 }> => {
-  const checks: { media_storage: 'up' | 'down'; media_table: 'up' | 'down'; timestamp: string } = {
+  const checks: {
+    media_storage: 'up' | 'down';
+    media_table: 'up' | 'down';
+    timestamp: string;
+  } = {
     media_storage: 'down',
     media_table: 'down',
     timestamp: new Date().toISOString(),

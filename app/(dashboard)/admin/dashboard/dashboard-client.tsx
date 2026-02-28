@@ -177,12 +177,19 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
     const ac = new AbortController();
     const timeoutId = setTimeout(() => ac.abort(), 10000);
 
-    fetch('/api/admin/check-status', { credentials: 'include', signal: ac.signal })
+    fetch('/api/admin/check-status', {
+      credentials: 'include',
+      signal: ac.signal,
+    })
       .then((res) => res.json())
       .then(
         (statusData: {
           success?: boolean;
-          data?: { is_admin?: boolean; user_type?: string; profile_exists?: boolean };
+          data?: {
+            is_admin?: boolean;
+            user_type?: string;
+            profile_exists?: boolean;
+          };
           error?: string;
         }) => {
           if (ac.signal.aborted) return;
@@ -943,7 +950,10 @@ function BusinessesTab({ page: controlledPage, onPageChange }: ListTabPageProps 
     }
     setLoading(true);
     const ac = new AbortController();
-    adminFetch('/api/admin/businesses', { credentials: 'include', signal: ac.signal })
+    adminFetch('/api/admin/businesses', {
+      credentials: 'include',
+      signal: ac.signal,
+    })
       .then((r) => r.json())
       .then((data) => {
         if (ac.signal.aborted) return;
@@ -1215,7 +1225,9 @@ function UsersTab({ page: controlledPage, onPageChange }: ListTabPageProps = {})
       setUsers(stale.data);
       setLoading(false);
       if (!ready || !session) return;
-      adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, { credentials: 'include' })
+      adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
+        credentials: 'include',
+      })
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
@@ -1470,7 +1482,9 @@ function BookingsTab({ page: controlledPage, onPageChange }: ListTabPageProps = 
       setBookings(stale.data);
       setLoading(false);
       if (!ready || !session) return;
-      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, { credentials: 'include' })
+      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
+        credentials: 'include',
+      })
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
@@ -1827,7 +1841,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     }
     setLoading(true);
     const ac = new AbortController();
-    const params = new URLSearchParams({ limit: String(AUDIT_LOGS_FETCH_LIMIT) });
+    const params = new URLSearchParams({
+      limit: String(AUDIT_LOGS_FETCH_LIMIT),
+    });
     if (filterSeverity) params.set('severity', filterSeverity);
     if (filterStatus) params.set('status', filterStatus);
     if (filterActorRole) params.set('actor_role', filterActorRole);

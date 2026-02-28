@@ -23,14 +23,20 @@ async function testConfigEnvSafety() {
         console.log(`   ⚠️  ${error.message}`);
       }
     });
-  } finally {}
+  } finally {
+  }
 
   runner.printSummary();
   return runner.getResults();
 }
 
 if (require.main === module) {
-  testConfigEnvSafety().then(() => process.exit(0)).catch((error) => { console.error('Test failed:', error); process.exit(1); });
+  testConfigEnvSafety()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error('Test failed:', error);
+      process.exit(1);
+    });
 }
 
 export { testConfigEnvSafety };

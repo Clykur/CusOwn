@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT, UI_CUSTOMER } from '@/config/constants';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
@@ -45,9 +46,46 @@ export default function CustomerSidebar({
   const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
 
   const { initialUser } = useCustomerSession();
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const canShowCustomerProfileImage = initialUser?.user_type === 'both';
 
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
+
+  useEffect(() => {
+    if (!canShowCustomerProfileImage || !initialUser?.profile_media_id) {
+      setProfileImageUrl(null);
+      return;
+    }
+
+    const mediaId = initialUser.profile_media_id;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/media/signed-url?mediaId=${encodeURIComponent(mediaId)}`,
+          {
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          if (!cancelled) setProfileImageUrl(null);
+          return;
+        }
+
+        const result = await response.json();
+        if (!cancelled) setProfileImageUrl(result?.data?.url ?? null);
+      } catch {
+        if (!cancelled) setProfileImageUrl(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canShowCustomerProfileImage, initialUser?.profile_media_id]);
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
@@ -136,8 +174,18 @@ export default function CustomerSidebar({
                 className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
-                  <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
+                  {profileImageUrl ? (
+                    <Image
+                      src={profileImageUrl}
+                      alt="Customer profile"
+                      width={36}
+                      height={36}
+                      unoptimized
+                    />
+                  ) : (
+                    <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="truncate text-sm font-medium text-slate-900">

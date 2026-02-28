@@ -9,6 +9,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 1. Branch Protection
 
 **Enforced Rules:**
+
 - ✅ Direct pushes to `main` are blocked
 - ✅ All changes must go through pull requests
 - ✅ Pull requests require at least one approval
@@ -16,6 +17,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 - ✅ Branches must be up to date before merging
 
 **Implementation:**
+
 - Configured via GitHub branch protection rules
 - See `.github/BRANCH_PROTECTION.md` for setup instructions
 
@@ -46,12 +48,14 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 3. Environment Isolation
 
 **Staging Environment:**
+
 - Automatic deployment after checks pass
 - Uses staging-specific secrets
 - Accessible to all team members
 - No manual approval required
 
 **Production Environment:**
+
 - Manual approval required
 - Only accessible from `main` branch
 - Uses production-specific secrets
@@ -61,6 +65,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 4. Secret Management
 
 **Protection Measures:**
+
 - ✅ Secrets never committed to repository
 - ✅ Secrets stored only in GitHub/Vercel secret stores
 - ✅ Environment-specific secret scoping
@@ -68,6 +73,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 - ✅ No secrets in build artifacts
 
 **Secret Rotation:**
+
 - Recommended: Every 6-12 months
 - Immediately if compromised
 - Document rotation process
@@ -75,6 +81,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 5. Deployment Verification
 
 **Pre-Deployment Checks:**
+
 - [ ] All required status checks passed
 - [ ] No high/critical vulnerabilities
 - [ ] Environment variables validated
@@ -82,6 +89,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 - [ ] Code reviewed and approved
 
 **Post-Deployment Checks:**
+
 - [ ] Application health verified
 - [ ] No errors in logs
 - [ ] Environment variables correctly scoped
@@ -90,17 +98,20 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 6. Rollback Strategy
 
 **Automatic Rollback:**
+
 - Vercel automatically rolls back on deployment failure
 - Health checks detect application errors
 - Previous deployment remains available
 
 **Manual Rollback:**
+
 1. Navigate to Vercel dashboard
 2. Select project → Deployments
 3. Find previous successful deployment
 4. Click "Promote to Production"
 
 **Rollback Triggers:**
+
 - Build failure
 - Runtime errors
 - Health check failures
@@ -111,6 +122,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 1. Token Leakage Prevention
 
 **Measures:**
+
 - ✅ Secrets never logged or printed
 - ✅ Secrets masked in CI/CD output
 - ✅ Token rotation on suspicion of compromise
@@ -120,6 +132,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 2. Replay Attack Prevention
 
 **Measures:**
+
 - ✅ Deployment requires fresh commits
 - ✅ Status checks must pass for current commit
 - ✅ Branch must be up to date
@@ -128,6 +141,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 3. Unauthorized Deployment Prevention
 
 **Measures:**
+
 - ✅ Branch protection blocks direct pushes
 - ✅ Production requires manual approval
 - ✅ Only authorized reviewers can approve
@@ -137,6 +151,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### 4. Supply Chain Attack Prevention
 
 **Measures:**
+
 - ✅ Lockfile enforcement (`package-lock.json` required)
 - ✅ Post-install scripts disabled in CI
 - ✅ Dependency vulnerability scanning
@@ -148,6 +163,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### GitHub Repository Access
 
 **Roles:**
+
 - **Owner**: Full access (use sparingly)
 - **Admin**: Can modify settings (restricted)
 - **Maintainer**: Can merge PRs (standard)
@@ -155,6 +171,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 - **Read-only**: View only
 
 **Best Practices:**
+
 - Limit admin access to essential personnel
 - Use teams for role management
 - Regular access reviews
@@ -162,12 +179,14 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### Vercel Access Control
 
 **Roles:**
+
 - **Owner**: Full project access
 - **Admin**: Can manage deployments
 - **Developer**: Can deploy to preview
 - **Viewer**: Read-only access
 
 **Production Deployment:**
+
 - Only owners and admins can deploy to production
 - Requires manual approval via GitHub Environments
 - All deployments logged
@@ -177,6 +196,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### Deployment Monitoring
 
 **Track:**
+
 - Deployment frequency
 - Deployment success/failure rates
 - Time to deploy
@@ -185,6 +205,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### Alerting
 
 **Configure alerts for:**
+
 - Failed deployments
 - Production deployments
 - Security scan failures
@@ -220,6 +241,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 ### Audit Requirements
 
 **Logged Information:**
+
 - Who deployed
 - When deployed
 - What was deployed (commit SHA)
@@ -227,6 +249,7 @@ This document outlines the safeguards and controls in place to prevent unauthori
 - Deployment status
 
 **Retention:**
+
 - GitHub Actions logs: 90 days
 - Vercel deployment logs: 90 days
 - Audit logs: 1 year (recommended)

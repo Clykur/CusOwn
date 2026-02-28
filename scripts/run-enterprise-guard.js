@@ -19,7 +19,10 @@ const checks = [
 for (const args of checks) {
   const label = `npm ${args.join(' ')}`;
   process.stdout.write(`\n=== ${label} ===\n`);
-  const result = spawnSync(npmCmd, args, { stdio: 'inherit', shell: isWindows });
+  const result = spawnSync(npmCmd, args, {
+    stdio: 'inherit',
+    shell: isWindows,
+  });
   if (result.error) {
     process.stderr.write(`\nFAILED: ${label}\n`);
     process.stderr.write(`${result.error.message}\n`);

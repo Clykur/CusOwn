@@ -23,7 +23,9 @@ function Header() {
 
     const loadState = async () => {
       try {
-        const stateRes = await fetch('/api/user/state', { credentials: 'include' });
+        const stateRes = await fetch('/api/user/state', {
+          credentials: 'include',
+        });
         if (!stateRes.ok) {
           if (!mounted) return;
           setUserState(null);

@@ -8,7 +8,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local');
+  throw new Error(
+    'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local'
+  );
 }
 
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -35,37 +37,41 @@ export class TestRunner {
   async runTest(name: string, testFn: () => Promise<void>): Promise<void> {
     const testStart = Date.now();
     let testDetails: any = {};
-    
+
     try {
       console.log(`\n🧪 Running: ${name}`);
       console.log(`   ⏱️  Started at: ${new Date().toLocaleTimeString()}`);
-      
+
       await testFn();
-      
+
       const duration = Date.now() - testStart;
-      this.results.push({ 
-        name, 
-        passed: true, 
+      this.results.push({
+        name,
+        passed: true,
         duration,
-        details: testDetails 
+        details: testDetails,
       });
-      
+
       console.log(`✅ PASSED: ${name}`);
       console.log(`   ⏱️  Duration: ${duration}ms`);
       if (testDetails.dataCreated) {
-        console.log(`   📝 Data Created: ${JSON.stringify(testDetails.dataCreated, null, 2).split('\n').slice(0, 5).join('\n      ')}`);
+        console.log(
+          `   📝 Data Created: ${JSON.stringify(testDetails.dataCreated, null, 2).split('\n').slice(0, 5).join('\n      ')}`
+        );
       }
       if (testDetails.dataAccessed) {
-        console.log(`   📊 Data Accessed: ${JSON.stringify(testDetails.dataAccessed, null, 2).split('\n').slice(0, 5).join('\n      ')}`);
+        console.log(
+          `   📊 Data Accessed: ${JSON.stringify(testDetails.dataAccessed, null, 2).split('\n').slice(0, 5).join('\n      ')}`
+        );
       }
     } catch (error) {
       const duration = Date.now() - testStart;
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.results.push({ 
-        name, 
-        passed: false, 
+      this.results.push({
+        name,
+        passed: false,
         error: errorMessage,
-        duration 
+        duration,
       });
       console.error(`❌ FAILED: ${name}`);
       console.error(`   ⏱️  Duration: ${duration}ms`);
@@ -97,9 +103,9 @@ export class TestRunner {
     console.log('\n' + '='.repeat(70));
     console.log('📊 DETAILED TEST SUMMARY');
     console.log('='.repeat(70));
-    
-    const passed = this.results.filter(r => r.passed).length;
-    const failed = this.results.filter(r => !r.passed).length;
+
+    const passed = this.results.filter((r) => r.passed).length;
+    const failed = this.results.filter((r) => !r.passed).length;
     const total = this.results.length;
     const avgDuration = this.results.reduce((sum, r) => sum + (r.duration || 0), 0) / total;
     const totalTestDuration = this.results.reduce((sum, r) => sum + (r.duration || 0), 0);
@@ -108,14 +114,16 @@ export class TestRunner {
     console.log(`   Total Tests: ${total}`);
     console.log(`   ✅ Passed: ${passed} (${((passed / total) * 100).toFixed(1)}%)`);
     console.log(`   ❌ Failed: ${failed} (${((failed / total) * 100).toFixed(1)}%)`);
-    console.log(`   ⏱️  Total Duration: ${totalDuration}ms (${(totalDuration / 1000).toFixed(2)}s)`);
+    console.log(
+      `   ⏱️  Total Duration: ${totalDuration}ms (${(totalDuration / 1000).toFixed(2)}s)`
+    );
     console.log(`   ⏱️  Average Test Duration: ${avgDuration.toFixed(0)}ms`);
     console.log(`   ⏱️  Test Execution Time: ${totalTestDuration.toFixed(0)}ms`);
 
     if (passed > 0) {
       console.log(`\n✅ Passed Tests:`);
       this.results
-        .filter(r => r.passed)
+        .filter((r) => r.passed)
         .forEach((r, idx) => {
           console.log(`   ${idx + 1}. ${r.name}`);
           if (r.duration) {
@@ -134,7 +142,7 @@ export class TestRunner {
     if (failed > 0) {
       console.log(`\n❌ Failed Tests:`);
       this.results
-        .filter(r => !r.passed)
+        .filter((r) => !r.passed)
         .forEach((r, idx) => {
           console.log(`   ${idx + 1}. ${r.name}`);
           if (r.duration) {
@@ -262,27 +270,32 @@ export async function getRandomAvailableSlot(businessId: string): Promise<any> {
     }
   }
 
-  throw new Error(`No available slots found for business ${businessId.substring(0, 8)}... after checking 7 days`);
+  throw new Error(
+    `No available slots found for business ${businessId.substring(0, 8)}... after checking 7 days`
+  );
 }
 
-export async function getOrCreateTestUser(email: string, userType: 'customer' | 'owner' = 'customer'): Promise<any> {
+export async function getOrCreateTestUser(
+  email: string,
+  userType: 'customer' | 'owner' = 'customer'
+): Promise<any> {
   // Create new user using admin API (always create with unique email)
   const { data: newUser, error } = await supabase.auth.admin.createUser({
     email,
     password: 'TestPassword123!',
     email_confirm: true,
   });
-  
+
   if (error) {
     // If user already exists, the error will indicate that
     // For testing, we'll throw and let the test handle it
     throw new Error(`Failed to create test user: ${error.message}. Email may already exist.`);
   }
-  
+
   if (!newUser.user) {
     throw new Error('Failed to create test user: No user returned');
   }
-  
+
   const userId = newUser.user.id;
 
   // Check and create profile
@@ -305,10 +318,7 @@ export async function getOrCreateTestUser(email: string, userType: 'customer' | 
   } else {
     // Update user type if needed
     if (profile.user_type !== userType) {
-      await supabase
-        .from('user_profiles')
-        .update({ user_type: userType })
-        .eq('id', userId);
+      await supabase.from('user_profiles').update({ user_type: userType }).eq('id', userId);
     }
   }
 
@@ -320,7 +330,10 @@ export async function cleanupTestData(bookingIds: string[], slotIds: string[]): 
     await supabase.from('bookings').delete().in('id', bookingIds);
   }
   if (slotIds.length > 0) {
-    await supabase.from('slots').update({ status: 'available', reserved_until: null }).in('id', slotIds);
+    await supabase
+      .from('slots')
+      .update({ status: 'available', reserved_until: null })
+      .in('id', slotIds);
   }
 }
 
@@ -333,7 +346,7 @@ export async function simulateUserAction(action: string, details?: any): Promise
       console.log(`      Details: ${lines.join('\n      ')}`);
     }
   }
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
 /**

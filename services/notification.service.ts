@@ -18,7 +18,10 @@ export interface SendNotificationInput {
 }
 
 export class NotificationService {
-  async getNotificationPreferences(userId?: string, customerPhone?: string): Promise<NotificationPreferences | null> {
+  async getNotificationPreferences(
+    userId?: string,
+    customerPhone?: string
+  ): Promise<NotificationPreferences | null> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
@@ -165,7 +168,6 @@ export class NotificationService {
     return data || [];
   }
 
-
   async sendBookingNotification(
     bookingId: string,
     notificationType: 'whatsapp' | 'email' | 'sms',
@@ -194,7 +196,11 @@ export class NotificationService {
       });
     } catch (error) {
       if (notificationType === 'whatsapp') {
-        const fallbackType = preferences?.emailEnabled ? 'email' : preferences?.smsEnabled ? 'sms' : null;
+        const fallbackType = preferences?.emailEnabled
+          ? 'email'
+          : preferences?.smsEnabled
+            ? 'sms'
+            : null;
         if (fallbackType) {
           try {
             result = await this.sendNotification({

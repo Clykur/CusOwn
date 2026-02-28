@@ -3,13 +3,16 @@
 ## ✅ All Redis Dependencies Removed
 
 ### Files Deleted
+
 - `lib/redis/client.ts`
 - `lib/cache/cache.service.ts`
 
 ### Dependencies Removed
+
 - `@upstash/redis` from package.json
 
 ### Environment Variables Removed
+
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
@@ -20,12 +23,14 @@
 ### 1. PostgreSQL-Level Optimizations
 
 **New Indexes:**
+
 - Covering indexes for business and booking lookups
 - Partial indexes for filtered queries
 - Optimized composite indexes
 
 **Query Optimizations:**
-- Specific SELECT columns (no SELECT *)
+
+- Specific SELECT columns (no SELECT \*)
 - Deterministic WHERE clauses
 - Proper ORDER BY with indexed columns
 
@@ -36,6 +41,7 @@
 ### 2. Next.js React `cache()` Function
 
 **Cached Methods:**
+
 - `salonService.getSalonById()` - Per-request deduplication
 - `salonService.getSalonByBookingLink()` - Per-request deduplication
 - `bookingService.getBookingById()` - Per-request deduplication
@@ -47,6 +53,7 @@
 ### 3. HTTP Cache Headers (Edge/CDN Caching)
 
 **Public Endpoints:**
+
 - Business profile: 5min / 10min stale-while-revalidate
 - Booking status: 30s (active) / 5min (final)
 - QR codes: 24h / 48h stale-while-revalidate
@@ -54,10 +61,12 @@
 - Locations: 30min / 1h stale-while-revalidate
 
 **Authenticated Endpoints:**
+
 - Owner businesses: 1min / 2min stale-while-revalidate
 - Customer bookings: 30s / 1min stale-while-revalidate
 
 **No-Cache Endpoints:**
+
 - Slot availability (CRITICAL)
 - Booking mutations (CRITICAL)
 - Owner booking management (CRITICAL)
@@ -67,10 +76,12 @@
 ### 4. Database Metrics (PostgreSQL)
 
 **Tables:**
+
 - `metrics` - Counter metrics
 - `metric_timings` - Performance timings
 
 **Functions:**
+
 - `increment_metric()` - Atomic counter increment
 - `record_timing()` - Store timing with auto-cleanup
 
@@ -99,12 +110,14 @@
 ## Performance Impact
 
 ### Expected Improvements
+
 - Business lookups: **5-10x faster**
 - Booking status: **3-5x faster**
 - Public pages: **10x faster** (CDN)
 - Slot queries: **Optimized** (indexes only)
 
 ### Slot Integrity
+
 - ✅ Always fetched live
 - ✅ No stale data possible
 - ✅ No race conditions
@@ -115,6 +128,7 @@
 ## Setup Instructions
 
 1. **Run Database Migrations**
+
    ```sql
    -- In Supabase SQL Editor
    -- Run: database/migration_optimize_queries.sql
@@ -122,6 +136,7 @@
    ```
 
 2. **Remove Redis Package**
+
    ```bash
    npm uninstall @upstash/redis
    npm install
@@ -141,18 +156,18 @@
 
 ## Cached Endpoints Summary
 
-| Endpoint | Cache Type | TTL | Status |
-|----------|-----------|-----|--------|
-| `/api/salons/[bookingLink]` | HTTP | 5min | ✅ Cached |
-| `/api/bookings/booking-id/[bookingId]` | HTTP | 30s-5min | ✅ Cached |
-| `/api/salons/[bookingLink]/qr` | HTTP | 24h | ✅ Cached |
-| `/api/salons/list` | HTTP | 5min | ✅ Cached |
-| `/api/salons/locations` | HTTP | 30min | ✅ Cached |
-| `/api/owner/businesses` | HTTP | 1min | ✅ Cached |
-| `/api/customer/bookings` | HTTP | 30s | ✅ Cached |
-| `/api/slots` | None | - | ❌ NOT Cached (CRITICAL) |
-| `/api/bookings` (POST) | None | - | ❌ NOT Cached (CRITICAL) |
-| `/api/bookings/[id]/*` | None | - | ❌ NOT Cached (CRITICAL) |
+| Endpoint                               | Cache Type | TTL      | Status                   |
+| -------------------------------------- | ---------- | -------- | ------------------------ |
+| `/api/salons/[bookingLink]`            | HTTP       | 5min     | ✅ Cached                |
+| `/api/bookings/booking-id/[bookingId]` | HTTP       | 30s-5min | ✅ Cached                |
+| `/api/salons/[bookingLink]/qr`         | HTTP       | 24h      | ✅ Cached                |
+| `/api/salons/list`                     | HTTP       | 5min     | ✅ Cached                |
+| `/api/salons/locations`                | HTTP       | 30min    | ✅ Cached                |
+| `/api/owner/businesses`                | HTTP       | 1min     | ✅ Cached                |
+| `/api/customer/bookings`               | HTTP       | 30s      | ✅ Cached                |
+| `/api/slots`                           | None       | -        | ❌ NOT Cached (CRITICAL) |
+| `/api/bookings` (POST)                 | None       | -        | ❌ NOT Cached (CRITICAL) |
+| `/api/bookings/[id]/*`                 | None       | -        | ❌ NOT Cached (CRITICAL) |
 
 ---
 
@@ -173,16 +188,19 @@
 ## Files Modified
 
 ### Removed
+
 - `lib/redis/client.ts`
 - `lib/cache/cache.service.ts`
 
 ### Created
+
 - `lib/cache/next-cache.ts` - HTTP cache headers
 - `lib/cache/client-cache.ts` - Client-side cache utilities
 - `database/migration_optimize_queries.sql` - Query optimizations
 - `database/migration_add_metrics.sql` - Metrics tables
 
 ### Updated
+
 - `services/slot.service.ts` - Removed slot caching
 - `services/salon.service.ts` - Added React cache()
 - `services/booking.service.ts` - Added React cache(), optimized queries

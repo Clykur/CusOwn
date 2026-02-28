@@ -31,6 +31,9 @@ export default function BookingLayoutFallback({ children }: BookingLayoutFallbac
             id: user.id,
             email: user.email ?? undefined,
             full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
+            user_type: userType as 'owner' | 'customer' | 'both' | 'admin',
+            profile_media_id: (profile as { profile_media_id?: string | null } | null)
+              ?.profile_media_id,
           });
         }
       })

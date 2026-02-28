@@ -18,10 +18,7 @@ export class ServiceService {
   async getServicesByBusiness(businessId: string, activeOnly = true): Promise<Service[]> {
     const supabaseAdmin = requireSupabaseAdmin();
 
-    let query = supabaseAdmin
-      .from('services')
-      .select('*')
-      .eq('business_id', businessId);
+    let query = supabaseAdmin.from('services').select('*').eq('business_id', businessId);
 
     if (activeOnly) {
       query = query.eq('is_active', true);

@@ -5,23 +5,34 @@
  * Simulates admin user accessing customer features and flows
  */
 
-import { supabase, TestRunner, getRandomBusiness, getRandomAvailableSlot, getOrCreateTestUser, cleanupTestData, simulateUserAction } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getRandomBusiness,
+  getRandomAvailableSlot,
+  getOrCreateTestUser,
+  cleanupTestData,
+  simulateUserAction,
+} from './test-utils';
 
 async function testAdminAsCustomer() {
   const runner = new TestRunner();
-  const cleanup: { bookings: string[]; slots: string[] } = { bookings: [], slots: [] };
+  const cleanup: { bookings: string[]; slots: string[] } = {
+    bookings: [],
+    slots: [],
+  };
   let admin: any = null;
 
   try {
     // STEP 1: Admin logs in
     await runner.runTest('STEP 1: Admin logs in', async () => {
       admin = await getOrCreateTestUser(`test-admin-customer-${Date.now()}@test.com`, 'owner');
-      await supabase
-        .from('user_profiles')
-        .update({ user_type: 'admin' })
-        .eq('id', admin.id);
+      await supabase.from('user_profiles').update({ user_type: 'admin' }).eq('id', admin.id);
 
-      await simulateUserAction('Admin logs in', { email: admin.email, role: 'admin' });
+      await simulateUserAction('Admin logs in', {
+        email: admin.email,
+        role: 'admin',
+      });
       console.log(`   Admin ID: ${admin.id.substring(0, 8)}...`);
     });
 
@@ -74,7 +85,9 @@ async function testAdminAsCustomer() {
         console.log(`   Available slot: ${slot.date} ${slot.start_time}`);
         (global as any).adminSelectedSlot = slot;
       } catch (error) {
-        throw new Error(`No available slots found: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `No available slots found: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     });
 
@@ -104,7 +117,7 @@ async function testAdminAsCustomer() {
 
       cleanup.bookings.push(data.booking_id);
       cleanup.slots.push(slot.id);
-      
+
       console.log(`   ✅ Booking created successfully`);
       console.log(`   📋 Booking ID: ${bookingId}`);
       console.log(`   🏢 Business: ${business.salon_name}`);
@@ -127,14 +140,16 @@ async function testAdminAsCustomer() {
         throw new Error(`Failed to fetch bookings: ${error.message}`);
       }
 
-      const myBooking = data?.find(b => b.id === cleanup.bookings[0]);
+      const myBooking = data?.find((b) => b.id === cleanup.bookings[0]);
       if (myBooking) {
         console.log(`   📋 Booking Details:`);
         console.log(`      Booking ID: ${myBooking.booking_id}`);
         console.log(`      Status: ${myBooking.status.toUpperCase()}`);
         console.log(`      Business: ${myBooking.business?.salon_name || 'N/A'}`);
         console.log(`      Date: ${myBooking.slot?.date || 'N/A'}`);
-        console.log(`      Time: ${myBooking.slot?.start_time || 'N/A'} - ${myBooking.slot?.end_time || 'N/A'}`);
+        console.log(
+          `      Time: ${myBooking.slot?.start_time || 'N/A'} - ${myBooking.slot?.end_time || 'N/A'}`
+        );
       }
     });
 
@@ -147,9 +162,7 @@ async function testAdminAsCustomer() {
         .select('id')
         .eq('suspended', false);
 
-      const { data: allBookings } = await supabase
-        .from('bookings')
-        .select('id');
+      const { data: allBookings } = await supabase.from('bookings').select('id');
 
       console.log(`   🔐 Admin Access Verified:`);
       console.log(`      Businesses Visible: ${allBusinesses?.length || 0}`);
@@ -157,13 +170,9 @@ async function testAdminAsCustomer() {
       console.log(`   ✅ Admin has both customer and admin access`);
       console.log(`   📊 Multi-role functionality working correctly`);
     });
-
   } finally {
     if (admin) {
-      await supabase
-        .from('user_profiles')
-        .update({ user_type: 'admin' })
-        .eq('id', admin.id);
+      await supabase.from('user_profiles').update({ user_type: 'admin' }).eq('id', admin.id);
     }
     await cleanupTestData(cleanup.bookings, cleanup.slots);
   }

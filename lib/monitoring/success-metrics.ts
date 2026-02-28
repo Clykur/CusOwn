@@ -135,7 +135,10 @@ export class SuccessMetricsService {
     const bookingCompletionRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
     const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
-    const owners = (ownersRes.data ?? []) as { id: string; owner_user_id: string | null }[];
+    const owners = (ownersRes.data ?? []) as {
+      id: string;
+      owner_user_id: string | null;
+    }[];
     const activeOwners = new Set(
       owners.filter((o) => o.owner_user_id).map((o) => o.owner_user_id!)
     );
@@ -174,9 +177,7 @@ export class SuccessMetricsService {
   }
 
   /** Threshold result with human-readable reason for pass/fail. */
-  async checkThresholds(
-    metrics: SuccessMetrics
-  ): Promise<
+  async checkThresholds(metrics: SuccessMetrics): Promise<
     Array<{
       metric: string;
       status: 'pass' | 'fail';

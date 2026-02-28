@@ -14,7 +14,7 @@
     "build:fresh": "node scripts/clean-build-artifacts.js && npm run build:strict",
     "start": "next start",
     "lint": "next lint",
-    "lint:strict": "next lint --max-warnings=0",
+    "lint:strict": "eslint app components lib services repositories middleware.ts --max-warnings=0",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "type-check": "tsc --noEmit -p tsconfig.typecheck.json",
     "security": "npm audit --omit=dev",

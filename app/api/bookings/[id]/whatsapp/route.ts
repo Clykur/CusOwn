@@ -17,7 +17,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const slot = booking.slot;
 
     if (!salon || !slot || !salon.whatsapp_number) {
-      return NextResponse.json({ success: false, data: { whatsapp_url: null } });
+      return NextResponse.json({
+        success: false,
+        data: { whatsapp_url: null },
+      });
     }
 
     const date = slot.date || '';

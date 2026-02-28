@@ -54,7 +54,10 @@ async function getUserProfileSafe(userId: string): Promise<any> {
  * Check if user has owner access (owner, both, or admin).
  * Pass profile to avoid second fetch (O(1) when profile provided).
  */
-export async function hasOwnerAccess(userId: string, profile?: ProfileLike | null): Promise<boolean> {
+export async function hasOwnerAccess(
+  userId: string,
+  profile?: ProfileLike | null
+): Promise<boolean> {
   if (profile !== undefined) return hasOwnerProfile(profile ?? null);
   try {
     const p = await getUserProfileSafe(userId);
@@ -68,7 +71,10 @@ export async function hasOwnerAccess(userId: string, profile?: ProfileLike | nul
  * Check if user has customer access (customer, both, or admin).
  * Pass profile to avoid second fetch (O(1) when profile provided).
  */
-export async function hasCustomerAccess(userId: string, profile?: ProfileLike | null): Promise<boolean> {
+export async function hasCustomerAccess(
+  userId: string,
+  profile?: ProfileLike | null
+): Promise<boolean> {
   if (profile !== undefined) return hasCustomerProfile(profile ?? null);
   try {
     const p = await getUserProfileSafe(userId);
@@ -82,7 +88,10 @@ export async function hasCustomerAccess(userId: string, profile?: ProfileLike | 
  * Check if user has admin access.
  * Pass profile to avoid second fetch (O(1) when profile provided).
  */
-export async function hasAdminAccess(userId: string, profile?: ProfileLike | null): Promise<boolean> {
+export async function hasAdminAccess(
+  userId: string,
+  profile?: ProfileLike | null
+): Promise<boolean> {
   if (profile !== undefined) return isAdminProfile(profile ?? null);
   try {
     const p = await getUserProfileSafe(userId);
@@ -99,7 +108,7 @@ export async function getUserType(userId: string): Promise<UserType | null> {
   try {
     const profile = await getUserProfileSafe(userId);
     if (!profile) return null;
-    
+
     return (profile as any).user_type as UserType;
   } catch {
     return null;
@@ -114,7 +123,7 @@ export async function userOwnsBusiness(userId: string, businessId: string): Prom
     // Dynamically import userService to avoid bundling server-only code in client
     const { userService } = await import('@/services/user.service');
     const businesses = await userService.getUserBusinesses(userId);
-    return businesses.some(b => b.id === businessId);
+    return businesses.some((b) => b.id === businessId);
   } catch {
     return false;
   }

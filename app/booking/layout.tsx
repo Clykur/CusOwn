@@ -21,6 +21,8 @@ export default async function BookingLayout({ children }: { children: React.Reac
     id: user.id,
     email: user.email ?? undefined,
     full_name: profile.full_name ?? undefined,
+    user_type: profile.user_type as 'owner' | 'customer' | 'both' | 'admin',
+    profile_media_id: profile.profile_media_id ?? null,
   };
 
   return <CustomerBookingShell initialUser={initialUser}>{children}</CustomerBookingShell>;

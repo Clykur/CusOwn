@@ -45,7 +45,12 @@ export async function GET(request: NextRequest) {
 
     const idsNeedingRole = Array.from(
       new Set(
-        (logs as { admin_user_id?: string | null; actor_role?: string | null }[])
+        (
+          logs as {
+            admin_user_id?: string | null;
+            actor_role?: string | null;
+          }[]
+        )
           .filter((l) => l.admin_user_id && !l.actor_role)
           .map((l) => l.admin_user_id as string)
       )

@@ -5,7 +5,12 @@
 
 export type ServerSession = {
   user: { id: string; email?: string } | null;
-  profile: { id: string; user_type: string; full_name: string | null; [k: string]: unknown } | null;
+  profile: {
+    id: string;
+    user_type: string;
+    full_name: string | null;
+    [k: string]: unknown;
+  } | null;
 };
 
 let sessionCache: { data: ServerSession; timestamp: number } | null = null;

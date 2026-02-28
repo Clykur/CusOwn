@@ -1,5 +1,10 @@
 import { eventBus } from './event-bus';
-import { BookingCreatedEvent, BookingConfirmedEvent, BookingRejectedEvent, BookingCancelledEvent } from './booking-events';
+import {
+  BookingCreatedEvent,
+  BookingConfirmedEvent,
+  BookingRejectedEvent,
+  BookingCancelledEvent,
+} from './booking-events';
 import { SlotReservedEvent, SlotBookedEvent, SlotReleasedEvent } from './slot-events';
 import { reminderService } from '@/services/reminder.service';
 import { metricsService } from '@/lib/monitoring/metrics';

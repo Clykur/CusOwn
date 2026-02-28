@@ -68,7 +68,11 @@ export function runUnitInputFilterTests(): void {
   });
 
   runTest('should_filterUserProfileUpdateFields_allow_user_type_full_name', () => {
-    const body = { user_type: 'owner', full_name: 'John', phone_number: '+919876543210' };
+    const body = {
+      user_type: 'owner',
+      full_name: 'John',
+      phone_number: '+919876543210',
+    };
     const out = filterUserProfileUpdateFields(body);
     assert(
       out.user_type === 'owner' && out.full_name === 'John',

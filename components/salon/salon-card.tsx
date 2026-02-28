@@ -67,63 +67,58 @@ export default function SalonCard({ salon }: SalonCardProps) {
   };
 
   return (
-  <div className="group relative bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-black hover:shadow-xl transition-all duration-200 h-full flex flex-col">
-    <div className="flex-1">
-      <div className="flex items-start justify-between mb-3">
-        <h3 className="text-xl font-bold text-gray-900 pr-2">
-          {salon.salon_name}
-        </h3>
-      </div>
-
-      {salon.location && (
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-          <MapPinIcon className="w-4 h-4 flex-shrink-0" />
-          <span className="truncate">{salon.location}</span>
+    <div className="group relative bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-black hover:shadow-xl transition-all duration-200 h-full flex flex-col">
+      <div className="flex-1">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
         </div>
-      )}
 
-      {salon.address && (
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 min-h-[2.5rem]">
-          {salon.address}
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
-        {salon.opening_time && salon.closing_time && (
-          <div className="flex items-center gap-1.5">
-            <ClockIcon className="w-4 h-4" />
-            <span>
-              {formatTime(salon.opening_time)} - {formatTime(salon.closing_time)}
-            </span>
+        {salon.location && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+            <MapPinIcon className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">{salon.location}</span>
           </div>
         )}
 
-        {salon.slot_duration && (
-          <div className="flex items-center gap-1.5">
-            <ClockIcon className="w-4 h-4" />
-            <span>{formatDuration(salon.slot_duration)} slots</span>
-          </div>
+        {salon.address && (
+          <p className="text-sm text-gray-500 mb-4 line-clamp-2 min-h-[2.5rem]">{salon.address}</p>
         )}
+
+        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
+          {salon.opening_time && salon.closing_time && (
+            <div className="flex items-center gap-1.5">
+              <ClockIcon className="w-4 h-4" />
+              <span>
+                {formatTime(salon.opening_time)} - {formatTime(salon.closing_time)}
+              </span>
+            </div>
+          )}
+
+          {salon.slot_duration && (
+            <div className="flex items-center gap-1.5">
+              <ClockIcon className="w-4 h-4" />
+              <span>{formatDuration(salon.slot_duration)} slots</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Action Row */}
+      <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+        <Link
+          href={`/customer/${bookingLink}`}
+          className="flex-1 text-center text-sm font-medium border border-gray-300 rounded-lg py-2 hover:bg-gray-100 transition"
+        >
+          View Business
+        </Link>
+
+        <Link
+          href={secureUrl}
+          className="flex-1 text-center text-sm font-medium bg-black text-white rounded-lg py-2 hover:bg-gray-800 transition"
+        >
+          View Slots
+        </Link>
       </div>
     </div>
-
-    {/* Bottom Action Row */}
-    <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-      <Link
-        href={`/customer/${bookingLink}`}
-        className="flex-1 text-center text-sm font-medium border border-gray-300 rounded-lg py-2 hover:bg-gray-100 transition"
-      >
-        View Business
-      </Link>
-
-      <Link
-        href={secureUrl}
-        className="flex-1 text-center text-sm font-medium bg-black text-white rounded-lg py-2 hover:bg-gray-800 transition"
-      >
-        View Slots
-      </Link>
-
-    </div>
-  </div>
-);
+  );
 }

@@ -460,7 +460,11 @@ export const AUDIT_ACTIONS = {
   MEDIA: ['media_uploaded', 'media_deleted'],
 } as const;
 
-export const AUDIT_SEVERITY = { INFO: 'info', WARNING: 'warning', CRITICAL: 'critical' } as const;
+export const AUDIT_SEVERITY = {
+  INFO: 'info',
+  WARNING: 'warning',
+  CRITICAL: 'critical',
+} as const;
 export type AuditSeverity = (typeof AUDIT_SEVERITY)[keyof typeof AUDIT_SEVERITY];
 
 export const AUDIT_STATUS = { SUCCESS: 'success', FAILED: 'failed' } as const;
@@ -591,6 +595,13 @@ export const MEDIA_CACHE_CONTROL_HEADER = 'private, max-age=3600, stale-while-re
 /** Role names stored in DB (roles.name) and in user_roles. No "both" - use multiple roles. */
 export const ROLES = ['customer', 'owner', 'admin'] as const;
 export type RoleName = (typeof ROLES)[number];
+
+/** Stable role IDs used by RBAC (must match DB seeds/migrations). */
+export const ROLE_IDS = {
+  owner: '00000000-0000-4000-8000-000000000001',
+  customer: '00000000-0000-4000-8000-000000000002',
+  admin: '00000000-0000-4000-8000-000000000003',
+} as const;
 
 /** Capabilities for layout/route access. Derive from roles; do not check role directly. */
 export const CAPABILITIES = {

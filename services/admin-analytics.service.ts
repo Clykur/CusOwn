@@ -57,13 +57,17 @@ export class AdminAnalyticsService {
           }))
         : [],
       revenueByBusiness: Array.isArray(raw.revenueByBusiness)
-        ? (raw.revenueByBusiness as { business_id: string; name: string; revenue: number }[]).map(
-            (b) => ({
-              business_id: String(b.business_id),
-              name: String(b.name ?? ''),
-              revenue: Number(b.revenue) ?? 0,
-            })
-          )
+        ? (
+            raw.revenueByBusiness as {
+              business_id: string;
+              name: string;
+              revenue: number;
+            }[]
+          ).map((b) => ({
+            business_id: String(b.business_id),
+            name: String(b.name ?? ''),
+            revenue: Number(b.revenue) ?? 0,
+          }))
         : [],
     };
   }

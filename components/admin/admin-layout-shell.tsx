@@ -50,7 +50,9 @@ export function AdminLayoutShell({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/session', { credentials: 'include' });
+        const res = await fetch('/api/auth/session', {
+          credentials: 'include',
+        });
         const json = await res.json();
         const data = json?.data ?? json;
         const user = data?.user ?? null;

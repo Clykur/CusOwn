@@ -124,10 +124,12 @@ export const BusinessProfile = () => {
         const queryParam = userId ? `userId=${userId}` : `businessId=${salonData.id}`;
 
         const [servicesRes, mediaRes] = await Promise.all([
-          fetch(`/api/services/list?${queryParam}`, { cache: FETCH_CACHE }).then((r) => r.json()),
-          fetch(`/api/media/business/${salonData.id}`, { cache: FETCH_CACHE }).then((r) =>
-            r.json()
-          ),
+          fetch(`/api/services/list?${queryParam}`, {
+            cache: FETCH_CACHE,
+          }).then((r) => r.json()),
+          fetch(`/api/media/business/${salonData.id}`, {
+            cache: FETCH_CACHE,
+          }).then((r) => r.json()),
         ]);
 
         if (cancelled) return;

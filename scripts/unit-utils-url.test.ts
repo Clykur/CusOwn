@@ -245,7 +245,9 @@ export function runUnitUtilsUrlTests(): void {
     const prevWindow = (globalThis as any).window;
     try {
       delete (process.versions as any).node;
-      (globalThis as any).window = { location: { origin: 'https://browser-origin.test' } };
+      (globalThis as any).window = {
+        location: { origin: 'https://browser-origin.test' },
+      };
       const base = getBaseUrl();
       assert(base === 'https://browser-origin.test', `Expected browser origin, got ${base}`);
     } finally {
@@ -483,7 +485,9 @@ export function runUnitUtilsUrlTests(): void {
     const prevWindow = (globalThis as any).window;
     try {
       delete (process.versions as any).node;
-      (globalThis as any).window = { location: { origin: 'https://client-browser.test' } };
+      (globalThis as any).window = {
+        location: { origin: 'https://client-browser.test' },
+      };
       const base = getClientBaseUrl();
       assert(base === 'https://client-browser.test', `Expected client browser origin, got ${base}`);
     } finally {

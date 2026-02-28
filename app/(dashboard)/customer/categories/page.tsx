@@ -7,7 +7,12 @@ import BusinessesIcon from '@/src/icons/businesses.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
 
 /** Category config: add more entries for multi-service. No hardcoded names in layout. */
-const SERVICE_CATEGORIES: { id: string; title: string; description: string; href: string }[] = [
+const SERVICE_CATEGORIES: {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+}[] = [
   {
     id: 'salon',
     title: 'Salon',

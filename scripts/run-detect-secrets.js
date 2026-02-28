@@ -28,7 +28,9 @@ function resolvePythonCommand() {
   ];
 
   for (const candidate of candidates) {
-    const check = spawnSync(candidate.cmd, candidate.args, { encoding: 'utf8' });
+    const check = spawnSync(candidate.cmd, candidate.args, {
+      encoding: 'utf8',
+    });
     if (check.status === 0) return candidate.cmd;
   }
 

@@ -63,8 +63,16 @@ const ALLOWED_URL_HOSTS = new Set([
 ]);
 
 const RULES = [
-  { name: 'todo-fixme', regex: /\b(TODO|FIXME|XXX)\b/, message: 'TODO/FIXME/XXX is not allowed' },
-  { name: 'debugger', regex: /\bdebugger\s*;?/, message: 'debugger statement is not allowed' },
+  {
+    name: 'todo-fixme',
+    regex: /\b(TODO|FIXME|XXX)\b/,
+    message: 'TODO/FIXME/XXX is not allowed',
+  },
+  {
+    name: 'debugger',
+    regex: /\bdebugger\s*;?/,
+    message: 'debugger statement is not allowed',
+  },
   {
     name: 'console-log',
     regex: /\bconsole\.(log|debug|trace)\s*\(/,

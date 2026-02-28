@@ -12,7 +12,12 @@ export function verifyRazorpayWebhook(body: string, signature: string, secret: s
   }
 }
 
-export function verifyStripeWebhook(body: string, signature: string, secret: string, timestamp: string): boolean {
+export function verifyStripeWebhook(
+  body: string,
+  signature: string,
+  secret: string,
+  timestamp: string
+): boolean {
   try {
     const signedPayload = `${timestamp}.${body}`;
     const hmac = createHmac('sha256', secret);

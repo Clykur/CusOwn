@@ -4,10 +4,19 @@ import { Card } from '@tremor/react';
 
 function statusMeta(value: number, warningAt: number, criticalAt: number) {
   if (value >= criticalAt)
-    return { label: 'Critical', cls: 'bg-rose-50 text-rose-700 border-rose-200' };
+    return {
+      label: 'Critical',
+      cls: 'bg-rose-50 text-rose-700 border-rose-200',
+    };
   if (value >= warningAt)
-    return { label: 'Warning', cls: 'bg-amber-50 text-amber-700 border-amber-200' };
-  return { label: 'Healthy', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    return {
+      label: 'Warning',
+      cls: 'bg-amber-50 text-amber-700 border-amber-200',
+    };
+  return {
+    label: 'Healthy',
+    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  };
 }
 
 export default function OperationalHealthPanel({
@@ -34,8 +43,14 @@ export default function OperationalHealthPanel({
       title: 'Cron Status',
       value: insights.cronHealthy ? 'OK' : 'Issue',
       status: insights.cronHealthy
-        ? { label: 'Healthy', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
-        : { label: 'Critical', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+        ? {
+            label: 'Healthy',
+            cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          }
+        : {
+            label: 'Critical',
+            cls: 'bg-rose-50 text-rose-700 border-rose-200',
+          },
     },
     {
       title: 'System Errors',
@@ -50,15 +65,24 @@ export default function OperationalHealthPanel({
     {
       title: 'Repeat Customers',
       value: insights.repeatCustomers,
-      status: { label: 'Healthy', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      status: {
+        label: 'Healthy',
+        cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      },
     },
     {
       title: 'Customer Growth Trend',
       value: insights.customerGrowth == null ? '—' : `${insights.customerGrowth}%`,
       status:
         (insights.customerGrowth ?? 0) >= 0
-          ? { label: 'Healthy', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
-          : { label: 'Warning', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+          ? {
+              label: 'Healthy',
+              cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            }
+          : {
+              label: 'Warning',
+              cls: 'bg-amber-50 text-amber-700 border-amber-200',
+            },
     },
   ];
 

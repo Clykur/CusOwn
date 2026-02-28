@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
 
       if (selectError) throw new Error(selectError.message);
 
-      const rows = (toPurge ?? []) as { id: string; bucket_name: string; storage_path: string }[];
+      const rows = (toPurge ?? []) as {
+        id: string;
+        bucket_name: string;
+        storage_path: string;
+      }[];
       for (const row of rows) {
         try {
           await supabaseStorageProvider.remove(row.bucket_name, [row.storage_path]);

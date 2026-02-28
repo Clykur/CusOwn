@@ -4,7 +4,12 @@ import {
   CACHE_TTL_API_LONG_MS,
 } from '@/config/constants';
 
-type CacheEntry = { data: unknown; expiresAt: number; staleAt: number; lastAccess: number };
+type CacheEntry = {
+  data: unknown;
+  expiresAt: number;
+  staleAt: number;
+  lastAccess: number;
+};
 const cache = new Map<string, CacheEntry>();
 const accessOrder: string[] = [];
 

@@ -3,6 +3,10 @@ node_modules
 .turbo
 out
 build
+
+scripts/
+public/scripts/
+
 *.config.js
 *.config.ts
 

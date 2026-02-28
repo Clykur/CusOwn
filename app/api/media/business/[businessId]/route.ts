@@ -49,7 +49,10 @@ export async function GET(
     );
     const offset = Math.max(parseInt(url.searchParams.get('offset') ?? '0', 10) || 0, 0);
 
-    const list = await mediaService.listBusinessMedia(businessId, { limit, offset });
+    const list = await mediaService.listBusinessMedia(businessId, {
+      limit,
+      offset,
+    });
     return successResponse({ items: list, limit, offset });
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.LOADING_ERROR;

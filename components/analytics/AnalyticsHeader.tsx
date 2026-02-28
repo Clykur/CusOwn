@@ -26,7 +26,11 @@ export default function AnalyticsHeader({
               <motion.span
                 initial={{ opacity: 0.4 }}
                 animate={{ opacity: 1 }}
-                transition={{ repeat: Infinity, repeatType: 'reverse', duration: 0.8 }}
+                transition={{
+                  repeat: Infinity,
+                  repeatType: 'reverse',
+                  duration: 0.8,
+                }}
                 className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
               >
                 Refreshing

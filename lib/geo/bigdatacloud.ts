@@ -72,7 +72,9 @@ export async function reverseGeocode(
     {
       latitude: String(latitude),
       longitude: String(longitude),
-      ...(options?.localityLanguage && { localityLanguage: options.localityLanguage }),
+      ...(options?.localityLanguage && {
+        localityLanguage: options.localityLanguage,
+      }),
     },
     getApiKey()
   );

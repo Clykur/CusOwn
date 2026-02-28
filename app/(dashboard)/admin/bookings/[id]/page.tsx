@@ -18,7 +18,9 @@ export default function AdminBookingPage() {
 
   const loadBooking = useCallback(async () => {
     try {
-      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+      const sessionRes = await fetch('/api/auth/session', {
+        credentials: 'include',
+      });
       const sessionJson = await sessionRes.json();
       if (!sessionRes.ok || !sessionJson?.data?.user) {
         router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_BOOKING(bookingId)));

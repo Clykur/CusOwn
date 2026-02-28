@@ -16,7 +16,8 @@ function normalizeAppBaseUrl(url: string): string {
 }
 
 const envSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.string().min(1).default('https://placeholder.supabase.co'),
+  NODE_ENV: z.string().default('development'),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().min(1),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).default('placeholder-anon-key'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).default('placeholder-service-role-key'),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
@@ -55,11 +56,20 @@ const envSchema = z.object({
   MEDIA_VALIDATE_MAGIC_BYTES: z.string().default('true'),
   /** BigDataCloud geo APIs: optional key for higher limits / IP lookup when required. */
   BIGDATACLOUD_API_KEY: z.string().optional(),
+  FEATURE_PAYMENT_CANARY: z.string().default('true'),
+  FEATURE_RESCHEDULE: z.string().default('true'),
+  FEATURE_NO_SHOW: z.string().default('true'),
 });
 
 const rawEnv = envSchema.parse(process.env);
 
 export const env = {
+  nodeEnv: rawEnv.NODE_ENV,
+  featureFlags: {
+    paymentCanary: rawEnv.FEATURE_PAYMENT_CANARY !== 'false',
+    reschedule: rawEnv.FEATURE_RESCHEDULE !== 'false',
+    noShow: rawEnv.FEATURE_NO_SHOW !== 'false',
+  },
   supabase: {
     url: rawEnv.NEXT_PUBLIC_SUPABASE_URL,
     anonKey: rawEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -74,11 +84,7 @@ export const env = {
   security: {
     get salonTokenSecret(): string {
       return (
-        process.env.SALON_TOKEN_SECRET ||
-        process.env.CRON_SECRET ||
-        rawEnv.SALON_TOKEN_SECRET ||
-        rawEnv.CRON_SECRET ||
-        'default-secret-change-in-production'
+        rawEnv.SALON_TOKEN_SECRET || rawEnv.CRON_SECRET || 'default-secret-change-in-production'
       );
     },
     razorpayWebhookSecret: rawEnv.RAZORPAY_WEBHOOK_SECRET || '',

@@ -1,6 +1,6 @@
 /**
  * Slot Optimizer Service - DSA-based optimization for slot generation
- * 
+ *
  * Uses:
  * - HashMap for slot template caching (O(1) lookup)
  * - Trie-like structure for date-based slot lookup
@@ -47,7 +47,7 @@ class SlotTemplateCache {
    */
   getTemplate(config: SalonTimeConfig): Array<{ start: string; end: string }> {
     const key = this.getConfigKey(config);
-    
+
     // Check cache first (O(1) lookup)
     const cached = this.cache.get(key);
     if (cached) {
@@ -66,7 +66,7 @@ class SlotTemplateCache {
 
     // Add to cache
     this.addToCache(key, timeSlots);
-    
+
     return timeSlots;
   }
 
@@ -138,12 +138,16 @@ class SlotPoolManager {
    * Groups by config to maximize template cache hits
    */
   async batchGenerateSlots(
-    requests: Array<{ businessId: string; date: string; config: SalonTimeConfig }>,
+    requests: Array<{
+      businessId: string;
+      date: string;
+      config: SalonTimeConfig;
+    }>,
     generateFn: (businessId: string, date: string, config: SalonTimeConfig) => Promise<void>
   ): Promise<void> {
     // Group by config to maximize cache hits
     const configGroups = new Map<string, typeof requests>();
-    
+
     for (const request of requests) {
       const configKey = `${request.config.opening_time}-${request.config.closing_time}-${request.config.slot_duration}`;
       if (!configGroups.has(configKey)) {
@@ -155,9 +159,7 @@ class SlotPoolManager {
     // Process each config group in parallel
     const promises = Array.from(configGroups.values()).map(async (group) => {
       // Process businesses in parallel within same config group
-      await Promise.all(
-        group.map((req) => generateFn(req.businessId, req.date, req.config))
-      );
+      await Promise.all(group.map((req) => generateFn(req.businessId, req.date, req.config)));
     });
 
     await Promise.all(promises);
@@ -173,7 +175,7 @@ class SlotPoolManager {
     generateFn: (businessId: string, date: string, config: SalonTimeConfig) => Promise<void>
   ): Promise<void> {
     const key = `${businessId}-${date}`;
-    
+
     // Check if already generating
     const existing = this.pendingGenerations.get(key);
     if (existing) {
@@ -181,10 +183,9 @@ class SlotPoolManager {
     }
 
     // Create new generation promise
-    const promise = generateFn(businessId, date, config)
-      .finally(() => {
-        this.pendingGenerations.delete(key);
-      });
+    const promise = generateFn(businessId, date, config).finally(() => {
+      this.pendingGenerations.delete(key);
+    });
 
     this.pendingGenerations.set(key, promise);
     return promise;
@@ -211,19 +212,22 @@ class DateSlotOptimizer {
 
     // Check dates in parallel batches
     const dateChecks: Promise<{ date: string; exists: boolean }>[] = [];
-    
+
     for (let i = 0; i < days; i++) {
       const targetDate = new Date(today);
       targetDate.setDate(today.getDate() + i);
       const dateString = targetDate.toISOString().split('T')[0];
-      
+
       dateChecks.push(
-        checkExistsFn(businessId, dateString).then(exists => ({ date: dateString, exists }))
+        checkExistsFn(businessId, dateString).then((exists) => ({
+          date: dateString,
+          exists,
+        }))
       );
     }
 
     const results = await Promise.all(dateChecks);
-    
+
     for (const { date, exists } of results) {
       if (!exists) {
         missingDates.push(date);
@@ -253,7 +257,7 @@ export async function generateOptimizedSlots(
   const timeSlots = slotTemplateCache.getTemplate(config);
 
   // Build slot objects
-  const slotsToCreate = timeSlots.map(timeSlot => ({
+  const slotsToCreate = timeSlots.map((timeSlot) => ({
     business_id: businessId,
     date,
     start_time: timeSlot.start,
@@ -269,12 +273,16 @@ export async function generateOptimizedSlots(
  * Batch generate slots for multiple businesses efficiently
  */
 export async function batchGenerateSlotsOptimized(
-  requests: Array<{ businessId: string; date: string; config: SalonTimeConfig }>,
+  requests: Array<{
+    businessId: string;
+    date: string;
+    config: SalonTimeConfig;
+  }>,
   insertFn: (businessId: string, slots: Array<Omit<any, 'id' | 'created_at'>>) => Promise<void>
 ): Promise<void> {
   // Group by config to maximize cache hits
   const configGroups = new Map<string, typeof requests>();
-  
+
   for (const request of requests) {
     const configKey = `${request.config.opening_time}-${request.config.closing_time}-${request.config.slot_duration}`;
     if (!configGroups.has(configKey)) {
@@ -291,7 +299,7 @@ export async function batchGenerateSlotsOptimized(
 
     // Generate slots for all businesses in this config group
     const insertPromises = group.map(async (req) => {
-      const slotsToCreate = timeSlots.map(timeSlot => ({
+      const slotsToCreate = timeSlots.map((timeSlot) => ({
         business_id: req.businessId,
         date: req.date,
         start_time: timeSlot.start,

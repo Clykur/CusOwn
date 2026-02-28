@@ -78,11 +78,13 @@ completed → partially_refunded (refund)
 ### Step 1: Slot Reservation (Pre-payment)
 
 **Prerequisites:**
+
 - Slot must be available or expired-reserved
 - Booking must be in `pending` status
 - Slot reservation must not be expired
 
 **Process:**
+
 1. Check slot status and `reserved_until` timestamp
 2. Validate slot expiry: `now < (booking.created_at + SLOT_EXPIRY_MINUTES)`
 3. Reject if slot is `booked` or reservation expired
@@ -96,6 +98,7 @@ completed → partially_refunded (refund)
 **Endpoint:** `POST /api/payments/initiate`
 
 **Request:**
+
 ```json
 {
   "booking_id": "uuid",
@@ -104,6 +107,7 @@ completed → partially_refunded (refund)
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -118,12 +122,14 @@ completed → partially_refunded (refund)
 ```
 
 **Security:**
+
 - RBAC: Customer can only initiate for their own bookings
 - Nonce validation (replay protection)
 - Rate limiting: 10 requests/minute per IP
 - Idempotency: Same `booking_id + nonce` returns existing payment if valid
 
 **Server-Side Actions:**
+
 1. Validate booking exists and is `pending`
 2. Validate slot is still available/reserved
 3. Calculate amount server-side (NEVER trust client)
@@ -138,18 +144,21 @@ completed → partially_refunded (refund)
 ### Step 3: Client Redirection / UPI Collect
 
 **Client Receives:**
+
 - `payment_id` - For status polling
 - `upi_payment_link` - Deep link to open UPI app
 - `upi_qr_code` - QR code image for scanning
 - `expires_at` - Payment expiration time
 
 **Client Actions:**
+
 1. Display QR code or payment link
 2. User scans/clicks → Opens UPI app
 3. User completes payment in UPI app
 4. Poll `/api/payments/[paymentId]/status` for updates
 
 **Client CANNOT:**
+
 - Modify amount
 - Modify booking
 - Signal payment success directly
@@ -164,15 +173,17 @@ completed → partially_refunded (refund)
 **Endpoint:** `POST /api/payments/webhook/upi`
 
 **Headers:**
+
 ```
 x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Request Body:**
+
 ```json
 {
   "transaction_id": "TXN1234567890ABC",
-  "amount": 1000.00,
+  "amount": 1000.0,
   "status": "success",
   "upi_app": "PhonePe",
   "payment_reference": "REF123456"
@@ -180,6 +191,7 @@ x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Verification Process:**
+
 1. Verify HMAC signature using `UPI_WEBHOOK_SECRET`
 2. Parse and validate payload structure
 3. Find payment by `transaction_id`
@@ -194,6 +206,7 @@ x-upi-signature: HMAC-SHA256 signature
 10. Store webhook payload hash (idempotency)
 
 **Idempotency:**
+
 - Duplicate webhooks with same payload hash are ignored
 - Payment already `completed` → return success without action
 
@@ -202,6 +215,7 @@ x-upi-signature: HMAC-SHA256 signature
 **Endpoint:** `POST /api/payments/verify`
 
 **Request:**
+
 ```json
 {
   "payment_id": "PAY1234567890ABC",
@@ -210,10 +224,12 @@ x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Authorization:**
+
 - Customer (for their own bookings)
 - Owner/Admin (for any booking)
 
 **Process:**
+
 1. Validate payment exists and is `initiated`
 2. Verify `transaction_id` matches
 3. Update payment to `completed`
@@ -225,6 +241,7 @@ x-upi-signature: HMAC-SHA256 signature
 ### Step 5: Booking Confirmation (Atomic)
 
 **Transaction Requirements:**
+
 1. Verify slot is still `available` or `reserved`
 2. Verify payment status is `completed`
 3. Verify booking status is `pending`
@@ -234,6 +251,7 @@ x-upi-signature: HMAC-SHA256 signature
 5. If any step fails → rollback and mark payment as failed
 
 **Failure Handling:**
+
 - Slot already booked → Mark payment failed, return error
 - Booking not pending → Return error (payment may be orphaned)
 - Database error → Rollback transaction, mark payment failed
@@ -247,6 +265,7 @@ x-upi-signature: HMAC-SHA256 signature
 **Cron Job:** `POST /api/cron/expire-payments`
 
 **Process:**
+
 1. Find payments with `status = 'initiated'` and `expires_at < now`
 2. Mark as `expired`
 3. Release associated slot if booking is `pending`
@@ -257,12 +276,14 @@ x-upi-signature: HMAC-SHA256 signature
 #### Payment Failure
 
 **Scenarios:**
+
 - Webhook reports `status = 'failed'`
 - Manual verification failure
 - Payment expiration
 - Slot unavailable during confirmation
 
 **Actions:**
+
 1. Mark payment as `failed`
 2. Increment `attempt_count`
 3. Store `failure_reason`
@@ -270,6 +291,7 @@ x-upi-signature: HMAC-SHA256 signature
 5. Cancel booking if `pending` (optional, configurable)
 
 **Retry Logic:**
+
 - Max attempts: `MAX_PAYMENT_ATTEMPTS` (default: 3)
 - After max attempts, booking may be cancelled
 
@@ -286,14 +308,16 @@ x-upi-signature: HMAC-SHA256 signature
 **Rate Limit:** 10 req/min per IP
 
 **Request:**
+
 ```typescript
 {
-  booking_id: string;  // UUID
-  nonce: string;       // Replay protection nonce
+  booking_id: string; // UUID
+  nonce: string; // Replay protection nonce
 }
 ```
 
 **Response (Success):**
+
 ```typescript
 {
   success: true,
@@ -308,6 +332,7 @@ x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Response (Error):**
+
 ```typescript
 {
   success: false,
@@ -316,6 +341,7 @@ x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Status Codes:**
+
 - `200` - Success
 - `400` - Invalid request (missing fields, invalid booking)
 - `401` - Unauthorized
@@ -335,6 +361,7 @@ x-upi-signature: HMAC-SHA256 signature
 **Rate Limit:** 20 req/min per IP
 
 **Request:**
+
 ```typescript
 {
   payment_id: string;
@@ -343,6 +370,7 @@ x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Response (Success):**
+
 ```typescript
 {
   success: true,
@@ -355,6 +383,7 @@ x-upi-signature: HMAC-SHA256 signature
 ```
 
 **Status Codes:**
+
 - `200` - Success
 - `400` - Invalid request / Payment not in valid state
 - `401` - Unauthorized
@@ -374,11 +403,13 @@ x-upi-signature: HMAC-SHA256 signature
 **Rate Limit:** None (webhook endpoint)
 
 **Headers:**
+
 ```
 x-upi-signature: string;  // HMAC-SHA256
 ```
 
 **Request Body:**
+
 ```typescript
 {
   transaction_id: string;
@@ -390,6 +421,7 @@ x-upi-signature: string;  // HMAC-SHA256
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -402,6 +434,7 @@ x-upi-signature: string;  // HMAC-SHA256
 ```
 
 **Status Codes:**
+
 - `200` - Success (processed or already processed)
 - `400` - Invalid payload / Payment expired
 - `401` - Invalid signature
@@ -420,6 +453,7 @@ x-upi-signature: string;  // HMAC-SHA256
 **Rate Limit:** 30 req/min per IP
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -501,35 +535,35 @@ UPI_WEBHOOK_SECRET=your-secret-key  # HMAC secret for webhook verification
 
 ## Edge Cases & Mitigations
 
-| Edge Case | Mitigation |
-|-----------|------------|
-| Webhook arrives after payment expired | Check `expires_at`, reject if `AUTO_REFUND_ON_LATE_SUCCESS = false` |
-| Slot booked between payment and confirmation | Check slot status atomically, mark payment failed |
-| Duplicate webhook with same payload | Store payload hash, ignore duplicates |
-| Payment success but booking confirmation fails | Rollback payment status, release slot |
-| Client claims payment success without verification | Server never trusts client, requires webhook/manual verification |
-| Race condition: two payments for same booking | Idempotency key prevents duplicate payment creation |
-| Slot reservation expires during payment | Validate slot expiry before payment initiation and confirmation |
-| Network failure during atomic confirmation | Database transaction ensures all-or-nothing |
-| Webhook signature verification fails | Reject webhook, log security event |
-| Payment amount mismatch | Reject webhook, log security event |
+| Edge Case                                          | Mitigation                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------- |
+| Webhook arrives after payment expired              | Check `expires_at`, reject if `AUTO_REFUND_ON_LATE_SUCCESS = false` |
+| Slot booked between payment and confirmation       | Check slot status atomically, mark payment failed                   |
+| Duplicate webhook with same payload                | Store payload hash, ignore duplicates                               |
+| Payment success but booking confirmation fails     | Rollback payment status, release slot                               |
+| Client claims payment success without verification | Server never trusts client, requires webhook/manual verification    |
+| Race condition: two payments for same booking      | Idempotency key prevents duplicate payment creation                 |
+| Slot reservation expires during payment            | Validate slot expiry before payment initiation and confirmation     |
+| Network failure during atomic confirmation         | Database transaction ensures all-or-nothing                         |
+| Webhook signature verification fails               | Reject webhook, log security event                                  |
+| Payment amount mismatch                            | Reject webhook, log security event                                  |
 
 ---
 
 ## Security Risks & Defenses
 
-| Risk | Defense |
-|------|---------|
-| **Payment amount tampering** | Amount calculated server-side, never accepted from client |
-| **Replay attacks** | Nonce validation, idempotency keys, payload hash deduplication |
-| **Webhook spoofing** | HMAC signature verification required |
-| **Slot hoarding** | Slot expiry enforced, automatic release on payment failure |
-| **Double booking** | Atomic slot booking, pessimistic locking |
-| **Payment without slot** | Slot validation at payment initiation and confirmation |
-| **Orphaned payments** | Cron job expires payments, releases slots |
-| **Race conditions** | Database transactions, atomic updates |
-| **Client-side fraud** | Zero-trust model, all verification server-side |
-| **Webhook replay** | Payload hash storage, duplicate detection |
+| Risk                         | Defense                                                        |
+| ---------------------------- | -------------------------------------------------------------- |
+| **Payment amount tampering** | Amount calculated server-side, never accepted from client      |
+| **Replay attacks**           | Nonce validation, idempotency keys, payload hash deduplication |
+| **Webhook spoofing**         | HMAC signature verification required                           |
+| **Slot hoarding**            | Slot expiry enforced, automatic release on payment failure     |
+| **Double booking**           | Atomic slot booking, pessimistic locking                       |
+| **Payment without slot**     | Slot validation at payment initiation and confirmation         |
+| **Orphaned payments**        | Cron job expires payments, releases slots                      |
+| **Race conditions**          | Database transactions, atomic updates                          |
+| **Client-side fraud**        | Zero-trust model, all verification server-side                 |
+| **Webhook replay**           | Payload hash storage, duplicate detection                      |
 
 ---
 

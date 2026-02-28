@@ -5,7 +5,11 @@ const NONCE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 let cleanupInterval: NodeJS.Timeout | null = null;
 
-export async function storeNonce(nonce: string, userId?: string, ipAddress?: string): Promise<boolean> {
+export async function storeNonce(
+  nonce: string,
+  userId?: string,
+  ipAddress?: string
+): Promise<boolean> {
   if (!supabaseAdmin) {
     return false;
   }
@@ -13,14 +17,12 @@ export async function storeNonce(nonce: string, userId?: string, ipAddress?: str
   const expiresAt = new Date();
   expiresAt.setMinutes(expiresAt.getMinutes() + NONCE_TTL_MINUTES);
 
-  const { error } = await supabaseAdmin
-    .from('request_nonces')
-    .insert({
-      nonce,
-      user_id: userId || null,
-      ip_address: ipAddress || null,
-      expires_at: expiresAt.toISOString(),
-    });
+  const { error } = await supabaseAdmin.from('request_nonces').insert({
+    nonce,
+    user_id: userId || null,
+    ip_address: ipAddress || null,
+    expires_at: expiresAt.toISOString(),
+  });
 
   if (error) {
     if (error.code === '23505') {

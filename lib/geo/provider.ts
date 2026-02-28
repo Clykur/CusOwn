@@ -79,7 +79,9 @@ export async function reverseGeocode(
   const url = buildUrl(REVERSE_GEOCODE_PATH, {
     latitude: String(latitude),
     longitude: String(longitude),
-    ...(options?.localityLanguage && { localityLanguage: options.localityLanguage }),
+    ...(options?.localityLanguage && {
+      localityLanguage: options.localityLanguage,
+    }),
   });
 
   let lastError: Error | null = null;

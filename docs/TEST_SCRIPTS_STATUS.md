@@ -24,11 +24,13 @@ The following scripts need to be created (they were defined in the initial imple
 ## 🚀 How to Use
 
 ### Install Dependencies First
+
 ```bash
 npm install -D ts-node dotenv
 ```
 
 ### Run Tests
+
 ```bash
 # Run all tests (when all scripts are created)
 npm run test:all
