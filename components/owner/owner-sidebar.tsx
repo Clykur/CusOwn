@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CONTEXT } from '@/config/constants';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
@@ -38,6 +39,9 @@ export default function OwnerSidebar({
   const [navigating, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
 
+  // profile image URL for sidebar
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
 
@@ -66,6 +70,42 @@ export default function OwnerSidebar({
       cancelled = true;
     };
   }, [safePathname, initialUser?.id]);
+
+  // load profile image when we have an owner id
+  useEffect(() => {
+    if (!initialUser?.id) {
+      setProfileImageUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/user/profile', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const mediaId = data?.data?.profile?.profile_media_id;
+        if (mediaId) {
+          const r2 = await fetch(`/api/media/signed-url?mediaId=${mediaId}`, {
+            credentials: 'include',
+          });
+          if (!r2.ok) return;
+          const j2 = await r2.json();
+          const url = j2?.data?.url;
+          if (url && !cancelled) setProfileImageUrl(url);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialUser?.id]);
 
   // ===============================
   // Navigation items (UNCHANGED)
@@ -198,8 +238,18 @@ export default function OwnerSidebar({
                 className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
-                  <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
+                  {profileImageUrl ? (
+                    <Image
+                      src={profileImageUrl}
+                      alt="Owner profile"
+                      width={36}
+                      height={36}
+                      unoptimized
+                    />
+                  ) : (
+                    <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="truncate text-sm font-medium text-slate-900">
