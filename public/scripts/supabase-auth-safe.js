@@ -19,7 +19,10 @@
     if (isRefresh(u, b))
       return Promise.resolve(
         new Response(
-          JSON.stringify({ error: 'refresh_disabled', message: 'Session from server only' }),
+          JSON.stringify({
+            error: 'refresh_disabled',
+            message: 'Session from server only',
+          }),
           { status: 401, headers: { 'Content-Type': 'application/json' } }
         )
       );

@@ -46,7 +46,18 @@ function shouldRetryOnEnoent(combined) {
   return /ENOENT: no such file or directory/i.test(combined) && /\.next(-build)?\//i.test(combined);
 }
 
+function cleanBuildArtifacts() {
+  const cleanResult = spawnSync(nodeCommand, ['scripts/clean-build-artifacts.js'], {
+    stdio: 'inherit',
+  });
+
+  if (cleanResult.status !== 0) {
+    process.exit(cleanResult.status || 1);
+  }
+}
+
 let attempts = 0;
+cleanBuildArtifacts();
 let build = runNextBuild();
 let { result, combined } = build;
 
@@ -56,7 +67,9 @@ while (result.status !== 0 && shouldRetryOnEnoent(combined) && attempts < 2) {
   console.warn(
     `Build failed with .next ENOENT. Cleaning artifacts and retrying (${attempts}/2)...`
   );
-  spawnSync(nodeCommand, ['scripts/clean-build-artifacts.js'], { stdio: 'inherit' });
+  spawnSync(nodeCommand, ['scripts/clean-build-artifacts.js'], {
+    stdio: 'inherit',
+  });
   ensureManifestPlaceholders();
   build = runNextBuild();
   result = build.result;

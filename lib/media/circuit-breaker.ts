@@ -64,7 +64,10 @@ export function isCircuitOpen(key: string): boolean {
   return true;
 }
 
-export function getCircuitState(key: string): { open: boolean; openUntil?: number } {
+export function getCircuitState(key: string): {
+  open: boolean;
+  openUntil?: number;
+} {
   const s = getState(key);
   const open = s.openUntil !== null && Date.now() < s.openUntil;
   return { open, openUntil: s.openUntil ?? undefined };

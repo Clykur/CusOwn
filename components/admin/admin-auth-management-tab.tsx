@@ -69,7 +69,9 @@ export function AdminAuthManagementTab() {
   const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
     try {
-      const res = await adminFetch('/api/admin/auth-events?limit=50', { credentials: 'include' });
+      const res = await adminFetch('/api/admin/auth-events?limit=50', {
+        credentials: 'include',
+      });
       const data = await res.json();
       if (data.success && data.data?.events) {
         setEvents(data.data.events);

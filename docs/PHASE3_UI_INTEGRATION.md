@@ -25,6 +25,7 @@
 ### Integration Points
 
 #### Owner Dashboard (`app/owner/[bookingLink]/page.tsx`)
+
 - ✅ Added "Analytics" tab
 - ✅ Integrated AnalyticsDashboard component
 - ✅ Added RescheduleButton to booking cards (for confirmed/pending bookings)
@@ -32,11 +33,13 @@
 - ✅ All buttons only show when appropriate (status checks, no-show checks)
 
 #### Customer Dashboard (`app/customer/dashboard/page.tsx`)
+
 - ✅ Integrated RescheduleButton in booking cards
 - ✅ Fetches available slots for each booking
 - ✅ Only shows for confirmed/pending bookings that aren't no-show
 
 #### Booking Status Page (`app/booking/[bookingId]/page.tsx`)
+
 - ✅ Integrated RescheduleButton
 - ✅ Fetches available slots when booking loads
 - ✅ Shows reschedule option alongside cancel button
@@ -44,6 +47,7 @@
 ### Features
 
 **Analytics Dashboard:**
+
 - Overview metrics (total, confirmed, conversion rate, no-shows)
 - Daily breakdown table
 - Peak hours bar chart
@@ -51,6 +55,7 @@
 - CSV export button
 
 **Rescheduling:**
+
 - Modal with available slots
 - Filters out current slot
 - Only shows available slots
@@ -59,6 +64,7 @@
 - Automatic slot release and booking
 
 **No-Show:**
+
 - One-click marking
 - Confirmation dialog
 - Automatic slot release

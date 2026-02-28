@@ -171,7 +171,12 @@ export class AnalyticsService {
       { id: string; name: string; count: number; revenueCents: number }
     >();
     (servicesData || []).forEach((s) => {
-      serviceMap.set(s.id, { id: s.id, name: s.name, count: 0, revenueCents: 0 });
+      serviceMap.set(s.id, {
+        id: s.id,
+        name: s.name,
+        count: 0,
+        revenueCents: 0,
+      });
     });
     const bookingIds = bookings.map((b) => b.id as string);
     if (bookingIds.length > 0 && serviceMap.size > 0) {

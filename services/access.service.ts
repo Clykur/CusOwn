@@ -156,7 +156,9 @@ export async function resolveUserAccess(
     const { headers } = await import('next/headers');
     const headersList = await headers();
     baseUrl = optionBaseUrl ?? buildBaseUrl(headersList as Headers);
-    request = new Request(baseUrl, { headers: headersList as unknown as Headers });
+    request = new Request(baseUrl, {
+      headers: headersList as unknown as Headers,
+    });
   }
 
   const user = await getServerUser(request);

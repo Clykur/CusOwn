@@ -35,7 +35,9 @@ export default function EditBusinessPage() {
 
   const checkAuthAndLoad = async () => {
     try {
-      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+      const sessionRes = await fetch('/api/auth/session', {
+        credentials: 'include',
+      });
       const sessionJson = await sessionRes.json();
       const data = sessionJson?.data;
       if (!sessionRes.ok || !data?.user) {
@@ -106,7 +108,9 @@ export default function EditBusinessPage() {
       };
 
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const res = await fetch(`/api/admin/businesses/${businessId}`, {

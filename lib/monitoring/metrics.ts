@@ -8,8 +8,7 @@ export class MetricsService {
         metric_name: metric,
         increment_value: value,
       });
-    } catch {
-    }
+    } catch {}
   }
 
   async recordTiming(metric: string, durationMs: number): Promise<void> {
@@ -19,8 +18,7 @@ export class MetricsService {
         metric_name: metric,
         duration_ms: durationMs,
       });
-    } catch {
-    }
+    } catch {}
   }
 
   async getCount(metric: string): Promise<number> {
@@ -46,7 +44,7 @@ export class MetricsService {
         .eq('metric', metric)
         .order('recorded_at', { ascending: false })
         .limit(1000);
-      return data?.map(d => d.duration_ms) || [];
+      return data?.map((d) => d.duration_ms) || [];
     } catch {
       return [];
     }
@@ -59,12 +57,14 @@ export class MetricsService {
   async setGauge(metric: string, value: number): Promise<void> {
     if (!supabaseAdmin) return;
     try {
-      await supabaseAdmin
-        .from('metrics')
-        .upsert(
-          { metric, value: Math.floor(value), updated_at: new Date().toISOString() },
-          { onConflict: 'metric' }
-        );
+      await supabaseAdmin.from('metrics').upsert(
+        {
+          metric,
+          value: Math.floor(value),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'metric' }
+      );
     } catch {
       // ignore
     }

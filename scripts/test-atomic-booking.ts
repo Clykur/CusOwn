@@ -1,10 +1,19 @@
 #!/usr/bin/env ts-node
 
-import { supabase, TestRunner, getRandomBusiness, getRandomAvailableSlot, cleanupTestData } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getRandomBusiness,
+  getRandomAvailableSlot,
+  cleanupTestData,
+} from './test-utils';
 
 async function testAtomicBookingCreation() {
   const runner = new TestRunner();
-  const cleanup: { bookings: string[]; slots: string[] } = { bookings: [], slots: [] };
+  const cleanup: { bookings: string[]; slots: string[] } = {
+    bookings: [],
+    slots: [],
+  };
 
   try {
     await runner.runTest('Get real business and slot', async () => {
@@ -49,11 +58,7 @@ async function testAtomicBookingCreation() {
 
     await runner.runTest('Verify slot is reserved', async () => {
       const slot = (global as any).testSlot;
-      const { data, error } = await supabase
-        .from('slots')
-        .select('*')
-        .eq('id', slot.id)
-        .single();
+      const { data, error } = await supabase.from('slots').select('*').eq('id', slot.id).single();
 
       if (error || !data) {
         throw new Error('Failed to fetch slot');
@@ -119,7 +124,6 @@ async function testAtomicBookingCreation() {
         throw new Error('Expected rejection but got unexpected result');
       }
     });
-
   } finally {
     await cleanupTestData(cleanup.bookings, cleanup.slots);
   }

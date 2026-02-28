@@ -19,15 +19,9 @@ export type AuthContext = {
 export async function getAuthContext(request: NextRequest): Promise<AuthContext | null> {
   const user = await getServerUser(request);
   if (!user) {
-    console.log('[AUTH] getAuthContext: no user', { hasRequest: !!request });
     return null;
   }
   const profile = await getServerUserProfile(user.id);
-  console.log('[AUTH] getAuthContext: ok', {
-    userId: user.id.substring(0, 8) + '...',
-    hasProfile: !!profile,
-    userType: (profile as { user_type?: string } | null)?.user_type ?? null,
-  });
   return { user, profile };
 }
 
@@ -37,11 +31,9 @@ export async function requireAuth(
 ): Promise<NextResponse | AuthContext> {
   const ctx = await getAuthContext(request);
   if (!ctx) {
-    console.log('[AUTH] requireAuth: denied (missing)', { route });
     logAuthDeny({ route, reason: 'auth_missing' });
     return errorResponse('Authentication required', 401);
   }
-  console.log('[AUTH] requireAuth: ok', { route, userId: ctx.user.id.substring(0, 8) + '...' });
   return ctx;
 }
 
@@ -55,28 +47,19 @@ export async function requirePermission(
 ): Promise<NextResponse | AuthContext> {
   const ctx = await getAuthContext(request);
   if (!ctx) {
-    console.log('[AUTH] requirePermission: denied (missing)', {
-      route,
-      permission: permissionName,
-    });
     logAuthDeny({ route, reason: 'auth_missing' });
     return errorResponse('Authentication required', 401);
   }
   const allowed = await hasPermission(ctx.user.id, permissionName);
   if (!allowed) {
-    console.log('[AUTH] requirePermission: denied (forbidden)', {
+    logAuthDeny({
+      user_id: ctx.user.id,
       route,
+      reason: 'auth_denied',
       permission: permissionName,
-      userId: ctx.user.id.substring(0, 8) + '...',
     });
-    logAuthDeny({ user_id: ctx.user.id, route, reason: 'auth_denied', permission: permissionName });
     return errorResponse('Access denied', 403);
   }
-  console.log('[AUTH] requirePermission: ok', {
-    route,
-    permission: permissionName,
-    userId: ctx.user.id.substring(0, 8) + '...',
-  });
   return ctx;
 }
 
@@ -109,10 +92,6 @@ export function denyInvalidToken(
   route: string,
   resource?: string
 ): NextResponse {
-  console.log('[AUTH] denyInvalidToken: invalid or expired token', {
-    route,
-    resource: resource ?? null,
-  });
   logAuthDeny({
     route,
     reason: 'auth_invalid_token',

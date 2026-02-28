@@ -305,7 +305,9 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     setSlotValidationError(null);
     setError(null);
     try {
-      const res = await fetch(`/api/slots/${slot.id}`, { credentials: 'include' });
+      const res = await fetch(`/api/slots/${slot.id}`, {
+        credentials: 'include',
+      });
       const result = await res.json();
       if (result?.success && result?.data?.status === 'available') {
         setSelectedSlot(slot);
@@ -343,7 +345,9 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
 
     try {
       // Check authentication via server endpoint (httpOnly cookies aren't visible to client JS)
-      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+      const sessionRes = await fetch('/api/auth/session', {
+        credentials: 'include',
+      });
       const sessionData = await sessionRes.json();
       const isAuthenticated = sessionData?.success && sessionData?.data?.user;
 

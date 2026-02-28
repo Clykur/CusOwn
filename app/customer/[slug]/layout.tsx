@@ -12,6 +12,13 @@ export default async function CustomerBusinessLayout({ children }: { children: R
           id: result.user.id,
           email: result.user.email,
           full_name: (result.profile as { full_name?: string } | null)?.full_name,
+          user_type: (
+            result.profile as {
+              user_type?: 'owner' | 'customer' | 'both' | 'admin';
+            } | null
+          )?.user_type,
+          profile_media_id: (result.profile as { profile_media_id?: string | null } | null)
+            ?.profile_media_id,
         }
       : null;
   return (

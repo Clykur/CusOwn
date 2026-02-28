@@ -68,7 +68,9 @@ export async function resolveUserAndRedirect(
     const { headers } = await import('next/headers');
     const headersList = await headers();
     baseUrl = options?.baseUrl ?? buildBaseUrlFromHeaders(headersList);
-    request = new Request(baseUrl, { headers: headersList as unknown as Headers });
+    request = new Request(baseUrl, {
+      headers: headersList as unknown as Headers,
+    });
   }
 
   const requireScope = options?.requireScope;
@@ -87,11 +89,6 @@ export async function resolveUserAndRedirect(
 
     if (isLayoutContext) {
       // Layout often cannot see cookies (RSC). Do not redirect; let client verify session and redirect.
-      if (process.env.NODE_ENV === 'development') {
-        console.log(
-          '[AUTH] resolveUserAndRedirect: no user in layout context — require client auth check'
-        );
-      }
       return {
         user: { id: '' },
         profile: null,
@@ -118,12 +115,6 @@ export async function resolveUserAndRedirect(
       };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AUTH] resolveUserAndRedirect: no user, redirect to login', {
-        attemptedPath: pathname,
-        loginUrl: redirectToLogin,
-      });
-    }
     return {
       user: { id: '' },
       profile: null,
@@ -207,14 +198,6 @@ export async function resolveUserAndRedirect(
   if (requireScope === 'admin' && permissions.canAccessAdmin) redirectUrl = null;
   if (requireScope === 'owner' && permissions.canAccessOwner) redirectUrl = null;
   if (requireScope === 'customer' && permissions.canAccessCustomer) redirectUrl = null;
-
-  if (process.env.NODE_ENV === 'development' && redirectUrl) {
-    console.log('[AUTH] resolveUserAndRedirect: redirecting', {
-      scope: requireScope,
-      userId: user.id.substring(0, 8) + '...',
-      redirectUrl,
-    });
-  }
 
   return {
     user: { id: user.id, email: user.email ?? undefined },

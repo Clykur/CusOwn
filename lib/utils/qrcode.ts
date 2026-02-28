@@ -8,7 +8,7 @@ import { NextRequest } from 'next/server';
 export const generateQRCodeDataUrl = async (bookingUrl: string): Promise<string> => {
   // Dynamic import to avoid SSR issues
   const QRCode = (await import('qrcode')).default;
-  
+
   try {
     // Generate QR code as data URL (base64 image)
     const qrCodeDataUrl = await QRCode.toDataURL(bookingUrl, {
@@ -19,10 +19,12 @@ export const generateQRCodeDataUrl = async (bookingUrl: string): Promise<string>
         light: '#FFFFFF',
       },
     });
-    
+
     return qrCodeDataUrl;
   } catch (error) {
-    throw new Error(`Failed to generate QR code: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate QR code: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 };
 
@@ -32,8 +34,10 @@ export const generateQRCodeDataUrl = async (bookingUrl: string): Promise<string>
  * @param bookingLink - The booking link identifier
  * @param request - Optional NextRequest for proper URL generation (production vs dev)
  */
-export const generateQRCodeForBookingLink = async (bookingLink: string, request?: NextRequest): Promise<string> => {
+export const generateQRCodeForBookingLink = async (
+  bookingLink: string,
+  request?: NextRequest
+): Promise<string> => {
   const bookingUrl = getBookingUrl(bookingLink, request);
   return generateQRCodeDataUrl(bookingUrl);
 };
-

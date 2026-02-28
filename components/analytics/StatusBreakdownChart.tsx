@@ -26,7 +26,14 @@ export default function StatusBreakdownChart({
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Booking Status Breakdown</h3>
       <div className="flex h-72 items-center min-w-0">
         <div className="h-full w-1/2 min-w-0">
-          <div style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 180 }}>
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              minWidth: 0,
+              minHeight: 180,
+            }}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

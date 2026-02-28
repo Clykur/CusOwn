@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
         'salon_name, booking_link, address, location, category, opening_time, closing_time, slot_duration'
       );
     // Only show active, non-deleted businesses
-    query = applyActiveBusinessFilters(query).order('salon_name', { ascending: true });
+    query = applyActiveBusinessFilters(query).order('salon_name', {
+      ascending: true,
+    });
 
     if (sanitizedLocation) {
       query = query.ilike('location', `%${sanitizedLocation}%`);

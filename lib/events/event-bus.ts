@@ -22,13 +22,15 @@ export class EventBus {
 
   async emit<T>(event: string, data: T): Promise<void> {
     const handlers = this.handlers.get(event) || [];
-    await Promise.all(handlers.map(handler => {
-      try {
-        return handler(data);
-      } catch {
-        return Promise.resolve();
-      }
-    }));
+    await Promise.all(
+      handlers.map((handler) => {
+        try {
+          return handler(data);
+        } catch {
+          return Promise.resolve();
+        }
+      })
+    );
   }
 }
 

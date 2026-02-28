@@ -71,41 +71,37 @@ export default function OwnerSidebar({
     };
   }, [safePathname, initialUser?.id]);
 
-  // load profile image when we have an owner id
+  // load profile image from session profile_media_id
   useEffect(() => {
-    if (!initialUser?.id) {
+    if (!initialUser?.profile_media_id) {
       setProfileImageUrl(null);
       return;
     }
 
+    const mediaId = initialUser.profile_media_id;
+
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/user/profile', {
+        const r2 = await fetch(`/api/media/signed-url?mediaId=${encodeURIComponent(mediaId)}`, {
           credentials: 'include',
-          cache: 'no-store',
         });
-        if (!res.ok) return;
-        const data = await res.json();
-        const mediaId = data?.data?.profile?.profile_media_id;
-        if (mediaId) {
-          const r2 = await fetch(`/api/media/signed-url?mediaId=${mediaId}`, {
-            credentials: 'include',
-          });
-          if (!r2.ok) return;
-          const j2 = await r2.json();
-          const url = j2?.data?.url;
-          if (url && !cancelled) setProfileImageUrl(url);
+        if (!r2.ok) {
+          if (!cancelled) setProfileImageUrl(null);
+          return;
         }
+        const j2 = await r2.json();
+        const url = j2?.data?.url;
+        if (!cancelled) setProfileImageUrl(url ?? null);
       } catch {
-        /* ignore */
+        if (!cancelled) setProfileImageUrl(null);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [initialUser?.id]);
+  }, [initialUser?.profile_media_id]);
 
   // ===============================
   // Navigation items (UNCHANGED)

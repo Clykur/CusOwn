@@ -76,7 +76,10 @@ export async function processMediaVariants(mediaId: string): Promise<{
     processing_status: string;
   };
   if (m.processing_status === 'completed') {
-    return { ok: true, variants: (media as { variants?: MediaVariants }).variants ?? undefined };
+    return {
+      ok: true,
+      variants: (media as { variants?: MediaVariants }).variants ?? undefined,
+    };
   }
   try {
     const { data: blob } = await supabase.storage.from(m.bucket_name).download(m.storage_path);
@@ -87,7 +90,10 @@ export async function processMediaVariants(mediaId: string): Promise<{
 
     await supabase
       .from('media')
-      .update({ processing_status: 'processing', updated_at: new Date().toISOString() })
+      .update({
+        processing_status: 'processing',
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', mediaId);
 
     const [thumb, medium, large] = await Promise.all([

@@ -3,6 +3,7 @@
 ## ✅ Completed
 
 ### 1. Replay Protection (Request Nonces)
+
 - ✅ Created `lib/security/nonce-store.ts`
 - ✅ Database migration: `migration_add_request_nonces.sql`
 - ✅ Integrated into booking API with optional request ID
@@ -10,11 +11,13 @@
 - ✅ Integrated into event initialization
 
 ### 2. Improved Slot Reservation
+
 - ✅ Atomic slot reservation with status check
 - ✅ Handles expired reservations automatically
 - ✅ Returns false on race condition (no error)
 
 ### 3. Location-Based Discovery
+
 - ✅ Database migration for location fields (non-critical)
 - ✅ Geo-utilities: `lib/utils/geo.ts` (Haversine distance)
 - ✅ Geo-search API: `/api/businesses/search`
@@ -24,6 +27,7 @@
 - ✅ Output filtering (no sensitive data)
 
 ### 4. Location Fields in Salon Creation
+
 - ✅ Updated `CreateSalonInput` type with optional location fields
 - ✅ Updated `Salon` type
 - ✅ Updated salon service to save location data
@@ -32,6 +36,7 @@
 ## 📋 Next Steps
 
 ### Multi-Service Booking
+
 - [ ] Create services table migration
 - [ ] Create booking_services junction table
 - [ ] Update booking schema with duration/price fields
@@ -39,6 +44,7 @@
 - [ ] Server-side duration calculation
 
 ### Payment Integration
+
 - [ ] Create payments table
 - [ ] Implement payment creation API
 - [ ] Webhook verification

@@ -5,7 +5,10 @@ const targets = ['.next', '.next-build', path.join('node_modules', '.cache'), '.
 
 for (const target of targets) {
   try {
-    fs.rmSync(path.resolve(process.cwd(), target), { recursive: true, force: true });
+    fs.rmSync(path.resolve(process.cwd(), target), {
+      recursive: true,
+      force: true,
+    });
     // eslint-disable-next-line no-console
     console.log(`Removed: ${target}`);
   } catch (error) {

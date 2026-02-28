@@ -64,7 +64,12 @@ export interface AnalyticsOverview {
   failedBookings?: number;
   systemErrors?: number;
   upcoming?: number;
-  services?: { id: string; name: string; count: number; revenueCents?: number }[];
+  services?: {
+    id: string;
+    name: string;
+    count: number;
+    revenueCents?: number;
+  }[];
 }
 
 export interface DailyPoint {

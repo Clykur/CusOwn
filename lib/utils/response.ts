@@ -9,10 +9,7 @@ export const successResponse = <T>(data: T, message?: string): NextResponse<ApiR
   });
 };
 
-export const errorResponse = (
-  error: string,
-  status: number = 400
-): NextResponse<ApiResponse> => {
+export const errorResponse = (error: string, status: number = 400): NextResponse<ApiResponse> => {
   return NextResponse.json(
     {
       success: false,
@@ -21,4 +18,3 @@ export const errorResponse = (
     { status }
   );
 };
-

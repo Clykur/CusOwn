@@ -12,7 +12,12 @@ function isRefreshTokenRequest(url: string, body: string): boolean {
   );
 }
 
-type CachedResponse = { status: number; statusText: string; headers: Headers; body: string };
+type CachedResponse = {
+  status: number;
+  statusText: string;
+  headers: Headers;
+  body: string;
+};
 
 let lastRefreshAt = 0;
 let lastRefreshCached: CachedResponse | null = null;

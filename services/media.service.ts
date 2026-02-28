@@ -202,6 +202,10 @@ export class MediaService {
       });
 
       const existingProfile = await mediaRepository.getProfileMedia(input.userId);
+      if (existingProfile) {
+        await mediaRepository.softDelete(existingProfile.id);
+        await supabaseStorageProvider.remove(bucket(), [existingProfile.storage_path]);
+      }
       const media = await mediaRepository.insert({
         entity_type: 'profile',
         entity_id: input.userId,
@@ -216,10 +220,6 @@ export class MediaService {
         content_type_resolved: contentType,
         recompressed_at: env.media.stripExif ? new Date().toISOString() : null,
       });
-      if (existingProfile && existingProfile.id !== media.id) {
-        await mediaRepository.softDelete(existingProfile.id);
-        await supabaseStorageProvider.remove(bucket(), [existingProfile.storage_path]);
-      }
       await mediaRepository.updateProfileMediaId(input.userId, media.id);
       await auditService.createAuditLog(input.userId, 'media_uploaded', 'media', {
         entityId: media.id,

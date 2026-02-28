@@ -13,11 +13,13 @@ The slot generation system uses **DSA-based optimizations** to efficiently gener
 **Trigger**: When a new business is created via `salonService.createSalon()`
 
 **Flow**:
+
 ```
 Business Created → generateInitialSlots() → Generate slots for next 7 days
 ```
 
 **Code Path**:
+
 ```typescript
 // services/salon.service.ts
 await slotService.generateInitialSlots(salon.id, {
@@ -28,6 +30,7 @@ await slotService.generateInitialSlots(salon.id, {
 ```
 
 **What Happens**:
+
 1. Loops through next 7 days (configurable via `DAYS_TO_GENERATE_SLOTS`)
 2. Checks if business is closed on each date (downtime service)
 3. Checks for special hours per day of week
@@ -36,6 +39,7 @@ await slotService.generateInitialSlots(salon.id, {
 6. **Batches inserts** (100 slots per batch) to avoid overwhelming database
 
 **Example**:
+
 - Business: 09:00-18:00, 30min slots
 - Days: 7 days
 - Slots per day: ~18 slots (9 hours × 2 slots/hour)
@@ -48,11 +52,13 @@ await slotService.generateInitialSlots(salon.id, {
 **Trigger**: When user requests available slots via `getAvailableSlots()`
 
 **Flow**:
+
 ```
 User Requests Slots → Check if slots exist → Generate if missing → Return slots
 ```
 
 **Code Path**:
+
 ```typescript
 // services/slot.service.ts - getAvailableSlots()
 const { data: existingSlots } = await supabaseAdmin
@@ -69,6 +75,7 @@ if (!existingSlots || existingSlots.length === 0) {
 ```
 
 **What Happens**:
+
 1. **Check if slots exist** for requested date
 2. If missing, **queue generation** (prevents duplicate concurrent requests)
 3. **Optimize future dates**: Check which dates in next 7 days are missing
@@ -86,13 +93,15 @@ if (!existingSlots || existingSlots.length === 0) {
 **Purpose**: Avoid recalculating time slots for same config
 
 **Data Structure**:
+
 ```typescript
-Map<string, SlotTemplate>
+Map<string, SlotTemplate>;
 // Key: "09:00-18:00-30" (opening-closing-duration)
 // Value: Pre-computed time slots array
 ```
 
 **How It Works**:
+
 1. First call with config `09:00-18:00-30`:
    - Generates time slots: `[{start: "09:00", end: "09:30"}, ...]`
    - Caches result in HashMap
@@ -104,11 +113,13 @@ Map<string, SlotTemplate>
    - Returns cached slots
 
 **Benefits**:
+
 - **70-90% cache hit rate** (most businesses have similar hours)
 - **O(1) lookup** vs O(n) generation
 - **LRU eviction** prevents memory bloat (max 100 configs)
 
 **Code**:
+
 ```typescript
 // services/slot-optimizer.service.ts
 const timeSlots = slotTemplateCache.getTemplate({
@@ -127,34 +138,39 @@ const timeSlots = slotTemplateCache.getTemplate({
 **Features**:
 
 #### a) **Queue System** (Prevents Duplicates)
+
 ```typescript
 // Tracks pending generations
-Map<string, Promise<void>>
+Map<string, Promise<void>>;
 // Key: "businessId-date" (e.g., "abc123-2026-01-27")
 // Value: Generation promise
 ```
 
 **How It Works**:
+
 - If 10 users request slots for same business/date simultaneously:
   - First request: Starts generation, stores promise
   - Other 9 requests: **Reuse same promise** (wait for first to complete)
   - Result: **Only 1 generation** instead of 10!
 
 #### b) **Batch Processing** (Groups by Config)
+
 ```typescript
 // Groups requests by config to maximize cache hits
-Map<string, Request[]>
+Map<string, Request[]>;
 // Key: "09:00-18:00-30"
 // Value: Array of businesses with same config
 ```
 
 **How It Works**:
+
 - Multiple businesses with same hours (09:00-18:00, 30min):
   - Get template **once** (cache hit)
   - Generate slots for **all businesses** using same template
   - Parallel processing within config group
 
 **Code**:
+
 ```typescript
 // services/slot.service.ts
 await slotPoolManager.queueGeneration(
@@ -174,11 +190,13 @@ await slotPoolManager.queueGeneration(
 **Purpose**: Only generate slots for dates that don't exist
 
 **Algorithm**:
+
 1. Check which dates in next 7 days already have slots (parallel queries)
 2. Filter out dates that exist
 3. Only generate for missing dates
 
 **Example**:
+
 ```
 Requested date: 2026-01-27
 Window: 7 days (2026-01-27 to 2026-02-02)
@@ -196,6 +214,7 @@ Result: Generate only 5 dates instead of 7!
 ```
 
 **Code**:
+
 ```typescript
 // services/slot.service.ts
 const missingDates = await dateSlotOptimizer.getMissingDates(
@@ -210,7 +229,7 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
       .eq('business_id', bid)
       .eq('date', date)
       .limit(1);
-    return (data && data.length > 0);
+    return data && data.length > 0;
   }
 );
 ```
@@ -220,6 +239,7 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
 ## 📊 Performance Improvements
 
 ### Before Optimization
+
 - ❌ Time slot calculation: **O(n) for every request**
 - ❌ Database inserts: **Individual per business/date**
 - ❌ Cache hits: **0%** (no caching)
@@ -227,6 +247,7 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
 - ❌ Database load: **Very high**
 
 ### After Optimization
+
 - ✅ Time slot calculation: **O(1) for cached configs** (~90% cache hit)
 - ✅ Database inserts: **Batched** (100 slots per batch)
 - ✅ Cache hits: **70-90%** (same configs reused)
@@ -238,11 +259,13 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
 **Scenario**: 100 businesses, all with 09:00-18:00, 30min slots
 
 **Before**:
+
 - Each business: Recalculate 18 slots × 7 days = 126 calculations
 - Total: 100 × 126 = **12,600 calculations**
 - Database: 100 × 126 = **12,600 inserts**
 
 **After**:
+
 - Template cache: Calculate once, reuse 99 times
 - Calculations: **126** (1 business) + **0** (99 cache hits) = **126**
 - Database: Same (but batched efficiently)
@@ -280,20 +303,24 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
 ## 🛡️ Safety Features
 
 ### 1. **Duplicate Prevention**
+
 - Queue system prevents concurrent generations
 - Database UNIQUE constraint: `(business_id, date, start_time, end_time)`
 
 ### 2. **Downtime Handling**
+
 - Checks if business is closed on date
 - Checks special hours per day of week
 - Skips generation for closed dates
 
 ### 3. **Transaction Safety**
+
 - Batched inserts (100 slots per batch)
 - Error handling per batch
 - No partial slot generation
 
 ### 4. **State Management**
+
 - Slots start as `available`
 - State machine enforces valid transitions
 - Expired reservations auto-released
@@ -327,6 +354,7 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
 ## 🎯 Summary
 
 **Current System**:
+
 - ✅ **Lazy generation**: Slots generated on-demand
 - ✅ **Template caching**: O(1) lookup for same configs
 - ✅ **Queue system**: Prevents duplicate concurrent generations

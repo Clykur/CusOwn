@@ -95,7 +95,9 @@ export default function UniversalSidebar() {
         }
 
         // Fallback based on logged-in role (server endpoint)
-        const stateRes = await fetch('/api/user/state', { credentials: 'include' });
+        const stateRes = await fetch('/api/user/state', {
+          credentials: 'include',
+        });
         if (!stateRes.ok) {
           setSidebarType(null);
           return;

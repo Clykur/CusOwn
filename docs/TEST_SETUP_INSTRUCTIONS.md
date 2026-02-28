@@ -9,9 +9,9 @@ Before running tests, you **MUST** run this migration in your Supabase SQL edito
 ALTER TABLE slots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- Create trigger to auto-update updated_at
-CREATE TRIGGER update_slots_updated_at 
+CREATE TRIGGER update_slots_updated_at
   BEFORE UPDATE ON slots
-  FOR EACH ROW 
+  FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 ```
 
@@ -20,12 +20,14 @@ CREATE TRIGGER update_slots_updated_at
 ## Quick Setup
 
 1. **Install dependencies:**
+
    ```bash
    npm install -D ts-node dotenv
    ```
 
 2. **Set up environment:**
    Create `.env.local`:
+
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -44,15 +46,18 @@ CREATE TRIGGER update_slots_updated_at
 ## Test Scripts
 
 ### Core User Flows
+
 - `01-user-customer-journey.ts` - Customer flow
-- `02-user-owner-journey.ts` - Owner flow  
+- `02-user-owner-journey.ts` - Owner flow
 - `05-user-admin-journey.ts` - Admin flow
 
 ### Admin Multi-Role Flows
+
 - `09-user-admin-as-customer.ts` - Admin as customer
 - `10-user-admin-as-owner.ts` - Admin as owner
 
 ### Additional Flows
+
 - `03-user-booking-flow.ts` - Complete booking
 - `04-user-payment-flow.ts` - Payment flow
 - `06-user-concurrent-operations.ts` - Concurrent ops

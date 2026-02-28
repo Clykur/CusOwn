@@ -144,7 +144,11 @@ function AdminDashboardContentInner() {
       .then(
         (statusData: {
           success?: boolean;
-          data?: { is_admin?: boolean; user_type?: string; profile_exists?: boolean };
+          data?: {
+            is_admin?: boolean;
+            user_type?: string;
+            profile_exists?: boolean;
+          };
           error?: string;
         }) => {
           if (!statusData.success) {
@@ -245,9 +249,10 @@ function AdminDashboardContentInner() {
 
     Promise.allSettled([
       adminFetch('/api/admin/metrics', { ...opts, token: authToken }).then((r) => r.json()),
-      adminFetch(`/api/admin/trends?days=${OVERVIEW_DAYS}`, { ...opts, token: authToken }).then(
-        (r) => r.json()
-      ),
+      adminFetch(`/api/admin/trends?days=${OVERVIEW_DAYS}`, {
+        ...opts,
+        token: authToken,
+      }).then((r) => r.json()),
       adminFetch(`/api/admin/revenue-metrics?days=${OVERVIEW_DAYS}`, {
         ...opts,
         token: authToken,
@@ -848,7 +853,11 @@ function BusinessesTab() {
     }
     setLoading(true);
     const ac = new AbortController();
-    adminFetch('/api/admin/businesses', { token, credentials: 'include', signal: ac.signal })
+    adminFetch('/api/admin/businesses', {
+      token,
+      credentials: 'include',
+      signal: ac.signal,
+    })
       .then((r) => r.json())
       .then((data) => {
         if (ac.signal.aborted) return;
@@ -1110,7 +1119,10 @@ function UsersTab() {
       setUsers(stale.data);
       setLoading(false);
       if (!token) return;
-      adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, { token, credentials: 'include' })
+      adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
+        token,
+        credentials: 'include',
+      })
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
@@ -1344,7 +1356,10 @@ function BookingsTab() {
       setBookings(stale.data);
       setLoading(false);
       if (!token) return;
-      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, { token, credentials: 'include' })
+      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
+        token,
+        credentials: 'include',
+      })
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
@@ -1629,7 +1644,10 @@ function AuditLogsTab() {
       setLogs(stale.data);
       setLoading(false);
       if (!token) return;
-      adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, { token, credentials: 'include' })
+      adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, {
+        token,
+        credentials: 'include',
+      })
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {

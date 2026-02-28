@@ -4,7 +4,10 @@ import { BookingWithDetails } from '@/types';
 export type BookingCreatedEvent = { booking: BookingWithDetails };
 export type BookingConfirmedEvent = { booking: BookingWithDetails };
 export type BookingRejectedEvent = { booking: BookingWithDetails };
-export type BookingCancelledEvent = { booking: BookingWithDetails; cancelledBy: string };
+export type BookingCancelledEvent = {
+  booking: BookingWithDetails;
+  cancelledBy: string;
+};
 
 export const emitBookingCreated = async (booking: BookingWithDetails): Promise<void> => {
   await eventBus.emit<BookingCreatedEvent>('booking:created', { booking });
@@ -22,5 +25,8 @@ export const emitBookingCancelled = async (
   booking: BookingWithDetails,
   cancelledBy: string
 ): Promise<void> => {
-  await eventBus.emit<BookingCancelledEvent>('booking:cancelled', { booking, cancelledBy });
+  await eventBus.emit<BookingCancelledEvent>('booking:cancelled', {
+    booking,
+    cancelledBy,
+  });
 };

@@ -61,7 +61,10 @@ export async function POST(request: NextRequest) {
 
     if (status === 'failed') {
       await paymentService.markPaymentFailed(payment.id, 'Payment failed via webhook', undefined);
-      return successResponse({ success: true, message: 'Payment marked as failed' });
+      return successResponse({
+        success: true,
+        message: 'Payment marked as failed',
+      });
     }
 
     if (status === 'success') {

@@ -54,6 +54,7 @@ CRON_SECRET=your-random-secret-key-here
 ```
 
 Generate a secure secret:
+
 ```bash
 openssl rand -base64 32
 ```

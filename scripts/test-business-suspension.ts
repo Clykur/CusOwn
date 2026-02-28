@@ -1,10 +1,19 @@
 #!/usr/bin/env ts-node
 
-import { supabase, TestRunner, getRandomBusiness, getRandomAvailableSlot, cleanupTestData } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getRandomBusiness,
+  getRandomAvailableSlot,
+  cleanupTestData,
+} from './test-utils';
 
 async function testBusinessSuspension() {
   const runner = new TestRunner();
-  const cleanup: { bookings: string[]; slots: string[] } = { bookings: [], slots: [] };
+  const cleanup: { bookings: string[]; slots: string[] } = {
+    bookings: [],
+    slots: [],
+  };
   let testBusinessId: string | null = null;
   let wasSuspended: boolean = false;
 
@@ -107,12 +116,14 @@ async function testBusinessSuspension() {
 
       console.log(`   Suspended business correctly excluded from getSalonByBookingLink`);
     });
-
   } finally {
     if (testBusinessId) {
       await supabase
         .from('businesses')
-        .update({ suspended: wasSuspended, suspended_at: wasSuspended ? null : null })
+        .update({
+          suspended: wasSuspended,
+          suspended_at: wasSuspended ? null : null,
+        })
         .eq('id', testBusinessId);
     }
     await cleanupTestData(cleanup.bookings, cleanup.slots);

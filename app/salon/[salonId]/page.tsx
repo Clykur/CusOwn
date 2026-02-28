@@ -603,9 +603,13 @@ export default function SalonDetailPage() {
                   const dateObj = new Date(date + 'T00:00:00');
                   const isToday = date === getTodayDateString();
                   const isSelected = selectedDate === date;
-                  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                  const dayName = dateObj.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                  });
                   const dayNum = dateObj.getDate();
-                  const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                  const month = dateObj.toLocaleDateString('en-US', {
+                    month: 'short',
+                  });
 
                   return (
                     <button

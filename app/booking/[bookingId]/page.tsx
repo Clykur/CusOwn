@@ -23,6 +23,7 @@ import ClockIcon from '@/src/icons/clock.svg';
 import BusinessesIcon from '@/src/icons/businesses.svg';
 import BookingsIcon from '@/src/icons/bookings.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
+import RefreshIcon from '@/src/icons/refresh.svg';
 
 export default function BookingStatusPage() {
   const params = useParams();
@@ -285,23 +286,26 @@ export default function BookingStatusPage() {
     <div className="w-full pb-24 flex flex-col gap-8">
       <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
         <div className="mb-8">
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">
-            {UI_CUSTOMER.HEADER_BOOKING_DETAILS}
-          </h1>
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="text-xl font-semibold text-slate-900">
+              {UI_CUSTOMER.HEADER_BOOKING_DETAILS}
+            </h1>
+
+            <button
+              type="button"
+              onClick={handleRefreshStatus}
+              disabled={refreshingStatus}
+              className="p-1 text-slate-600 hover:text-slate-900 disabled:opacity-50"
+            >
+              <RefreshIcon className={`w-5 h-5 ${refreshingStatus ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           <p className="text-sm text-slate-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
           <div className="flex flex-wrap items-center gap-2 text-slate-600">
             <span className="text-sm">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
             <span className="font-mono text-sm bg-slate-100 px-3 py-1 rounded-xl text-slate-900">
               {booking.booking_id}
             </span>
-            <button
-              type="button"
-              onClick={handleRefreshStatus}
-              disabled={refreshingStatus}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 underline hover:no-underline disabled:opacity-50"
-            >
-              {refreshingStatus ? 'Refreshing…' : 'Refresh status'}
-            </button>
             {whatsappUrl && (
               <div className="w-full mt-3">
                 <button

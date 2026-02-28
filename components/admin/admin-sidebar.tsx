@@ -30,11 +30,27 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Overview', href: getAdminDashboardUrl(), icon: DashboardIcon },
-  { name: 'Businesses', href: getAdminDashboardUrl('businesses'), icon: BusinessesIcon },
+  {
+    name: 'Businesses',
+    href: getAdminDashboardUrl('businesses'),
+    icon: BusinessesIcon,
+  },
   { name: 'Users', href: getAdminDashboardUrl('users'), icon: UsersIcon },
-  { name: 'Bookings', href: getAdminDashboardUrl('bookings'), icon: BookingsIcon },
-  { name: 'Audit Logs', href: getAdminDashboardUrl('audit'), icon: AuditLogsIcon },
-  { name: 'Cron Monitor', href: getAdminDashboardUrl('cron-monitor'), icon: CronMonitorIcon },
+  {
+    name: 'Bookings',
+    href: getAdminDashboardUrl('bookings'),
+    icon: BookingsIcon,
+  },
+  {
+    name: 'Audit Logs',
+    href: getAdminDashboardUrl('audit'),
+    icon: AuditLogsIcon,
+  },
+  {
+    name: 'Cron Monitor',
+    href: getAdminDashboardUrl('cron-monitor'),
+    icon: CronMonitorIcon,
+  },
   {
     name: 'Auth Management',
     href: getAdminDashboardUrl('auth-management'),
@@ -46,7 +62,11 @@ const navigation: NavItem[] = [
     href: getAdminDashboardUrl('success-metrics'),
     icon: SuccessMetricsIcon,
   },
-  { name: 'Analytics', href: getAdminDashboardUrl('analytics'), icon: AnalyticsIcon },
+  {
+    name: 'Analytics',
+    href: getAdminDashboardUrl('analytics'),
+    icon: AnalyticsIcon,
+  },
 ];
 
 const ADMIN_TAB_EVENT = 'admin-tab-change';

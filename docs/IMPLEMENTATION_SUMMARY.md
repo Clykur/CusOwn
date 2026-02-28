@@ -21,7 +21,7 @@
    **PostgreSQL Optimizations:**
    - Covering indexes for business/booking lookups
    - Partial indexes for filtered queries
-   - Optimized SELECT statements (no SELECT *)
+   - Optimized SELECT statements (no SELECT \*)
 
    **Next.js React cache():**
    - Business lookups (per-request deduplication)
@@ -45,27 +45,27 @@
 
 ### ✅ Safe to Cache (HTTP Headers)
 
-| Endpoint | Method | Cache TTL | Stale-While-Revalidate |
-|----------|--------|-----------|------------------------|
-| `/api/salons/[bookingLink]` | GET | 5min | 10min |
-| `/api/bookings/booking-id/[bookingId]` | GET | 30s (active) / 5min (final) | 60s / 10min |
-| `/api/salons/[bookingLink]/qr` | GET | 24h | 48h |
-| `/api/salons/list` | GET | 5min | 10min |
-| `/api/salons/locations` | GET | 30min | 1h |
-| `/api/owner/businesses` | GET | 1min | 2min |
-| `/api/customer/bookings` | GET | 30s | 1min |
+| Endpoint                               | Method | Cache TTL                   | Stale-While-Revalidate |
+| -------------------------------------- | ------ | --------------------------- | ---------------------- |
+| `/api/salons/[bookingLink]`            | GET    | 5min                        | 10min                  |
+| `/api/bookings/booking-id/[bookingId]` | GET    | 30s (active) / 5min (final) | 60s / 10min            |
+| `/api/salons/[bookingLink]/qr`         | GET    | 24h                         | 48h                    |
+| `/api/salons/list`                     | GET    | 5min                        | 10min                  |
+| `/api/salons/locations`                | GET    | 30min                       | 1h                     |
+| `/api/owner/businesses`                | GET    | 1min                        | 2min                   |
+| `/api/customer/bookings`               | GET    | 30s                         | 1min                   |
 
 ### ❌ NOT Cached (Critical)
 
-| Endpoint | Method | Reason |
-|----------|--------|--------|
-| `/api/slots` | GET | **Slot availability must be real-time** |
-| `/api/bookings` | POST | Write operation |
-| `/api/bookings/[id]/accept` | POST | Mutation operation |
-| `/api/bookings/[id]/reject` | POST | Mutation operation |
-| `/api/bookings/[id]/cancel` | POST | Mutation operation |
-| `/api/bookings/salon/[salonId]` | GET | Real-time management data |
-| `/api/salons` | POST | Write operation |
+| Endpoint                        | Method | Reason                                  |
+| ------------------------------- | ------ | --------------------------------------- |
+| `/api/slots`                    | GET    | **Slot availability must be real-time** |
+| `/api/bookings`                 | POST   | Write operation                         |
+| `/api/bookings/[id]/accept`     | POST   | Mutation operation                      |
+| `/api/bookings/[id]/reject`     | POST   | Mutation operation                      |
+| `/api/bookings/[id]/cancel`     | POST   | Mutation operation                      |
+| `/api/bookings/salon/[salonId]` | GET    | Real-time management data               |
+| `/api/salons`                   | POST   | Write operation                         |
 
 ---
 
@@ -99,6 +99,7 @@
 ## Database Optimizations
 
 ### New Indexes
+
 ```sql
 -- Covering index for business lookups
 idx_businesses_booking_link_optimized
@@ -117,7 +118,8 @@ idx_slots_business_date_status_optimized
 ```
 
 ### Query Optimizations
-- ✅ Specific SELECT columns (no SELECT *)
+
+- ✅ Specific SELECT columns (no SELECT \*)
 - ✅ Deterministic WHERE clauses
 - ✅ Proper ORDER BY with indexed columns
 - ✅ Covering indexes where possible
@@ -127,12 +129,14 @@ idx_slots_business_date_status_optimized
 ## Performance Impact
 
 ### Expected Improvements
+
 - **Business Lookups**: 5-10x faster (indexes + HTTP cache)
 - **Booking Status**: 3-5x faster (indexes + HTTP cache)
 - **Public Pages**: 10x faster (CDN edge caching)
 - **Slot Queries**: Optimized (indexes only, no cache overhead)
 
 ### Database Load Reduction
+
 - **60-70% reduction** on cached endpoints
 - **Slot queries remain optimized** (indexes)
 - **No cache invalidation overhead**
@@ -142,24 +146,30 @@ idx_slots_business_date_status_optimized
 ## Setup Required
 
 ### 1. Database Migrations
+
 Run in Supabase SQL Editor:
+
 ```sql
 -- database/migration_optimize_queries.sql
 -- database/migration_add_metrics.sql
 ```
 
 ### 2. Remove Redis Package
+
 ```bash
 npm uninstall @upstash/redis
 npm install
 ```
 
 ### 3. Environment Variables
+
 Remove from `.env.local`:
+
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
 ### 4. Verify
+
 ```bash
 # Health check (should not mention Redis)
 curl http://localhost:3000/api/health
@@ -193,16 +203,19 @@ curl http://localhost:3000/api/salons/[bookingLink]
 ## Files Changed
 
 ### Deleted
+
 - `lib/redis/client.ts`
 - `lib/cache/cache.service.ts`
 
 ### Created
+
 - `lib/cache/next-cache.ts` - HTTP cache headers
 - `lib/cache/client-cache.ts` - Client cache utilities
 - `database/migration_optimize_queries.sql`
 - `database/migration_add_metrics.sql`
 
 ### Modified
+
 - All service files (removed cacheService references)
 - All API routes (added cache headers)
 - Rate limiting (in-memory)
@@ -213,28 +226,30 @@ curl http://localhost:3000/api/salons/[bookingLink]
 
 ## TTL Strategy Summary
 
-| Data Type | Cache Layer | TTL | Rationale |
-|-----------|------------|-----|-----------|
-| Business Profile | HTTP + React cache | 5min | Public, changes infrequently |
-| Booking Status (Active) | HTTP | 30s | Needs freshness |
-| Booking Status (Final) | HTTP | 5min | Static once finalized |
-| QR Codes | HTTP | 24h | Never changes |
-| Locations | HTTP | 30min | Changes rarely |
-| Owner Businesses | HTTP | 1min | User's data, moderate freshness |
-| Customer Bookings | HTTP | 30s | User's data, needs freshness |
-| **Slot Availability** | **None** | **N/A** | **CRITICAL - Must be real-time** |
+| Data Type               | Cache Layer        | TTL     | Rationale                        |
+| ----------------------- | ------------------ | ------- | -------------------------------- |
+| Business Profile        | HTTP + React cache | 5min    | Public, changes infrequently     |
+| Booking Status (Active) | HTTP               | 30s     | Needs freshness                  |
+| Booking Status (Final)  | HTTP               | 5min    | Static once finalized            |
+| QR Codes                | HTTP               | 24h     | Never changes                    |
+| Locations               | HTTP               | 30min   | Changes rarely                   |
+| Owner Businesses        | HTTP               | 1min    | User's data, moderate freshness  |
+| Customer Bookings       | HTTP               | 30s     | User's data, needs freshness     |
+| **Slot Availability**   | **None**           | **N/A** | **CRITICAL - Must be real-time** |
 
 ---
 
 ## Confirmation
 
 ✅ **Slot integrity is preserved**
+
 - Slots always fetched live
 - No stale reservation data
 - No race conditions
 - Real-time availability guaranteed
 
 ✅ **Production-ready**
+
 - No external dependencies
 - Free-tier friendly
 - Scalable architecture

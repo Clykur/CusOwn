@@ -250,7 +250,9 @@ export default function SetupPage() {
       }
 
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch(API_ROUTES.SALONS, {

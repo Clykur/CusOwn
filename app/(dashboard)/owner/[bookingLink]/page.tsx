@@ -276,8 +276,12 @@ export default function OwnerDashboardPage() {
 
     try {
       const [holidaysRes, closuresRes] = await Promise.all([
-        fetch(`/api/businesses/${salon.id}/downtime/holidays`, { credentials: 'include' }),
-        fetch(`/api/businesses/${salon.id}/downtime/closures`, { credentials: 'include' }),
+        fetch(`/api/businesses/${salon.id}/downtime/holidays`, {
+          credentials: 'include',
+        }),
+        fetch(`/api/businesses/${salon.id}/downtime/closures`, {
+          credentials: 'include',
+        }),
       ]);
 
       // Check if tab is still visible before processing
@@ -314,7 +318,9 @@ export default function OwnerDashboardPage() {
     setPhotosLoading(true);
     setPhotoError(null);
     try {
-      const res = await fetch(API_ROUTES.MEDIA_BUSINESS(businessId), { credentials: 'include' });
+      const res = await fetch(API_ROUTES.MEDIA_BUSINESS(businessId), {
+        credentials: 'include',
+      });
       const result = await res.json();
       if (!res.ok || !result?.success) {
         throw new Error(result?.error || ERROR_MESSAGES.LOADING_ERROR);
@@ -371,7 +377,9 @@ export default function OwnerDashboardPage() {
       const authHeaders: Record<string, string> = {};
       if (csrfToken) authHeaders['x-csrf-token'] = csrfToken;
       if (supabaseAuth) {
-        const { data: { session } } = await supabaseAuth.auth.getSession();
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
         if (session?.access_token) {
           authHeaders['Authorization'] = `Bearer ${session.access_token}`;
         }
@@ -387,7 +395,9 @@ export default function OwnerDashboardPage() {
         });
         const uploadResult = await uploadRes.json();
         if (!uploadRes.ok || !uploadResult?.success) {
-          throw new Error(uploadResult?.error || uploadResult?.message || ERROR_MESSAGES.MEDIA_UPLOAD_FAILED);
+          throw new Error(
+            uploadResult?.error || uploadResult?.message || ERROR_MESSAGES.MEDIA_UPLOAD_FAILED
+          );
         }
       }
       setSelectedFiles([]);
@@ -414,7 +424,9 @@ export default function OwnerDashboardPage() {
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
       if (supabaseAuth) {
-        const { data: { session } } = await supabaseAuth.auth.getSession();
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
         if (session?.access_token) {
           headers['Authorization'] = `Bearer ${session.access_token}`;
         }
@@ -426,7 +438,9 @@ export default function OwnerDashboardPage() {
       });
       const deleteResult = await deleteRes.json();
       if (!deleteRes.ok || !deleteResult?.success) {
-        throw new Error(deleteResult?.error || deleteResult?.message || ERROR_MESSAGES.UNEXPECTED_ERROR);
+        throw new Error(
+          deleteResult?.error || deleteResult?.message || ERROR_MESSAGES.UNEXPECTED_ERROR
+        );
       }
     } catch (err) {
       setShopPhotos(previousPhotos);
@@ -456,7 +470,10 @@ export default function OwnerDashboardPage() {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({ holiday_date: newHolidayDate, holiday_name: newHolidayName }),
+        body: JSON.stringify({
+          holiday_date: newHolidayDate,
+          holiday_name: newHolidayName,
+        }),
       });
       if (response.ok) {
         const result = await response.json();
@@ -543,7 +560,9 @@ export default function OwnerDashboardPage() {
     setEditError(null);
     try {
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const res = await fetch(`/api/owner/businesses/${encodeURIComponent(bookingLink)}`, {
         method: 'PATCH',
@@ -842,7 +861,12 @@ export default function OwnerDashboardPage() {
                   <input
                     type="time"
                     value={editForm.opening_time}
-                    onChange={(e) => setEditForm((f) => ({ ...f, opening_time: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        opening_time: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
                   />
                 </div>
@@ -853,7 +877,12 @@ export default function OwnerDashboardPage() {
                   <input
                     type="time"
                     value={editForm.closing_time}
-                    onChange={(e) => setEditForm((f) => ({ ...f, closing_time: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        closing_time: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
                   />
                 </div>
@@ -865,7 +894,10 @@ export default function OwnerDashboardPage() {
                 <select
                   value={editForm.slot_duration}
                   onChange={(e) =>
-                    setEditForm((f) => ({ ...f, slot_duration: Number(e.target.value) }))
+                    setEditForm((f) => ({
+                      ...f,
+                      slot_duration: Number(e.target.value),
+                    }))
                   }
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
                 >
@@ -971,9 +1003,18 @@ export default function OwnerDashboardPage() {
               {selectedFiles.map((file, idx) => {
                 const url = URL.createObjectURL(file);
                 return (
-                  <div key={file.name + file.size + idx} className="relative group overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                  <div
+                    key={file.name + file.size + idx}
+                    className="relative group overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                  >
                     <div className="relative h-40 w-full">
-                       <Image src={url} alt={file.name} className="object-cover w-full h-full rounded-lg" width={320} height={160} />
+                      <Image
+                        src={url}
+                        alt={file.name}
+                        className="object-cover w-full h-full rounded-lg"
+                        width={320}
+                        height={160}
+                      />
                       {/* X button for removing image */}
                       <button
                         type="button"
@@ -981,14 +1022,30 @@ export default function OwnerDashboardPage() {
                         title="Remove image"
                         onClick={() => handleRemoveSelectedFile(idx)}
                       >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     </div>
                     {/* Status badge: Pending/Uploading/Success */}
                     <div className="absolute bottom-2 left-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-slate-700 border border-slate-200">
-                      {uploadQueue[idx]?.status === 'uploading' ? 'Uploading…' : uploadQueue[idx]?.status === 'success' ? 'Uploaded' : uploadQueue[idx]?.status === 'error' ? 'Error' : 'Pending'}
+                      {uploadQueue[idx]?.status === 'uploading'
+                        ? 'Uploading…'
+                        : uploadQueue[idx]?.status === 'success'
+                          ? 'Uploaded'
+                          : uploadQueue[idx]?.status === 'error'
+                            ? 'Error'
+                            : 'Pending'}
                     </div>
                   </div>
                 );
@@ -1015,7 +1072,10 @@ export default function OwnerDashboardPage() {
                 skeletonCount = shopPhotos.length;
               }
               return Array.from({ length: skeletonCount }).map((_, i) => (
-                <div key={i} className="rounded-lg border border-gray-200 bg-white p-3 flex flex-col items-center justify-center h-40 skeleton-shimmer">
+                <div
+                  key={i}
+                  className="rounded-lg border border-gray-200 bg-white p-3 flex flex-col items-center justify-center h-40 skeleton-shimmer"
+                >
                   <div className="h-28 w-full bg-gray-200 rounded mb-3" />
                 </div>
               ));
@@ -1024,11 +1084,23 @@ export default function OwnerDashboardPage() {
         ) : shopPhotos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
-              <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              <svg
+                className="w-8 h-8 text-slate-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+                />
               </svg>
             </div>
-            <p className="text-sm text-slate-500">No shop photos yet. Upload your first photo above.</p>
+            <p className="text-sm text-slate-500">
+              No shop photos yet. Upload your first photo above.
+            </p>
           </div>
         ) : (
           <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
@@ -1058,7 +1130,12 @@ export default function OwnerDashboardPage() {
                     <span className="block h-4 w-4 animate-spin border-2 border-red-400 border-t-transparent rounded-full" />
                   ) : (
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
                     </svg>
                   )}
                 </button>
@@ -1074,19 +1151,21 @@ export default function OwnerDashboardPage() {
           {/* Bookings tab removed from per-salon page; moved to owner dashboard */}
           <button
             onClick={() => setActiveTab('slots')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${activeTab === 'slots'
-              ? 'bg-white text-black shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-              }`}
+            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+              activeTab === 'slots'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
           >
             Slots
           </button>
           <button
             onClick={() => setActiveTab('downtime')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${activeTab === 'downtime'
-              ? 'bg-white text-black shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-              }`}
+            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+              activeTab === 'downtime'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
           >
             Downtime
           </button>

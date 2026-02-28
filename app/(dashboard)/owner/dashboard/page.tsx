@@ -103,7 +103,10 @@ export default function OwnerDashboardPage() {
               if (signal?.aborted || !res.ok) return;
               const json = await res.json();
               if (json.success && Array.isArray(json.data)) {
-                const items = json.data.map((it: any) => ({ ...it, salon: it.salon || b }));
+                const items = json.data.map((it: any) => ({
+                  ...it,
+                  salon: it.salon || b,
+                }));
                 aggregated.push(...items);
               }
             } catch (err) {
@@ -168,7 +171,11 @@ export default function OwnerDashboardPage() {
       setBookings((prev) =>
         prev.map((b) =>
           b.id === bookingId
-            ? { ...b, status: 'confirmed' as const, updated_at: new Date().toISOString() }
+            ? {
+                ...b,
+                status: 'confirmed' as const,
+                updated_at: new Date().toISOString(),
+              }
             : b
         )
       );
@@ -213,7 +220,11 @@ export default function OwnerDashboardPage() {
       setBookings((prev) =>
         prev.map((b) =>
           b.id === bookingId
-            ? { ...b, status: 'rejected' as const, updated_at: new Date().toISOString() }
+            ? {
+                ...b,
+                status: 'rejected' as const,
+                updated_at: new Date().toISOString(),
+              }
             : b
         )
       );
@@ -262,7 +273,11 @@ export default function OwnerDashboardPage() {
           prevSnapshot = prev;
           return prev.map((b) =>
             b.id === bookingId
-              ? { ...b, status: 'pending' as const, updated_at: new Date().toISOString() }
+              ? {
+                  ...b,
+                  status: 'pending' as const,
+                  updated_at: new Date().toISOString(),
+                }
               : b
           );
         });
@@ -310,7 +325,11 @@ export default function OwnerDashboardPage() {
           prevSnapshot = prev;
           return prev.map((b) =>
             b.id === bookingId
-              ? { ...b, status: 'pending' as const, updated_at: new Date().toISOString() }
+              ? {
+                  ...b,
+                  status: 'pending' as const,
+                  updated_at: new Date().toISOString(),
+                }
               : b
           );
         });

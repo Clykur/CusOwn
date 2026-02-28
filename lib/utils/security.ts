@@ -23,8 +23,8 @@ export type ResourceType =
   | 'admin-booking';
 
 // Get secret for resource type (all use same secret for now, but can be separated)
-const getResourceSecret = (resourceType: ResourceType): string => {
-  return env.security.salonTokenSecret; // Using same secret for all resources
+const getResourceSecret = (resourceType: ResourceType): string | undefined => {
+  return env.security.salonTokenSecret;
 };
 
 // Generate secure token for any resource using HMAC with timestamp
@@ -49,7 +49,6 @@ export const generateResourceToken = (
   hmac.update(resourceType); // Scoped: no privilege escalation (accept token cannot be used for admin)
   hmac.update(resourceId);
   hmac.update(time.toString());
-  hmac.update(secret);
   return hmac.digest('hex');
 };
 
@@ -211,14 +210,20 @@ export const validateResourceToken = (
       return false;
     }
 
-    // Legacy support for 16/32 char tokens
+    // Legacy support for 16/32 char tokens (old format: HMAC(resourceType + resourceId))
     if (token.length === 16 || token.length === 32) {
-      const secret = getResourceSecret(resourceType);
       const hmac = createHmac('sha256', secret);
       hmac.update(resourceType);
       hmac.update(resourceId);
-      const legacyToken = hmac.digest('hex').substring(0, token.length);
-      return timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(legacyToken, 'hex'));
+      const legacyToken = hmac.digest('hex');
+
+      const expected = legacyToken.substring(0, token.length);
+
+      try {
+        return timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expected, 'hex'));
+      } catch {
+        return false;
+      }
     }
 
     return false;
@@ -245,8 +250,8 @@ export const getSecureResourceUrl = (
   const token = generateResourceToken(resourceType, resourceId);
   let url = baseUrl || getBaseUrl();
   // In production, avoid returning localhost from getBaseUrl() (serverless/internal routing can expose localhost).
-  if (process.env.NODE_ENV === 'production' && /localhost|127\.0\.0\.1/.test(url)) {
-    url = (process.env.NEXT_PUBLIC_APP_URL || 'https://cusown.clykur.com').replace(/\/$/, '');
+  if (env.nodeEnv === 'production' && /localhost|127\.0\.0\.1/.test(url)) {
+    url = env.app.baseUrl.replace(/\/$/, '');
   }
   const encodedToken = encodeURIComponent(token);
   const urlPatterns: Record<ResourceType, string> = {

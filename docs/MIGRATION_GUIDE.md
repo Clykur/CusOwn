@@ -9,6 +9,7 @@ This guide helps you migrate from the basic CI/CD pipeline to the hardened, prod
 ### Step 1: Backup Current Workflow
 
 The old workflow is preserved at `.github/workflows/ci-cd.yml`. You can:
+
 - Keep it as a backup
 - Rename it to `ci-cd-legacy.yml`
 - Or delete it after migration is complete
@@ -18,10 +19,11 @@ The old workflow is preserved at `.github/workflows/ci-cd.yml`. You can:
 The new workflow is at `.github/workflows/ci-cd-hardened.yml`. To activate it:
 
 1. **Option A: Replace Old Workflow** (Recommended)
+
    ```bash
    # Rename old workflow
    mv .github/workflows/ci-cd.yml .github/workflows/ci-cd-legacy.yml
-   
+
    # Rename new workflow
    mv .github/workflows/ci-cd-hardened.yml .github/workflows/ci-cd.yml
    ```
@@ -58,6 +60,7 @@ The new workflow is at `.github/workflows/ci-cd-hardened.yml`. To activate it:
 Ensure all required secrets are set in GitHub:
 
 **Required Secrets:**
+
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
@@ -66,12 +69,14 @@ Ensure all required secrets are set in GitHub:
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 **Optional but Recommended:**
+
 - `NEXT_PUBLIC_APP_URL` (for production)
 - `SALON_TOKEN_SECRET` (for production)
 
 ### Step 6: Test the Pipeline
 
 1. **Create a Test PR:**
+
    ```bash
    git checkout -b test/hardened-pipeline
    # Make a small change
@@ -97,17 +102,17 @@ Ensure all required secrets are set in GitHub:
 
 ### Old Workflow vs New Workflow
 
-| Feature | Old | New |
-|---------|-----|-----|
-| **Security Scanning** | ❌ Basic npm audit only | ✅ Comprehensive security scanning |
-| **Secret Scanning** | ❌ None | ✅ Automated secret detection |
-| **Branch Protection** | ❌ Not enforced | ✅ Enforced in workflow |
-| **Environment Validation** | ❌ Basic | ✅ Comprehensive validation |
-| **Manual Approval** | ❌ None | ✅ Required for production |
-| **Deployment Audit** | ❌ None | ✅ Full audit logging |
-| **Lockfile Enforcement** | ❌ Not checked | ✅ Required and verified |
-| **Post-install Scripts** | ⚠️ Enabled | ✅ Disabled in CI |
-| **Fail-fast Behavior** | ⚠️ Some checks can fail | ✅ All checks must pass |
+| Feature                    | Old                     | New                                |
+| -------------------------- | ----------------------- | ---------------------------------- |
+| **Security Scanning**      | ❌ Basic npm audit only | ✅ Comprehensive security scanning |
+| **Secret Scanning**        | ❌ None                 | ✅ Automated secret detection      |
+| **Branch Protection**      | ❌ Not enforced         | ✅ Enforced in workflow            |
+| **Environment Validation** | ❌ Basic                | ✅ Comprehensive validation        |
+| **Manual Approval**        | ❌ None                 | ✅ Required for production         |
+| **Deployment Audit**       | ❌ None                 | ✅ Full audit logging              |
+| **Lockfile Enforcement**   | ❌ Not checked          | ✅ Required and verified           |
+| **Post-install Scripts**   | ⚠️ Enabled              | ✅ Disabled in CI                  |
+| **Fail-fast Behavior**     | ⚠️ Some checks can fail | ✅ All checks must pass            |
 
 ## Rollback Plan
 
@@ -129,6 +134,7 @@ If you need to rollback:
 ### Issue: Status checks not appearing
 
 **Solution:**
+
 - Ensure workflow file is named correctly
 - Check that workflow runs on pull requests
 - Verify job names match exactly
@@ -136,6 +142,7 @@ If you need to rollback:
 ### Issue: Production deployment blocked
 
 **Solution:**
+
 - Verify manual approval is configured
 - Check authorized reviewers are assigned
 - Ensure deployment is from `main` branch
@@ -143,6 +150,7 @@ If you need to rollback:
 ### Issue: Security scan fails
 
 **Solution:**
+
 - Review security scan output
 - Fix identified vulnerabilities
 - Update dependencies if needed
@@ -150,6 +158,7 @@ If you need to rollback:
 ### Issue: Build fails with missing env vars
 
 **Solution:**
+
 - Verify all required secrets are set
 - Check secret names match exactly
 - Ensure secrets are not empty
@@ -178,6 +187,6 @@ If you encounter issues:
 
 ---
 
-**Migration Date**: _______________
-**Migrated By**: _______________
+**Migration Date**: **\*\***\_\_\_**\*\***
+**Migrated By**: **\*\***\_\_\_**\*\***
 **Status**: [ ] Complete [ ] In Progress [ ] Blocked

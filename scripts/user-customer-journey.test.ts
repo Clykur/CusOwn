@@ -5,11 +5,22 @@
  * Simulates a complete customer journey from browsing to booking
  */
 
-import { supabase, TestRunner, getRandomBusiness, getRandomAvailableSlot, getOrCreateTestUser, cleanupTestData, simulateUserAction } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getRandomBusiness,
+  getRandomAvailableSlot,
+  getOrCreateTestUser,
+  cleanupTestData,
+  simulateUserAction,
+} from './test-utils';
 
 async function testCustomerJourney() {
   const runner = new TestRunner();
-  const cleanup: { bookings: string[]; slots: string[] } = { bookings: [], slots: [] };
+  const cleanup: { bookings: string[]; slots: string[] } = {
+    bookings: [],
+    slots: [],
+  };
   let customer: any = null;
 
   try {
@@ -44,7 +55,9 @@ async function testCustomerJourney() {
     // STEP 3: View business details
     await runner.runTest('STEP 3: View business details', async () => {
       const business = await getRandomBusiness();
-      await simulateUserAction('Customer views business details', { businessName: business.salon_name });
+      await simulateUserAction('Customer views business details', {
+        businessName: business.salon_name,
+      });
 
       const { data, error } = await supabase
         .from('businesses')
@@ -82,7 +95,7 @@ async function testCustomerJourney() {
           date.setDate(date.getDate() + i);
           dates.push(date.toISOString().split('T')[0]);
         }
-        
+
         let slotsFound = false;
         for (const dateStr of dates) {
           const { data, error: queryError } = await supabase
@@ -93,7 +106,7 @@ async function testCustomerJourney() {
             .eq('date', dateStr)
             .order('start_time', { ascending: true })
             .limit(10);
-          
+
           if (!queryError && data && data.length > 0) {
             console.log(`   Found ${data.length} available slots for ${dateStr}`);
             slotsFound = true;
@@ -102,9 +115,11 @@ async function testCustomerJourney() {
             break;
           }
         }
-        
+
         if (!slotsFound) {
-          throw new Error(`No available slots found: ${error instanceof Error ? error.message : String(error)}`);
+          throw new Error(
+            `No available slots found: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
       }
     });
@@ -112,8 +127,10 @@ async function testCustomerJourney() {
     // STEP 5: Create booking
     await runner.runTest('STEP 5: Customer creates booking', async () => {
       const business = (global as any).selectedBusiness;
-      const slot = (global as any).selectedSlot || await getRandomAvailableSlot(business.id);
-      await simulateUserAction('Customer creates booking', { slotTime: slot.start_time });
+      const slot = (global as any).selectedSlot || (await getRandomAvailableSlot(business.id));
+      await simulateUserAction('Customer creates booking', {
+        slotTime: slot.start_time,
+      });
 
       const bookingId = `CUST-${Date.now()}`;
       const { data, error } = await supabase.rpc('create_booking_atomically', {
@@ -136,7 +153,7 @@ async function testCustomerJourney() {
       cleanup.bookings.push(data.booking_id);
       cleanup.slots.push(slot.id);
       (global as any).customerBookingId = data.booking_id;
-      
+
       console.log(`   ✅ Booking created successfully`);
       console.log(`   📋 Booking ID: ${bookingId}`);
       console.log(`   🏢 Business: ${business.salon_name}`);
@@ -152,7 +169,9 @@ async function testCustomerJourney() {
 
       const { data, error } = await supabase
         .from('bookings')
-        .select('*, business:business_id(salon_name, location), slot:slot_id(date, start_time, end_time)')
+        .select(
+          '*, business:business_id(salon_name, location), slot:slot_id(date, start_time, end_time)'
+        )
         .eq('customer_user_id', customer.id)
         .order('created_at', { ascending: false });
 
@@ -160,24 +179,24 @@ async function testCustomerJourney() {
         throw new Error(`Failed to fetch bookings: ${error.message}`);
       }
 
-      const myBooking = data?.find(b => b.id === (global as any).customerBookingId);
+      const myBooking = data?.find((b) => b.id === (global as any).customerBookingId);
       if (!myBooking) {
         throw new Error('Created booking not found in customer bookings');
       }
 
       const bookings = data || [];
       const statusCounts = {
-        pending: bookings.filter(b => b.status === 'pending').length,
-        confirmed: bookings.filter(b => b.status === 'confirmed').length,
-        cancelled: bookings.filter(b => b.status === 'cancelled').length,
+        pending: bookings.filter((b) => b.status === 'pending').length,
+        confirmed: bookings.filter((b) => b.status === 'confirmed').length,
+        cancelled: bookings.filter((b) => b.status === 'cancelled').length,
       };
-      
+
       console.log(`   📊 Bookings Overview:`);
       console.log(`      Total Bookings: ${bookings.length}`);
       console.log(`      Pending: ${statusCounts.pending}`);
       console.log(`      Confirmed: ${statusCounts.confirmed}`);
       console.log(`      Cancelled: ${statusCounts.cancelled}`);
-      
+
       if (myBooking) {
         console.log(`   📋 Latest Booking:`);
         console.log(`      ID: ${myBooking.booking_id}`);
@@ -210,10 +229,11 @@ async function testCustomerJourney() {
       console.log(`      Phone: ${data.customer_phone}`);
       console.log(`      Business: ${data.business?.salon_name || 'N/A'}`);
       console.log(`      Date: ${data.slot?.date || 'N/A'}`);
-      console.log(`      Time: ${data.slot?.start_time || 'N/A'} - ${data.slot?.end_time || 'N/A'}`);
+      console.log(
+        `      Time: ${data.slot?.start_time || 'N/A'} - ${data.slot?.end_time || 'N/A'}`
+      );
       console.log(`      Created: ${new Date(data.created_at).toLocaleString()}`);
     });
-
   } finally {
     await cleanupTestData(cleanup.bookings, cleanup.slots);
   }

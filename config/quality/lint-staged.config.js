@@ -1,19 +1,20 @@
 // Strict staged-file checks: no auto-fixes, no warnings.
+
+const SOURCE_DIRS = ['app/', 'components/', 'lib/', 'services/', 'repositories/', 'middleware.ts'];
+
 module.exports = {
   '*.{js,jsx,ts,tsx,json,css,md,yml,yaml}': [
     'prettier --check --config config/quality/prettier.config.js',
   ],
+
   '*.{js,jsx,ts,tsx}': (files) => {
-    const ignoredSuffixes = [
-      'next.config.js',
-      'config/quality/lint-staged.config.js',
-      'config/quality/prettier.config.js',
-    ];
-    const lintableFiles = files.filter(
-      (file) => !ignoredSuffixes.some((suffix) => file.endsWith(suffix))
+    const lintableFiles = files.filter((file) =>
+      SOURCE_DIRS.some((dir) => (dir.endsWith('.ts') ? file === dir : file.startsWith(dir)))
     );
+
     if (lintableFiles.length === 0) return [];
-    const quotedFiles = lintableFiles.map((file) => JSON.stringify(file)).join(' ');
-    return [`eslint --max-warnings=0 ${quotedFiles}`];
+
+    const quoted = lintableFiles.map((f) => JSON.stringify(f)).join(' ');
+    return [`eslint --max-warnings=0 ${quoted}`];
   },
 };

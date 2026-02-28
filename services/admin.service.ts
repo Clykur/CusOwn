@@ -296,7 +296,12 @@ export class AdminService {
 
     const recentByBusiness = new Map<
       string,
-      { id: string; customer_name: string; status: string; created_at: string }[]
+      {
+        id: string;
+        customer_name: string;
+        status: string;
+        created_at: string;
+      }[]
     >();
     (recentBookingsRes.data || []).forEach((r) => {
       const list = recentByBusiness.get(r.business_id) ?? [];
@@ -547,9 +552,11 @@ export class AdminService {
   }
 
   /** Restore a soft-deleted user account (admin only). Must be within 30-day retention period. */
-  async restoreDeletedUser(
-    userId: string
-  ): Promise<{ user_id: string; restored_at: string; businesses_restored: number }> {
+  async restoreDeletedUser(userId: string): Promise<{
+    user_id: string;
+    restored_at: string;
+    businesses_restored: number;
+  }> {
     const supabase = requireSupabaseAdmin();
     const { data, error } = await supabase.rpc('restore_deleted_user_account', {
       p_user_id: userId,
@@ -673,7 +680,12 @@ export class AdminService {
 
     // Group by date
     const trends: {
-      [key: string]: { date: string; total: number; confirmed: number; rejected: number };
+      [key: string]: {
+        date: string;
+        total: number;
+        confirmed: number;
+        rejected: number;
+      };
     } = {};
 
     bookings.forEach((booking) => {
@@ -761,7 +773,10 @@ export class AdminService {
     const map = new Map<string, { amount_cents: number; status: string }>();
     for (const p of payments || []) {
       if (!map.has(p.booking_id)) {
-        map.set(p.booking_id, { amount_cents: p.amount_cents ?? 0, status: p.status ?? 'unknown' });
+        map.set(p.booking_id, {
+          amount_cents: p.amount_cents ?? 0,
+          status: p.status ?? 'unknown',
+        });
       }
     }
     return map;

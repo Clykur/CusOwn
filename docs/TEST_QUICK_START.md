@@ -3,12 +3,14 @@
 ## Prerequisites
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Set up environment:**
    Create `.env.local` with:
+
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -25,6 +27,7 @@ npm run test:all
 ```
 
 This will run all 8 test suites sequentially:
+
 1. ✅ Atomic Booking Creation
 2. ✅ State Machines
 3. ✅ Business Suspension
@@ -50,11 +53,13 @@ npm run test:slots             # Test slot operations
 ## What Gets Tested
 
 All tests use **real data** from your database:
+
 - ✅ Real businesses
 - ✅ Real slots
 - ✅ Real database connections
 
 Tests automatically:
+
 - ✅ Clean up after themselves
 - ✅ Report pass/fail status
 - ✅ Provide detailed error messages
@@ -73,6 +78,7 @@ Tests automatically:
 ## Next Steps
 
 After running tests, check:
+
 - ✅ All tests pass
 - ✅ No errors in output
 - ✅ Database is clean (test data removed)

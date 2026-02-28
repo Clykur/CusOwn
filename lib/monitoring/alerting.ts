@@ -16,7 +16,7 @@ export class AlertingService {
     const thresholds = await successMetricsService.checkThresholds(metrics);
     const alerts: Alert[] = [];
 
-    thresholds.forEach(t => {
+    thresholds.forEach((t) => {
       if (t.status === 'fail') {
         const severity = this.getSeverity(t.metric, t.value, t.threshold);
         alerts.push({
@@ -34,7 +34,11 @@ export class AlertingService {
     return alerts;
   }
 
-  private getSeverity(metric: string, value: number, threshold: number): 'critical' | 'warning' | 'info' {
+  private getSeverity(
+    metric: string,
+    value: number,
+    threshold: number
+  ): 'critical' | 'warning' | 'info' {
     const deviation = Math.abs(value - threshold) / threshold;
 
     if (metric.includes('Uptime') || metric.includes('Error Rate')) {
@@ -68,8 +72,7 @@ export class AlertingService {
         metric_name: `alerts.${alert.severity}.${alert.metric.toLowerCase().replace(/\s+/g, '_')}`,
         increment_value: 1,
       });
-    } catch {
-    }
+    } catch {}
   }
 
   async getRecentAlerts(limit: number = 50): Promise<Alert[]> {
@@ -83,10 +86,14 @@ export class AlertingService {
         .order('updated_at', { ascending: false })
         .limit(limit);
 
-      return (data || []).map(m => ({
+      return (data || []).map((m) => ({
         id: m.metric,
         metric: m.metric.replace('alerts.', ''),
-        severity: m.metric.includes('critical') ? 'critical' : m.metric.includes('warning') ? 'warning' : 'info',
+        severity: m.metric.includes('critical')
+          ? 'critical'
+          : m.metric.includes('warning')
+            ? 'warning'
+            : 'info',
         message: `Alert: ${m.metric}`,
         value: m.value || 0,
         threshold: 0,

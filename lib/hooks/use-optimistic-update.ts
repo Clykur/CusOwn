@@ -27,5 +27,11 @@ export function useOptimisticUpdate<T>(
     setIsOptimistic(false);
   }, []);
 
-  return { data, isOptimistic, updateOptimistic, confirmUpdate, rollbackUpdate };
+  return {
+    data,
+    isOptimistic,
+    updateOptimistic,
+    confirmUpdate,
+    rollbackUpdate,
+  };
 }

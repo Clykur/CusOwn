@@ -35,7 +35,10 @@ export default function KPISection({ analytics }: { analytics: any }) {
     { title: 'Total Revenue', value: currency(analytics?.totalRevenueCents) },
     { title: 'Total Bookings', value: String(bookings) },
     { title: 'Conversion Rate', value: `${analytics?.conversionRate ?? 0}%` },
-    { title: 'Avg Ticket Size', value: currency(analytics?.averageTicketCents) },
+    {
+      title: 'Avg Ticket Size',
+      value: currency(analytics?.averageTicketCents),
+    },
     { title: 'No Show Rate', value: `${analytics?.noShowRate ?? 0}%` },
     { title: 'Peak Hour', value: formatPeakHour(analytics?.peakHour) },
   ];

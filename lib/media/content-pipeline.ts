@@ -46,7 +46,10 @@ export async function stripExifAndRecompress(
             ? 'webp'
             : 'gif';
     const out = await pipeline
-      .toFormat(format as 'jpeg' | 'png' | 'webp' | 'gif', { quality: 85, effort: 4 })
+      .toFormat(format as 'jpeg' | 'png' | 'webp' | 'gif', {
+        quality: 85,
+        effort: 4,
+      })
       .toBuffer();
     return {
       buffer: out,

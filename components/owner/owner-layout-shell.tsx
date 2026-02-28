@@ -41,7 +41,9 @@ export default function OwnerLayoutShell({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/session', { credentials: 'include' });
+        const res = await fetch('/api/auth/session', {
+          credentials: 'include',
+        });
         const json = await res.json();
         const data = json?.data ?? json;
         const user = data?.user ?? null;
@@ -56,6 +58,13 @@ export default function OwnerLayoutShell({
           id: user.id,
           email: user.email,
           full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
+          user_type: (
+            profile as {
+              user_type?: 'owner' | 'customer' | 'both' | 'admin';
+            } | null
+          )?.user_type,
+          profile_media_id: (profile as { profile_media_id?: string | null } | null)
+            ?.profile_media_id,
         });
       } catch {
         if (!cancelled) {

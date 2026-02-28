@@ -61,8 +61,12 @@ export default function PullToRefresh({ onRefresh, children, threshold = 80 }: P
       }
     };
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, {
+      passive: false,
+    });
+    container.addEventListener('touchmove', handleTouchMove, {
+      passive: false,
+    });
     container.addEventListener('touchend', handleTouchEnd);
 
     return () => {
@@ -114,7 +118,11 @@ export default function PullToRefresh({ onRefresh, children, threshold = 80 }: P
           )}
         </div>
       )}
-      <div style={{ transform: `translateY(${Math.max(0, pullDistance - threshold)}px)` }}>
+      <div
+        style={{
+          transform: `translateY(${Math.max(0, pullDistance - threshold)}px)`,
+        }}
+      >
         {children}
       </div>
     </div>

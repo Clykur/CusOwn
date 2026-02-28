@@ -4,7 +4,14 @@
  * PHASE 6: ABUSE & RATE LIMITING TESTS
  */
 
-import { supabase, TestRunner, getRandomBusiness, getRandomAvailableSlot, cleanupTestData, simulateUserAction } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getRandomBusiness,
+  getRandomAvailableSlot,
+  cleanupTestData,
+  simulateUserAction,
+} from './test-utils';
 
 async function testAbuseRateLimiting() {
   const runner = new TestRunner();
@@ -17,7 +24,7 @@ async function testAbuseRateLimiting() {
     await runner.runTest('ABUSE 1: Slot hoarding detection', async () => {
       const business = await getRandomBusiness();
       await simulateUserAction('Simulate slot hoarding');
-      
+
       const slots: string[] = [];
       for (let i = 0; i < 3; i++) {
         const slot = await getRandomAvailableSlot(business.id);
@@ -26,7 +33,7 @@ async function testAbuseRateLimiting() {
           cleanup.slots.push(slot.id);
         }
       }
-      
+
       console.log(`   ✅ Reserved ${slots.length} slots`);
     });
 
@@ -34,10 +41,10 @@ async function testAbuseRateLimiting() {
       const business = await getRandomBusiness();
       const slot = await getRandomAvailableSlot(business.id);
       cleanup.slots.push(slot.id);
-      
+
       await simulateUserAction('Simulate concurrent reservation abuse');
-      
-      const attempts = Array.from({ length: 5 }, (_, i) => 
+
+      const attempts = Array.from({ length: 5 }, (_, i) =>
         supabase.rpc('create_booking_atomically', {
           p_business_id: business.id,
           p_slot_id: slot.id,
@@ -51,22 +58,21 @@ async function testAbuseRateLimiting() {
           p_service_data: null,
         })
       );
-      
+
       const results = await Promise.all(attempts);
-      const successful = results.filter(r => r.data?.success).length;
-      
+      const successful = results.filter((r) => r.data?.success).length;
+
       if (successful > 1) {
         throw new Error(`Multiple bookings succeeded: ${successful}`);
       }
-      
-      const successResult = results.find(r => r.data?.success);
+
+      const successResult = results.find((r) => r.data?.success);
       if (successResult?.data?.booking_id) {
         cleanup.bookings.push(successResult.data.booking_id);
       }
-      
+
       console.log(`   ✅ Concurrent attempts: ${successful} succeeded`);
     });
-
   } finally {
     await cleanupTestData(cleanup.bookings, cleanup.slots);
   }

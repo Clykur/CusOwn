@@ -65,12 +65,14 @@ This document outlines the security hardening measures implemented in the CI/CD 
 ## Environment Isolation
 
 ### Development
+
 - **Branch**: `develop` or feature branches
 - **Vercel Environment**: Preview deployments
 - **Secrets**: Development-specific secrets
 - **Access**: All team members
 
 ### Staging
+
 - **Branch**: `develop` or `main` (automatic)
 - **Vercel Environment**: Staging (`--prod=false`)
 - **Secrets**: Staging environment variables
@@ -78,6 +80,7 @@ This document outlines the security hardening measures implemented in the CI/CD 
 - **Deployment**: Automatic after all checks pass
 
 ### Production
+
 - **Branch**: `main` only
 - **Vercel Environment**: Production (`--prod`)
 - **Secrets**: Production-specific secrets
@@ -89,11 +92,13 @@ This document outlines the security hardening measures implemented in the CI/CD 
 ### GitHub Secrets
 
 #### Vercel Deployment
+
 - `VERCEL_TOKEN` - Vercel API token (least privilege)
 - `VERCEL_ORG_ID` - Vercel organization ID
 - `VERCEL_PROJECT_ID` - Vercel project ID
 
 #### Application Secrets
+
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side only)
@@ -106,14 +111,17 @@ This document outlines the security hardening measures implemented in the CI/CD 
 Configure these in Vercel dashboard with proper scoping:
 
 **Production Environment:**
+
 - All required secrets with `Production` scope only
 - `NEXT_PUBLIC_APP_URL` = `https://cusown.clykur.com`
 
 **Preview Environment:**
+
 - Development/staging secrets with `Preview` scope
 - `NEXT_PUBLIC_APP_URL` = Preview URL (auto-set by Vercel)
 
 **Development Environment:**
+
 - Local development secrets (if using Vercel CLI)
 
 ## Security Controls
@@ -234,6 +242,7 @@ Configure these in Vercel dashboard with proper scoping:
 ## Support
 
 For security concerns or questions:
+
 1. Review this document
 2. Check GitHub Actions logs
 3. Review Vercel deployment logs

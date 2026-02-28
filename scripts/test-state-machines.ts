@@ -1,10 +1,19 @@
 #!/usr/bin/env ts-node
 
-import { supabase, TestRunner, getRandomBusiness, getRandomAvailableSlot, cleanupTestData } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getRandomBusiness,
+  getRandomAvailableSlot,
+  cleanupTestData,
+} from './test-utils';
 
 async function testStateMachines() {
   const runner = new TestRunner();
-  const cleanup: { bookings: string[]; slots: string[] } = { bookings: [], slots: [] };
+  const cleanup: { bookings: string[]; slots: string[] } = {
+    bookings: [],
+    slots: [],
+  };
 
   try {
     await runner.runTest('Get real business and slot', async () => {
@@ -206,7 +215,6 @@ async function testStateMachines() {
 
       await supabase.from('payments').delete().eq('id', payment.id);
     });
-
   } finally {
     await cleanupTestData(cleanup.bookings, cleanup.slots);
   }

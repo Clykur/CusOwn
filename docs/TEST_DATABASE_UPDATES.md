@@ -13,7 +13,7 @@ The test scripts **intentionally clean up** test data after each test run. This 
 ### What Gets Cleaned Up
 
 - Test users created during tests
-- Test bookings created during tests  
+- Test bookings created during tests
 - Test businesses created during tests (in owner/admin tests)
 - Test slots that were modified during tests
 
@@ -63,7 +63,7 @@ The test scripts **intentionally clean up** test data after each test run. This 
 
 ```sql
 -- Check slots for a business
-SELECT 
+SELECT
   business_id,
   date,
   COUNT(*) as slot_count,
@@ -79,7 +79,7 @@ ORDER BY date;
 
 ```sql
 -- Check recent bookings
-SELECT 
+SELECT
   booking_id,
   status,
   customer_name,
@@ -92,6 +92,7 @@ LIMIT 10;
 ### Check Test Data Cleanup
 
 The test scripts clean up in `finally` blocks:
+
 - Bookings: `cleanupTestData(cleanup.bookings, cleanup.slots)`
 - Businesses: `supabase.from('businesses').delete().in('id', cleanup.businesses)`
 
@@ -111,6 +112,7 @@ If you want to see data persist, you can:
 ✅ **Real data persists** - Only test data is cleaned up
 
 The main application code now:
+
 - Generates 7 days of slots when business is created
 - Auto-generates missing slots when requested
 - Has better error handling and logging

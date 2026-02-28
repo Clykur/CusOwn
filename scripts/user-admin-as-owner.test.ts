@@ -5,11 +5,21 @@
  * Simulates admin user accessing owner features and flows
  */
 
-import { supabase, TestRunner, getOrCreateTestUser, cleanupTestData, simulateUserAction } from './test-utils';
+import {
+  supabase,
+  TestRunner,
+  getOrCreateTestUser,
+  cleanupTestData,
+  simulateUserAction,
+} from './test-utils';
 
 async function testAdminAsOwner() {
   const runner = new TestRunner();
-  const cleanup: { bookings: string[]; slots: string[]; businesses: string[] } = { bookings: [], slots: [], businesses: [] };
+  const cleanup: { bookings: string[]; slots: string[]; businesses: string[] } = {
+    bookings: [],
+    slots: [],
+    businesses: [],
+  };
   let admin: any = null;
   let testBusiness: any = null;
 
@@ -17,12 +27,12 @@ async function testAdminAsOwner() {
     // STEP 1: Admin logs in
     await runner.runTest('STEP 1: Admin logs in', async () => {
       admin = await getOrCreateTestUser(`test-admin-owner-${Date.now()}@test.com`, 'owner');
-      await supabase
-        .from('user_profiles')
-        .update({ user_type: 'admin' })
-        .eq('id', admin.id);
+      await supabase.from('user_profiles').update({ user_type: 'admin' }).eq('id', admin.id);
 
-      await simulateUserAction('Admin logs in', { email: admin.email, role: 'admin' });
+      await simulateUserAction('Admin logs in', {
+        email: admin.email,
+        role: 'admin',
+      });
       console.log(`   Admin ID: ${admin.id.substring(0, 8)}...`);
     });
 
@@ -74,7 +84,7 @@ async function testAdminAsOwner() {
 
       testBusiness = data;
       cleanup.businesses.push(data.id);
-      
+
       console.log(`   ✅ Business created: ${data.salon_name}`);
       console.log(`   📍 Location: ${data.location}`);
       console.log(`   🔗 Booking Link: ${data.booking_link}`);
@@ -117,9 +127,9 @@ async function testAdminAsOwner() {
       }
 
       const statusCounts = {
-        pending: data?.filter(b => b.status === 'pending').length || 0,
-        confirmed: data?.filter(b => b.status === 'confirmed').length || 0,
-        cancelled: data?.filter(b => b.status === 'cancelled').length || 0,
+        pending: data?.filter((b) => b.status === 'pending').length || 0,
+        confirmed: data?.filter((b) => b.status === 'confirmed').length || 0,
+        cancelled: data?.filter((b) => b.status === 'cancelled').length || 0,
       };
 
       console.log(`   Found ${data?.length || 0} bookings`);
@@ -139,7 +149,9 @@ async function testAdminAsOwner() {
         .single();
 
       if (pendingBooking) {
-        await simulateUserAction('Admin accepts booking as owner', { bookingId: pendingBooking.booking_id });
+        await simulateUserAction('Admin accepts booking as owner', {
+          bookingId: pendingBooking.booking_id,
+        });
 
         const { data, error } = await supabase.rpc('confirm_booking_atomically', {
           p_booking_id: pendingBooking.id,
@@ -168,10 +180,10 @@ async function testAdminAsOwner() {
 
       const stats = {
         total: bookings?.length || 0,
-        confirmed: bookings?.filter(b => b.status === 'confirmed').length || 0,
-        pending: bookings?.filter(b => b.status === 'pending').length || 0,
-        cancelled: bookings?.filter(b => b.status === 'cancelled').length || 0,
-        rejected: bookings?.filter(b => b.status === 'rejected').length || 0,
+        confirmed: bookings?.filter((b) => b.status === 'confirmed').length || 0,
+        pending: bookings?.filter((b) => b.status === 'pending').length || 0,
+        cancelled: bookings?.filter((b) => b.status === 'cancelled').length || 0,
+        rejected: bookings?.filter((b) => b.status === 'rejected').length || 0,
       };
 
       console.log(`   📊 Business Analytics:`);
@@ -195,9 +207,7 @@ async function testAdminAsOwner() {
         .select('id')
         .eq('suspended', false);
 
-      const { data: allBookings } = await supabase
-        .from('bookings')
-        .select('id');
+      const { data: allBookings } = await supabase.from('bookings').select('id');
 
       console.log(`   🔐 Admin Access Verified:`);
       console.log(`      Businesses Visible: ${allBusinesses?.length || 0}`);
@@ -205,16 +215,12 @@ async function testAdminAsOwner() {
       console.log(`   ✅ Admin has both owner and admin access`);
       console.log(`   📊 Multi-role functionality working correctly`);
     });
-
   } finally {
     if (cleanup.businesses.length > 0) {
       await supabase.from('businesses').delete().in('id', cleanup.businesses);
     }
     if (admin) {
-      await supabase
-        .from('user_profiles')
-        .update({ user_type: 'admin' })
-        .eq('id', admin.id);
+      await supabase.from('user_profiles').update({ user_type: 'admin' }).eq('id', admin.id);
     }
     await cleanupTestData(cleanup.bookings, cleanup.slots);
   }

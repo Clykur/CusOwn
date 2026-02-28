@@ -4,24 +4,28 @@
 
 ### 1. ❌ Audit Log Foreign Key Violation (CRITICAL - Must Fix)
 
-**Error**: 
+**Error**:
+
 ```
 insert or update on table "audit_logs" violates foreign key constraint "audit_logs_admin_user_id_fkey"
 Key (admin_user_id)=(00000000-0000-0000-0000-000000000000) is not present in table "users".
 ```
 
 **Root Cause**:
+
 - The `audit_logs.admin_user_id` column has a foreign key constraint: `REFERENCES auth.users(id)`
 - The code uses `'00000000-0000-0000-0000-000000000000'` as a system user ID for automated actions
 - This UUID doesn't exist in the `auth.users` table, causing the foreign key violation
 - The column is `NOT NULL`, so we can't use NULL either
 
 **Impact**:
+
 - All system-generated audit logs fail (slot transitions, automated actions)
 - No audit trail for slot operations
 - Tests pass but audit logging is completely broken
 
 **Fix**:
+
 1. Run migration: `database/migration_fix_audit_logs_foreign_key.sql`
    - Makes `admin_user_id` nullable
    - Updates foreign key to allow NULL
@@ -37,11 +41,13 @@ Key (admin_user_id)=(00000000-0000-0000-0000-000000000000) is not present in tab
 ### 2. ❌ Audit Log Action Type Constraint (If Migration Not Run)
 
 **Error** (if migration not run):
+
 ```
 new row for relation "audit_logs" violates check constraint "audit_logs_action_type_check"
 ```
 
 **Root Cause**:
+
 - Missing slot actions in the CHECK constraint
 - Missing `'slot'` entity type
 
@@ -53,18 +59,21 @@ new row for relation "audit_logs" violates check constraint "audit_logs_action_t
 
 ### 3. ⚠️ "Payment confirmation function not available" (ACCEPTABLE)
 
-**Warning**: 
+**Warning**:
+
 ```
 ⚠️ Payment confirmation function not available: undefined
 ⚠️ Payment confirmation function not available or failed: Payment not completed
 ```
 
 **Root Cause**:
+
 - Tests are calling `confirm_booking_with_payment` RPC function
 - Function might not exist, might fail, or payment might not be in correct state
 - Tests handle this gracefully by logging a warning and continuing
 
 **Why It's Acceptable**:
+
 - Tests are designed to handle missing functions gracefully
 - The warning indicates the test tried to use the function but it wasn't available
 - This is expected behavior in test environments where not all functions may be deployed
@@ -77,16 +86,19 @@ new row for relation "audit_logs" violates check constraint "audit_logs_action_t
 ### 4. ⚠️ "No audit logs found" (ACCEPTABLE - Due to Constraint Issue)
 
 **Warning**:
+
 ```
 ⚠️ No audit logs found
 ```
 
 **Root Cause**:
+
 - Tests check for audit logs after slot operations
 - Audit logs are failing to be created due to constraint violations (Issue #1)
 - Test correctly detects that no logs exist
 
 **Why It's Acceptable (Temporarily)**:
+
 - The test is correctly identifying that audit logs aren't being created
 - Once Issue #1 is fixed, this warning should disappear
 - The test doesn't fail - it just warns that logs weren't found
@@ -98,16 +110,19 @@ new row for relation "audit_logs" violates check constraint "audit_logs_action_t
 ### 5. ⚠️ "Direct DB update succeeded - ensure application-level validation" (ACCEPTABLE)
 
 **Warning**:
+
 ```
 ⚠️ Direct DB update succeeded - ensure application-level validation
 ```
 
 **Root Cause**:
+
 - Tests use Supabase service role key which bypasses Row Level Security (RLS)
 - Direct database updates succeed even when they shouldn't in production
 - This is expected behavior - service role key is designed to bypass RLS
 
 **Why It's Acceptable**:
+
 - This is **intentional** - tests use service role to test database constraints
 - The warning reminds developers that application-level validation is still needed
 - In production, API endpoints should enforce validation even if RLS is bypassed
@@ -119,13 +134,13 @@ new row for relation "audit_logs" violates check constraint "audit_logs_action_t
 
 ## Summary
 
-| Issue | Status | Action Required |
-|-------|--------|----------------|
-| Audit log foreign key violation | ❌ **NOT ACCEPTABLE** | Run migration_fix_audit_logs_foreign_key.sql |
+| Issue                            | Status                | Action Required                                        |
+| -------------------------------- | --------------------- | ------------------------------------------------------ |
+| Audit log foreign key violation  | ❌ **NOT ACCEPTABLE** | Run migration_fix_audit_logs_foreign_key.sql           |
 | Audit log action type constraint | ❌ **NOT ACCEPTABLE** | Run migration_add_slot_audit_actions.sql (if not done) |
-| Payment function warnings | ✅ **ACCEPTABLE** | None - informational only |
-| No audit logs found | ⚠️ **WILL BE FIXED** | Will resolve after migrations |
-| Direct DB update warnings | ✅ **ACCEPTABLE** | None - informational reminder |
+| Payment function warnings        | ✅ **ACCEPTABLE**     | None - informational only                              |
+| No audit logs found              | ⚠️ **WILL BE FIXED**  | Will resolve after migrations                          |
+| Direct DB update warnings        | ✅ **ACCEPTABLE**     | None - informational reminder                          |
 
 ---
 
@@ -162,7 +177,7 @@ supabase db execute -f database/migration_add_slot_audit_actions.sql
 
 - ✅ `admin_user_id` can be NULL for system actions (no foreign key violation)
 - ✅ Slot reservation audit logs will be created successfully
-- ✅ Slot release audit logs will be created successfully  
+- ✅ Slot release audit logs will be created successfully
 - ✅ Slot booking audit logs will be created successfully
 - ✅ "No audit logs found" warnings should disappear
 - ✅ All audit-related tests should pass without constraint violations

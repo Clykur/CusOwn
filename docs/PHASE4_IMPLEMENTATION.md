@@ -5,12 +5,14 @@
 ### Week 25-26: Security Hardening ✅
 
 **Enhanced Rate Limiting:**
+
 - Per-IP rate limiting (200 req/min)
 - Per-user rate limiting (100 req/min)
 - Combined rate limiting for authenticated users
 - Automatic cleanup of expired entries
 
 **Input Sanitization:**
+
 - Comprehensive sanitization functions
 - String sanitization (XSS prevention)
 - Number/Integer validation
@@ -21,6 +23,7 @@
 - Object sanitization with schema
 
 **CSRF Protection:**
+
 - Token-based CSRF protection
 - HttpOnly cookies
 - Header validation
@@ -28,12 +31,14 @@
 - Automatic token generation
 
 **Security Headers:**
+
 - X-Content-Type-Options: nosniff
 - X-Frame-Options: DENY
 - X-XSS-Protection: 1; mode=block
 - Referrer-Policy: strict-origin-when-cross-origin
 
 **Security Documentation:**
+
 - Security measures documentation
 - Security audit report template
 - Compliance checklist
@@ -43,6 +48,7 @@
 ### Week 27-28: Operations & Deployment ✅
 
 **CI/CD Pipeline:**
+
 - GitHub Actions workflow
 - Lint and type checking
 - Build verification
@@ -51,6 +57,7 @@
 - Blue-green deployment via Vercel
 
 **Deployment Documentation:**
+
 - Deployment strategy
 - Environment setup guide
 - Database migration procedures
@@ -58,6 +65,7 @@
 - Monitoring setup
 
 **Runbooks:**
+
 - Database migration runbook
 - Application deployment runbook
 - High error rate runbook
@@ -68,6 +76,7 @@
 - Backup and restore runbook
 
 **Disaster Recovery Plan:**
+
 - Recovery objectives (RTO/RPO)
 - Disaster scenarios and recovery procedures
 - Backup strategy
@@ -79,12 +88,14 @@
 ## Files Created
 
 ### Security
+
 - `lib/security/rate-limit-api.security.ts` - API rate limiting
 - `lib/security/input-sanitizer.ts` - Input sanitization functions
 - `lib/security/csrf.ts` - CSRF protection
 - `lib/security/security-middleware.ts` - Security middleware
 
 ### Documentation
+
 - `docs/SECURITY.md` - Security documentation
 - `docs/SECURITY_AUDIT.md` - Security audit template
 - `docs/DEPLOYMENT.md` - Deployment guide
@@ -92,9 +103,11 @@
 - `docs/DISASTER_RECOVERY.md` - Disaster recovery plan
 
 ### CI/CD
+
 - `.github/workflows/ci-cd.yml` - GitHub Actions pipeline
 
 ### Configuration
+
 - `next.config.js` - Security headers added
 
 ---
@@ -102,29 +115,34 @@
 ## Security Measures
 
 ### Rate Limiting
+
 - **IP-based**: 200 requests/minute
 - **User-based**: 100 requests/minute
 - **Booking operations**: 10 requests/minute
 - **Implementation**: In-memory with auto-cleanup
 
 ### Input Sanitization
+
 - All string inputs sanitized
 - XSS prevention (HTML/script removal)
 - Type validation (numbers, emails, phones, UUIDs)
 - Schema-based object sanitization
 
 ### CSRF Protection
+
 - Token generation and validation
 - HttpOnly cookies
 - Header-based validation
 - SameSite strict policy
 
 ### SQL Injection Prevention
+
 - Supabase uses parameterized queries
 - No raw SQL string concatenation
 - Type-safe queries
 
 ### XSS Prevention
+
 - React automatic escaping
 - Input sanitization
 - Content Security Policy ready
@@ -134,6 +152,7 @@
 ## CI/CD Pipeline
 
 ### Workflow Steps
+
 1. **Lint and Test**
    - Install dependencies
    - Run linter
@@ -156,13 +175,16 @@
 ## Deployment Strategy
 
 ### Blue-Green Deployment
+
 - **Staging**: `develop` branch → Preview deployment
 - **Production**: `main` branch → Production deployment
 - **Zero Downtime**: Vercel handles automatically
 - **Rollback**: Instant via Vercel dashboard
 
 ### Environment Variables
+
 All secrets managed via:
+
 - Vercel dashboard (production)
 - `.env.local` (local development)
 - GitHub Secrets (CI/CD)
@@ -185,10 +207,12 @@ All secrets managed via:
 ## Disaster Recovery
 
 ### Recovery Objectives
+
 - **RTO**: 1 hour (target), 4 hours (maximum)
 - **RPO**: 1 hour (target), 24 hours (maximum)
 
 ### Scenarios Covered
+
 1. Complete system failure
 2. Database corruption
 3. Security breach
@@ -196,6 +220,7 @@ All secrets managed via:
 5. Data loss
 
 ### Backup Strategy
+
 - **Database**: Daily automatic backups (7-day retention)
 - **Application**: Git version control + Vercel deployment history
 - **Configuration**: Environment variables in Vercel

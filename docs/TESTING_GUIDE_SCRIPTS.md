@@ -7,7 +7,9 @@ This test suite simulates **real user journeys** through the CusOwn application.
 ## 📋 Test Scripts
 
 ### 01-user-customer-journey.ts
+
 **Customer Complete Journey**
+
 - User logs in as customer
 - Browses available businesses
 - Views business details
@@ -17,7 +19,9 @@ This test suite simulates **real user journeys** through the CusOwn application.
 - Checks booking status
 
 ### 02-user-owner-journey.ts
+
 **Owner Complete Journey**
+
 - Owner logs in
 - Views dashboard (no business)
 - Creates business (setup flow)
@@ -27,7 +31,9 @@ This test suite simulates **real user journeys** through the CusOwn application.
 - Views analytics
 
 ### 03-user-booking-flow.ts
+
 **Complete Booking Flow**
+
 - User browses and selects business
 - Views available slots
 - Reserves slot
@@ -36,7 +42,9 @@ This test suite simulates **real user journeys** through the CusOwn application.
 - Verifies final state
 
 ### 04-user-payment-flow.ts
+
 **Payment Complete Flow**
+
 - User creates booking requiring payment
 - Initiates UPI payment
 - Views payment details
@@ -46,7 +54,9 @@ This test suite simulates **real user journeys** through the CusOwn application.
 - Booking automatically confirmed
 
 ### 05-user-admin-journey.ts
+
 **Admin Complete Journey**
+
 - Admin logs in
 - Views dashboard
 - Views all businesses
@@ -56,13 +66,17 @@ This test suite simulates **real user journeys** through the CusOwn application.
 - Views audit logs
 
 ### 06-user-concurrent-operations.ts
+
 **Concurrent Operations**
+
 - Multiple users compete for same slot
 - User tries to book already reserved slot
 - Multiple users browse simultaneously
 
 ### 07-user-slot-management.ts
+
 **Slot Management**
+
 - User views available slots
 - User reserves a slot
 - Slot expires and is released
@@ -70,7 +84,9 @@ This test suite simulates **real user journeys** through the CusOwn application.
 - Prevents invalid state transition
 
 ### 08-user-error-scenarios.ts
+
 **Error Scenarios**
+
 - Try to book suspended business
 - Try to book already booked slot
 - Try to confirm already confirmed booking
@@ -80,23 +96,28 @@ This test suite simulates **real user journeys** through the CusOwn application.
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
+
 ```bash
 npm install -D ts-node dotenv
 ```
 
 ### 2. Set Up Environment
+
 Create `.env.local`:
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
 ### 3. Run All Tests
+
 ```bash
 npm run test:all
 ```
 
 Or use the shell script:
+
 ```bash
 ./scripts/run-all-tests.sh
 ```
@@ -120,6 +141,7 @@ Each test provides step-by-step output:
 ## ✅ What Gets Tested
 
 ### User Flows
+
 - ✅ Customer browsing and booking
 - ✅ Owner setup and management
 - ✅ Admin operations
@@ -129,6 +151,7 @@ Each test provides step-by-step output:
 - ✅ Error handling
 
 ### Security
+
 - ✅ Business suspension enforcement
 - ✅ Race condition prevention
 - ✅ State machine enforcement
@@ -148,6 +171,7 @@ Each test provides step-by-step output:
 ## 📈 Success Criteria
 
 All tests should:
+
 - ✅ Complete without errors
 - ✅ Clean up test data
 - ✅ Report pass/fail status

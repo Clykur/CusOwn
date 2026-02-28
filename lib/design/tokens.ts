@@ -3,52 +3,52 @@
 export const tokens = {
   // Spacing scale (based on 4px base unit)
   spacing: {
-    xs: '0.5rem',    // 8px
-    sm: '0.75rem',   // 12px
-    md: '1rem',      // 16px
-    lg: '1.5rem',    // 24px
-    xl: '2rem',      // 32px
+    xs: '0.5rem', // 8px
+    sm: '0.75rem', // 12px
+    md: '1rem', // 16px
+    lg: '1.5rem', // 24px
+    xl: '2rem', // 32px
     '2xl': '2.5rem', // 40px
-    '3xl': '3rem',   // 48px
-    '4xl': '4rem',   // 64px
+    '3xl': '3rem', // 48px
+    '4xl': '4rem', // 64px
   },
 
   // Sidebar dimensions
   sidebar: {
-    width: '16rem',  // 256px (w-64)
+    width: '16rem', // 256px (w-64)
     mobileBreakpoint: '1024px', // lg breakpoint
   },
 
   // Page container
   container: {
     maxWidth: {
-      sm: '42rem',   // 672px
-      md: '48rem',   // 768px
-      lg: '64rem',   // 1024px
-      xl: '80rem',   // 1280px
+      sm: '42rem', // 672px
+      md: '48rem', // 768px
+      lg: '64rem', // 1024px
+      xl: '80rem', // 1280px
       '2xl': '96rem', // 1536px
     },
     padding: {
-      mobile: '1rem',   // 16px
-      desktop: '2rem',  // 32px
+      mobile: '1rem', // 16px
+      desktop: '2rem', // 32px
     },
   },
 
   // Content spacing
   content: {
-    sectionGap: '2rem',      // 32px between sections
-    cardGap: '1.5rem',      // 24px between cards
-    elementGap: '1rem',     // 16px between elements
-    tightGap: '0.5rem',     // 8px tight spacing
+    sectionGap: '2rem', // 32px between sections
+    cardGap: '1.5rem', // 24px between cards
+    elementGap: '1rem', // 16px between elements
+    tightGap: '0.5rem', // 8px tight spacing
   },
 
   // Border radius
   radius: {
-    sm: '0.5rem',    // 8px
-    md: '0.75rem',   // 12px
-    lg: '1rem',      // 16px
-    xl: '1.5rem',    // 24px
-    '2xl': '2rem',  // 32px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
+    xl: '1.5rem', // 24px
+    '2xl': '2rem', // 32px
     full: '9999px',
   },
 
@@ -63,18 +63,18 @@ export const tokens = {
   // Typography
   typography: {
     heading: {
-      '1': { size: '3rem', lineHeight: '1.2', weight: '700' },      // 48px
+      '1': { size: '3rem', lineHeight: '1.2', weight: '700' }, // 48px
       '2': { size: '2.5rem', lineHeight: '1.25', weight: '700' }, // 40px
-      '3': { size: '2rem', lineHeight: '1.3', weight: '700' },     // 32px
-      '4': { size: '1.5rem', lineHeight: '1.4', weight: '600' },   // 24px
-      '5': { size: '1.25rem', lineHeight: '1.5', weight: '600' },   // 20px
+      '3': { size: '2rem', lineHeight: '1.3', weight: '700' }, // 32px
+      '4': { size: '1.5rem', lineHeight: '1.4', weight: '600' }, // 24px
+      '5': { size: '1.25rem', lineHeight: '1.5', weight: '600' }, // 20px
       '6': { size: '1.125rem', lineHeight: '1.5', weight: '600' }, // 18px
     },
     body: {
-      lg: { size: '1.125rem', lineHeight: '1.75' },  // 18px
-      md: { size: '1rem', lineHeight: '1.5' },       // 16px
-      sm: { size: '0.875rem', lineHeight: '1.5' },   // 14px
-      xs: { size: '0.75rem', lineHeight: '1.5' },     // 12px
+      lg: { size: '1.125rem', lineHeight: '1.75' }, // 18px
+      md: { size: '1rem', lineHeight: '1.5' }, // 16px
+      sm: { size: '0.875rem', lineHeight: '1.5' }, // 14px
+      xs: { size: '0.75rem', lineHeight: '1.5' }, // 12px
     },
   },
 

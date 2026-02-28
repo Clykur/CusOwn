@@ -17,7 +17,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect(result.redirectUrl);
   }
   const initialSession = result.user?.id
-    ? { user: { id: result.user.id, email: result.user.email }, profile: result.profile }
+    ? {
+        user: { id: result.user.id, email: result.user.email },
+        profile: result.profile,
+      }
     : null;
   return (
     <AdminLayoutShell

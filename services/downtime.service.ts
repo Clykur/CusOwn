@@ -31,7 +31,11 @@ export type BusinessSpecialHours = {
 };
 
 export class DowntimeService {
-  async addHoliday(businessId: string, holidayDate: string, holidayName?: string): Promise<BusinessHoliday> {
+  async addHoliday(
+    businessId: string,
+    holidayDate: string,
+    holidayName?: string
+  ): Promise<BusinessHoliday> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('business_holidays')
@@ -54,10 +58,7 @@ export class DowntimeService {
 
   async removeHoliday(holidayId: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
-    const { error } = await supabaseAdmin
-      .from('business_holidays')
-      .delete()
-      .eq('id', holidayId);
+    const { error } = await supabaseAdmin.from('business_holidays').delete().eq('id', holidayId);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -78,7 +79,12 @@ export class DowntimeService {
     return data || [];
   }
 
-  async addClosure(businessId: string, startDate: string, endDate: string, reason?: string): Promise<BusinessClosure> {
+  async addClosure(
+    businessId: string,
+    startDate: string,
+    endDate: string,
+    reason?: string
+  ): Promise<BusinessClosure> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (new Date(endDate) < new Date(startDate)) {
       throw new Error(ERROR_MESSAGES.DOWNTIME_DATE_INVALID);
@@ -106,10 +112,7 @@ export class DowntimeService {
 
   async removeClosure(closureId: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
-    const { error } = await supabaseAdmin
-      .from('business_closures')
-      .delete()
-      .eq('id', closureId);
+    const { error } = await supabaseAdmin.from('business_closures').delete().eq('id', closureId);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -130,7 +133,13 @@ export class DowntimeService {
     return data || [];
   }
 
-  async setSpecialHours(businessId: string, dayOfWeek: number, openingTime?: string, closingTime?: string, isClosed: boolean = false): Promise<BusinessSpecialHours> {
+  async setSpecialHours(
+    businessId: string,
+    dayOfWeek: number,
+    openingTime?: string,
+    closingTime?: string,
+    isClosed: boolean = false
+  ): Promise<BusinessSpecialHours> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from('business_special_hours')
@@ -172,10 +181,10 @@ export class DowntimeService {
     const closures = await this.getBusinessClosures(businessId);
     const checkDate = new Date(date);
 
-    const isHoliday = holidays.some(h => h.holiday_date === date);
+    const isHoliday = holidays.some((h) => h.holiday_date === date);
     if (isHoliday) return true;
 
-    const isInClosure = closures.some(c => {
+    const isInClosure = closures.some((c) => {
       const start = new Date(c.start_date);
       const end = new Date(c.end_date);
       return checkDate >= start && checkDate <= end;
@@ -184,7 +193,7 @@ export class DowntimeService {
 
     const dayOfWeek = checkDate.getDay();
     const specialHours = await this.getBusinessSpecialHours(businessId);
-    const daySpecialHours = specialHours.find(sh => sh.day_of_week === dayOfWeek);
+    const daySpecialHours = specialHours.find((sh) => sh.day_of_week === dayOfWeek);
     if (daySpecialHours?.is_closed) return true;
 
     return false;

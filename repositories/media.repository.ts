@@ -98,7 +98,10 @@ export class MediaRepository {
     const supabase = requireSupabaseAdmin();
     const { error } = await supabase
       .from('media')
-      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id);
     if (error) throw new Error(error.message);
   }
@@ -154,7 +157,10 @@ export class MediaRepository {
       p_resource_type: resourceType,
     });
     if (error || !data?.length) return null;
-    const row = data[0] as { result_id: string | null; response_snapshot: unknown };
+    const row = data[0] as {
+      result_id: string | null;
+      response_snapshot: unknown;
+    };
     return row;
   }
 

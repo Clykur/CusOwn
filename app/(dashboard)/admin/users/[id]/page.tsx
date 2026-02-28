@@ -27,14 +27,18 @@ export default function AdminUserDetailPage() {
 
   const loadUser = useCallback(async () => {
     try {
-      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+      const sessionRes = await fetch('/api/auth/session', {
+        credentials: 'include',
+      });
       const sessionJson = await sessionRes.json();
       if (!sessionRes.ok || !sessionJson?.data?.user) {
         router.push(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_USER(userId)));
         return;
       }
 
-      const res = await fetch(`/api/admin/users/${userId}`, { credentials: 'include' });
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        credentials: 'include',
+      });
       if (!res.ok) {
         if (res.status === 404) setError('User not found');
         else if (res.status === 403) setError('You do not have permission to view this user');

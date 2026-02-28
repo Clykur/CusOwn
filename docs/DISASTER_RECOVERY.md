@@ -1,15 +1,18 @@
 # Disaster Recovery Plan
 
 ## Overview
+
 This document outlines procedures for recovering from various disaster scenarios.
 
 ## Recovery Objectives
 
 ### RTO (Recovery Time Objective)
+
 - **Target**: 1 hour
 - **Maximum**: 4 hours
 
 ### RPO (Recovery Point Objective)
+
 - **Target**: 1 hour
 - **Maximum**: 24 hours
 
@@ -18,11 +21,13 @@ This document outlines procedures for recovering from various disaster scenarios
 ### Scenario 1: Complete System Failure
 
 **Symptoms:**
+
 - Application unavailable
 - Database unreachable
 - All services down
 
 **Recovery Steps:**
+
 1. **Assess Damage**
    - Check Supabase status
    - Check Vercel status
@@ -55,11 +60,13 @@ This document outlines procedures for recovering from various disaster scenarios
 ### Scenario 2: Database Corruption
 
 **Symptoms:**
+
 - Data inconsistencies
 - Query errors
 - Application errors
 
 **Recovery Steps:**
+
 1. **Identify Corruption**
    - Review error logs
    - Identify affected tables
@@ -87,11 +94,13 @@ This document outlines procedures for recovering from various disaster scenarios
 ### Scenario 3: Security Breach
 
 **Symptoms:**
+
 - Unauthorized access
 - Data exfiltration
 - Suspicious activity
 
 **Recovery Steps:**
+
 1. **Immediate Containment**
    - Isolate affected systems
    - Revoke compromised credentials
@@ -124,11 +133,13 @@ This document outlines procedures for recovering from various disaster scenarios
 ### Scenario 4: Application Deployment Failure
 
 **Symptoms:**
+
 - Application errors after deployment
 - Feature breakage
 - Performance degradation
 
 **Recovery Steps:**
+
 1. **Identify Issue**
    - Review deployment logs
    - Check error rates
@@ -156,11 +167,13 @@ This document outlines procedures for recovering from various disaster scenarios
 ### Scenario 5: Data Loss
 
 **Symptoms:**
+
 - Missing data
 - Incomplete records
 - Data inconsistencies
 
 **Recovery Steps:**
+
 1. **Assess Loss**
    - Identify missing data
    - Determine loss scope
@@ -188,17 +201,20 @@ This document outlines procedures for recovering from various disaster scenarios
 ## Backup Strategy
 
 ### Database Backups
+
 - **Frequency**: Daily (automatic)
 - **Retention**: 7 days
 - **Location**: Supabase managed
 - **Manual Backups**: Before major changes
 
 ### Application Backups
+
 - **Version Control**: Git repository
 - **Deployment History**: Vercel dashboard
 - **Configuration**: Environment variables in Vercel
 
 ### Backup Verification
+
 - **Weekly**: Verify backup integrity
 - **Monthly**: Test restore procedure
 - **Quarterly**: Full disaster recovery drill
@@ -208,6 +224,7 @@ This document outlines procedures for recovering from various disaster scenarios
 ## Recovery Procedures
 
 ### Pre-Recovery Checklist
+
 - [ ] Assess disaster scope
 - [ ] Notify team
 - [ ] Access recovery tools
@@ -215,6 +232,7 @@ This document outlines procedures for recovering from various disaster scenarios
 - [ ] Document timeline
 
 ### During Recovery
+
 - [ ] Follow recovery steps
 - [ ] Document actions taken
 - [ ] Monitor progress
@@ -222,6 +240,7 @@ This document outlines procedures for recovering from various disaster scenarios
 - [ ] Communicate status
 
 ### Post-Recovery
+
 - [ ] Verify all services operational
 - [ ] Test critical features
 - [ ] Monitor for issues
@@ -233,12 +252,14 @@ This document outlines procedures for recovering from various disaster scenarios
 ## Testing and Drills
 
 ### Quarterly Drills
+
 - Test backup restore
 - Test application rollback
 - Test database recovery
 - Review and update procedures
 
 ### Annual Full Drill
+
 - Simulate complete failure
 - Execute full recovery
 - Measure recovery time
@@ -249,11 +270,13 @@ This document outlines procedures for recovering from various disaster scenarios
 ## Communication Plan
 
 ### Internal Communication
+
 - **Slack Channel**: #incidents
 - **Email**: oncall@cusown.com
 - **Phone**: [Configure]
 
 ### External Communication
+
 - **Status Page**: [Configure]
 - **User Notifications**: Email/SMS
 - **Public Updates**: Social media

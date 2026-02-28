@@ -3,7 +3,10 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 
 /** Minimal session shape from server layout only. Zero client session fetch. */
-export type SessionLike = { user: { id: string; email?: string }; profile?: unknown } | null;
+export type SessionLike = {
+  user: { id: string; email?: string };
+  profile?: unknown;
+} | null;
 
 type AdminSessionContextValue = {
   session: SessionLike;

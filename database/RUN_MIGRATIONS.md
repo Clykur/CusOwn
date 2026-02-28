@@ -11,6 +11,7 @@
 ### 2. Run Migration 1: Slots RLS
 
 Copy and paste the entire contents of:
+
 ```
 database/migration_add_slots_rls.sql
 ```
@@ -22,6 +23,7 @@ Then click "Run" (or press Cmd/Ctrl + Enter)
 ### 3. Run Migration 2: Default DENY RLS
 
 Copy and paste the entire contents of:
+
 ```
 database/migration_add_default_deny_rls.sql
 ```
@@ -33,6 +35,7 @@ Then click "Run"
 ### 4. Run Migration 3: Update Audit Logs Actions
 
 Copy and paste the entire contents of:
+
 ```
 database/migration_update_audit_logs_actions.sql
 ```
@@ -46,6 +49,7 @@ Then click "Run"
 Fixes Supabase database linter errors and warnings: SECURITY INVOKER views, RLS on public tables, function `search_path`, audit policy, and RLS performance (`(select auth.uid())`).
 
 Copy and paste the entire contents of:
+
 ```
 database/migration_supabase_linter_remediation.sql
 ```
@@ -71,6 +75,7 @@ This is normal. The migrations use `DROP POLICY IF EXISTS` which handles this.
 ### If you get "table does not exist" error:
 
 Make sure you've run the base migrations first:
+
 - `database/migration_add_audit_logs.sql` (for audit_logs table)
 - `database/schema.sql` (for other tables)
 
@@ -85,9 +90,9 @@ Make sure you're running these as a database admin or using the Supabase SQL Edi
 After running all migrations, verify RLS is enabled:
 
 ```sql
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public' 
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public'
   AND tablename IN ('slots', 'businesses', 'bookings', 'user_profiles', 'audit_logs');
 ```
 
@@ -100,7 +105,7 @@ All tables should show `rowsecurity = true`.
 You can also combine all three migrations into one query:
 
 1. Copy contents of `migration_add_slots_rls.sql`
-2. Copy contents of `migration_add_default_deny_rls.sql`  
+2. Copy contents of `migration_add_default_deny_rls.sql`
 3. Copy contents of `migration_update_audit_logs_actions.sql`
 4. Paste all three into SQL Editor
 5. Run

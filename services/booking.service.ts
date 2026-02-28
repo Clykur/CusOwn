@@ -68,7 +68,10 @@ export class BookingService {
       totalDurationMinutes = await serviceService.calculateTotalDuration(services);
       totalPriceCents = await serviceService.calculateTotalPrice(services);
       servicesCount = services.length;
-      serviceData = services.map((s) => ({ service_id: s.id, price_cents: s.price_cents }));
+      serviceData = services.map((s) => ({
+        service_id: s.id,
+        price_cents: s.price_cents,
+      }));
     }
 
     let bookingId = generateUniqueId();
@@ -522,7 +525,10 @@ export class BookingService {
       error = fallback.error;
       const rawData = fallback.data as Record<string, unknown>[] | null;
       if (rawData && rawData.length > 0) {
-        bookingRows = rawData.map((row) => ({ ...row, undo_used_at: null })) as Booking[];
+        bookingRows = rawData.map((row) => ({
+          ...row,
+          undo_used_at: null,
+        })) as Booking[];
       } else {
         bookingRows = rawData as Booking[] | null;
       }
@@ -614,7 +620,10 @@ export class BookingService {
           await auditService.createAuditLog(null, 'booking_cancelled', 'booking', {
             entityId: bookingId,
             description: 'Booking expired by system',
-            newData: { status: BOOKING_STATUS.CANCELLED, cancelled_by: 'system' },
+            newData: {
+              status: BOOKING_STATUS.CANCELLED,
+              cancelled_by: 'system',
+            },
           });
         } catch (auditErr) {
           console.error('[AUDIT] Failed to log expired booking:', auditErr);

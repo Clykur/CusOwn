@@ -75,7 +75,6 @@ export class SlotService {
     }
 
     if (slotsToCreate.length === 0) {
-      console.warn(`No slots to create for business ${salonId} - check time configuration`);
       return;
     }
 
@@ -90,14 +89,9 @@ export class SlotService {
       const { error } = await supabaseAdmin.from('slots').insert(batch);
 
       if (error) {
-        console.error(`Error inserting slot batch ${i / BATCH_SIZE + 1}:`, error);
         throw new Error(error.message || ERROR_MESSAGES.SLOT_GENERATION_FAILED);
       }
     }
-
-    console.log(
-      `✅ Generated ${slotsToCreate.length} slots for business ${salonId} (${INITIAL_SLOT_DAYS} days)`
-    );
   }
 
   async generateSlotsForDate(
@@ -111,7 +105,6 @@ export class SlotService {
 
     // Validate config
     if (!config.opening_time || !config.closing_time || !config.slot_duration) {
-      console.error('Invalid slot generation config:', { salonId, date, config });
       throw new Error(
         'Invalid slot generation configuration: missing opening_time, closing_time, or slot_duration'
       );
@@ -119,7 +112,6 @@ export class SlotService {
 
     const isClosed = await downtimeService.isBusinessClosed(salonId, date);
     if (isClosed) {
-      console.log(`Business ${salonId} is closed on ${date}, skipping slot generation`);
       return;
     }
 
@@ -143,9 +135,6 @@ export class SlotService {
 
     if (daySpecialHours) {
       if (daySpecialHours.is_closed) {
-        console.log(
-          `Business ${salonId} is closed on day ${dayOfWeek} (${date}), skipping slot generation`
-        );
         return;
       }
       if (daySpecialHours.opening_time) {
@@ -164,11 +153,6 @@ export class SlotService {
     });
 
     if (timeSlots.length === 0) {
-      console.warn(`No slots generated for ${salonId} on ${date}`, {
-        openingTime,
-        closingTime,
-        slotDuration: config.slot_duration,
-      });
       return;
     }
 
@@ -188,18 +172,12 @@ export class SlotService {
     const { error, data } = await supabaseAdmin.from('slots').insert(slotsToCreate).select('id');
 
     if (error) {
-      console.error('Error inserting slots:', error);
       throw new Error(error.message || ERROR_MESSAGES.SLOT_GENERATION_FAILED);
     }
 
     if (!data || data.length === 0) {
-      console.error('No slots were inserted despite no error');
       throw new Error('Slot insertion failed - no data returned');
     }
-
-    console.log(
-      `✅ Generated ${slotsToCreate.length} slots for ${salonId} on ${date} (${data.length} inserted)`
-    );
   }
 
   async getAvailableSlots(
@@ -270,10 +248,6 @@ export class SlotService {
             await this.generateSlotsForDate(b, d, c);
           });
         });
-
-        console.log(
-          `✅ Generated slots for ${missingDates.length} future dates: ${missingDates.join(', ')}`
-        );
       }
     }
 
@@ -461,9 +435,7 @@ export class SlotService {
         entityId: slotId,
         description: `Slot reserved until ${reservedUntil.toISOString()}`,
       });
-    } catch (auditError) {
-      console.error('[AUDIT] Failed to log slot reservation:', auditError);
-    }
+    } catch (auditError) {}
 
     return true;
   }
@@ -507,9 +479,7 @@ export class SlotService {
           entityId: slotId,
           description: `Slot released from ${slot.status} to available`,
         });
-      } catch (auditError) {
-        console.error('[AUDIT] Failed to log slot release:', auditError);
-      }
+      } catch (auditError) {}
     }
   }
 
@@ -576,9 +546,7 @@ export class SlotService {
           entityId: slotId,
           description: `Slot booked from ${slot.status}`,
         });
-      } catch (auditError) {
-        console.error('[AUDIT] Failed to log slot booking:', auditError);
-      }
+      } catch (auditError) {}
     }
   }
 

@@ -67,7 +67,9 @@ export const getSecureSalonUrlClient = async (
 
       console.log('[CLIENT_URL_GEN] Sending request to /api/security/generate-salon-url...');
       const requestBody = JSON.stringify({ salonId });
-      console.log('[CLIENT_URL_GEN] Request body:', { salonId: salonIdPreview });
+      console.log('[CLIENT_URL_GEN] Request body:', {
+        salonId: salonIdPreview,
+      });
 
       const response = await fetch('/api/security/generate-salon-url', {
         method: 'POST',
@@ -76,14 +78,10 @@ export const getSecureSalonUrlClient = async (
         body: requestBody,
       });
 
-      console.log('[CLIENT_URL_GEN] Response status:', response.status, response.statusText);
-
       if (response.ok) {
-        console.log('[CLIENT_URL_GEN] Parsing response JSON...');
         let data;
         try {
           data = await response.json();
-          console.log('[CLIENT_URL_GEN] Response parsed successfully, success:', data.success);
         } catch (jsonError) {
           console.error('[CLIENT_URL_GEN] Failed to parse response JSON:', jsonError);
           throw jsonError;
@@ -91,11 +89,9 @@ export const getSecureSalonUrlClient = async (
 
         if (data.success && data.data?.url) {
           const secureUrl = data.data.url;
-          console.log('[CLIENT_URL_GEN] Secure URL received:', secureUrl.substring(0, 80) + '...');
           // Cache the URL with timestamp
           salonUrlCache.set(salonId, { url: secureUrl, timestamp: Date.now() });
           const duration = Date.now() - startTime;
-          console.log(`[CLIENT_URL_GEN] Successfully generated and cached URL in ${duration}ms`);
           return secureUrl;
         } else {
           console.error('[CLIENT_URL_GEN] Invalid response structure:', {
@@ -130,7 +126,6 @@ export const getSecureSalonUrlClient = async (
       }
     } finally {
       delete (window as any)[requestKey];
-      console.log('[CLIENT_URL_GEN] Cleaned up request promise');
     }
 
     // Fallback: return URL with placeholder (will be validated server-side)
@@ -184,7 +179,10 @@ export const getSecureResourceUrlClient = async (
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data?.url) {
-          salonUrlCache.set(cacheKey, { url: data.data.url, timestamp: Date.now() });
+          salonUrlCache.set(cacheKey, {
+            url: data.data.url,
+            timestamp: Date.now(),
+          });
           return data.data.url;
         }
       }

@@ -41,44 +41,21 @@ export async function GET(
 
     // If it's a UUID, require token validation for security
     if (isUUID) {
-      let token = request.nextUrl.searchParams.get('token');
+      const user = await getServerUser(request);
 
-      // Handle URL decoding
-      if (token) {
-        try {
-          token = decodeURIComponent(token);
-        } catch {
-          // If decoding fails, use original token
+      if (!user) {
+        // If not logged in, require token
+        let token = request.nextUrl.searchParams.get('token');
+
+        if (token) {
+          try {
+            token = decodeURIComponent(token);
+          } catch {}
         }
-      }
 
-      if (!token) {
-        console.warn(
-          `[SECURITY] Missing token for salon ID access from IP: ${clientIP}, Salon: ${bookingLink}`
-        );
-        return errorResponse('Invalid or missing access token', 403);
-      }
-
-      // Reject placeholder tokens and validate format (64 chars for new, 32/16 for legacy)
-      if (
-        token === 'pending' ||
-        (!/^[0-9a-f]{64}$/i.test(token) &&
-          !/^[0-9a-f]{32}$/i.test(token) &&
-          !/^[0-9a-f]{16}$/i.test(token))
-      ) {
-        console.warn(
-          `[SECURITY] Invalid token format from IP: ${clientIP}, Salon: ${bookingLink.substring(0, 8)}..., Token length: ${token.length}, Token preview: ${token.substring(0, 10)}...`
-        );
-        return errorResponse('Invalid access token format', 403);
-      }
-
-      const isValidToken = validateSalonToken(bookingLink, token);
-
-      if (!isValidToken) {
-        return errorResponse(
-          'Invalid or expired access token. Please use a valid booking link.',
-          403
-        );
+        if (!token || !validateSalonToken(bookingLink, token)) {
+          return errorResponse('Invalid or missing access token', 403);
+        }
       }
     }
 

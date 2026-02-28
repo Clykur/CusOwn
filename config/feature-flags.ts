@@ -4,17 +4,13 @@
  * No business logic changes — only gating for canary/rollback.
  */
 
+import { env } from '@/config/env';
 /** Enable new payment flow (canary). Default true; set FEATURE_PAYMENT_CANARY=false to rollback. */
-export const FEATURE_PAYMENT_CANARY =
-  process.env.FEATURE_PAYMENT_CANARY !== 'false';
-
+export const FEATURE_PAYMENT_CANARY = env.featureFlags.paymentCanary;
 /** Enable reschedule flow. Set FEATURE_RESCHEDULE=false to disable. */
-export const FEATURE_RESCHEDULE =
-  process.env.FEATURE_RESCHEDULE !== 'false';
-
+export const FEATURE_RESCHEDULE = env.featureFlags.reschedule;
 /** Enable no-show marking. Set FEATURE_NO_SHOW=false to disable. */
-export const FEATURE_NO_SHOW =
-  process.env.FEATURE_NO_SHOW !== 'false';
+export const FEATURE_NO_SHOW = env.featureFlags.noShow;
 
 /**
  * Check a feature flag (use in API routes or UI to gate risky paths).

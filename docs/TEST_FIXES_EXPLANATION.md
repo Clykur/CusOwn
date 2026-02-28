@@ -7,16 +7,19 @@
 **Error**: `error TS2304: Cannot find name 'window'`
 
 **Root Cause**:
+
 - TypeScript doesn't recognize `window` in Node.js context
 - Even with `typeof window === 'undefined'` checks, TypeScript still tries to type-check `window.location`
 - This happens because TypeScript's type checker runs before runtime checks
 
 **Why It Keeps Happening**:
+
 - The file `lib/utils/url.ts` is used in both browser and Node.js contexts
 - TypeScript needs explicit type guards for browser-only globals
 - Previous fixes used `typeof window` but TypeScript still sees `window` in the code
 
 **Solution**:
+
 ```typescript
 // Instead of:
 if (typeof window !== 'undefined' && window.location) {
@@ -37,6 +40,7 @@ try {
 ```
 
 **Why This Works**:
+
 - `globalThis` is available in both Node.js and browser
 - Using `as any` bypasses TypeScript's strict checking for this specific case
 - Try-catch ensures no runtime errors in Node.js
@@ -49,6 +53,7 @@ try {
 **Error**: `Slot reservation failed. Slot status: available, reserved_until: null`
 
 **Root Cause**:
+
 - The `reserveSlot` method used a complex Supabase `.or()` condition:
   ```typescript
   .or(`status.eq.${SLOT_STATUS.AVAILABLE},and(status.eq.${SLOT_STATUS.RESERVED},reserved_until.lt.${now})`)
@@ -58,11 +63,13 @@ try {
 - The update was returning 0 rows even though the slot was available
 
 **Why It Keeps Happening**:
+
 - The complex `.or()` condition syntax might not be parsed correctly by Supabase
 - Race conditions: slot status might change between the `getSlotById` check and the update
 - The condition was too complex for Supabase to evaluate correctly
 
 **Solution**:
+
 ```typescript
 // Build update query conditionally based on current status
 let updateQuery = supabaseAdmin
@@ -80,9 +87,7 @@ if (slot.status === SLOT_STATUS.AVAILABLE) {
 } else if (slot.status === SLOT_STATUS.RESERVED && slot.reserved_until) {
   // Only update if reservation has expired
   const now = new Date().toISOString();
-  updateQuery = updateQuery
-    .eq('status', SLOT_STATUS.RESERVED)
-    .lt('reserved_until', now);
+  updateQuery = updateQuery.eq('status', SLOT_STATUS.RESERVED).lt('reserved_until', now);
 } else {
   // Invalid state, cannot reserve
   return false;
@@ -90,6 +95,7 @@ if (slot.status === SLOT_STATUS.AVAILABLE) {
 ```
 
 **Why This Works**:
+
 - Simpler, more explicit conditions that Supabase can handle
 - Checks status before building the query
 - Handles expired reservations explicitly
@@ -101,12 +107,14 @@ if (slot.status === SLOT_STATUS.AVAILABLE) {
 ## Prevention Strategies
 
 ### For Window Errors:
+
 1. **Always use `globalThis` with type assertions** for browser-only globals
 2. **Wrap in try-catch** for safety
 3. **Check environment first** before accessing browser globals
 4. **Use type guards** that TypeScript understands
 
 ### For Slot Reservation:
+
 1. **Avoid complex `.or()` conditions** - break them into separate queries
 2. **Check status before building query** - don't rely on complex conditions
 3. **Handle expired reservations explicitly** - don't try to combine conditions

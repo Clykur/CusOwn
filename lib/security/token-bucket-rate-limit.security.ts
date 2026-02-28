@@ -54,7 +54,10 @@ function getCapacityRefill(tier: 'admin' | 'export' | 'auth' | 'default'): {
         refillPerSec: TOKEN_BUCKET_AUTH_REFILL_PER_SEC,
       };
     default:
-      return { capacity: TOKEN_BUCKET_CAPACITY, refillPerSec: TOKEN_BUCKET_REFILL_PER_SEC };
+      return {
+        capacity: TOKEN_BUCKET_CAPACITY,
+        refillPerSec: TOKEN_BUCKET_REFILL_PER_SEC,
+      };
   }
 }
 

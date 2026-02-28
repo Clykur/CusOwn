@@ -52,11 +52,19 @@ export class NoShowService {
     return updatedBooking;
   }
 
-  async getNoShowAnalytics(businessId: string, startDate: string, endDate: string): Promise<{
+  async getNoShowAnalytics(
+    businessId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<{
     totalNoShows: number;
     noShowRate: number;
     noShowByDate: Array<{ date: string; count: number }>;
-    noShowCustomers: Array<{ customerPhone: string; customerName: string; count: number }>;
+    noShowCustomers: Array<{
+      customerPhone: string;
+      customerName: string;
+      count: number;
+    }>;
   }> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
@@ -89,7 +97,7 @@ export class NoShowService {
     const noShowRate = confirmedCount > 0 ? (totalNoShows / confirmedCount) * 100 : 0;
 
     const dateMap = new Map<string, number>();
-    noShows.forEach(ns => {
+    noShows.forEach((ns) => {
       if (ns.no_show_marked_at) {
         const date = new Date(ns.no_show_marked_at).toISOString().split('T')[0];
         dateMap.set(date, (dateMap.get(date) || 0) + 1);
@@ -101,9 +109,12 @@ export class NoShowService {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     const customerMap = new Map<string, { name: string; count: number }>();
-    noShows.forEach(ns => {
+    noShows.forEach((ns) => {
       const phone = ns.customer_phone;
-      const current = customerMap.get(phone) || { name: ns.customer_name || 'Unknown', count: 0 };
+      const current = customerMap.get(phone) || {
+        name: ns.customer_name || 'Unknown',
+        count: 0,
+      };
       customerMap.set(phone, { name: current.name, count: current.count + 1 });
     });
 

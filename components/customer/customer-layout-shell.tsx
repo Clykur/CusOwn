@@ -11,25 +11,44 @@ import {
 } from '@/components/customer/customer-session-context';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CUSTOMER } from '@/config/constants';
+import { env } from '@/config/env';
 
-function getCustomerHeader(pathname: string): { title: string; subtitle: string } {
+function getCustomerHeader(pathname: string): {
+  title: string;
+  subtitle: string;
+} {
   if (pathname === ROUTES.CUSTOMER_DASHBOARD)
-    return { title: UI_CUSTOMER.HEADER_MY_ACTIVITY, subtitle: UI_CUSTOMER.HEADER_MY_ACTIVITY_SUB };
+    return {
+      title: UI_CUSTOMER.HEADER_MY_ACTIVITY,
+      subtitle: UI_CUSTOMER.HEADER_MY_ACTIVITY_SUB,
+    };
   if (pathname === ROUTES.CUSTOMER_CATEGORIES)
-    return { title: UI_CUSTOMER.DISCOVER_HEADING, subtitle: UI_CUSTOMER.DISCOVER_SUB };
+    return {
+      title: UI_CUSTOMER.DISCOVER_HEADING,
+      subtitle: UI_CUSTOMER.DISCOVER_SUB,
+    };
   if (pathname === ROUTES.CUSTOMER_SALON_LIST)
-    return { title: UI_CUSTOMER.NAV_EXPLORE_SERVICES, subtitle: UI_CUSTOMER.HEADER_BROWSE_SUB };
+    return {
+      title: UI_CUSTOMER.NAV_EXPLORE_SERVICES,
+      subtitle: UI_CUSTOMER.HEADER_BROWSE_SUB,
+    };
   if (pathname === ROUTES.CUSTOMER_PROFILE)
-    return { title: UI_CUSTOMER.HEADER_PROFILE, subtitle: UI_CUSTOMER.HEADER_PROFILE_SUB };
+    return {
+      title: UI_CUSTOMER.HEADER_PROFILE,
+      subtitle: UI_CUSTOMER.HEADER_PROFILE_SUB,
+    };
   if (pathname?.startsWith('/booking/'))
     return {
       title: UI_CUSTOMER.HEADER_BOOKING_DETAILS,
       subtitle: UI_CUSTOMER.HEADER_BOOKING_DETAILS_SUB,
     };
-  return { title: UI_CUSTOMER.HEADER_MY_ACTIVITY, subtitle: UI_CUSTOMER.HEADER_MY_ACTIVITY_SUB };
+  return {
+    title: UI_CUSTOMER.HEADER_MY_ACTIVITY,
+    subtitle: UI_CUSTOMER.HEADER_MY_ACTIVITY_SUB,
+  };
 }
 
-const DEV = process.env.NODE_ENV === 'development';
+env.nodeEnv;
 
 type CustomerLayoutShellProps = {
   children: React.ReactNode;
@@ -49,19 +68,17 @@ export default function CustomerLayoutShell({
 }: CustomerLayoutShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const safePathname = pathname ?? '';
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const header = getCustomerHeader(pathname ?? '');
+  const header = getCustomerHeader(safePathname);
   const [clientUser, setClientUser] = useState<CustomerInitialUser | null>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
   /** When true, session was missing after client check; user stays in flow until they click Sign in or Logout. */
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
-    if (DEV && typeof window !== 'undefined') {
-      console.log('[AUTH_FLOW] Customer dashboard shell mounted', {
-        hasInitialUser: !!initialUser?.id,
-        requireClientAuthCheck,
-      });
+    if (env && typeof window !== 'undefined') {
+      return;
     }
   }, [initialUser?.id, requireClientAuthCheck]);
 
@@ -70,7 +87,9 @@ export default function CustomerLayoutShell({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/session', { credentials: 'include' });
+        const res = await fetch('/api/auth/session', {
+          credentials: 'include',
+        });
         const json = await res.json();
         const data = json?.data ?? json;
         const user = data?.user ?? null;
@@ -85,6 +104,13 @@ export default function CustomerLayoutShell({
           id: user.id,
           email: user.email,
           full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
+          user_type: (
+            profile as {
+              user_type?: 'owner' | 'customer' | 'both' | 'admin';
+            } | null
+          )?.user_type,
+          profile_media_id: (profile as { profile_media_id?: string | null } | null)
+            ?.profile_media_id,
         });
       } catch {
         if (!cancelled) {
@@ -104,6 +130,15 @@ export default function CustomerLayoutShell({
     typeof ROUTES.AUTH_LOGIN === 'function'
       ? ROUTES.AUTH_LOGIN('/customer/dashboard')
       : '/auth/login';
+
+  const isDashboard = safePathname === ROUTES.CUSTOMER_DASHBOARD;
+  const isCategories = safePathname === ROUTES.CUSTOMER_CATEGORIES;
+  const isSalonList = safePathname === ROUTES.CUSTOMER_SALON_LIST;
+  const isProfile = safePathname === ROUTES.CUSTOMER_PROFILE;
+  const isBookingDetails = safePathname.startsWith('/booking/');
+  const isCustomerMainArea =
+    isDashboard || isCategories || isSalonList || isProfile || isBookingDetails;
+  const mainSpacing = '';
 
   if (requireClientAuthCheck && !clientCheckDone) {
     return (
@@ -135,16 +170,17 @@ export default function CustomerLayoutShell({
     <CustomerSessionProvider initialUser={user ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 lg:ml-64 w-full">
-          <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
-            <div className="flex flex-col gap-8">
-              {/* Hide CustomerHeader for /customer/[slug] page */}
-              {pathname?.startsWith('/customer/') && pathname?.split('/').length === 3 ? null : (
+        <main className={`flex-1 lg:ml-64 w-full ${mainSpacing}`}>
+          {isCustomerMainArea ? (
+            <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
+              <div className="flex flex-col gap-6">
                 <CustomerHeader title={header.title} subtitle={header.subtitle} />
-              )}
-              {children}
+                {children}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="px-4 sm:px-6 lg:px-12 xl:px-16 py-6 lg:py-8">{children}</div>
+          )}
         </main>
         <CustomerMobileBottomNav sidebarOpen={sidebarOpen} />
       </div>

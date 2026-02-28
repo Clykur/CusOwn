@@ -13,7 +13,9 @@ export default function OwnerAnalyticsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/owner/businesses', { credentials: 'include' });
+        const res = await fetch('/api/owner/businesses', {
+          credentials: 'include',
+        });
         if (!res.ok) return;
         const json = await res.json();
         if (cancelled) return;

@@ -1,6 +1,7 @@
 # Contingency Plans & Risk Mitigation
 
 ## Overview
+
 This document outlines contingency plans for high-risk scenarios and mitigation strategies.
 
 ## High-Risk Items & Mitigation
@@ -11,6 +12,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 **Impact:** Customer notifications fail, booking confirmations delayed
 
 **Mitigation:**
+
 - ✅ **Primary Channel**: WhatsApp remains the primary notification channel
 - ✅ **Fallback Strategy**: Email/SMS as secondary (currently disabled, can be enabled)
 - ✅ **Retry Logic**: Automatic retry with exponential backoff
@@ -18,6 +20,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 - ✅ **Notification History**: Track delivery status
 
 **Contingency Plan:**
+
 1. **Immediate Actions:**
    - Monitor WhatsApp delivery rates
    - Check WhatsApp API status
@@ -35,6 +38,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
    - Verify delivery
 
 **Monitoring:**
+
 - Track notification success rate
 - Alert if success rate < 90%
 - Monitor circuit breaker state
@@ -47,12 +51,14 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 **Impact:** Slow API responses, timeouts, poor user experience
 
 **Mitigation:**
+
 - ✅ **Caching Layer**: Business data cached (1 hour TTL)
 - ✅ **Query Optimization**: Indexes on all frequently queried columns
 - ✅ **Connection Pooling**: Supabase handles automatically
 - ✅ **Read Replicas**: Available via Supabase (upgrade required)
 
 **Contingency Plan:**
+
 1. **Immediate Actions:**
    - Check database CPU/memory usage
    - Review slow query logs
@@ -72,6 +78,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
    - Adjust caching strategy
 
 **Monitoring:**
+
 - Track query execution time (p95 < 100ms)
 - Monitor database connections
 - Alert on slow queries (>500ms)
@@ -84,12 +91,14 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 **Impact:** Rate limiting, degraded performance, potential downtime
 
 **Mitigation:**
+
 - ✅ **Rate Limiting**: Per-IP (200/min) and per-user (100/min)
 - ✅ **Caching**: Reduces database load
 - ✅ **Auto-Scaling**: Vercel handles automatically
 - ✅ **CDN**: Vercel Edge Network
 
 **Contingency Plan:**
+
 1. **Immediate Actions:**
    - Monitor request rates
    - Check rate limit hits
@@ -108,6 +117,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
    - Optimize hot paths
 
 **Monitoring:**
+
 - Track request rate
 - Monitor rate limit hits
 - Alert if error rate > 1%
@@ -120,12 +130,14 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 **Impact:** Business data lost, bookings lost, customer trust
 
 **Mitigation:**
+
 - ✅ **Automated Backups**: Supabase daily backups (7-day retention)
 - ✅ **Point-in-Time Recovery**: Available via Supabase
 - ✅ **Transaction Logs**: All changes logged
 - ✅ **Audit Logs**: Track all data modifications
 
 **Contingency Plan:**
+
 1. **Immediate Actions:**
    - Identify data loss scope
    - Determine loss point
@@ -145,6 +157,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
    - Document incident
 
 **Monitoring:**
+
 - Verify backups daily
 - Test restore procedure monthly
 - Monitor data integrity
@@ -155,32 +168,34 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 
 ### Technical Metrics
 
-| Metric | Target | Threshold | Alert Level |
-|--------|--------|-----------|-------------|
-| API Response Time (p95) | <200ms | >250ms | Warning, >300ms Critical |
-| Uptime | >99.9% | <99.5% | Warning, <99% Critical |
-| Error Rate | <0.1% | >0.2% | Warning, >0.5% Critical |
-| DB Query Time (p95) | <100ms | >150ms | Warning, >200ms Critical |
+| Metric                  | Target | Threshold | Alert Level              |
+| ----------------------- | ------ | --------- | ------------------------ |
+| API Response Time (p95) | <200ms | >250ms    | Warning, >300ms Critical |
+| Uptime                  | >99.9% | <99.5%    | Warning, <99% Critical   |
+| Error Rate              | <0.1%  | >0.2%     | Warning, >0.5% Critical  |
+| DB Query Time (p95)     | <100ms | >150ms    | Warning, >200ms Critical |
 
 ### Business Metrics
 
-| Metric | Target | Threshold | Alert Level |
-|--------|--------|-----------|-------------|
-| Support Queries Reduction | 60% | <50% | Warning |
-| No-Show Rate | <10% | >12% | Warning, >15% Critical |
-| Owner Retention | >80% | <75% | Warning, <70% Critical |
-| Booking Completion Rate | >90% | <85% | Warning, <80% Critical |
+| Metric                    | Target | Threshold | Alert Level            |
+| ------------------------- | ------ | --------- | ---------------------- |
+| Support Queries Reduction | 60%    | <50%      | Warning                |
+| No-Show Rate              | <10%   | >12%      | Warning, >15% Critical |
+| Owner Retention           | >80%   | <75%      | Warning, <70% Critical |
+| Booking Completion Rate   | >90%   | <85%      | Warning, <80% Critical |
 
 ---
 
 ## Alerting Strategy
 
 ### Alert Channels
+
 - **Critical**: Immediate notification (email/SMS)
 - **Warning**: Daily summary
 - **Info**: Weekly report
 
 ### Alert Conditions
+
 - **API Response Time**: p95 > 200ms for 5 minutes
 - **Uptime**: <99.9% for 10 minutes
 - **Error Rate**: >0.1% for 5 minutes
@@ -202,6 +217,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 ## Recovery Procedures
 
 ### WhatsApp Failure
+
 1. Check API status
 2. Enable fallback channels
 3. Retry failed notifications
@@ -209,6 +225,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 5. Verify delivery
 
 ### Database Overload
+
 1. Enable read replicas
 2. Increase caching
 3. Optimize queries
@@ -216,6 +233,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 5. Scale if needed
 
 ### High Traffic
+
 1. Monitor auto-scaling
 2. Increase cache TTL
 3. Adjust rate limits
@@ -223,6 +241,7 @@ This document outlines contingency plans for high-risk scenarios and mitigation 
 5. Monitor performance
 
 ### Data Loss
+
 1. Identify scope
 2. Select backup point
 3. Restore database

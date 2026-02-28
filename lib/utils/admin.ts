@@ -17,7 +17,10 @@ async function getUserProfileSafe(userId: string): Promise<any> {
  * Check if current user is admin.
  * Pass profile when already fetched (O(1)); otherwise fetches once.
  */
-export const checkIsAdmin = async (userId: string, profile?: ProfileLike | null): Promise<boolean> => {
+export const checkIsAdmin = async (
+  userId: string,
+  profile?: ProfileLike | null
+): Promise<boolean> => {
   if (profile !== undefined) return isAdminProfile(profile ?? null);
   try {
     const p = await getUserProfileSafe(userId);
@@ -44,4 +47,3 @@ export const requireAdmin = async (userId: string): Promise<void> => {
     throw new Error('Admin access required');
   }
 };
-
