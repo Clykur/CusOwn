@@ -12,8 +12,8 @@ interface BookingCardProps {
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
   processingId: string | null;
-  actionError: string | null;
-  actionSuccess: string | null;
+  actionError?: string | null;
+  actionSuccess?: string | null;
   onRescheduled?: () => void;
   onNoShowMarked?: (id: string) => void;
   onUndoAccept?: (id: string) => void;
@@ -26,8 +26,6 @@ export default function BookingCard({
   onAccept,
   onReject,
   processingId,
-  actionError,
-  actionSuccess,
   onRescheduled,
   onNoShowMarked,
   onUndoAccept,
@@ -74,14 +72,18 @@ export default function BookingCard({
   };
 
   const isProcessing = processingId === booking.id;
-  // Accept/Reject should be disabled if processing (parent disables via prop)
+
+  // Phase 5: Hard guarantee canUndo logic
+  const windowMs = undoWindowMinutes * 60 * 1000;
+  const withinUndoWindow = booking.updated_at
+    ? Date.now() - new Date(booking.updated_at).getTime() < windowMs
+    : false;
+
   const canUndo =
     undoWindowMinutes > 0 &&
     (booking.status === 'confirmed' || booking.status === 'rejected') &&
     !booking.undo_used_at &&
-    (booking.updated_at
-      ? Date.now() - new Date(booking.updated_at).getTime() < undoWindowMinutes * 60 * 1000
-      : false);
+    withinUndoWindow;
 
   return (
     <div className="relative w-full overflow-hidden">
@@ -130,22 +132,6 @@ export default function BookingCard({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Alerts */}
-        {(actionSuccess || actionError) && (
-          <div className="mb-3 text-xs">
-            {actionSuccess && (
-              <div className="p-2 bg-green-50 border border-green-200 rounded text-green-800">
-                {actionSuccess}
-              </div>
-            )}
-            {actionError && (
-              <div className="p-2 bg-red-50 border border-red-200 rounded text-red-800">
-                {actionError}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">

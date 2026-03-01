@@ -18,7 +18,8 @@ export type AuditActionType =
   | (typeof AUDIT_ACTIONS.PAYMENT)[number]
   | (typeof AUDIT_ACTIONS.SYSTEM)[number]
   | (typeof AUDIT_ACTIONS.SLOT)[number]
-  | (typeof AUDIT_ACTIONS.MEDIA)[number];
+  | (typeof AUDIT_ACTIONS.MEDIA)[number]
+  | (typeof AUDIT_ACTIONS.DELETION)[number];
 
 export type AuditEntityType =
   | 'business'

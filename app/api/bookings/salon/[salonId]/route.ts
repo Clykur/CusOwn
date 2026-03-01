@@ -18,7 +18,8 @@ export async function GET(
 
     const { salonId } = await params;
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || undefined;
+    const fromDate = searchParams.get('fromDate') || undefined;
+    const toDate = searchParams.get('toDate') || undefined;
 
     if (!salonId || !isValidUUID(salonId)) {
       console.warn(`[SECURITY] Invalid salon ID format from IP: ${clientIP}`);
@@ -50,7 +51,7 @@ export async function GET(
       return errorResponse('Authentication required', 401);
     }
 
-    const bookings = await bookingService.getSalonBookings(salonId, date);
+    const bookings = await bookingService.getSalonBookings(salonId, fromDate, toDate);
 
     const response = successResponse(bookings);
     setNoCacheHeaders(response);

@@ -4,6 +4,7 @@ import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { validateCSRFToken } from '@/lib/security/csrf';
+import { getClientIp } from '@/lib/utils/security';
 
 /**
  * GET /api/user/profile
@@ -166,8 +167,11 @@ export async function DELETE(request: NextRequest) {
       // Body is optional
     }
 
-    // Soft delete the account
-    const result = await userService.softDeleteAccount(user.id, reason);
+    const clientIp = getClientIp(request);
+    const result = await userService.softDeleteAccount(user.id, reason, {
+      actorId: user.id,
+      ip: clientIp ?? null,
+    });
 
     const response = successResponse({
       ...result,
