@@ -227,11 +227,12 @@ export class UserService {
 
   /**
    * Soft delete user account and all associated businesses.
-   * Data is retained for 30 days for admin/recovery purposes.
+   * Data is retained for 30 days. Pass actorId/ip for audit; optional overrideLegalHold for admin.
    */
   async softDeleteAccount(
     userId: string,
-    reason: string = 'User requested account deletion'
+    reason: string = 'User requested account deletion',
+    options?: { actorId?: string; ip?: string | null; overrideLegalHold?: boolean }
   ): Promise<{
     user_id: string;
     deleted_at: string;
@@ -242,18 +243,20 @@ export class UserService {
       throw new Error('Database not configured');
     }
 
-    // Call the database function that handles soft delete
-    const { data, error } = await supabaseAdmin.rpc('soft_delete_user_account', {
-      p_user_id: userId,
-      p_reason: reason,
-    });
+    const hasAudit = options?.actorId != null;
+    const params = hasAudit
+      ? {
+          p_user_id: userId,
+          p_actor_id: options.actorId,
+          p_reason: reason,
+          p_ip_address: options.ip ?? null,
+          p_override_legal_hold: options.overrideLegalHold ?? false,
+        }
+      : { p_user_id: userId, p_reason: reason };
+
+    const { data, error } = await supabaseAdmin.rpc('soft_delete_user_account', params);
 
     if (error) {
-      console.error('[USER_SERVICE] Error soft deleting account:', {
-        error: error.message,
-        code: error.code,
-        details: error.details,
-      });
       throw new Error(error.message || 'Failed to delete account');
     }
 

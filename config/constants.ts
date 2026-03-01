@@ -172,6 +172,10 @@ export const ERROR_MESSAGES = {
   USER_UNBLOCK_FAILED: 'Failed to unblock user',
   USER_DELETE_FAILED: 'Failed to delete user',
   CANNOT_DELETE_SELF: 'You cannot delete your own account',
+  LEGAL_HOLD_BLOCK: 'Deletion blocked: entity is under legal hold',
+  LAST_ADMIN_BLOCK: 'Cannot delete the last admin',
+  OUTSTANDING_PAYMENTS_BLOCK: 'User has outstanding payments; resolve before deletion',
+  DELETION_REASON_REQUIRED: 'Deletion reason is mandatory',
   UNDO_WINDOW_EXPIRED: 'Undo window has expired',
   SLOT_NO_LONGER_AVAILABLE: 'Slot is no longer available; cannot undo reject',
   BOOKING_NOT_CONFIRMED: 'Booking is not confirmed',
@@ -458,6 +462,7 @@ export const AUDIT_ACTIONS = {
   ],
   SLOT: ['slot_reserved', 'slot_released', 'slot_booked'],
   MEDIA: ['media_uploaded', 'media_deleted'],
+  DELETION: ['soft_delete', 'restore', 'hard_delete'],
 } as const;
 
 export const AUDIT_SEVERITY = {

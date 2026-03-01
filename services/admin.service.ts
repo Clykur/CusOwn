@@ -256,6 +256,7 @@ export class AdminService {
       .select(
         'id, owner_user_id, salon_name, booking_link, address, location, suspended, created_at, deleted_at, permanent_deletion_at, deletion_reason'
       )
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -363,6 +364,7 @@ export class AdminService {
     let profileQuery = supabase
       .from('user_profiles')
       .select('*', { count: 'exact' })
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (filters?.role) {
@@ -436,6 +438,7 @@ export class AdminService {
     const { data: profiles, error } = await supabase
       .from('user_profiles')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -543,16 +546,49 @@ export class AdminService {
     if (error) throw new Error(error.message || 'Failed to unblock user');
   }
 
-  /** Delete user from Auth (cascades depend on DB FKs). Cannot delete self. */
-  async deleteUser(userId: string, requestingAdminId: string): Promise<void> {
+  /** Soft delete user (30-day retention). Cannot delete self. Blocks: legal hold, last admin, outstanding payments. */
+  async deleteUser(
+    userId: string,
+    requestingAdminId: string,
+    options?: { reason?: string; ip?: string | null }
+  ): Promise<void> {
     if (userId === requestingAdminId) throw new Error('Cannot delete your own account');
     const supabase = requireSupabaseAdmin();
-    const { error } = await supabase.auth.admin.deleteUser(userId);
+    const reason = options?.reason ?? 'Deleted by admin';
+    const { error } = await supabase.rpc('soft_delete_user_account', {
+      p_user_id: userId,
+      p_actor_id: requestingAdminId,
+      p_reason: reason,
+      p_ip_address: options?.ip ?? null,
+      p_override_legal_hold: true,
+    });
     if (error) throw new Error(error.message || 'Failed to delete user');
   }
 
+  /** Soft delete a business (30-day retention). Blocks when legal_hold unless override. */
+  async softDeleteBusiness(
+    businessId: string,
+    actorId: string,
+    reason: string,
+    options?: { ip?: string | null; overrideLegalHold?: boolean }
+  ): Promise<{ business_id: string; deleted_at: string; permanent_deletion_at: string }> {
+    const supabase = requireSupabaseAdmin();
+    const { data, error } = await supabase.rpc('soft_delete_business', {
+      p_business_id: businessId,
+      p_actor_id: actorId,
+      p_reason: reason,
+      p_ip_address: options?.ip ?? null,
+      p_override_legal_hold: options?.overrideLegalHold ?? false,
+    });
+    if (error) throw new Error(error.message || 'Failed to delete business');
+    return data;
+  }
+
   /** Restore a soft-deleted user account (admin only). Must be within 30-day retention period. */
-  async restoreDeletedUser(userId: string): Promise<{
+  async restoreDeletedUser(
+    userId: string,
+    options?: { actorId?: string | null; ip?: string | null }
+  ): Promise<{
     user_id: string;
     restored_at: string;
     businesses_restored: number;
@@ -560,6 +596,8 @@ export class AdminService {
     const supabase = requireSupabaseAdmin();
     const { data, error } = await supabase.rpc('restore_deleted_user_account', {
       p_user_id: userId,
+      p_actor_id: options?.actorId ?? null,
+      p_ip_address: options?.ip ?? null,
     });
     if (error) throw new Error(error.message || 'Failed to restore user account');
     return data;

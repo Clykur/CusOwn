@@ -3,6 +3,7 @@ import { adminService } from '@/services/admin.service';
 import { requireAdmin } from '@/lib/utils/api-auth-pipeline';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
+import { getClientIp } from '@/lib/utils/security';
 
 const ROUTE_GET = 'GET /api/admin/users/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/users/[id]';
@@ -70,7 +71,11 @@ export async function DELETE(
     const { id } = await params;
     if (!id) return errorResponse('User ID required', 400);
 
-    await adminService.deleteUser(id, auth.user.id);
+    const clientIp = getClientIp(request);
+    await adminService.deleteUser(id, auth.user.id, {
+      reason: 'Deleted by admin',
+      ip: clientIp ?? null,
+    });
     return successResponse({ deleted: true });
   } catch (error) {
     if (error instanceof Error && error.message === 'User not found') {

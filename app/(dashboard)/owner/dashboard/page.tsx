@@ -9,7 +9,7 @@ import { useOwnerSession } from '@/components/owner/owner-session-context';
 import { BookingWithDetails } from '@/types';
 import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constants';
-import CloseIcon from '@/src/icons/close.svg';
+import { Toast } from '@/components/ui/toast';
 import UndoIcon from '@/src/icons/undo.svg';
 import ExploreIcon from '@/src/icons/explore.svg';
 
@@ -27,32 +27,16 @@ export default function OwnerDashboardPage() {
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [lastUndoable, setLastUndoable] = useState<{
-    bookingId: string;
-    action: 'accept' | 'reject';
-    at: number;
-  } | null>(null);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const midnightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /** Return local YYYY-MM-DD (not UTC) */
-  const getLocalTodayStr = useCallback(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }, []);
-
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
-  const isUndoWindowOpen = lastUndoable ? Date.now() - lastUndoable.at < undoWindowMs : false;
 
   useEffect(() => {
     if (!initialUser?.id) {
@@ -60,7 +44,13 @@ export default function OwnerDashboardPage() {
       return;
     }
     let cancelled = false;
-    fetch('/api/owner/dashboard-stats', { credentials: 'include' })
+    const params = new URLSearchParams();
+    if (fromDate) params.append('fromDate', fromDate);
+    if (toDate) params.append('toDate', toDate);
+
+    const url = `/api/owner/dashboard-stats${params.toString() ? `?${params.toString()}` : ''}`;
+
+    fetch(url, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
@@ -75,12 +65,15 @@ export default function OwnerDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [initialUser?.id]);
+  }, [initialUser?.id, fromDate, toDate]);
 
   const fetchBookings = useCallback(
     async (signal?: AbortSignal) => {
       try {
-        const date = selectedDate || getLocalTodayStr();
+        const params = new URLSearchParams();
+        if (fromDate) params.append('fromDate', fromDate);
+        if (toDate) params.append('toDate', toDate);
+        const queryStr = params.toString();
 
         const bizRes = await fetch('/api/owner/businesses', {
           credentials: 'include',
@@ -96,10 +89,13 @@ export default function OwnerDashboardPage() {
           businesses.map(async (b: any) => {
             if (signal?.aborted) return;
             try {
-              const res = await fetch(`/api/bookings/salon/${b.id}?date=${date}`, {
-                credentials: 'include',
-                signal: signal ?? undefined,
-              });
+              const res = await fetch(
+                `/api/bookings/salon/${b.id}${queryStr ? `?${queryStr}` : ''}`,
+                {
+                  credentials: 'include',
+                  signal: signal ?? undefined,
+                }
+              );
               if (signal?.aborted || !res.ok) return;
               const json = await res.json();
               if (json.success && Array.isArray(json.data)) {
@@ -123,30 +119,8 @@ export default function OwnerDashboardPage() {
         if ((err as Error)?.name !== 'AbortError') console.error('Failed to fetch bookings', err);
       }
     },
-    [selectedDate, getLocalTodayStr]
+    [fromDate, toDate]
   );
-
-  // Initialise to local today & schedule midnight refresh
-  useEffect(() => {
-    setSelectedDate(getLocalTodayStr());
-
-    const scheduleMidnightRefresh = () => {
-      const now = new Date();
-      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const msUntilMidnight = tomorrow.getTime() - now.getTime();
-
-      midnightTimerRef.current = setTimeout(() => {
-        setSelectedDate(getLocalTodayStr());
-        scheduleMidnightRefresh(); // re-schedule for the next midnight
-      }, msUntilMidnight + 500); // +500 ms buffer
-    };
-
-    scheduleMidnightRefresh();
-
-    return () => {
-      if (midnightTimerRef.current) clearTimeout(midnightTimerRef.current);
-    };
-  }, [getLocalTodayStr]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -186,16 +160,14 @@ export default function OwnerDashboardPage() {
         credentials: 'include',
       });
       if (response.ok) {
-        setActionSuccess('Booking accepted successfully');
+        setActionSuccess('Booking accepted');
         setTimeout(() => setActionSuccess(null), 2000);
-        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-        setLastUndoable({ bookingId, action: 'accept', at: Date.now() });
-        undoTimeoutRef.current = setTimeout(() => setLastUndoable(null), undoWindowMs);
       } else {
         // Rollback on failure
         setBookings(prevBookings);
         const result = await response.json();
         setActionError(result.error || 'Failed to accept booking');
+        setTimeout(() => setActionError(null), 2000);
       }
     } catch (err) {
       setActionError('Failed to accept booking');
@@ -237,14 +209,12 @@ export default function OwnerDashboardPage() {
       if (response.ok) {
         setActionSuccess('Booking rejected');
         setTimeout(() => setActionSuccess(null), 2000);
-        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-        setLastUndoable({ bookingId, action: 'reject', at: Date.now() });
-        undoTimeoutRef.current = setTimeout(() => setLastUndoable(null), undoWindowMs);
       } else {
         // Rollback on failure
         setBookings(prevBookings);
         const result = await response.json();
         setActionError(result.error || 'Failed to reject booking');
+        setTimeout(() => setActionError(null), 2000);
       }
     } catch (err) {
       setActionError('Failed to reject booking');
@@ -258,7 +228,6 @@ export default function OwnerDashboardPage() {
       if (processingBookingId) return;
       setProcessingBookingId(bookingId);
       setActionError(null);
-      setLastUndoable(null);
       if (undoTimeoutRef.current) {
         clearTimeout(undoTimeoutRef.current);
         undoTimeoutRef.current = null;
@@ -276,6 +245,7 @@ export default function OwnerDashboardPage() {
               ? {
                   ...b,
                   status: 'pending' as const,
+                  undo_used_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 }
               : b
@@ -295,9 +265,11 @@ export default function OwnerDashboardPage() {
           // Rollback on failure
           setBookings(prevSnapshot);
           setActionError(json.error || 'Failed to undo');
+          setTimeout(() => setActionError(null), 2000);
         }
       } catch {
         setActionError('Failed to undo');
+        setTimeout(() => setActionError(null), 2000);
       } finally {
         setProcessingBookingId(null);
       }
@@ -310,7 +282,6 @@ export default function OwnerDashboardPage() {
       if (processingBookingId) return;
       setProcessingBookingId(bookingId);
       setActionError(null);
-      setLastUndoable(null);
       if (undoTimeoutRef.current) {
         clearTimeout(undoTimeoutRef.current);
         undoTimeoutRef.current = null;
@@ -328,6 +299,7 @@ export default function OwnerDashboardPage() {
               ? {
                   ...b,
                   status: 'pending' as const,
+                  undo_used_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 }
               : b
@@ -347,9 +319,11 @@ export default function OwnerDashboardPage() {
           // Rollback on failure
           setBookings(prevSnapshot);
           setActionError(json.error || 'Failed to undo');
+          setTimeout(() => setActionError(null), 2000);
         }
       } catch {
         setActionError('Failed to undo');
+        setTimeout(() => setActionError(null), 2000);
       } finally {
         setProcessingBookingId(null);
       }
@@ -389,62 +363,24 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
-      {actionError && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <span>{actionError}</span>
-          <button
-            type="button"
-            onClick={() => setActionError(null)}
-            className="shrink-0 p-1 rounded hover:bg-amber-100"
-            aria-label="Dismiss"
-          >
-            <CloseIcon className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-      )}
+      {/* Global Toast */}
       {actionSuccess && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {actionSuccess}
-        </div>
+        <Toast
+          message={actionSuccess}
+          variant="success"
+          onDismiss={() => setActionSuccess(null)}
+          duration={2000}
+        />
       )}
-      {lastUndoable && (
-        <div
-          className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
-            lastUndoable.action === 'accept'
-              ? 'border-emerald-200 bg-emerald-50'
-              : 'border-rose-200 bg-rose-50'
-          }`}
-        >
-          <span
-            className={
-              lastUndoable.action === 'accept'
-                ? 'text-emerald-800 font-medium'
-                : 'text-rose-900 font-medium'
-            }
-          >
-            {lastUndoable.action === 'accept' ? 'Accepted.' : 'Rejected.'}
-          </span>
-          {isUndoWindowOpen && (
-            <button
-              type="button"
-              onClick={() =>
-                lastUndoable.action === 'accept'
-                  ? handleUndoAccept(lastUndoable.bookingId)
-                  : handleUndoReject(lastUndoable.bookingId)
-              }
-              disabled={!!processingBookingId}
-              title={UI_CONTEXT.UNDO_LABEL}
-              className={`h-9 w-9 flex items-center justify-center rounded-lg disabled:opacity-50 ${
-                lastUndoable.action === 'accept'
-                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                  : 'bg-rose-100 text-rose-900 hover:bg-rose-200'
-              }`}
-            >
-              <UndoIcon className="h-5 w-5" aria-hidden="true" />
-            </button>
-          )}
-        </div>
+      {actionError && (
+        <Toast
+          message={actionError}
+          variant="error"
+          onDismiss={() => setActionError(null)}
+          duration={2000}
+        />
       )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
         <Stat label="Total Businesses" value={stats?.totalBusinesses ?? 0} />
         <Stat label="Total Bookings" value={stats?.totalBookings ?? 0} />
@@ -459,7 +395,7 @@ export default function OwnerDashboardPage() {
             <h2 className="text-lg font-semibold">Bookings</h2>
 
             {/* Right */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => setShowSearch((prev) => !prev)}
                 className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
@@ -467,12 +403,25 @@ export default function OwnerDashboardPage() {
                 <ExploreIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
               </button>
 
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="h-9 px-3 text-sm border border-gray-300 rounded-lg"
-              />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-medium uppercase">From</span>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="h-9 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 font-medium uppercase">To</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="h-9 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -494,7 +443,7 @@ export default function OwnerDashboardPage() {
               <div className="space-y-4">
                 {filteredBookings.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-500">No bookings for selected date</p>
+                    <p className="text-gray-500">No bookings for selected date range</p>
                   </div>
                 ) : (
                   filteredBookings.map((booking) => (
@@ -519,9 +468,9 @@ export default function OwnerDashboardPage() {
           </div>
 
           <div className="hidden lg:block">
-            {bookings.length === 0 ? (
+            {filteredBookings.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">No bookings for selected date</p>
+                <p className="text-gray-500">No bookings for selected date range</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -546,7 +495,7 @@ export default function OwnerDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {bookings.map((booking) => (
+                    {filteredBookings.map((booking) => (
                       <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">

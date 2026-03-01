@@ -2,9 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { UI_ERROR_CONTEXT } from '@/config/constants';
-import { ROUTES } from '@/lib/utils/navigation';
 
 export default function Error({
   error,
@@ -43,9 +41,6 @@ export default function Error({
           >
             Try again
           </button>
-          <Link href={ROUTES.HOME} className="text-gray-600 hover:text-gray-900 text-sm">
-            Go to home
-          </Link>
         </div>
       </div>
     </div>
