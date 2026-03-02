@@ -1,5 +1,6 @@
 {
   "github": {
     "enabled": false
-  }
+  },
+  "buildCommand": "npm run build:strict"
 }
