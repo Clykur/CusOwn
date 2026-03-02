@@ -12,6 +12,7 @@ import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constant
 import CloseIcon from '@/src/icons/close.svg';
 import UndoIcon from '@/src/icons/undo.svg';
 import ExploreIcon from '@/src/icons/explore.svg';
+import DateFilter from '@/components/owner/date-filter';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -388,7 +389,7 @@ export default function OwnerDashboardPage() {
   });
 
   return (
-    <div className="w-full pb-24 flex flex-col gap-6">
+    <div className="w-full pb-32 flex flex-col gap-6">
       {actionError && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <span>{actionError}</span>
@@ -453,8 +454,8 @@ export default function OwnerDashboardPage() {
       </div>
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4">Your Customers</h2>
-        <div className="bg-white border border-slate-200 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             {/* Left */}
             <h2 className="text-lg font-semibold">Bookings</h2>
 
@@ -464,15 +465,12 @@ export default function OwnerDashboardPage() {
                 onClick={() => setShowSearch((prev) => !prev)}
                 className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
               >
-                <ExploreIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
+                <ExploreIcon className="h-4 w-4 text-gray-600" />
               </button>
 
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="h-9 px-3 text-sm border border-gray-300 rounded-lg"
-              />
+              <div className="w-44 lg:w-52 xl:w-56">
+                <DateFilter value={selectedDate} onChange={setSelectedDate} />
+              </div>
             </div>
           </div>
 
@@ -679,7 +677,7 @@ export default function OwnerDashboardPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-6">
+    <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
       <div className="text-sm text-slate-500">{label}</div>
       <div className="text-3xl font-bold text-slate-900">{value}</div>
     </div>

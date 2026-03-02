@@ -13,6 +13,7 @@ import { supabaseAuth } from '@/lib/supabase/auth';
 import { Toast } from '@/components/ui/toast';
 import DownloadIcon from '@/src/icons/download.svg';
 import CreateBusinessIcon from '@/src/icons/create-business.svg';
+import DateFilter from '@/components/owner/date-filter';
 
 export default function OwnerDashboardPage() {
   const params = useParams();
@@ -1146,7 +1147,7 @@ export default function OwnerDashboardPage() {
       </div>
 
       {/* Tabs Section - Mobile Scrollable */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-lg">
         <div className="flex gap-1 bg-slate-100 p-1 border-b border-slate-200 overflow-x-auto">
           {/* Bookings tab removed from per-salon page; moved to owner dashboard */}
           <button
@@ -1174,12 +1175,10 @@ export default function OwnerDashboardPage() {
         <div className="p-4 lg:p-6">
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full sm:w-64 lg:w-72 h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-            />
+
+            <div className="w-full sm:w-64 lg:w-72">
+              <DateFilter value={selectedDate} onChange={setSelectedDate} />
+            </div>
           </div>
 
           {/* Bookings removed from per-salon page. */}

@@ -224,7 +224,7 @@ export const BusinessProfile = () => {
         aria-busy="true"
         aria-label="Loading business profile"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="flex flex-col gap-2">
             <div className="h-8 w-64 rounded-lg image-skeleton-shine" />
             <div className="h-5 w-32 rounded-full image-skeleton-shine" />
@@ -269,10 +269,10 @@ export const BusinessProfile = () => {
       {/* Header Section: Salon Name → Owner Profile Image (circular) → Owner Name → Phone Icon → Owner Phone Number */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex flex-col">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate leading-tight">
+          <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-tight break-words">
             {salon.salon_name}
           </h1>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-2">
             <span
               className={`px-2 py-0.5 rounded-full text-xs font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
             >

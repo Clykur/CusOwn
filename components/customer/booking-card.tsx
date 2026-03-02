@@ -12,6 +12,7 @@ import BookingsIcon from '@/src/icons/bookings.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface CustomerBookingCardProps {
   booking: any;
@@ -84,7 +85,7 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
         };
     }
   };
-
+  const router = useRouter();
   const statusConfig = getStatusConfig(booking.status);
   const [salonProfile, setSalonProfile] = useState<SalonProfile | null>(null);
 
@@ -168,7 +169,9 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
               />
             )}
             {/* Owner Name */}
-            <span className="font-semibold text-base text-slate-900 truncate">{ownerName}</span>
+            <span className="hidden sm:inline font-semibold text-base text-slate-900 truncate">
+              {ownerName}
+            </span>{' '}
             {/* Phone Icon & Number */}
             <div className="flex items-center text-gray-600 text-sm gap-1 min-w-0">
               {ownerPhone ? (
@@ -188,49 +191,79 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
 
         {booking.slot && (
           <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-100">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-2 border border-slate-200">
-                  <BookingsIcon className="w-4 h-4 text-slate-700" aria-hidden="true" />
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                {/* Date + Time */}
+                <div className="grid grid-cols-2 gap-4 flex-1">
+                  {/* Date */}
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white rounded-lg p-2 border border-slate-200">
+                      <BookingsIcon className="w-4 h-4 text-slate-700" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Date</p>
+                      <p className="font-semibold text-slate-900 text-sm sm:text-base truncate">
+                        {formatDate(booking.slot.date)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Time */}
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white rounded-lg p-2 border border-slate-200">
+                      <ClockIcon className="w-4 h-4 text-slate-700" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Time</p>
+                      <p className="font-semibold text-slate-900 text-sm sm:text-base">
+                        {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Date</p>
-                  <p className="font-semibold text-slate-900 text-sm sm:text-base truncate">
-                    {formatDate(booking.slot.date)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-2 border border-slate-200">
-                  <ClockIcon className="w-4 h-4 text-slate-700" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Time</p>
-                  <p className="font-semibold text-slate-900 text-sm sm:text-base">
-                    {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
-                  </p>
-                </div>
+
+                {/* View Details Button */}
+                <Link
+                  href={`/booking/${booking.booking_id}`}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all text-sm sm:text-base whitespace-nowrap"
+                >
+                  View Details
+                  <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <Link
-            href={`/booking/${booking.booking_id}`}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all text-sm sm:text-base"
-          >
-            View Details
-            <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
-          </Link>
-        </div>
-
         <div className="mt-3 pt-3 border-t border-slate-200">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-slate-500">{UI_CUSTOMER.LABEL_BOOKING_ID}:</p>
-            <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded text-slate-700 border border-slate-200">
-              {booking.booking_id}
-            </span>
+          <div className="flex items-center justify-between gap-3">
+            {/* Booking ID */}
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-xs text-slate-500 whitespace-nowrap">
+                {UI_CUSTOMER.LABEL_BOOKING_ID}:
+              </p>
+              <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded text-slate-700 border border-slate-200 truncate">
+                {booking.booking_id}
+              </span>
+            </div>
+
+            {/* Re-Book Button */}
+            <Link
+              href={`/book/${booking.salon?.booking_link || booking.business?.booking_link}`}
+              onClick={() => {
+                sessionStorage.setItem(
+                  'rebookData',
+                  JSON.stringify({
+                    name: booking.customer_name,
+                    phone: booking.customer_phone,
+                  })
+                );
+              }}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all text-sm sm:text-base"
+            >
+              Re-Book
+              <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </div>
