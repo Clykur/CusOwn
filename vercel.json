@@ -2,5 +2,6 @@
   "github": {
     "enabled": false
   },
-  "buildCommand": "npm run build:strict"
+  "buildCommand": "npm run build:strict",
+  "outputDirectory": ".next-build"
 }
