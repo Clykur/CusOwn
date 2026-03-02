@@ -36,6 +36,7 @@ export default function OwnerDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
 
