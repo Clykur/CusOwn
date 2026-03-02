@@ -9,7 +9,7 @@ import MapPinIcon from '@/src/icons/map-pin.svg';
 import ClockIcon from '@/src/icons/clock.svg';
 
 interface SalonCardProps {
-  salon: Salon;
+  salon: Salon & { distance_km?: number };
 }
 
 export default function SalonCard({ salon }: SalonCardProps) {
@@ -71,6 +71,14 @@ export default function SalonCard({ salon }: SalonCardProps) {
       <div className="flex-1">
         <div className="flex items-start justify-between mb-3">
           <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
+          {salon.distance_km !== undefined && (
+            <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+              {salon.distance_km < 1
+                ? `${(salon.distance_km * 1000).toFixed(0)}m`
+                : `${salon.distance_km.toFixed(1)}km`}{' '}
+              away
+            </span>
+          )}
         </div>
 
         {salon.location && (
@@ -81,7 +89,22 @@ export default function SalonCard({ salon }: SalonCardProps) {
         )}
 
         {salon.address && (
-          <p className="text-sm text-gray-500 mb-4 line-clamp-2 min-h-[2.5rem]">{salon.address}</p>
+          <div className="mb-4">
+            <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] mb-1">
+              {salon.address}
+            </p>
+            {salon.latitude && salon.longitude && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${salon.latitude},${salon.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-blue-600 hover:underline inline-flex items-center gap-1"
+              >
+                <MapPinIcon className="w-2.5 h-2.5" />
+                Open in Google Maps
+              </a>
+            )}
+          </div>
         )}
 
         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">

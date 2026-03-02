@@ -79,6 +79,11 @@ export const filterOwnerBusinessUpdateFields = (
   address: string;
   location: string;
   category: string;
+  city: string;
+  area: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
 }> => {
   const allowedFields = [
     'salon_name',
@@ -90,6 +95,11 @@ export const filterOwnerBusinessUpdateFields = (
     'address',
     'location',
     'category',
+    'city',
+    'area',
+    'pincode',
+    'latitude',
+    'longitude',
   ] as const;
   return filterFields(body, allowedFields);
 };

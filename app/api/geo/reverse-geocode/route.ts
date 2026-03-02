@@ -8,7 +8,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
-import { reverseGeocode } from '@/lib/geo/bigdatacloud';
+import { geolocationService } from '@/lib/services/geolocation.service';
 import {
   ERROR_MESSAGES,
   GEO_RATE_LIMIT_WINDOW_MS,
@@ -48,19 +48,20 @@ export async function GET(request: NextRequest) {
     return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
   }
 
-  const data = await reverseGeocode(latitude, longitude, { localityLanguage });
+  const data = await geolocationService.reverseGeocode(latitude, longitude);
   if (!data) {
     return errorResponse(ERROR_MESSAGES.GEO_SERVICE_UNAVAILABLE, 503);
   }
 
   const response = successResponse({
-    city: data.city ?? data.locality,
-    region: data.principalSubdivision,
+    city: data.city || data.locality,
+    region: data.state || data.principalSubdivision,
     countryCode: data.countryCode,
-    countryName: data.countryName,
-    localityInfo: data.localityInfo,
+    countryName: data.country,
     latitude: data.latitude,
     longitude: data.longitude,
+    address_line1: data.address_line1,
+    postal_code: data.postal_code,
   });
   setCacheHeaders(response, GEO_CACHE_MAX_AGE_SECONDS, GEO_CACHE_MAX_AGE_SECONDS * 2);
   return response;

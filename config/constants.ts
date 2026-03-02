@@ -195,6 +195,9 @@ export const ERROR_MESSAGES = {
   MEDIA_BUSINESS_ACCESS_DENIED: 'You do not have access to this business',
   MEDIA_PROFILE_ACCESS_DENIED: 'You can only update your own profile image',
   MEDIA_BUSINESS_MAX_IMAGES: 'Maximum number of business images reached',
+  INVALID_INPUT: 'Invalid input provided',
+  FORBIDDEN: 'Access forbidden',
+  NOT_FOUND: 'Resource not found',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -217,6 +220,7 @@ export const SUCCESS_MESSAGES = {
   MEDIA_UPLOADED: 'Image uploaded successfully',
   MEDIA_DELETED: 'Image removed successfully',
   PROFILE_IMAGE_UPDATED: 'Profile image updated successfully',
+  UPDATED_SUCCESSFULLY: 'Updated successfully',
 } as const;
 
 /** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */

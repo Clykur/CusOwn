@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,61 +25,106 @@ export default function CustomerSalonListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [locationsLoading, setLocationsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const fetchLocations = useCallback(async () => {
-    setLocationsLoading(true);
-    try {
-      const response = await fetch('/api/salons/locations');
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Locations API error:', response.status, errorText);
-        setLocations([]);
-        return;
-      }
-      const result = await response.json();
-      if (result.success && Array.isArray(result.data)) {
-        setLocations(result.data);
-      } else {
-        console.warn('Locations API returned invalid format:', {
-          success: result.success,
-          hasData: !!result.data,
-          dataType: typeof result.data,
-          error: result.error,
-        });
-        setLocations([]);
-      }
-    } catch (error) {
-      logError(error, 'Locations Fetch');
-      setLocations([]);
-    } finally {
-      setLocationsLoading(false);
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
     }
-  }, []);
 
-  const fetchSalons = useCallback(async () => {
     setLoading(true);
-    try {
-      const url = selectedLocation
-        ? `/api/salons/list?location=${encodeURIComponent(selectedLocation)}`
-        : '/api/salons/list';
-      const response = await fetch(url);
-      const result = await response.json();
-      if (result.success && result.data) {
-        const fetchedSalons = (result.data || []).filter((salon: Salon) => !salon.suspended);
-        setAllSalons(fetchedSalons);
-      } else {
-        setAllSalons([]);
-        if (result.error) {
-          logError(result.error, 'Salons Fetch Error');
+
+    // Fallback function for IP-based geolocation
+    const fallbackToIp = async () => {
+      try {
+        const res = await fetch('/api/geo/ip');
+        if (!res.ok) throw new Error('IP lookup failed');
+        const result = await res.json();
+
+        if (result.success && result.data) {
+          const { latitude, longitude, city } = result.data;
+
+          // If we have coordinates, use them
+          if (
+            typeof latitude === 'number' &&
+            typeof longitude === 'number' &&
+            (latitude !== 0 || longitude !== 0)
+          ) {
+            setUserLocation({ lat: latitude, lng: longitude });
+
+            // Persist location (approximate from IP)
+            await fetch('/api/user/location', {
+              method: 'POST',
+              body: JSON.stringify({
+                latitude,
+                longitude,
+                city: city,
+                country: result.data.countryName,
+              }),
+            });
+            return;
+          }
+
+          // If no coordinates but we have a city, search by city
+          if (city) {
+            setSelectedLocation(city);
+            setLoading(false);
+            return;
+          }
         }
+
+        throw new Error('Could not pinpoint location from IP');
+      } catch (e) {
+        console.error('IP fallback failed:', e);
+        setLoading(false);
+        // Don't show blocking alert, just let them use manual search
       }
-    } catch (error) {
-      logError(error, 'Salons Fetch');
-      setAllSalons([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedLocation]);
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setLoading(false);
+
+        // Persist location in background (non-blocking)
+        try {
+          await fetch('/api/user/location', {
+            method: 'POST',
+            body: JSON.stringify({ latitude, longitude }),
+          });
+        } catch (e) {
+          console.warn('Failed to persist user location:', e);
+        }
+      },
+      async (err) => {
+        console.warn('Geolocation error:', err);
+
+        // Code 3 is timeout, Code 2 is position unavailable
+        if (err.code === 3 || err.code === 2) {
+          await fallbackToIp();
+        } else {
+          setLoading(false);
+          // Handle specific geolocation error codes
+          switch (err.code) {
+            case 1: // PERMISSION_DENIED
+              alert(
+                'Geolocation permission denied. Please enable location access in your browser settings to use this feature.'
+              );
+              break;
+            default:
+              alert('Could not get your location. Please try again or enter it manually.');
+          }
+        }
+      },
+      {
+        timeout: 6000, // Reduced timeout to 6s for better UX with fallback
+        maximumAge: 300000, // Cache location for 5 minutes
+        enableHighAccuracy: false, // Don't force GPS if not needed, faster for desktop
+      }
+    );
+  };
 
   const filteredSalons = useMemo(() => {
     let filtered = allSalons;
@@ -103,18 +148,134 @@ export default function CustomerSalonListPage() {
 
   const totalPages = Math.ceil(filteredSalons.length / ITEMS_PER_PAGE);
 
+  // Reset pagination when search or location changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedLocation]);
 
+  // Single initialization effect: fetch locations and initial salons
   useEffect(() => {
-    fetchLocations();
-    fetchSalons();
-  }, [fetchLocations, fetchSalons]);
+    let isMounted = true;
 
+    const loadData = async () => {
+      try {
+        // Fetch locations and salons in parallel
+        const [locationsRes, salonsRes] = await Promise.all([
+          fetch('/api/salons/locations'),
+          fetch(
+            selectedLocation
+              ? `/api/salons/list?location=${encodeURIComponent(selectedLocation)}`
+              : '/api/salons/list'
+          ),
+        ]);
+
+        if (!isMounted) return;
+
+        // Process locations response
+        if (locationsRes.ok) {
+          const locationsResult = await locationsRes.json();
+          if (locationsResult.success && Array.isArray(locationsResult.data)) {
+            setLocations(locationsResult.data);
+          } else {
+            console.warn('Locations API returned invalid format:', {
+              success: locationsResult.success,
+              hasData: !!locationsResult.data,
+              dataType: typeof locationsResult.data,
+              error: locationsResult.error,
+            });
+            setLocations([]);
+          }
+        } else {
+          const errorText = await locationsRes.text();
+          console.error('Locations API error:', locationsRes.status, errorText);
+          setLocations([]);
+        }
+
+        setLocationsLoading(false);
+
+        // Process salons response
+        if (salonsRes.ok) {
+          const salonsResult = await salonsRes.json();
+          if (salonsResult.success && salonsResult.data) {
+            const fetchedSalons = (salonsResult.data || []).filter(
+              (salon: Salon) => !salon.suspended
+            );
+            setAllSalons(fetchedSalons);
+          } else {
+            setAllSalons([]);
+            if (salonsResult.error) {
+              logError(salonsResult.error, 'Salons Fetch Error');
+            }
+          }
+        } else {
+          setAllSalons([]);
+          console.error('Salons API error:', salonsRes.status);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        if (isMounted) {
+          logError(error, 'Data Fetch');
+          setLocations([]);
+          setAllSalons([]);
+          setLocationsLoading(false);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedLocation]);
+
+  // Handle user location changes separately
   useEffect(() => {
-    fetchSalons();
-  }, [selectedLocation, fetchSalons]);
+    if (!userLocation) return;
+
+    let isMounted = true;
+
+    const loadNearby = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/business/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=20`
+        );
+
+        if (!isMounted) return;
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            const fetchedSalons = (result.data || []).filter((salon: Salon) => !salon.suspended);
+            setAllSalons(fetchedSalons);
+          } else {
+            setAllSalons([]);
+          }
+        } else {
+          setAllSalons([]);
+          console.error('Nearby API error:', response.status);
+        }
+      } catch (error) {
+        if (isMounted) {
+          logError(error, 'Nearby Salons Fetch');
+          setAllSalons([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadNearby();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userLocation]);
 
   return (
     <div className="space-y-8 pb-20 md:pb-12">
@@ -161,24 +322,39 @@ export default function CustomerSalonListPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-slate-600">
-            {filteredSalons.length}{' '}
-            {filteredSalons.length === 1 ? UI_CUSTOMER.RESULT_COUNT : UI_CUSTOMER.RESULTS_COUNT}
-            {searchTerm && ` matching "${searchTerm}"`}
-            {selectedLocation && ` in ${selectedLocation}`}
-          </span>
-          {(searchTerm || selectedLocation) && (
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedLocation('');
-              }}
-              className="text-sm text-slate-900 hover:text-slate-700 font-medium underline"
-            >
-              {UI_CUSTOMER.CTA_ADJUST_FILTERS}
-            </button>
-          )}
+        <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-600">
+              {filteredSalons.length}{' '}
+              {filteredSalons.length === 1 ? UI_CUSTOMER.RESULT_COUNT : UI_CUSTOMER.RESULTS_COUNT}
+              {searchTerm && ` matching "${searchTerm}"`}
+              {selectedLocation && ` in ${selectedLocation}`}
+              {userLocation && ` near you`}
+            </span>
+            {(searchTerm || selectedLocation || userLocation) && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedLocation('');
+                  setUserLocation(null);
+                }}
+                className="text-sm text-slate-900 hover:text-slate-700 font-medium underline ml-2"
+              >
+                {UI_CUSTOMER.CTA_ADJUST_FILTERS}
+              </button>
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleUseMyLocation}
+            disabled={loading}
+            className="text-blue-600 hover:text-blue-800 flex items-center gap-1.5 px-2"
+          >
+            <MapPinIcon className="w-4 h-4" />
+            Use My Location
+          </Button>
         </div>
       </div>
 

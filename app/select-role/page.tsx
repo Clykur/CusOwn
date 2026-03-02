@@ -84,6 +84,14 @@ function SelectRoleContent() {
         const isOwner = state.userType === 'owner' || state.userType === 'both';
         const hasBusiness = state.businessCount >= 1;
 
+        // NEW: If we arrived with not_owner error but the user explicitly wants to be an owner
+        // and we haven't started processing, let's trigger the upgrade if they aren't an owner yet.
+        if (accessError === 'not_owner' && urlRole === 'owner' && !isOwner && !processing) {
+          // Just set the state to show they picked owner and let them click continue
+          // or we can even auto-trigger handleContinue if we want to be very robust.
+          setSelectedRole('owner');
+        }
+
         /**
          * Auto-redirect when no ?role= param:
          * - "both" users → let them pick (no auto-redirect)
@@ -136,7 +144,7 @@ function SelectRoleContent() {
       }
     };
     run().catch(() => setLoading(false));
-  }, [router, urlRole]);
+  }, [router, urlRole, accessError, processing]);
 
   const handleContinue = async () => {
     if (!selectedRole || processing) return;
@@ -154,7 +162,17 @@ function SelectRoleContent() {
         (currentUserType === 'customer' || currentUserType === 'both')) ||
       (selectedRole === 'owner' && (currentUserType === 'owner' || currentUserType === 'both'));
 
+    // Invalidate local state before upgrade to ensure fresh check
+    const { getUserState, clearUserStateCache } = await import('@/lib/utils/user-state');
+    clearUserStateCache();
+
     if (alreadyHasSelectedRole) {
+      const state = await getUserState(user.id, { skipCache: true });
+      if (selectedRole === 'owner' && state.businessCount === 0) {
+        setCurrentStep(2);
+        setProcessing(false);
+        return;
+      }
       router.replace(
         selectedRole === 'owner' ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.CUSTOMER_DASHBOARD
       );

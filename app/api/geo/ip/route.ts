@@ -8,7 +8,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
-import { ipGeolocation } from '@/lib/geo/bigdatacloud';
+import { geolocationService } from '@/lib/services/geolocation.service';
 import { getClientIp } from '@/lib/utils/security';
 import {
   ERROR_MESSAGES,
@@ -49,19 +49,41 @@ export async function GET(request: NextRequest) {
   }
 
   const ipToLookup = ip && ip !== '' ? ip : clientIp;
-  const data = await ipGeolocation(ipToLookup);
+
+  // Handle local development / private IPs
+  const isLocal =
+    ipToLookup === '::1' ||
+    ipToLookup === '127.0.0.1' ||
+    ipToLookup.startsWith('192.168.') ||
+    ipToLookup.startsWith('10.');
+
+  let data = await geolocationService.ipLookup(ipToLookup);
+
+  // If local and lookup failed or returned 0,0, provide a default for dev testing
+  if (isLocal && (!data || (data.latitude === 0 && data.longitude === 0))) {
+    data = {
+      ip: ipToLookup,
+      latitude: 12.9716, // Bangalore (default dev location)
+      longitude: 77.5946,
+      city: 'Bangalore',
+      country: 'India',
+      countryCode: 'IN',
+      state: 'Karnataka',
+    };
+  }
+
   if (!data) {
     return errorResponse(ERROR_MESSAGES.GEO_SERVICE_UNAVAILABLE, 503);
   }
 
   const response = successResponse({
-    ip: data.ip ?? clientIp,
-    city: data.location?.city ?? data.locality,
-    region: data.location?.principalSubdivision,
-    countryCode: data.country?.code,
-    countryName: data.country?.name,
-    latitude: data.location?.latitude,
-    longitude: data.location?.longitude,
+    ip: data.ip || clientIp,
+    city: data.city,
+    region: data.state,
+    countryCode: data.countryCode,
+    countryName: data.country,
+    latitude: data.latitude,
+    longitude: data.longitude,
   });
   setCacheHeaders(response, Math.min(GEO_CACHE_MAX_AGE_SECONDS, 3600), 7200);
   return response;

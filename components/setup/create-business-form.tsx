@@ -50,6 +50,11 @@ export default function CreateBusinessForm({
     address: '',
     location: '',
     category: 'salon',
+    city: '',
+    area: '',
+    pincode: '',
+    latitude: 0,
+    longitude: 0,
   });
   const [success, setSuccess] = useState<{
     bookingLink: string;
@@ -147,11 +152,17 @@ export default function CreateBusinessForm({
     if (formData.opening_time >= formData.closing_time) {
       return 'Closing time must be after opening time';
     }
-    if (!formData.location.trim() || formData.location.trim().length < 2) {
-      return 'Location must be at least 2 characters';
-    }
     if (!formData.address.trim() || formData.address.trim().length < 5) {
-      return 'Address must be at least 5 characters';
+      return 'Address is required (minimum 5 characters)';
+    }
+    if (!formData.location.trim() || formData.location.trim().length < 2) {
+      return 'Location/Area is required';
+    }
+    if (!formData.city?.trim()) {
+      return 'City is required';
+    }
+    if (!formData.latitude || !formData.longitude) {
+      return 'Please set your business location (coordinates)';
     }
     return null;
   };
@@ -227,6 +238,50 @@ export default function CreateBusinessForm({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const handleUseLocation = async () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(
+            `/api/geo/reverse-geocode?latitude=${latitude}&longitude=${longitude}`
+          );
+          if (!res.ok) throw new Error('Failed to fetch address');
+          const result = await res.json();
+          if (result.success && result.data) {
+            const { city, region } = result.data;
+            setFormData((prev) => ({
+              ...prev,
+              latitude,
+              longitude,
+              city: city || prev.city,
+              area: region || prev.area,
+              address: [city, region].filter(Boolean).join(', '),
+              location: city || '',
+            }));
+          }
+        } catch (err) {
+          console.error('Error reverse geocoding:', err);
+          setFormData((prev) => ({ ...prev, latitude, longitude }));
+        } finally {
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error('Error getting location:', err);
+        setLoading(false);
+        alert('Could not get your location. Please enter it manually.');
+      },
+      { timeout: 10000 }
+    );
   };
 
   if (success) {
@@ -479,38 +534,81 @@ export default function CreateBusinessForm({
         </select>
       </div>
       <div>
-        <label htmlFor="location" className={labelClass}>
-          City / area <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="location"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          required
-          minLength={2}
-          maxLength={100}
-          className={inputClass}
-          placeholder="e.g. Bangalore, Karnataka"
-        />
-      </div>
-      <div>
-        <label htmlFor="address" className={labelClass}>
-          Full address <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          id="address"
-          name="address"
-          value={formData.address}
-          onChange={handleChange}
-          required
-          minLength={5}
-          maxLength={500}
-          rows={2}
-          className={`${inputClass} resize-none`}
-          placeholder="Street, city, state, PIN"
-        />
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelClass}>
+            Business location <span className="text-red-500">*</span>
+          </label>
+          <button
+            type="button"
+            onClick={handleUseLocation}
+            disabled={loading}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
+          >
+            Use my location
+          </button>
+        </div>
+        <div className="space-y-2">
+          <textarea
+            id="address"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            required
+            minLength={5}
+            maxLength={500}
+            rows={2}
+            className={`${inputClass} resize-none`}
+            placeholder="Street address, building, floor"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              name="city"
+              value={formData.city || ''}
+              onChange={handleChange}
+              required
+              className={inputClass}
+              placeholder="City"
+            />
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              minLength={2}
+              maxLength={100}
+              className={inputClass}
+              placeholder="Area/Locality"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              name="area"
+              value={formData.area || ''}
+              onChange={handleChange}
+              maxLength={100}
+              className={inputClass}
+              placeholder="Sub-area (Optional)"
+            />
+            <input
+              type="text"
+              name="pincode"
+              value={formData.pincode || ''}
+              onChange={handleChange}
+              maxLength={10}
+              className={inputClass}
+              placeholder="Pincode (Optional)"
+            />
+          </div>
+          {formData.latitude !== 0 && formData.longitude !== 0 && (
+            <div className="text-[10px] text-slate-500 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full" />
+              Location pinned: {formData.latitude?.toFixed(4)}, {formData.longitude?.toFixed(4)}
+            </div>
+          )}
+        </div>
       </div>
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
@@ -710,44 +808,92 @@ export default function CreateBusinessForm({
           </select>
         </div>
         <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
-          <label
-            htmlFor="location"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
-          >
-            City / Area <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="location"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            required
-            minLength={2}
-            maxLength={100}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
-            placeholder="Bangalore, Karnataka"
-          />
-        </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
-          <label
-            htmlFor="address"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
-          >
-            Full Address <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-            minLength={5}
-            maxLength={500}
-            rows={3}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black resize-none"
-            placeholder="123 Main Street, Bangalore, Karnataka 560001"
-          />
+          <div className="flex items-center justify-between mb-2">
+            <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900">
+              Business Location <span className="text-red-500">*</span>
+            </label>
+            <button
+              type="button"
+              onClick={handleUseLocation}
+              disabled={loading}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            >
+              Use My Current Location
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              minLength={5}
+              maxLength={500}
+              className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+              placeholder="Street address and building details"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                name="city"
+                value={formData.city || ''}
+                onChange={handleChange}
+                required
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                placeholder="City"
+              />
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                required
+                minLength={2}
+                maxLength={100}
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                placeholder="Area/Locality"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                name="area"
+                value={formData.area || ''}
+                onChange={handleChange}
+                maxLength={100}
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                placeholder="Sub-area (Optional)"
+              />
+              <input
+                type="text"
+                name="pincode"
+                value={formData.pincode || ''}
+                onChange={handleChange}
+                maxLength={10}
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                placeholder="Pincode (Optional)"
+              />
+            </div>
+
+            {formData.latitude && formData.longitude && (
+              <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-500">
+                <p className="font-semibold text-gray-700 mb-1">Map Preview (Coordinates)</p>
+                <p>
+                  Lat: {formData.latitude!.toFixed(6)}, Lng: {formData.longitude!.toFixed(6)}
+                </p>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${formData.latitude},${formData.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block text-blue-600 hover:underline"
+                >
+                  View on Google Maps →
+                </a>
+              </div>
+            )}
+          </div>
         </div>
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
