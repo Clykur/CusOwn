@@ -49,53 +49,22 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid role. Must be "customer" or "owner"', 400);
     }
 
-    const roleId = ROLE_IDS[requestedRole];
-    const { error: roleInsertError } = await supabaseAdmin.from('user_roles').upsert(
-      {
-        user_id: user.id,
-        role_id: roleId,
-      },
-      {
-        onConflict: 'user_id,role_id',
-        ignoreDuplicates: true,
-      }
-    );
+    const { userService } = await import('@/services/user.service');
+    const profile = await userService.getUserProfile(user.id);
+    const currentRoles =
+      profile?.user_type === 'both'
+        ? ['customer', 'owner']
+        : profile?.user_type === 'admin'
+          ? ['admin']
+          : profile?.user_type
+            ? [profile.user_type]
+            : [];
 
-    if (roleInsertError) {
-      return errorResponse(roleInsertError.message || 'Failed to assign role', 500);
-    }
+    const newRoles = Array.from(new Set([...currentRoles, requestedRole]));
+    await userService.setUserRoles(user.id, newRoles);
 
-    const { data: roleRows, error: rolesError } = await supabaseAdmin
-      .from('user_roles')
-      .select('roles(name)')
-      .eq('user_id', user.id);
-
-    if (rolesError) {
-      return errorResponse(rolesError.message || 'Failed to load user roles', 500);
-    }
-
-    const roleNames = (roleRows ?? [])
-      .map((row: { roles: { name: string } | { name: string }[] | null }) => {
-        const joined = row.roles;
-        if (Array.isArray(joined)) return joined[0]?.name;
-        return joined?.name;
-      })
-      .filter((name): name is string => typeof name === 'string');
-
-    const nextUserType = toUserType(roleNames);
-
-    const { error: profileError } = await supabaseAdmin.from('user_profiles').upsert(
-      {
-        id: user.id,
-        user_type: nextUserType,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' }
-    );
-
-    if (profileError) {
-      return errorResponse(profileError.message || 'Failed to sync user profile', 500);
-    }
+    const updatedProfile = await userService.getUserProfile(user.id);
+    const nextUserType = updatedProfile?.user_type || 'customer';
 
     const { invalidateProfileCache } = await import('@/lib/cache/auth-cache');
     invalidateProfileCache(user.id);
@@ -103,7 +72,7 @@ export async function POST(request: NextRequest) {
     return successResponse({
       role: requestedRole,
       user_type: nextUserType,
-      roles: Array.from(new Set(roleNames)),
+      roles: newRoles,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to upgrade role';

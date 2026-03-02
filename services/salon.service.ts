@@ -96,7 +96,7 @@ export class SalonService {
     const { data, error } = await supabaseAdmin
       .from('businesses')
       .select(
-        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code'
       )
       .eq('booking_link', bookingLink)
       .eq('suspended', false)
