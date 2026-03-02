@@ -269,6 +269,9 @@ export class BookingService {
 
     if (!result || !result.success) {
       const errorMsg = result?.error || 'Booking confirmation failed';
+      if (errorMsg.includes('Another booking for this slot is already confirmed')) {
+        throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
+      }
       throw new Error(errorMsg);
     }
 
@@ -346,37 +349,35 @@ export class BookingService {
   }
 
   /**
-   * Revert confirmed booking to pending (undo accept). Allowed only within UNDO_ACCEPT_REJECT_WINDOW_MINUTES.
+   * Revert confirmed booking to pending (undo accept). Guaranteed by DB RPC for single-use, 5m window, and ownership.
    */
-  async revertConfirmToPending(bookingId: string, actorId?: string | null): Promise<Booking> {
-    const booking = await this.getBookingByUuid(bookingId);
-    if (!booking) {
-      throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
-    }
-    if (booking.undo_used_at) {
-      throw new Error(ERROR_MESSAGES.UNDO_ALREADY_USED);
-    }
-    const allowed = await canTransition(booking.status, 'undo_confirm');
-    if (!allowed) {
-      throw new Error(ERROR_MESSAGES.BOOKING_NOT_CONFIRMED);
-    }
-    const updatedAt = new Date(booking.updated_at).getTime();
-    const windowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
-    if (Date.now() - updatedAt > windowMs) {
-      throw new Error(ERROR_MESSAGES.UNDO_WINDOW_EXPIRED);
-    }
+  async revertConfirmToPending(bookingId: string, actorId: string): Promise<Booking> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
+
     const { data: result, error: rpcError } = await supabaseAdmin.rpc(
       'undo_confirm_booking_atomically',
-      { p_booking_id: bookingId, p_actor_id: actorId ?? null }
+      { p_booking_id: bookingId, p_actor_id: actorId }
     );
+
     if (rpcError) {
       throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
+
     if (!result?.success) {
       const err = (result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
+
+      // Map DB errors to structured ERROR_MESSAGES
+      if (err.includes('Undo already used')) {
+        throw new Error(ERROR_MESSAGES.UNDO_ALREADY_USED);
+      }
+      if (err.includes('Undo window expired')) {
+        throw new Error(ERROR_MESSAGES.UNDO_WINDOW_EXPIRED);
+      }
+      if (err.includes('Unauthorized')) {
+        throw new Error(ERROR_MESSAGES.UNAUTHORIZED);
+      }
       if (
         err.includes('confirmed') &&
         (err.includes('not in') || err.includes('not in confirmed'))
@@ -386,63 +387,66 @@ export class BookingService {
       if (err === 'Booking not found') {
         throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
       }
-      if (err === 'Booking update failed' || err === 'Slot update failed') {
-        throw new Error(ERROR_MESSAGES.BOOKING_REVERT_FAILED);
+      if (err.includes('Slot no longer available') || err.includes('Slot update failed')) {
+        throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
       }
+
       throw new Error(err);
     }
+
     try {
       const { reminderService } = await import('@/services/reminder.service');
       await reminderService.cancelRemindersForBooking(bookingId);
     } catch {
       // Do not block undo on reminder cancellation
     }
+
     const updated = await this.getBookingByUuid(bookingId);
     if (!updated) {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
+
     logBookingLifecycle({
       booking_id: bookingId,
-      slot_id: booking.slot_id,
+      slot_id: updated.slot_id,
       action: 'booking_undo_accept',
-      actor: actorId ?? 'owner',
+      actor: actorId,
       source: 'api',
     });
+
     return updated;
   }
 
   /**
-   * Revert rejected booking to pending (undo reject). Allowed only within window and if slot still available.
+   * Revert rejected booking to pending (undo reject). Guaranteed by DB RPC.
    */
-  async revertRejectToPending(bookingId: string, actorId?: string | null): Promise<Booking> {
-    const booking = await this.getBookingByUuid(bookingId);
-    if (!booking) {
-      throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
-    }
-    if (booking.undo_used_at) {
-      throw new Error(ERROR_MESSAGES.UNDO_ALREADY_USED);
-    }
-    const allowed = await canTransition(booking.status, 'undo_reject');
-    if (!allowed) {
-      throw new Error(ERROR_MESSAGES.BOOKING_NOT_REJECTED);
-    }
-    const updatedAt = new Date(booking.updated_at).getTime();
-    const windowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
-    if (Date.now() - updatedAt > windowMs) {
-      throw new Error(ERROR_MESSAGES.UNDO_WINDOW_EXPIRED);
-    }
+  async revertRejectToPending(bookingId: string, actorId: string): Promise<Booking> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
+
     const { data: result, error: rpcError } = await supabaseAdmin.rpc(
       'undo_reject_booking_atomically',
-      { p_booking_id: bookingId, p_actor_id: actorId ?? null }
+      { p_booking_id: bookingId, p_actor_id: actorId }
     );
+
     if (rpcError) {
       throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
+
     if (!result?.success) {
       const err = (result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
+
+      // Map DB errors
+      if (err.includes('Undo already used')) {
+        throw new Error(ERROR_MESSAGES.UNDO_ALREADY_USED);
+      }
+      if (err.includes('Undo window expired')) {
+        throw new Error(ERROR_MESSAGES.UNDO_WINDOW_EXPIRED);
+      }
+      if (err.includes('Unauthorized')) {
+        throw new Error(ERROR_MESSAGES.UNAUTHORIZED);
+      }
       if (err.includes('Slot') || err.includes('available')) {
         throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
       }
@@ -452,22 +456,23 @@ export class BookingService {
       if (err === 'Booking not found') {
         throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
       }
-      if (err === 'Booking update failed') {
-        throw new Error(ERROR_MESSAGES.BOOKING_REVERT_FAILED);
-      }
+
       throw new Error(err);
     }
+
     const updated = await this.getBookingByUuid(bookingId);
     if (!updated) {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
+
     logBookingLifecycle({
       booking_id: bookingId,
-      slot_id: booking.slot_id,
+      slot_id: updated.slot_id,
       action: 'booking_undo_reject',
-      actor: actorId ?? 'owner',
+      actor: actorId,
       source: 'api',
     });
+
     return updated;
   }
 
@@ -476,7 +481,11 @@ export class BookingService {
   private static BOOKING_SELECT_WITHOUT_UNDO =
     'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at';
 
-  async getSalonBookings(salonId: string, date?: string): Promise<BookingWithDetails[]> {
+  async getSalonBookings(
+    salonId: string,
+    fromDate?: string,
+    toDate?: string
+  ): Promise<BookingWithDetails[]> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
@@ -486,12 +495,13 @@ export class BookingService {
       .eq('business_id', salonId)
       .order('created_at', { ascending: false });
 
-    if (date) {
-      const { data: slots } = await supabaseAdmin
-        .from('slots')
-        .select('id')
-        .eq('business_id', salonId)
-        .eq('date', date);
+    if (fromDate || toDate) {
+      let slotQuery = supabaseAdmin.from('slots').select('id').eq('business_id', salonId);
+
+      if (fromDate) slotQuery = slotQuery.gte('date', fromDate);
+      if (toDate) slotQuery = slotQuery.lte('date', toDate);
+
+      const { data: slots } = await slotQuery;
 
       if (slots && slots.length > 0) {
         const slotIds = slots.map((s) => s.id);
@@ -510,15 +520,18 @@ export class BookingService {
         .select(BookingService.BOOKING_SELECT_WITHOUT_UNDO)
         .eq('business_id', salonId)
         .order('created_at', { ascending: false });
-      if (date) {
-        const { data: slots } = await supabaseAdmin
-          .from('slots')
-          .select('id')
-          .eq('business_id', salonId)
-          .eq('date', date);
+      if (fromDate || toDate) {
+        let slotQuery = supabaseAdmin.from('slots').select('id').eq('business_id', salonId);
+
+        if (fromDate) slotQuery = slotQuery.gte('date', fromDate);
+        if (toDate) slotQuery = slotQuery.lte('date', toDate);
+
+        const { data: slots } = await slotQuery;
         if (slots && slots.length > 0) {
           const slotIds = slots.map((s) => s.id);
           query = query.in('slot_id', slotIds);
+        } else {
+          return [];
         }
       }
       const fallback = await query;

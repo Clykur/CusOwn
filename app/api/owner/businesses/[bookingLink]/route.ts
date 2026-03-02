@@ -6,12 +6,14 @@
 import { NextRequest } from 'next/server';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { userService } from '@/services/user.service';
+import { adminService } from '@/services/admin.service';
 import { requireOwner } from '@/lib/utils/api-auth-pipeline';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
 import { filterOwnerBusinessUpdateFields, validateStringLength } from '@/lib/security/input-filter';
 import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
+import { getClientIp } from '@/lib/utils/security';
 
 const ROUTE_PATCH = 'PATCH /api/owner/businesses/[bookingLink]';
 const ROUTE_DELETE = 'DELETE /api/owner/businesses/[bookingLink]';
@@ -119,12 +121,15 @@ export async function DELETE(
       return errorResponse('Access denied', 403);
     }
 
-    const supabase = requireSupabaseAdmin();
-    const { error } = await supabase.from('businesses').delete().eq('id', owned.id);
-
-    if (error) {
-      return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
-    }
+    const clientIp = getClientIp(request);
+    await adminService.softDeleteBusiness(
+      owned.id,
+      auth.user.id,
+      'Owner requested business deletion',
+      {
+        ip: clientIp ?? null,
+      }
+    );
 
     invalidateApiCacheByPrefix('GET|/api/owner/businesses');
     invalidateApiCacheByPrefix('GET|/api/salons');

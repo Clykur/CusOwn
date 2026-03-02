@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
       return errorResponse('Authentication required', 401);
     }
 
+    const { searchParams } = new URL(request.url);
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
+
     // Get all businesses for the user
     const businesses = await userService.getUserBusinesses(user.id);
 
@@ -38,13 +42,44 @@ export async function GET(request: NextRequest) {
       throw new Error('Database not configured');
     }
 
-    const { data: bookings, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('bookings')
       .select(
-        'id, status, no_show, created_at, business_id, booking_id, customer_name, customer_phone'
+        'id, status, no_show, created_at, business_id, booking_id, customer_name, customer_phone, slot_id'
       )
-      .in('business_id', businessIds)
-      .order('created_at', { ascending: false });
+      .in('business_id', businessIds);
+
+    if (fromDate || toDate) {
+      let slotQuery = supabaseAdmin.from('slots').select('id').in('business_id', businessIds);
+
+      if (fromDate) slotQuery = slotQuery.gte('date', fromDate);
+      if (toDate) slotQuery = slotQuery.lte('date', toDate);
+
+      const { data: slots } = await slotQuery;
+
+      if (slots && slots.length > 0) {
+        query = query.in(
+          'slot_id',
+          slots.map((s) => s.id)
+        );
+      } else {
+        return successResponse({
+          totalBusinesses: businesses.length,
+          totalBookings: 0,
+          confirmedBookings: 0,
+          pendingBookings: 0,
+          rejectedBookings: 0,
+          cancelledBookings: 0,
+          noShowCount: 0,
+          conversionRate: 0,
+          cancellationRate: 0,
+          noShowRate: 0,
+          recentBookings: [],
+        });
+      }
+    }
+
+    const { data: bookings, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('[OWNER_DASHBOARD_STATS] Error fetching bookings:', error);

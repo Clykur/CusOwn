@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server';
 import { requireAdmin } from '@/lib/utils/api-auth-pipeline';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
+import { adminService } from '@/services/admin.service';
 import { auditService } from '@/services/audit.service';
 import { adminNotificationService } from '@/services/admin-notification.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
 import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
+import { getClientIp } from '@/lib/utils/security';
 
 const ROUTE_GET = 'GET /api/admin/businesses/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/businesses/[id]';
@@ -169,34 +171,21 @@ export async function DELETE(
     const { id } = await params;
     const supabase = requireSupabaseAdmin();
 
-    // Get business data for audit
     const { data: business } = await supabase.from('businesses').select('*').eq('id', id).single();
 
     if (!business) {
       return errorResponse('Business not found', 404);
     }
 
-    // Already soft-deleted? Return early.
     if (business.deleted_at) {
       return errorResponse('Business is already deleted', 409);
     }
 
-    // Soft-delete: set deleted_at + 30-day permanent deletion window
-    const now = new Date().toISOString();
-    const permanentDeletionAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await supabase
-      .from('businesses')
-      .update({
-        deleted_at: now,
-        permanent_deletion_at: permanentDeletionAt,
-        deletion_reason: 'Deleted by admin',
-        updated_at: now,
-      })
-      .eq('id', id);
-
-    if (error) {
-      return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
-    }
+    const clientIp = getClientIp(request);
+    await adminService.softDeleteBusiness(id, auth.user.id, 'Deleted by admin', {
+      ip: clientIp ?? null,
+      overrideLegalHold: true,
+    });
 
     await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
       entityId: id,
