@@ -269,6 +269,9 @@ export class BookingService {
 
     if (!result || !result.success) {
       const errorMsg = result?.error || 'Booking confirmation failed';
+      if (errorMsg.includes('Another booking for this slot is already confirmed')) {
+        throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
+      }
       throw new Error(errorMsg);
     }
 

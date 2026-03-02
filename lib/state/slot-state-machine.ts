@@ -16,7 +16,7 @@ const transitions: SlotStateTransition[] = [
   { from: 'reserved', event: 'book', to: 'booked', allowed: true },
   { from: 'reserved', event: 'release', to: 'available', allowed: true },
   { from: 'reserved', event: 'expire', to: 'available', allowed: true },
-  { from: 'booked', event: 'release', to: 'available', allowed: true },
+  { from: 'booked', event: 'release', to: 'available', allowed: false },
 ];
 
 export class SlotStateMachine {

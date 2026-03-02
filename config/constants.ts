@@ -140,6 +140,8 @@ export const ERROR_MESSAGES = {
   DATABASE_ERROR: 'Database error occurred',
   SLOT_NOT_FOUND: 'Slot not found',
   SLOT_NOT_AVAILABLE: 'This slot is no longer available',
+  SLOT_ALREADY_BOOKED:
+    'This slot is already booked. Another booking for this slot has been confirmed.',
   BOOKING_NOT_FOUND: 'Booking not found',
   CUSTOMER_NAME_REQUIRED: 'Customer name is required',
   CUSTOMER_PHONE_REQUIRED: 'Please enter your phone number',

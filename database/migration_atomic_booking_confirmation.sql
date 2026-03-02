@@ -43,6 +43,16 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid slot status', 'slot_status', v_slot_status);
   END IF;
 
+  -- Check for other confirmed bookings for this slot (DB invariant safety)
+  IF EXISTS (
+    SELECT 1 FROM bookings 
+    WHERE slot_id = v_slot_id 
+      AND status = 'confirmed' 
+      AND id != p_booking_id
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Another booking for this slot is already confirmed');
+  END IF;
+
   IF p_actor_id IS NOT NULL THEN
     SELECT user_type INTO v_actor_type
     FROM user_profiles
