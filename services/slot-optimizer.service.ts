@@ -24,92 +24,51 @@ type SlotTemplate = {
 };
 
 /**
- * HashMap-based Slot Template Cache
- * Key: "opening-closing-duration" (e.g., "09:00-18:00-30")
- * Value: Pre-computed time slots array
+ * Bounded LRU slot template cache. Key: opening_time + closing_time + slot_duration.
+ * O(1) get/set; max size bounded for memory safety.
  */
 class SlotTemplateCache {
-  private cache: Map<string, SlotTemplate> = new Map();
-  private maxSize: number = 100; // LRU cache size limit
-  private accessOrder: string[] = []; // Track access order for LRU eviction
+  private readonly maxSize: number = 100;
+  /** Map iteration order = insertion order; re-set moves to end = most recent. */
+  private cache = new Map<string, SlotTemplate>();
 
-  /**
-   * Generate cache key from config
-   * O(1) key generation
-   */
   private getConfigKey(config: SalonTimeConfig): string {
     return `${config.opening_time}-${config.closing_time}-${config.slot_duration}`;
   }
 
-  /**
-   * Get or generate slot template
-   * O(1) lookup + O(n) generation (only on cache miss)
-   */
   getTemplate(config: SalonTimeConfig): Array<{ start: string; end: string }> {
     const key = this.getConfigKey(config);
 
-    // Check cache first (O(1) lookup)
-    const cached = this.cache.get(key);
-    if (cached) {
-      // Update access order for LRU
-      this.updateAccessOrder(key);
-      cached.lastUsed = Date.now();
-      return cached.timeSlots;
+    const existing = this.cache.get(key);
+    if (existing) {
+      this.cache.delete(key);
+      this.cache.set(key, { ...existing, lastUsed: Date.now() });
+      return existing.timeSlots;
     }
 
-    // Generate new template (O(n) where n = number of slots)
     const timeSlots = generateTimeSlots(
       config.opening_time,
       config.closing_time,
       config.slot_duration
     );
 
-    // Add to cache
-    this.addToCache(key, timeSlots);
-
-    return timeSlots;
-  }
-
-  /**
-   * Update access order for LRU eviction
-   */
-  private updateAccessOrder(key: string): void {
-    const index = this.accessOrder.indexOf(key);
-    if (index > -1) {
-      this.accessOrder.splice(index, 1);
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) this.cache.delete(firstKey);
     }
-    this.accessOrder.push(key);
-  }
-
-  /**
-   * Add template to cache with LRU eviction
-   */
-  private addToCache(key: string, timeSlots: Array<{ start: string; end: string }>): void {
-    // Evict least recently used if cache is full
-    if (this.cache.size >= this.maxSize && this.accessOrder.length > 0) {
-      const lruKey = this.accessOrder.shift()!;
-      this.cache.delete(lruKey);
-    }
-
     this.cache.set(key, {
       timeSlots,
       configKey: key,
       lastUsed: Date.now(),
     });
-    this.accessOrder.push(key);
+
+    return timeSlots;
   }
 
-  /**
-   * Clear cache (useful for testing or memory management)
-   */
   clear(): void {
     this.cache.clear();
-    this.accessOrder = [];
   }
 
-  /**
-   * Get cache stats
-   */
   getStats(): { size: number; maxSize: number; keys: string[] } {
     return {
       size: this.cache.size,
