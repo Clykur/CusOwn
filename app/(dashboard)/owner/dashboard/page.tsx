@@ -12,6 +12,7 @@ import { UNDO_ACCEPT_REJECT_WINDOW_MINUTES, UI_CONTEXT } from '@/config/constant
 import { Toast } from '@/components/ui/toast';
 import UndoIcon from '@/src/icons/undo.svg';
 import ExploreIcon from '@/src/icons/explore.svg';
+import DateFilter from '@/components/owner/date-filter';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -35,6 +36,7 @@ export default function OwnerDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
 
@@ -389,8 +391,8 @@ export default function OwnerDashboardPage() {
       </div>
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4">Your Customers</h2>
-        <div className="bg-white border border-slate-200 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             {/* Left */}
             <h2 className="text-lg font-semibold">Bookings</h2>
 
@@ -400,27 +402,11 @@ export default function OwnerDashboardPage() {
                 onClick={() => setShowSearch((prev) => !prev)}
                 className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
               >
-                <ExploreIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
+                <ExploreIcon className="h-4 w-4 text-gray-600" />
               </button>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium uppercase">From</span>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="h-9 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500 font-medium uppercase">To</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="h-9 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                />
+              <div className="w-44 lg:w-52 xl:w-56">
+                <DateFilter value={selectedDate} onChange={setSelectedDate} />
               </div>
             </div>
           </div>
@@ -628,7 +614,7 @@ export default function OwnerDashboardPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-6">
+    <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
       <div className="text-sm text-slate-500">{label}</div>
       <div className="text-3xl font-bold text-slate-900">{value}</div>
     </div>

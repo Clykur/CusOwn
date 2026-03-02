@@ -18,6 +18,7 @@ import { logError } from '@/lib/utils/error-handler';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingPageSkeleton } from '@/components/ui/skeleton';
 import CheckIcon from '@/src/icons/check.svg';
+import CalendarGrid from '@/components/booking/calendar-grid';
 
 const PENDING_BOOKING_KEY = 'pendingBooking';
 
@@ -40,10 +41,6 @@ function isAfterBusinessHours(closeHour: number): boolean {
 
 /**
  * Filter slots based on the business's actual opening/closing hours.
- * - Remove slots outside the business's configured hours
- * - For today: remove slots whose start_time has already passed
- * - For today after closing: return empty (all expired)
- * - For future dates: show full working-hour slots
  */
 function filterSlotsByBusinessHours(
   slots: Slot[],
@@ -119,6 +116,8 @@ type PublicBookingPageProps = { businessSlug: string };
 
 export default function PublicBookingPage({ businessSlug }: PublicBookingPageProps) {
   const router = useRouter();
+  const rebookAppliedRef = useRef(false);
+  const businessFetchedRef = useRef(false);
   const [business, setBusiness] = useState<PublicBusiness | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [closedMessage, setClosedMessage] = useState<string | null>(null);
@@ -127,8 +126,37 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(getLocalTodayStr());
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+
+  // Slot caching: Map of date string to cached slots (for bonus requirement)
+  const [slotCache, setSlotCache] = useState<Map<string, Slot[]>>(new Map());
+  // Closed dates tracking: Set of date strings that are closed
+  const [closedDates, setClosedDates] = useState<Set<string>>(new Set());
+
+  // Initialize customer name/phone from sessionStorage if rebook data exists
+  const getInitialRebookData = (): { name: string; phone: string; applied: boolean } => {
+    if (typeof window === 'undefined') return { name: '', phone: '', applied: false };
+    const raw = sessionStorage.getItem('rebookData');
+    if (!raw) return { name: '', phone: '', applied: false };
+    try {
+      const data = JSON.parse(raw);
+      if (data.name || data.phone) {
+        return { name: data.name ?? '', phone: data.phone ?? '', applied: true };
+      }
+    } catch {
+      sessionStorage.removeItem('rebookData');
+    }
+    return { name: '', phone: '', applied: false };
+  };
+
+  const initialRebook = getInitialRebookData();
+
+  // CRITICAL: Set ref AFTER state declarations but BEFORE any effects run
+  if (initialRebook.applied) {
+    rebookAppliedRef.current = true;
+  }
+
+  const [customerName, setCustomerName] = useState(initialRebook.name);
+  const [customerPhone, setCustomerPhone] = useState(initialRebook.phone);
   const [success, setSuccess] = useState<{
     bookingId: string;
     whatsappUrl: string;
@@ -200,12 +228,39 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const restorePendingBooking = useCallback(
     (loadedSlots: Slot[]) => {
       const pending = loadPendingBooking();
-      if (!pending || pending.businessSlug !== businessSlug) return;
+      if (!pending || pending.businessSlug !== businessSlug) {
+        // Even if no pending, we need to mark as restored if rebook was applied
+        if (rebookAppliedRef.current) {
+          setRestoredFromPending(true);
+        }
+        return;
+      }
 
-      if (pending.customerName) setCustomerName(pending.customerName);
-      if (pending.customerPhone) setCustomerPhone(pending.customerPhone);
-      if (pending.selectedDate) setSelectedDate(pending.selectedDate);
+      // If rebook was applied, only restore date/slot (NOT name/phone)
+      if (rebookAppliedRef.current) {
+        if (pending.selectedDate) {
+          setSelectedDate(pending.selectedDate);
+        }
+        if (pending.selectedSlotId && loadedSlots.length > 0) {
+          const matchedSlot = loadedSlots.find(
+            (s) => s.id === pending.selectedSlotId && s.status === 'available'
+          );
+          if (matchedSlot) setSelectedSlot(matchedSlot);
+        }
+        setRestoredFromPending(true);
+        return;
+      }
 
+      // No rebook applied - restore all fields including name and phone
+      if (pending.customerName) {
+        setCustomerName((prev) => prev || pending.customerName);
+      }
+      if (pending.customerPhone) {
+        setCustomerPhone((prev) => prev || pending.customerPhone);
+      }
+      if (pending.selectedDate) {
+        setSelectedDate(pending.selectedDate);
+      }
       if (pending.selectedSlotId && loadedSlots.length > 0) {
         const matchedSlot = loadedSlots.find(
           (s) => s.id === pending.selectedSlotId && s.status === 'available'
@@ -220,6 +275,10 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
 
   useEffect(() => {
     if (!businessSlug) return;
+    // Prevent duplicate fetches
+    if (businessFetchedRef.current) return;
+    businessFetchedRef.current = true;
+
     let cancelled = false;
     fetch(API_ROUTES.BOOK_BUSINESS(businessSlug), { credentials: 'include' })
       .then((res) => res.json())
@@ -243,7 +302,12 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   }, [businessSlug]);
 
   // Set initial date — prefer pending booking date if available
+  // BUT skip if rebook was applied (we don't want to change date/time on rebook)
   useEffect(() => {
+    // If rebook was applied, skip this effect entirely
+    // Rebook should NOT prefill date/time
+    if (rebookAppliedRef.current) return;
+
     const pending = loadPendingBooking();
     if (pending?.businessSlug === businessSlug && pending.selectedDate) {
       setSelectedDate(pending.selectedDate);
@@ -267,6 +331,14 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
           if (result.data.closed) {
             setClosedMessage(result.data.message || 'Shop is closed on this day.');
             setSlots([]);
+            // Update closed dates tracking
+            setClosedDates((prev) => new Set(prev).add(selectedDate));
+            // Cache empty slots for closed date
+            setSlotCache((prev) => {
+              const next = new Map(prev);
+              next.set(selectedDate, []);
+              return next;
+            });
             return;
           }
           setClosedMessage(null);
@@ -275,9 +347,48 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
             : (result.data.slots ?? []);
           setSlots(loadedSlots);
 
-          // Restore from pending booking if returning from login
-          if (!restoredFromPending) {
+          // Update slot cache (bonus requirement)
+          setSlotCache((prev) => {
+            const next = new Map(prev);
+            next.set(selectedDate, loadedSlots);
+            return next;
+          });
+
+          // Update closed dates - remove if previously closed
+          setClosedDates((prev) => {
+            const next = new Set(prev);
+            next.delete(selectedDate);
+            return next;
+          });
+
+          // CRITICAL: Check if rebook data exists and apply it AFTER slots are loaded
+          // This ensures prefill happens after slot loading completes
+          if (!rebookAppliedRef.current) {
+            const raw = sessionStorage.getItem('rebookData');
+            if (raw) {
+              try {
+                const rebookData = JSON.parse(raw);
+                if (rebookData.name || rebookData.phone) {
+                  rebookAppliedRef.current = true;
+                  if (rebookData.name) setCustomerName(rebookData.name);
+                  if (rebookData.phone) setCustomerPhone(rebookData.phone);
+                }
+              } catch {
+                // Ignore parse errors
+              } finally {
+                sessionStorage.removeItem('rebookData');
+              }
+            }
+          }
+
+          // Restore from pending booking only if:
+          // 1. Not already restored AND
+          // 2. NOT a rebook scenario
+          if (!restoredFromPending && !rebookAppliedRef.current) {
             restorePendingBooking(loadedSlots);
+          } else if (rebookAppliedRef.current && !restoredFromPending) {
+            // Rebook was applied, mark as restored to prevent further calls
+            setRestoredFromPending(true);
           }
 
           if (selectedSlot) {
@@ -294,7 +405,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     return () => {
       cancelled = true;
     };
-  }, [business, selectedDate, restoredFromPending, restorePendingBooking]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [business, selectedDate, restorePendingBooking]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSlotSelect = async (slot: Slot) => {
     if (slot.status === 'booked' || slot.status === 'reserved') {
@@ -506,30 +617,12 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
             <label className="block text-sm font-medium text-slate-700 mb-2">
               {UI_CUSTOMER.LABEL_SELECT_DATE}
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <button
-                type="button"
-                onClick={() => setSelectedDate(todayStr)}
-                className={`px-4 py-2 rounded-xl border-2 transition-colors ${
-                  selectedDate === todayStr
-                    ? 'border-slate-900 bg-slate-100 text-slate-900'
-                    : 'border-slate-300 text-slate-700 hover:border-slate-400'
-                }`}
-              >
-                Today ({formatDate(todayStr)})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(tomorrowStr)}
-                className={`px-4 py-2 rounded-xl border-2 transition-colors ${
-                  selectedDate === tomorrowStr
-                    ? 'border-slate-900 bg-slate-100 text-slate-900'
-                    : 'border-slate-300 text-slate-700 hover:border-slate-400'
-                }`}
-              >
-                Tomorrow ({formatDate(tomorrowStr)})
-              </button>
-            </div>
+            <CalendarGrid
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              datesWithSlots={slotCache}
+              closedDates={closedDates}
+            />
           </div>
 
           {selectedDate && (
