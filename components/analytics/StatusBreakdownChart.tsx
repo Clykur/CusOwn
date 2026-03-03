@@ -24,40 +24,31 @@ export default function StatusBreakdownChart({
   return (
     <Card className="rounded-xl border border-slate-200 shadow-sm min-w-0">
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Booking Status Breakdown</h3>
-      <div className="flex h-72 items-center min-w-0">
-        <div className="h-full w-1/2 min-w-0">
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              minWidth: 0,
-              minHeight: 180,
-            }}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={62}
-                  outerRadius={88}
-                  paddingAngle={2}
-                  isAnimationActive
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number | undefined, name?: string) => [
-                    value ?? 0,
-                    name || 'Value',
-                  ]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+      <div className="flex min-w-0 items-center" style={{ height: 288 }}>
+        <div className="h-full w-1/2 min-w-0" style={{ minHeight: 200 }}>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={62}
+                outerRadius={88}
+                paddingAngle={2}
+                isAnimationActive
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number | undefined, name?: string) => [
+                  value ?? 0,
+                  name || 'Value',
+                ]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
         <div className="w-1/2 space-y-2">
           <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>

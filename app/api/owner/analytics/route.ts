@@ -65,6 +65,11 @@ export async function GET(request: NextRequest) {
         businessId === 'all'
           ? await analyticsService.getCustomerRetentionForBusinesses(userBusinessIds)
           : await analyticsService.getCustomerRetention(businessId);
+    } else if (type === 'advanced') {
+      if (businessId === 'all') {
+        return errorResponse('Advanced analytics requires a single business_id', 400);
+      }
+      data = await analyticsService.getOwnerAnalyticsAdvanced(businessId, startDate, endDate);
     } else {
       return errorResponse('Invalid analytics type', 400);
     }

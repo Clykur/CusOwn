@@ -91,6 +91,18 @@ export interface RetentionPoint {
   totalBookings: number;
 }
 
+export interface AdvancedAnalytics {
+  peakHoursHeatmap: { hour: number; bookingCount: number }[];
+  repeatCustomerPercentage: number;
+  cancellationRate: number;
+  revenueTrend: { date: string; revenueCents: number }[];
+  servicePopularityRanking: {
+    serviceId: string;
+    serviceName: string;
+    bookingCount: number;
+  }[];
+}
+
 export default function AnalyticsDashboard({
   businesses,
   selectedBusinessId,
@@ -106,6 +118,7 @@ export default function AnalyticsDashboard({
   const [dailyData, setDailyData] = useState<DailyPoint[]>([]);
   const [peakHours, setPeakHours] = useState<PeakHourPoint[]>([]);
   const [retention, setRetention] = useState<RetentionPoint[] | null>(null);
+  const [advancedAnalytics, setAdvancedAnalytics] = useState<AdvancedAnalytics | null>(null);
 
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -132,6 +145,7 @@ export default function AnalyticsDashboard({
         setDailyData(parsed.dailyData ?? []);
         setPeakHours(parsed.peakHours ?? []);
         setRetention(parsed.retention ?? []);
+        setAdvancedAnalytics(parsed.advancedAnalytics ?? null);
         setLastUpdatedAt(parsed.lastUpdatedAt ? new Date(parsed.lastUpdatedAt) : null);
         hasCached = true;
         setLoading(false);
@@ -145,7 +159,8 @@ export default function AnalyticsDashboard({
       const { user } = await getServerSessionClient();
       if (!user) throw new Error('Authentication required');
 
-      const [overviewRes, dailyRes, peakRes, retentionRes] = await Promise.all([
+      const isSingleBusiness = selectedBusinessId !== 'all';
+      const requests: Promise<Response>[] = [
         fetch(
           `/api/owner/analytics?business_id=${selectedBusinessId}&type=overview&start_date=${startDate}&end_date=${endDate}`,
           { credentials: 'include' }
@@ -161,41 +176,74 @@ export default function AnalyticsDashboard({
         fetch(`/api/owner/analytics?business_id=${selectedBusinessId}&type=retention`, {
           credentials: 'include',
         }),
-      ]);
+      ];
+      if (isSingleBusiness) {
+        requests.push(
+          fetch(
+            `/api/owner/analytics?business_id=${selectedBusinessId}&type=advanced&start_date=${startDate}&end_date=${endDate}`,
+            { credentials: 'include' }
+          )
+        );
+      }
+      const settled = await Promise.allSettled(requests);
+      const overviewRes = settled[0].status === 'fulfilled' ? settled[0].value : null;
+      const dailyRes = settled[1].status === 'fulfilled' ? settled[1].value : null;
+      const peakRes = settled[2].status === 'fulfilled' ? settled[2].value : null;
+      const retentionRes = settled[3].status === 'fulfilled' ? settled[3].value : null;
+      const advancedRes =
+        isSingleBusiness && settled[4].status === 'fulfilled' ? settled[4].value : null;
 
       const next: {
         analytics: AnalyticsOverview | null;
         dailyData: DailyPoint[];
         peakHours: PeakHourPoint[];
         retention: RetentionPoint[];
+        advancedAnalytics: AdvancedAnalytics | null;
       } = {
         analytics: null,
         dailyData: [],
         peakHours: [],
         retention: [],
+        advancedAnalytics: null,
       };
 
-      if (overviewRes.ok) {
+      if (overviewRes?.ok) {
         const json = await overviewRes.json();
         if (json?.success) next.analytics = json.data;
       }
-      if (dailyRes.ok) {
+      if (dailyRes?.ok) {
         const json = await dailyRes.json();
         if (json?.success) next.dailyData = json.data;
       }
-      if (peakRes.ok) {
+      if (peakRes?.ok) {
         const json = await peakRes.json();
         if (json?.success) next.peakHours = json.data;
       }
-      if (retentionRes.ok) {
+      if (retentionRes?.ok) {
         const json = await retentionRes.json();
         if (json?.success) next.retention = json.data;
+      }
+      if (advancedRes?.ok) {
+        const json = await advancedRes.json();
+        if (json?.success && json.data) {
+          next.advancedAnalytics = {
+            peakHoursHeatmap: json.data.peakHoursHeatmap ?? [],
+            repeatCustomerPercentage: json.data.repeatCustomerPercentage ?? 0,
+            cancellationRate: json.data.cancellationRate ?? 0,
+            revenueTrend: json.data.revenueTrend ?? [],
+            servicePopularityRanking: json.data.servicePopularityRanking ?? [],
+          };
+          if (next.advancedAnalytics.peakHoursHeatmap.length > 0) {
+            next.peakHours = next.advancedAnalytics.peakHoursHeatmap;
+          }
+        }
       }
 
       setAnalytics(next.analytics);
       setDailyData(next.dailyData);
       setPeakHours(next.peakHours);
       setRetention(next.retention);
+      setAdvancedAnalytics(next.advancedAnalytics);
       const stamp = new Date();
       setLastUpdatedAt(stamp);
 
@@ -217,6 +265,7 @@ export default function AnalyticsDashboard({
         setDailyData([]);
         setPeakHours([]);
         setRetention([]);
+        setAdvancedAnalytics(null);
       }
     } finally {
       setLoading(false);
@@ -315,7 +364,7 @@ export default function AnalyticsDashboard({
         </motion.div>
       ) : (
         <>
-          <KPISection analytics={analytics} />
+          <KPISection analytics={analytics} advanced={advancedAnalytics} />
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <Suspense
@@ -356,7 +405,18 @@ export default function AnalyticsDashboard({
               <div className="h-72 animate-pulse rounded-xl border border-slate-200 bg-slate-100" />
             }
           >
-            <ServicePerformanceTable services={analytics?.services || []} />
+            <ServicePerformanceTable
+              services={
+                advancedAnalytics?.servicePopularityRanking?.length
+                  ? advancedAnalytics.servicePopularityRanking.map((s) => ({
+                      id: s.serviceId,
+                      name: s.serviceName,
+                      count: s.bookingCount,
+                      revenueCents: 0,
+                    }))
+                  : (analytics?.services ?? [])
+              }
+            />
           </Suspense>
 
           <OperationalHealthPanel

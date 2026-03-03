@@ -20,6 +20,7 @@ import { runStressBookingSlotTests } from './stress-booking-slot.test';
 import { runUnitBusinessDiscoveryRankingTests } from './unit-business-discovery-ranking.test';
 import { runUnitReviewsTests } from './unit-reviews.test';
 import { runUnitRescheduleCancellationTests } from './unit-reschedule-cancellation.test';
+import { runUnitRecommendationsAnalyticsTests } from './unit-recommendations-analytics.test';
 
 const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'lib/utils/string', run: runUnitUtilsStringTests },
@@ -38,6 +39,7 @@ const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'business discovery ranking', run: runUnitBusinessDiscoveryRankingTests },
   { name: 'reviews & ratings', run: runUnitReviewsTests },
   { name: 'reschedule & cancellation rules', run: runUnitRescheduleCancellationTests },
+  { name: 'recommendations & analytics', run: runUnitRecommendationsAnalyticsTests },
 ];
 
 async function main(): Promise<void> {

@@ -21,7 +21,11 @@ export default function OwnerAnalyticsPage() {
         if (cancelled) return;
         if (Array.isArray(json.data)) {
           setBusinesses(json.data);
-          if (json.data.length > 0) setSelectedBusinessId('all');
+          if (json.data.length === 1) {
+            setSelectedBusinessId(json.data[0].id);
+          } else if (json.data.length > 0) {
+            setSelectedBusinessId('all');
+          }
         }
       } catch (err) {
         console.error('Failed to load businesses for analytics', err);
