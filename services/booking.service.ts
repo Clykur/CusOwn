@@ -27,6 +27,7 @@ import {
   METRICS_BOOKING_REJECTED,
   METRICS_BOOKING_CANCELLED_USER,
   METRICS_BOOKING_CANCELLED_SYSTEM,
+  METRICS_INVALID_STATE_TRANSITION_TOTAL,
 } from '@/config/constants';
 import { cache } from 'react';
 
@@ -152,7 +153,12 @@ export class BookingService {
 
     const bookingWithDetails = await this.getBookingByUuidWithDetails(booking.id);
     if (bookingWithDetails) {
-      await emitBookingCreated(bookingWithDetails);
+      try {
+        await emitBookingCreated(bookingWithDetails);
+      } catch (notifyErr) {
+        console.error('Notification/event failed after booking created:', notifyErr);
+        // Booking already committed; do not fail the request (failure handling: notification fail ≠ booking fail).
+      }
       await metricsService.increment('bookings.created');
       await metricsService.increment(METRICS_BOOKING_CREATED);
       logBookingLifecycle({
@@ -264,11 +270,17 @@ export class BookingService {
     );
 
     if (funcError) {
+      if (String(funcError.message || '').includes('Invalid booking transition')) {
+        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+      }
       throw new Error(funcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
     if (!result || !result.success) {
       const errorMsg = result?.error || 'Booking confirmation failed';
+      if (String(errorMsg).includes('Invalid booking transition')) {
+        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+      }
       if (errorMsg.includes('Another booking for this slot is already confirmed')) {
         throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
       }
@@ -319,11 +331,18 @@ export class BookingService {
     });
 
     if (rpcError) {
+      if (String(rpcError.message || '').includes('Invalid booking transition')) {
+        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+      }
       throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
     if (!result?.success) {
-      throw new Error((result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR);
+      const errMsg = (result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
+      if (String(errMsg).includes('Invalid booking transition')) {
+        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+      }
+      throw new Error(errMsg);
     }
 
     const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
@@ -701,6 +720,9 @@ export class BookingService {
       .single();
 
     if (error) {
+      if (String(error.message || '').includes('Invalid booking transition')) {
+        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+      }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
@@ -756,6 +778,9 @@ export class BookingService {
       .single();
 
     if (error) {
+      if (String(error.message || '').includes('Invalid booking transition')) {
+        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+      }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 

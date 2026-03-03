@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-import { Calendar } from 'lucide-react';
+import CalendarIcon from '@/src/icons/calendar.svg';
 
 type Props = {
   value: string;
@@ -89,7 +89,7 @@ export default function DateFilter({ value, onChange }: Props) {
           ${value ? 'border-black bg-gray-50' : 'border-gray-300 bg-white hover:bg-gray-50'}`}
         >
           <span>{value || formatToYYYYMMDD(today)}</span>
-          <Calendar className="h-4 w-4 text-gray-600" />
+          <CalendarIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
         </button>
       </div>
 

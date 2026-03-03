@@ -3,7 +3,11 @@
  * Unit tests: lib/utils/geo
  */
 
-import { haversineDistance, parseAndValidateCoordinates } from '../lib/utils/geo';
+import {
+  haversineDistance,
+  parseAndValidateCoordinates,
+  validateCoordinates,
+} from '../lib/utils/geo';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -52,6 +56,24 @@ export function runUnitUtilsGeoTests(): void {
       threw = true;
     }
     assert(threw, 'Expected parseAndValidateCoordinates to throw');
+  });
+
+  runTest('validateCoordinates_rejects_0_0', () => {
+    assert(validateCoordinates(0, 0) === false, 'Expected (0,0) to be rejected');
+  });
+
+  runTest('validateCoordinates_accepts_valid_coords', () => {
+    assert(validateCoordinates(51.5, -0.1) === true, 'Expected valid coords to pass');
+  });
+
+  runTest('parseAndValidateCoordinates_throws_for_0_0', () => {
+    let threw = false;
+    try {
+      parseAndValidateCoordinates(0, 0);
+    } catch (e) {
+      threw = true;
+    }
+    assert(threw, 'Expected parseAndValidateCoordinates(0,0) to throw');
   });
 }
 
