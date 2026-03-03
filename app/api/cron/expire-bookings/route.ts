@@ -4,7 +4,10 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { validateCronSecret } from '@/lib/security/cron-auth';
 import { metricsService } from '@/lib/monitoring/metrics';
-import { METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN } from '@/config/constants';
+import {
+  METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN,
+  METRICS_OBSERVABILITY_CRON_HEALTH_STATUS,
+} from '@/config/constants';
 import { withCronRunLog } from '@/services/cron-run.service';
 
 export async function POST(request: NextRequest) {
@@ -18,9 +21,11 @@ export async function POST(request: NextRequest) {
         METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN,
         Math.floor(Date.now() / 1000)
       );
+      await metricsService.setGauge(METRICS_OBSERVABILITY_CRON_HEALTH_STATUS, 1);
       return successResponse(null, 'Expired bookings processed successfully');
     });
   } catch (error) {
+    await metricsService.setGauge(METRICS_OBSERVABILITY_CRON_HEALTH_STATUS, 0).catch(() => {});
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }

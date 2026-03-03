@@ -18,6 +18,8 @@ import {
   BOOKING_IDEMPOTENCY_HEADER,
   METRICS_BOOKING_CREATED,
   METRICS_BOOKING_CONFLICT_TOTAL,
+  METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL,
+  METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL,
   METRICS_INVALID_STATE_TRANSITION_TOTAL,
 } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
@@ -26,6 +28,9 @@ import { emitBookingCreated } from '@/lib/events/booking-events';
 import { metricsService } from '@/lib/monitoring/metrics';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
+import { recordIpUserSighting, computeAndStoreRisk } from '@/services/fraud.service';
+import { hashIp } from '@/lib/fraud/ip-hash';
+import { logStructured } from '@/lib/observability/structured-log';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { withBookingRetry } from '@/lib/booking-retry';
 const IDEMPOTENCY_TTL_HOURS = 24;
@@ -187,6 +192,10 @@ export async function POST(request: NextRequest) {
     }
     if (status === 'in_progress') {
       await metricsService.increment(METRICS_BOOKING_CONFLICT_TOTAL);
+      await metricsService.increment(METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL);
+      logStructured('warn', 'Slot conflict: booking in progress', {
+        metric: 'slot_conflict_total',
+      });
       return errorResponse('Booking request in progress; retry shortly', 409);
     }
     if (!createdBookingId) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
@@ -205,6 +214,12 @@ export async function POST(request: NextRequest) {
 
     await emitBookingCreated(bookingWithDetails);
     await metricsService.increment(METRICS_BOOKING_CREATED);
+    await metricsService.increment(METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL);
+    const serverUser = await getServerUser(request);
+    if (serverUser?.id) {
+      recordIpUserSighting(hashIp(clientIP), serverUser.id).catch(() => {});
+      computeAndStoreRisk(serverUser.id).catch(() => {});
+    }
     await reminderService.scheduleBookingReminders(booking.id);
 
     const whatsapp = whatsappService.generateBookingRequestMessage(

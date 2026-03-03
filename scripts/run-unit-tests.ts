@@ -21,6 +21,7 @@ import { runUnitBusinessDiscoveryRankingTests } from './unit-business-discovery-
 import { runUnitReviewsTests } from './unit-reviews.test';
 import { runUnitRescheduleCancellationTests } from './unit-reschedule-cancellation.test';
 import { runUnitRecommendationsAnalyticsTests } from './unit-recommendations-analytics.test';
+import { runUnitFraudObservabilityTests } from './unit-fraud-observability.test';
 
 const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'lib/utils/string', run: runUnitUtilsStringTests },
@@ -40,6 +41,7 @@ const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'reviews & ratings', run: runUnitReviewsTests },
   { name: 'reschedule & cancellation rules', run: runUnitRescheduleCancellationTests },
   { name: 'recommendations & analytics', run: runUnitRecommendationsAnalyticsTests },
+  { name: 'fraud & observability', run: runUnitFraudObservabilityTests },
 ];
 
 async function main(): Promise<void> {
