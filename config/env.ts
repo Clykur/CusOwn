@@ -56,6 +56,10 @@ const envSchema = z.object({
   MEDIA_VALIDATE_MAGIC_BYTES: z.string().default('true'),
   /** BigDataCloud geo APIs: optional key for higher limits / IP lookup when required. */
   BIGDATACLOUD_API_KEY: z.string().optional(),
+  /** Nominatim geocoding base URL (optional; fallback from constants). */
+  NOMINATIM_URL: z.string().url().optional(),
+  /** OSRM routing server URL (optional; when unset, internal graph/fallback is used). */
+  OSRM_URL: z.string().url().optional(),
   FEATURE_PAYMENT_CANARY: z.string().default('true'),
   FEATURE_RESCHEDULE: z.string().default('true'),
   FEATURE_NO_SHOW: z.string().default('true'),
@@ -136,6 +140,8 @@ export const env = {
   },
   geo: {
     bigDataCloudApiKey: rawEnv.BIGDATACLOUD_API_KEY || '',
+    nominatimUrl: rawEnv.NOMINATIM_URL || '',
+    osrmUrl: rawEnv.OSRM_URL || '',
   },
 } as const;
 
