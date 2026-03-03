@@ -9,6 +9,12 @@ import { KDTree } from './spatial-index';
 import { computeRoute, computeTravelTime } from './shortest-path';
 import { haversineDistance, assertValidCoordinates } from '../utils/geo';
 
+/** Sanitize a value for logging to prevent log injection (strip newlines/carriage returns). */
+function sanitizeLogValue(value: unknown): string {
+  const str = value instanceof Error ? value.message : String(value);
+  return str.replace(/[\r\n]+/g, ' ');
+}
+
 interface RouteQuery {
   startLat: number;
   startLng: number;
@@ -177,7 +183,7 @@ export class RoutingService {
         }
       } catch (err) {
         this.stats.osrmFailures++;
-        console.error('OSRM routing failed, falling back', err);
+        console.error('OSRM routing failed, falling back:', sanitizeLogValue(err));
       }
     }
 
@@ -361,7 +367,7 @@ export class RoutingService {
       }
       return null;
     } catch (err) {
-      console.error('OSRM error', err);
+      console.error('OSRM error:', sanitizeLogValue(err));
       return null;
     }
   }
