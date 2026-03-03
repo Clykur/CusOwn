@@ -118,6 +118,9 @@ export const VALIDATION = {
   OWNER_NAME_MAX_LENGTH: 100,
   ADDRESS_MIN_LENGTH: 5,
   ADDRESS_MAX_LENGTH: 500,
+  REVIEW_COMMENT_MAX_LENGTH: 2000,
+  REVIEW_RATING_MIN: 1,
+  REVIEW_RATING_MAX: 5,
 } as const;
 
 /** Simple email format for input validation (local + @ + domain). */
@@ -202,6 +205,11 @@ export const ERROR_MESSAGES = {
   INVALID_INPUT: 'Invalid input provided',
   FORBIDDEN: 'Access forbidden',
   NOT_FOUND: 'Resource not found',
+  REVIEW_BOOKING_NOT_CONFIRMED: 'Booking must be confirmed to submit a review',
+  REVIEW_ALREADY_EXISTS: 'Review already exists for this booking',
+  REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',
+  REVIEW_PROFANITY: 'Comment contains inappropriate content',
+  REVIEW_NOT_FOUND: 'Review not found',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -215,6 +223,8 @@ export const SUCCESS_MESSAGES = {
   BOOKING_CANCELLED: 'Booking cancelled successfully',
   REMINDER_SENT: 'Reminder sent successfully',
   USER_BLOCKED: 'User blocked successfully',
+  REVIEW_CREATED: 'Review submitted successfully',
+  REVIEW_VISIBILITY_UPDATED: 'Review visibility updated',
   USER_UNBLOCKED: 'User unblocked successfully',
   USER_DELETED: 'User deleted successfully',
   ACCOUNT_DELETED:
@@ -273,6 +283,10 @@ export const UI_CONTEXT = {
   REVERTED_TO_PENDING: 'Booking reverted to pending',
   /** Owner: status label when customer cancelled after accept. */
   CANCELLED_BY_CUSTOMER: 'Cancelled by customer',
+  /** Owner: label for customer rating on a booking. */
+  LABEL_CUSTOMER_RATING: 'Customer rating',
+  /** Owner: business rating summary (e.g. "4.2 ★ (12 reviews)"). */
+  BUSINESS_RATING_REVIEWS: (avg: string, count: number) => `${avg} ★ (${count} reviews)`,
   /** Create business: info when owner reuses a WhatsApp number already used for another business. */
   WHATSAPP_ALREADY_USED_FOR: (businessName: string) =>
     `This number is already used for "${businessName}". You can use it for this business too.`,
@@ -309,6 +323,16 @@ export const UI_CUSTOMER = {
   CTA_ADJUST_FILTERS: 'Adjust filters',
   PROVIDER_FALLBACK: 'Provider',
   LABEL_BOOKING_ID: 'Appointment ID',
+  VIEW_DETAILS: 'View Details',
+  LABEL_YOUR_RATING: 'Your rating',
+  LABEL_NOT_RATED: 'Not rated',
+  LABEL_BUSINESS_RATING: 'Business rating',
+  RATE_YOUR_VISIT: 'Rate your visit',
+  SUBMIT_RATING: 'Submit rating',
+  SUBMITTING_RATING: 'Submitting...',
+  RATING_SUBMIT_FAILED: 'Failed to submit rating',
+  ADD_COMMENT_OPTIONAL: 'Add a comment (optional)',
+  REBOOK: 'Re-Book',
   BREADCRUMB_BACK_EXPLORE: 'Back to Explore Services',
   BOOK_PAGE_SUB: 'Book your appointment',
   BOOKING_SENT_HEADING: 'Booking Request Sent!',
@@ -382,6 +406,14 @@ export const METRICS_INVALID_STATE_TRANSITION_TOTAL = 'invalid_state_transition_
 /** Phase 5: Rate limits (security). Booking creation per IP + per user. */
 export const RATE_LIMIT_BOOKING_WINDOW_MS = 60_000;
 export const RATE_LIMIT_BOOKING_MAX_PER_WINDOW = 10;
+/** Reviews: per user per hour. */
+export const RATE_LIMIT_REVIEW_WINDOW_MS = 60 * 60 * 1000;
+export const RATE_LIMIT_REVIEW_MAX_PER_WINDOW = 10;
+
+/** Profanity filter: blocked substrings (lowercase) for review comments. Expand as needed. */
+export const REVIEW_PROFANITY_WORDS: readonly string[] = [
+  'blockedword', // test fixture; add production terms as needed
+] as const;
 /** Phase 5: Admin endpoints — per user + per IP. */
 export const RATE_LIMIT_ADMIN_WINDOW_MS = 60_000;
 export const RATE_LIMIT_ADMIN_MAX_PER_WINDOW = 100;

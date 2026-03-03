@@ -123,7 +123,7 @@ export class SalonService {
       let query = supabaseAdmin
         .from('businesses')
         .select(
-          'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+          'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, rating_avg, review_count'
         )
         .eq('id', salonId);
 

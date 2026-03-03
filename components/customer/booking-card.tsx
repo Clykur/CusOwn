@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import { UI_CUSTOMER } from '@/config/constants';
+import { UI_CUSTOMER, UI_CONTEXT } from '@/config/constants';
 import CheckIcon from '@/src/icons/check.svg';
 import CloseIcon from '@/src/icons/close.svg';
 import ClockIcon from '@/src/icons/clock.svg';
@@ -12,10 +12,11 @@ import BookingsIcon from '@/src/icons/bookings.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import StarRating from '@/components/booking/star-rating';
 
 interface CustomerBookingCardProps {
   booking: any;
+  onRated?: () => void;
 }
 
 interface SalonProfile {
@@ -29,8 +30,11 @@ interface SalonProfile {
 
 const FETCH_CACHE: RequestCache = 'default';
 
-export default function CustomerBookingCard({ booking }: CustomerBookingCardProps) {
+export default function CustomerBookingCard({ booking, onRated }: CustomerBookingCardProps) {
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
+  const [pendingRating, setPendingRating] = useState(0);
 
   const getStatusConfig = (status: string) => {
     if (isNoShow) {
@@ -85,7 +89,6 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
         };
     }
   };
-  const router = useRouter();
   const statusConfig = getStatusConfig(booking.status);
   const [salonProfile, setSalonProfile] = useState<SalonProfile | null>(null);
 
@@ -147,6 +150,25 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
                 <span className="truncate">{location}</span>
               </div>
             )}
+            {/* Business combined rating (all customers) */}
+            {((booking.salon?.review_count ?? booking.business?.review_count ?? 0) > 0 ||
+              booking.salon?.rating_avg != null ||
+              booking.business?.rating_avg != null) && (
+              <div className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-700">
+                <span className="text-amber-500 font-medium" aria-hidden="true">
+                  ★
+                </span>
+                <span>
+                  {UI_CUSTOMER.LABEL_BUSINESS_RATING}:{' '}
+                  {UI_CONTEXT.BUSINESS_RATING_REVIEWS(
+                    String(
+                      (booking.salon?.rating_avg ?? booking.business?.rating_avg)?.toFixed(1) ?? '—'
+                    ),
+                    booking.salon?.review_count ?? booking.business?.review_count ?? 0
+                  )}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {/* Owner Profile Image */}
@@ -191,11 +213,10 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
 
         {booking.slot && (
           <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-100">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                {/* Date + Time */}
-                <div className="grid grid-cols-2 gap-4 flex-1">
-                  {/* Date */}
+            <div className="flex flex-col gap-4">
+              {/* Date + Time + Rating + View Details (same row, View Details on right) */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <div className="bg-white rounded-lg p-2 border border-slate-200">
                       <BookingsIcon className="w-4 h-4 text-slate-700" aria-hidden="true" />
@@ -207,8 +228,6 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
                       </p>
                     </div>
                   </div>
-
-                  {/* Time */}
                   <div className="flex items-center gap-3">
                     <div className="bg-white rounded-lg p-2 border border-slate-200">
                       <ClockIcon className="w-4 h-4 text-slate-700" aria-hidden="true" />
@@ -220,15 +239,80 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
                       </p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white rounded-lg p-2 border border-slate-200 flex items-center justify-center">
+                      <span className="text-amber-500 text-sm font-bold" aria-hidden="true">
+                        ★
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">
+                        {UI_CUSTOMER.LABEL_YOUR_RATING}
+                      </p>
+                      {booking.review ? (
+                        <div className="flex items-center gap-2">
+                          <StarRating value={booking.review.rating} readonly size="sm" />
+                          <span className="font-semibold text-slate-900 text-sm">
+                            {booking.review.rating} / 5
+                          </span>
+                        </div>
+                      ) : booking.status === 'confirmed' ? (
+                        <div className="space-y-1">
+                          <StarRating
+                            value={pendingRating}
+                            readonly={false}
+                            size="sm"
+                            disabled={submittingRating}
+                            onChange={async (rating) => {
+                              setRatingError(null);
+                              setPendingRating(rating);
+                              setSubmittingRating(true);
+                              try {
+                                const res = await fetch('/api/reviews', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({
+                                    booking_id: booking.id,
+                                    rating,
+                                  }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  setRatingError(data?.error || UI_CUSTOMER.RATING_SUBMIT_FAILED);
+                                  setPendingRating(0);
+                                  return;
+                                }
+                                onRated?.();
+                              } catch {
+                                setRatingError(UI_CUSTOMER.RATING_SUBMIT_FAILED);
+                                setPendingRating(0);
+                              } finally {
+                                setSubmittingRating(false);
+                              }
+                            }}
+                          />
+                          {ratingError && <p className="text-xs text-red-600">{ratingError}</p>}
+                          {submittingRating && (
+                            <p className="text-xs text-slate-500">
+                              {UI_CUSTOMER.SUBMITTING_RATING}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="font-semibold text-slate-500 text-sm">
+                          {UI_CUSTOMER.LABEL_NOT_RATED}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-
-                {/* View Details Button */}
                 <Link
                   href={`/booking/${booking.booking_id}`}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all text-sm sm:text-base whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-xl shadow-sm hover:bg-slate-800 hover:shadow transition-all text-sm whitespace-nowrap flex-shrink-0 border border-slate-900"
                 >
-                  View Details
-                  <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+                  {UI_CUSTOMER.VIEW_DETAILS}
+                  <ChevronRightIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -236,7 +320,7 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
         )}
 
         <div className="mt-3 pt-3 border-t border-slate-200">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Booking ID */}
             <div className="flex items-center gap-2 min-w-0">
               <p className="text-xs text-slate-500 whitespace-nowrap">
@@ -247,7 +331,7 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
               </span>
             </div>
 
-            {/* Re-Book Button */}
+            {/* Re-Book: outline style to differentiate from View Details */}
             <Link
               href={`/book/${booking.salon?.booking_link || booking.business?.booking_link}`}
               onClick={() => {
@@ -259,10 +343,10 @@ export default function CustomerBookingCard({ booking }: CustomerBookingCardProp
                   })
                 );
               }}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all text-sm sm:text-base"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-800 font-semibold rounded-xl border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all text-sm whitespace-nowrap shadow-sm"
             >
-              Re-Book
-              <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+              {UI_CUSTOMER.REBOOK}
+              <ChevronRightIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             </Link>
           </div>
         </div>

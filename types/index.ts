@@ -64,6 +64,10 @@ export type Salon = {
   suspended?: boolean;
   created_at: string;
   updated_at: string;
+  /** Cached average of visible reviews; from businesses.rating_avg */
+  rating_avg?: number | null;
+  /** Count of visible reviews; from businesses.review_count */
+  review_count?: number | null;
 };
 
 /** Public business shape for QR booking: no owner_user_id, no owner_name. */
@@ -130,9 +134,15 @@ export type Booking = {
   undo_used_at?: string | null;
 };
 
+export type BookingReview = {
+  rating: number;
+  comment: string | null;
+};
+
 export type BookingWithDetails = Booking & {
   salon?: Salon;
   slot?: Slot;
+  review?: BookingReview;
 };
 
 export type ApiResponse<T = unknown> = {

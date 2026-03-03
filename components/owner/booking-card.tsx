@@ -165,6 +165,12 @@ export default function BookingCard({
           </div>
         )}
 
+        {booking.review && (
+          <p className="mb-3 text-sm text-gray-600" aria-label={UI_CONTEXT.LABEL_CUSTOMER_RATING}>
+            {UI_CONTEXT.LABEL_CUSTOMER_RATING}: {booking.review.rating} ★
+          </p>
+        )}
+
         {/* Booking ID */}
         <div className="mb-3 text-xs text-gray-600 font-mono">{booking.booking_id}</div>
 

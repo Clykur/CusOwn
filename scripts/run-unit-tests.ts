@@ -18,6 +18,7 @@ import { runUnitInputFilterTests } from './unit-input-filter.test';
 import { runUnitCsrfTests } from './unit-csrf.test';
 import { runStressBookingSlotTests } from './stress-booking-slot.test';
 import { runUnitBusinessDiscoveryRankingTests } from './unit-business-discovery-ranking.test';
+import { runUnitReviewsTests } from './unit-reviews.test';
 
 const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'lib/utils/string', run: runUnitUtilsStringTests },
@@ -34,6 +35,7 @@ const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'lib/security/csrf', run: () => runUnitCsrfTests() },
   { name: 'stress/booking-slot', run: runStressBookingSlotTests },
   { name: 'business discovery ranking', run: runUnitBusinessDiscoveryRankingTests },
+  { name: 'reviews & ratings', run: runUnitReviewsTests },
 ];
 
 async function main(): Promise<void> {
