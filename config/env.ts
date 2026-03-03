@@ -44,6 +44,10 @@ const envSchema = z.object({
   REMINDER_24H_BEFORE_HOURS: z.string().default('24'),
   REMINDER_2H_BEFORE_HOURS: z.string().default('2'),
   CANCELLATION_MIN_HOURS_BEFORE: z.string().default('2'),
+  /** No-show: mark confirmed bookings as no-show this many minutes after slot end (cron). */
+  NO_SHOW_AUTO_MARK_MINUTES: z.string().default('30'),
+  /** Default max reschedules per booking when business has no override. */
+  MAX_RESCHEDULE_COUNT: z.string().default('5'),
   /** Storage bucket for uploads (business + profile images). */
   UPLOAD_STORAGE_BUCKET: z.string().min(1).default('uploads'),
   /** Media: retention days for soft-deleted media before hard purge. */
@@ -128,6 +132,8 @@ export const env = {
     reminder24hBeforeHours: parseInt(rawEnv.REMINDER_24H_BEFORE_HOURS, 10),
     reminder2hBeforeHours: parseInt(rawEnv.REMINDER_2H_BEFORE_HOURS, 10),
     cancellationMinHoursBefore: parseInt(rawEnv.CANCELLATION_MIN_HOURS_BEFORE, 10),
+    noShowAutoMarkMinutes: parseInt(rawEnv.NO_SHOW_AUTO_MARK_MINUTES, 10),
+    maxRescheduleCount: parseInt(rawEnv.MAX_RESCHEDULE_COUNT, 10),
   },
   upload: {
     storageBucket: rawEnv.UPLOAD_STORAGE_BUCKET,

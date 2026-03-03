@@ -505,9 +505,9 @@ export class BookingService {
   }
 
   private static BOOKING_SELECT =
-    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at';
+    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at';
   private static BOOKING_SELECT_WITHOUT_UNDO =
-    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at';
+    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at';
 
   async getSalonBookings(
     salonId: string,
@@ -709,7 +709,10 @@ export class BookingService {
       );
       const hoursUntilAppointment =
         (slotDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
-      if (hoursUntilAppointment < 2 && booking.status === 'confirmed') {
+      if (
+        hoursUntilAppointment < env.booking.cancellationMinHoursBefore &&
+        booking.status === 'confirmed'
+      ) {
         throw new Error(ERROR_MESSAGES.CANCELLATION_TOO_LATE);
       }
     }
@@ -718,18 +721,13 @@ export class BookingService {
       throw new Error('Database not configured');
     }
 
-    const now = new Date().toISOString();
-    const { data, error } = await supabaseAdmin
-      .from('bookings')
-      .update({
-        status: BOOKING_STATUS.CANCELLED,
-        cancelled_by: 'customer',
-        cancellation_reason: reason || null,
-        cancelled_at: now,
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    const defaultWindowMinutes = env.booking.cancellationMinHoursBefore * 60;
+    const { data: result, error } = await supabaseAdmin.rpc('cancel_booking_atomically', {
+      p_booking_id: bookingId,
+      p_cancelled_by: 'customer',
+      p_cancellation_reason: reason ?? null,
+      p_default_cancellation_window_minutes: defaultWindowMinutes,
+    });
 
     if (error) {
       if (String(error.message || '').includes('Invalid booking transition')) {
@@ -738,14 +736,19 @@ export class BookingService {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
+    const out = result as { success?: boolean; error?: string };
+    if (!out?.success) {
+      throw new Error((out?.error as string) || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+
+    const data = await this.getBookingByUuid(bookingId);
     if (!data) {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    await slotService.updateSlotStatus(booking.slot_id, SLOT_STATUS.AVAILABLE);
-
-    if (bookingWithDetails) {
-      await emitBookingCancelled(bookingWithDetails, 'customer');
+    const updatedWithDetails = await this.getBookingByUuidWithDetails(bookingId);
+    if (updatedWithDetails) {
+      await emitBookingCancelled(updatedWithDetails, 'customer');
       await metricsService.increment('bookings.cancelled');
       await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
       logBookingLifecycle({
@@ -776,18 +779,13 @@ export class BookingService {
       throw new Error('Database not configured');
     }
 
-    const now = new Date().toISOString();
-    const { data, error } = await supabaseAdmin
-      .from('bookings')
-      .update({
-        status: BOOKING_STATUS.CANCELLED,
-        cancelled_by: 'owner',
-        cancellation_reason: reason || null,
-        cancelled_at: now,
-      })
-      .eq('id', bookingId)
-      .select()
-      .single();
+    const defaultWindowMinutes = env.booking.cancellationMinHoursBefore * 60;
+    const { data: result, error } = await supabaseAdmin.rpc('cancel_booking_atomically', {
+      p_booking_id: bookingId,
+      p_cancelled_by: 'owner',
+      p_cancellation_reason: reason ?? null,
+      p_default_cancellation_window_minutes: defaultWindowMinutes,
+    });
 
     if (error) {
       if (String(error.message || '').includes('Invalid booking transition')) {
@@ -796,11 +794,15 @@ export class BookingService {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
+    const out = result as { success?: boolean; error?: string };
+    if (!out?.success) {
+      throw new Error((out?.error as string) || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+
+    const data = await this.getBookingByUuid(bookingId);
     if (!data) {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
-
-    await slotService.updateSlotStatus(booking.slot_id, SLOT_STATUS.AVAILABLE);
 
     const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
     if (bookingWithDetails) {
