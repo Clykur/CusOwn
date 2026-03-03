@@ -7,7 +7,7 @@ import { env } from '@/config/env';
 import { WeightedGraph } from './graph-data-structures';
 import { KDTree } from './spatial-index';
 import { computeRoute, computeTravelTime } from './shortest-path';
-import { haversineDistance } from '../utils/geo';
+import { haversineDistance, assertValidCoordinates } from '../utils/geo';
 
 interface RouteQuery {
   startLat: number;
@@ -321,6 +321,10 @@ export class RoutingService {
     mode: 'walking' | 'driving'
   ): Promise<RouteResult | null> {
     if (!this.osrmUrl) return null;
+
+    // Defensive: ensure coordinates are valid before using them in an external request URL (SSRF mitigation).
+    assertValidCoordinates(startLat, startLng);
+    assertValidCoordinates(endLat, endLng);
 
     const profile = mode === 'walking' ? 'foot' : 'car';
     const url = `${this.osrmUrl}/route/v1/${profile}/${startLng},${startLat};${endLng},${endLat}?overview=false`;

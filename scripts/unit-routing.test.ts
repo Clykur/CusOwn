@@ -311,9 +311,14 @@ async function runTests() {
   service.clearCache(); // ensure we hit OSRM rather than cached internal route
   let warned = false;
   const origWarn = console.warn;
-  console.warn = (...args: any[]) => {
+  // Sanitize log arguments to prevent log injection when tests capture warnings (CodeQL log-injection).
+  const sanitizeLogArg = (arg: unknown): unknown => {
+    if (typeof arg === 'string') return arg.replace(/[\r\n]+/g, ' ');
+    return arg;
+  };
+  console.warn = (...args: unknown[]) => {
     warned = true;
-    origWarn(...args);
+    origWarn(...args.map(sanitizeLogArg));
   };
 
   const osrmRoute = await service.computeRoute({
