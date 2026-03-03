@@ -390,6 +390,14 @@ export const GEO_PROVIDER_MAX_RETRIES = 1;
 export const GEO_IP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 export const GEO_IP_CACHE_MAX_ENTRIES = 5000;
 
+/** Nearby/search: max businesses to enrich with routed distance (avoids N parallel routing calls). */
+export const ROUTING_ENRICH_MAX_BUSINESSES = 15;
+
+/** Geocoding: default Nominatim API base when NOMINATIM_URL is not set. */
+export const GEO_NOMINATIM_DEFAULT_BASE = 'https://nominatim.openstreetmap.org';
+/** OSM data: Geofabrik download site (documentation / external reference). */
+export const GEO_OSM_DOWNLOAD_REF = 'https://download.geofabrik.de/';
+
 /** Phase 5: Refund/cancellation policy (documentation; no product change). */
 export const REFUND_POLICY_NOTE = 'Refunds follow payment provider policy and business discretion.';
 

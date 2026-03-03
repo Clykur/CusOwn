@@ -61,6 +61,8 @@ const ALLOWED_URL_HOSTS = new Set([
   'www.bigdatacloud.com', // Geo: BigDataCloud docs (lib/geo comment)
   'www.w3.org', // W3C SVG namespace in data URIs (config/constants.ts DEFAULT_AVATAR_DATA_URI)
   'placeholder.supabase.co', // env default for unit tests/CI (config/env.ts)
+  'nominatim.openstreetmap.org', // Geo: Nominatim default (config/constants.ts)
+  'download.geofabrik.de', // OSM data docs (config/constants.ts GEO_OSM_DOWNLOAD_REF)
 ]);
 
 const RULES = [

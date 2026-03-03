@@ -5,8 +5,9 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { getServerUser } from '@/lib/supabase/server-auth';
-import { haversineDistance, validateCoordinates, validateRadius } from '@/lib/utils/geo';
+import { haversineDistance, parseAndValidateCoordinates, validateRadius } from '@/lib/utils/geo';
 import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
+import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@/config/constants';
 
 const searchRateLimit = enhancedRateLimit({
   maxRequests: 20,
@@ -61,14 +62,12 @@ export async function POST(request: NextRequest) {
 
     const filteredBody = filterFields(body, allowedFields);
 
-    // Validate coordinates
+    // Validate coordinates (if present)
     if (filteredBody.latitude !== undefined || filteredBody.longitude !== undefined) {
-      if (
-        filteredBody.latitude === undefined ||
-        filteredBody.longitude === undefined ||
-        !validateCoordinates(filteredBody.latitude, filteredBody.longitude)
-      ) {
-        return errorResponse('Invalid coordinates', 400);
+      try {
+        parseAndValidateCoordinates(filteredBody.latitude, filteredBody.longitude);
+      } catch {
+        return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
       }
     }
 
@@ -79,12 +78,12 @@ export async function POST(request: NextRequest) {
       !filteredBody.area &&
       !filteredBody.pincode
     ) {
-      return errorResponse('Location required', 400);
+      return errorResponse(ERROR_MESSAGES.LOCATION_REQUIRED, 400);
     }
 
     // Validate radius
-    if (filteredBody.radius_km && !validateRadius(filteredBody.radius_km)) {
-      return errorResponse('Invalid radius', 400);
+    if (filteredBody.radius_km !== undefined && !validateRadius(filteredBody.radius_km)) {
+      return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
     const page = Math.max(1, Math.min(100, filteredBody.page || 1));
@@ -132,14 +131,17 @@ export async function POST(request: NextRequest) {
     }
 
     type BusinessResult = {
-      id: any;
-      salon_name: any;
-      location: any;
-      category: any;
-      latitude: any;
-      longitude: any;
-      area?: any;
+      id: string;
+      salon_name: string | null;
+      location: string | null;
+      category: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      area?: string | null;
       distance_km?: number;
+      estimated_time_minutes?: number;
+      is_routed?: boolean;
+      route_source?: string;
     };
 
     let results: BusinessResult[] = businesses as BusinessResult[];
@@ -150,25 +152,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Distance filtering
-    if (filteredBody.latitude && filteredBody.longitude) {
+    if (filteredBody.latitude !== undefined && filteredBody.longitude !== undefined) {
       const radius = filteredBody.radius_km || 10;
+      if (!validateRadius(radius)) return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
+
+      const { lat: userLat, lng: userLng } = parseAndValidateCoordinates(
+        filteredBody.latitude,
+        filteredBody.longitude
+      );
 
       results = results
         .map((business): BusinessResult | null => {
-          if (!business.latitude || !business.longitude) return null;
+          const bizLat = Number(business.latitude);
+          const bizLng = Number(business.longitude);
+          if (!Number.isFinite(bizLat) || !Number.isFinite(bizLng)) return null;
 
-          const distance = haversineDistance(
-            filteredBody.latitude!,
-            filteredBody.longitude!,
-            business.latitude,
-            business.longitude
-          );
-
-          if (distance > radius) return null;
+          const distance = haversineDistance(userLat, userLng, bizLat, bizLng);
+          if (!Number.isFinite(distance) || distance > radius) return null;
 
           return {
             ...business,
-            distance_km: Math.round(distance * 10) / 10,
+            // keep raw distance (km). Presentation layer should round.
+            distance_km: distance,
           };
         })
         .filter((b): b is BusinessResult => b !== null);
@@ -176,6 +181,34 @@ export async function POST(request: NextRequest) {
       if (filteredBody.sort_by === 'distance') {
         results.sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
       }
+
+      // Enrich only first N with routed distance/time to limit parallel routing calls
+      const toEnrich = results.slice(0, ROUTING_ENRICH_MAX_BUSINESSES);
+      const { getRoute } = await import('@/lib/routing');
+      const enriched = await Promise.all(
+        toEnrich.map(async (biz) => {
+          try {
+            const route = await getRoute({
+              startLat: userLat,
+              startLng: userLng,
+              endLat: Number(biz.latitude),
+              endLng: Number(biz.longitude),
+              mode: 'walking',
+            });
+            return {
+              ...biz,
+              distance_km: route.distance_km,
+              estimated_time_minutes: route.estimated_time_minutes,
+              is_routed: route.routed,
+              route_source: route.source,
+            } as BusinessResult;
+          } catch {
+            return biz;
+          }
+        })
+      );
+      const rest = results.slice(ROUTING_ENRICH_MAX_BUSINESSES);
+      results = [...enriched, ...rest];
     }
 
     const sanitized = results.map((business) => ({

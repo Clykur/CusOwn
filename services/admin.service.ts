@@ -364,7 +364,7 @@ export class AdminService {
     let profileQuery = supabase
       .from('user_profiles')
       .select('*', { count: 'exact' })
-      .is('deleted_at', null)
+      //.is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (filters?.role) {
@@ -438,7 +438,7 @@ export class AdminService {
     const { data: profiles, error } = await supabase
       .from('user_profiles')
       .select('*')
-      .is('deleted_at', null)
+      //.is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
