@@ -98,7 +98,7 @@ export const createBookingSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
-  service_ids: z.array(z.string().uuid()).optional(),
+  service_ids: z.array(z.string().uuid()).max(10, 'At most 10 services per booking').optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

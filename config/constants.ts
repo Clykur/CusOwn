@@ -22,6 +22,10 @@ import { env } from './env';
 
 export const SLOT_RESERVATION_TIMEOUT_MINUTES = env.payment.slotExpiryMinutes;
 
+/** Slot hold TTL bounds (minutes). Reservation expiry must be within this range for production. */
+export const SLOT_HOLD_TTL_MIN_MINUTES = 5;
+export const SLOT_HOLD_TTL_MAX_MINUTES = 15;
+
 // Number of days ahead to generate slots when lazy loading
 export const SLOT_GENERATION_WINDOW_DAYS = 7;
 
@@ -361,6 +365,19 @@ export const METRICS_BOOKING_CANCELLED_SYSTEM = 'booking_cancelled_system';
 export const METRICS_PAYMENT_CREATED = 'payment_created';
 export const METRICS_PAYMENT_SUCCEEDED = 'payment_succeeded';
 export const METRICS_PAYMENT_FAILED = 'payment_failed';
+
+/** Distributed booking: retry on deadlock/serialization (idempotent). */
+export const BOOKING_RETRY_MAX_ATTEMPTS = 3;
+export const BOOKING_RETRY_BACKOFF_MS = [50, 100, 200] as const;
+
+/** Observability: distributed booking metrics. */
+export const METRICS_BOOKING_CONFLICT_TOTAL = 'booking_conflict_total';
+export const METRICS_BOOKING_DEADLOCK_RETRY_TOTAL = 'booking_deadlock_retry_total';
+export const METRICS_EXPIRED_HOLD_CLEANUP_TOTAL = 'expired_hold_cleanup_total';
+export const METRICS_CRON_LOCK_SKIPPED_TOTAL = 'cron_lock_skipped_total';
+/** Refresh slot_generation lock every 2 min so long runs do not lose lock before TTL (10 min). */
+export const CRON_SLOT_GENERATION_LOCK_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+export const METRICS_INVALID_STATE_TRANSITION_TOTAL = 'invalid_state_transition_total';
 
 /** Phase 5: Rate limits (security). Booking creation per IP + per user. */
 export const RATE_LIMIT_BOOKING_WINDOW_MS = 60_000;

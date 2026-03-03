@@ -5,9 +5,10 @@ function toRad(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-// Validate numeric latitude/longitude ranges. Returns boolean rather than throwing.
+// Validate numeric latitude/longitude ranges. Rejects (0,0) as invalid/sentinel. Returns boolean rather than throwing.
 export function validateCoordinates(lat: number, lng: number): boolean {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  if (lat === 0 && lng === 0) return false;
   if (lat < -90 || lat > 90) return false;
   if (lng < -180 || lng > 180) return false;
   return true;

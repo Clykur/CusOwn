@@ -17,6 +17,8 @@ import {
   ERROR_MESSAGES,
   BOOKING_IDEMPOTENCY_HEADER,
   METRICS_BOOKING_CREATED,
+  METRICS_BOOKING_CONFLICT_TOTAL,
+  METRICS_INVALID_STATE_TRANSITION_TOTAL,
 } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { auditService } from '@/services/audit.service';
@@ -25,7 +27,7 @@ import { metricsService } from '@/lib/monitoring/metrics';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
-
+import { withBookingRetry } from '@/lib/booking-retry';
 const IDEMPOTENCY_TTL_HOURS = 24;
 
 export async function POST(request: NextRequest) {
@@ -153,28 +155,40 @@ export async function POST(request: NextRequest) {
       serviceIds
     );
 
-    const { data: idemResult, error: idemError } = await supabase.rpc(
-      'create_booking_idempotent_reserve',
-      {
-        p_key: idempotencyKey,
-        p_ttl_hours: IDEMPOTENCY_TTL_HOURS,
-        p_business_id: params.p_business_id,
-        p_slot_id: params.p_slot_id,
-        p_customer_name: params.p_customer_name,
-        p_customer_phone: params.p_customer_phone,
-        p_booking_id: params.p_booking_id,
-        p_customer_user_id: params.p_customer_user_id,
-        p_total_duration_minutes: params.p_total_duration_minutes,
-        p_total_price_cents: params.p_total_price_cents,
-        p_services_count: params.p_services_count,
-        p_service_data: params.p_service_data,
-      }
-    );
-
-    if (idemError) throw new Error(idemError.message);
+    const idemResult = await withBookingRetry({
+      fn: async () => {
+        const { data, error } = await supabase.rpc('create_booking_idempotent_reserve', {
+          p_key: idempotencyKey,
+          p_ttl_hours: IDEMPOTENCY_TTL_HOURS,
+          p_business_id: params.p_business_id,
+          p_slot_id: params.p_slot_id,
+          p_customer_name: params.p_customer_name,
+          p_customer_phone: params.p_customer_phone,
+          p_booking_id: params.p_booking_id,
+          p_customer_user_id: params.p_customer_user_id,
+          p_total_duration_minutes: params.p_total_duration_minutes,
+          p_total_price_cents: params.p_total_price_cents,
+          p_services_count: params.p_services_count,
+          p_service_data: params.p_service_data,
+        });
+        if (error) throw error;
+        return data;
+      },
+    });
 
     const row = Array.isArray(idemResult) ? idemResult[0] : idemResult;
+    const status = row?.status as string | undefined;
     const createdBookingId = row?.booking_id;
+
+    if (status === 'duplicate' && row?.response_snapshot) {
+      const response = NextResponse.json(row.response_snapshot);
+      setNoCacheHeaders(response);
+      return response;
+    }
+    if (status === 'in_progress') {
+      await metricsService.increment(METRICS_BOOKING_CONFLICT_TOTAL);
+      return errorResponse('Booking request in progress; retry shortly', 409);
+    }
     if (!createdBookingId) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
 
     const booking = await bookingService.getBookingByUuidWithDetails(createdBookingId);
