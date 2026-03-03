@@ -19,6 +19,7 @@ import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingPageSkeleton } from '@/components/ui/skeleton';
 import CheckIcon from '@/src/icons/check.svg';
 import CalendarGrid from '@/components/booking/calendar-grid';
+import { useSlotUpdates } from '@/lib/realtime/use-slot-updates';
 
 const PENDING_BOOKING_KEY = 'pendingBooking';
 
@@ -173,6 +174,33 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   useEffect(() => {
     getCSRFToken().catch(console.error);
   }, []);
+
+  const handleRealtimeSlotsUpdate = useCallback(
+    (nextSlots: Slot[]) => {
+      setSlots(nextSlots);
+      setSlotCache((prev) => {
+        const next = new Map(prev);
+        if (selectedDate) next.set(selectedDate, nextSlots);
+        return next;
+      });
+      if (selectedSlot) {
+        const updated = nextSlots.find((s) => s.id === selectedSlot.id);
+        if (!updated || updated.status !== 'available') {
+          setSelectedSlot(null);
+          setSlotValidationError(UI_CUSTOMER.SLOT_NO_LONGER_AVAILABLE);
+        }
+      }
+    },
+    [selectedDate, selectedSlot]
+  );
+
+  useSlotUpdates({
+    businessId: business?.id ?? null,
+    date: selectedDate,
+    slots,
+    onSlotsUpdate: handleRealtimeSlotsUpdate,
+    enabled: !!business && !!selectedDate && !success,
+  });
 
   // Midnight reset: when the day rolls over, update the date and re-render
   useEffect(() => {

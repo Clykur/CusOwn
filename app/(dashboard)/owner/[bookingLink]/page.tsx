@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { API_ROUTES, ERROR_MESSAGES, SLOT_DURATIONS, VALIDATION } from '@/config/constants';
 import { MediaListItem, Salon, Slot } from '@/types';
+import { useSlotUpdates } from '@/lib/realtime/use-slot-updates';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { handleApiError, logError } from '@/lib/utils/error-handler';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
@@ -265,6 +266,18 @@ export default function OwnerDashboardPage() {
     if (!salon) return;
     fetchSlots();
   }, [salon, selectedDate, fetchSlots]);
+
+  const slotsDate = selectedDate || new Date().toISOString().split('T')[0];
+  const handleRealtimeSlotsUpdate = useCallback((nextSlots: Slot[]) => {
+    setSlots(nextSlots);
+  }, []);
+  useSlotUpdates({
+    businessId: salon?.id ?? null,
+    date: salon ? slotsDate : null,
+    slots,
+    onSlotsUpdate: handleRealtimeSlotsUpdate,
+    enabled: !!salon && activeTab === 'slots',
+  });
 
   // Fetch downtime function - can be called from multiple places
   const fetchDowntime = useCallback(async () => {

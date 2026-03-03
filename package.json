@@ -53,6 +53,7 @@
     "test:slot-service": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/slot-service-comprehensive.test.ts",
     "test:phase1": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/schema-validation.test.ts",
     "test:phase2": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/atomic-booking-transactions.test.ts",
+    "test:realtime-slot-updates": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/integration-realtime-slot-updates.test.ts",
     "test:phase3": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/state-machines.test.ts",
     "test:phase4": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/payment-safety.test.ts",
     "test:phase5": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/rbac-authorization.security.ts",

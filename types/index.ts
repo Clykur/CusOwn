@@ -91,6 +91,8 @@ export type Slot = {
   status: (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS];
   reserved_until?: string | null;
   created_at: string;
+  /** Set by Realtime payload; used for event_id deduplication. */
+  updated_at?: string | null;
 };
 
 export const createBookingSchema = z.object({
