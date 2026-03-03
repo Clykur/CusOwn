@@ -20,6 +20,7 @@ import {
 } from '@/lib/events/booking-events';
 import { metricsService } from '@/lib/monitoring/metrics';
 import { auditService } from '@/services/audit.service';
+import { getReviewsByBookingIds } from '@/services/review.service';
 import { logBookingLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
 import {
   METRICS_BOOKING_CREATED,
@@ -196,13 +197,17 @@ export class BookingService {
       return null;
     }
 
-    const salon = await salonService.getSalonById(data.business_id);
-    const slot = await slotService.getSlotById(data.slot_id);
+    const [salon, slot, reviewMap] = await Promise.all([
+      salonService.getSalonById(data.business_id),
+      slotService.getSlotById(data.slot_id),
+      getReviewsByBookingIds([data.id]),
+    ]);
 
     return {
       ...data,
       salon: salon || undefined,
       slot: slot || undefined,
+      review: reviewMap.get(data.id) ?? undefined,
     };
   });
 
@@ -235,13 +240,17 @@ export class BookingService {
       return null;
     }
 
-    const salon = await salonService.getSalonById(booking.business_id);
-    const slot = await slotService.getSlotById(booking.slot_id);
+    const [salon, slot, reviewMap] = await Promise.all([
+      salonService.getSalonById(booking.business_id),
+      slotService.getSlotById(booking.slot_id),
+      getReviewsByBookingIds([booking.id]),
+    ]);
 
     return {
       ...booking,
       salon: salon || undefined,
       slot: slot || undefined,
+      review: reviewMap.get(booking.id) ?? undefined,
     };
   }
 
@@ -589,10 +598,13 @@ export class BookingService {
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
 
+    const reviewMap = await getReviewsByBookingIds(rows.map((b) => b.id));
+
     const bookingsWithDetails: BookingWithDetails[] = rows.map((booking) => ({
       ...booking,
       salon: salon ?? undefined,
       slot: slotMap.get(booking.slot_id) ?? undefined,
+      review: reviewMap.get(booking.id) ?? undefined,
     }));
 
     return bookingsWithDetails;
@@ -855,10 +867,13 @@ export class BookingService {
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
 
+    const reviewMap = await getReviewsByBookingIds(list.map((b: { id: string }) => b.id));
+
     const bookingsWithDetails: BookingWithDetails[] = list.map((booking: Booking) => ({
       ...booking,
       salon: salonMap.get(booking.business_id) ?? undefined,
       slot: slotMap.get(booking.slot_id) ?? undefined,
+      review: reviewMap.get(booking.id) ?? undefined,
     }));
 
     return bookingsWithDetails;

@@ -200,7 +200,11 @@ export default function CustomerDashboardPage() {
               ) : (
                 <div className="space-y-4">
                   {bookings.map((booking) => (
-                    <CustomerBookingCard key={booking.id} booking={booking} />
+                    <CustomerBookingCard
+                      key={booking.id}
+                      booking={booking}
+                      onRated={refetchBookings}
+                    />
                   ))}
                 </div>
               )}

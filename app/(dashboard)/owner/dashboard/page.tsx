@@ -493,6 +493,9 @@ export default function OwnerDashboardPage() {
                         Business
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status & actions
                       </th>
                     </tr>
@@ -527,6 +530,9 @@ export default function OwnerDashboardPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {booking.review ? `${booking.review.rating} ★` : '—'}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium">
                           <div className="flex flex-wrap gap-2 items-center">
