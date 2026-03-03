@@ -210,6 +210,7 @@ export const ERROR_MESSAGES = {
   REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',
   REVIEW_PROFANITY: 'Comment contains inappropriate content',
   REVIEW_NOT_FOUND: 'Review not found',
+  RESCHEDULE_MAX_EXCEEDED: 'Maximum reschedule count exceeded for this booking',
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -499,6 +500,7 @@ export const CRON_JOB_NAMES = [
   'trim-metric-timings',
   'health-check',
   'purge-soft-deleted-media',
+  'mark-no-show',
 ] as const;
 export type CronJobName = (typeof CRON_JOB_NAMES)[number];
 

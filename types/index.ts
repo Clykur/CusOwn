@@ -126,6 +126,8 @@ export type Booking = {
   rescheduled_at?: string | null;
   rescheduled_by?: 'customer' | 'owner' | null;
   reschedule_reason?: string | null;
+  reschedule_count?: number;
+  late_cancellation?: boolean;
   no_show?: boolean;
   no_show_marked_at?: string | null;
   no_show_marked_by?: 'owner' | 'system' | null;
