@@ -28,6 +28,8 @@ import {
   METRICS_BOOKING_REJECTED,
   METRICS_BOOKING_CANCELLED_USER,
   METRICS_BOOKING_CANCELLED_SYSTEM,
+  METRICS_OBSERVABILITY_BOOKING_SUCCESS_TOTAL,
+  METRICS_OBSERVABILITY_CANCELLATION_TOTAL,
   METRICS_INVALID_STATE_TRANSITION_TOTAL,
 } from '@/config/constants';
 import { cache } from 'react';
@@ -306,6 +308,7 @@ export class BookingService {
       await emitBookingConfirmed(bookingWithDetails);
       await metricsService.increment('bookings.confirmed');
       await metricsService.increment(METRICS_BOOKING_CONFIRMED);
+      await metricsService.increment(METRICS_OBSERVABILITY_BOOKING_SUCCESS_TOTAL);
       logBookingLifecycle({
         booking_id: bookingId,
         slot_id: bookingWithDetails.slot_id,
@@ -652,6 +655,7 @@ export class BookingService {
         await emitBookingCancelled(bookingWithDetails, 'system');
         await metricsService.increment(metricName);
         await metricsService.increment(METRICS_BOOKING_CANCELLED_SYSTEM);
+        await metricsService.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
         logBookingLifecycle({
           booking_id: bookingId,
           slot_id: bookingWithDetails.slot_id,
@@ -750,6 +754,7 @@ export class BookingService {
     if (updatedWithDetails) {
       await emitBookingCancelled(updatedWithDetails, 'customer');
       await metricsService.increment('bookings.cancelled');
+      await metricsService.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
       await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
       logBookingLifecycle({
         booking_id: bookingId,
@@ -808,6 +813,7 @@ export class BookingService {
     if (bookingWithDetails) {
       await emitBookingCancelled(bookingWithDetails, 'owner');
       await metricsService.increment('bookings.cancelled');
+      await metricsService.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
       await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
       logBookingLifecycle({
         booking_id: bookingId,

@@ -397,12 +397,31 @@ export const BOOKING_RETRY_BACKOFF_MS = [50, 100, 200] as const;
 
 /** Observability: distributed booking metrics. */
 export const METRICS_BOOKING_CONFLICT_TOTAL = 'booking_conflict_total';
+export const METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL = 'observability.booking_attempt_total';
+export const METRICS_OBSERVABILITY_BOOKING_SUCCESS_TOTAL = 'observability.booking_success_total';
+export const METRICS_OBSERVABILITY_CANCELLATION_TOTAL = 'observability.cancellation_total';
+export const METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL = 'observability.slot_conflict_total';
+export const METRICS_OBSERVABILITY_CRON_HEALTH_STATUS = 'observability.cron_health_status';
 export const METRICS_BOOKING_DEADLOCK_RETRY_TOTAL = 'booking_deadlock_retry_total';
 export const METRICS_EXPIRED_HOLD_CLEANUP_TOTAL = 'expired_hold_cleanup_total';
 export const METRICS_CRON_LOCK_SKIPPED_TOTAL = 'cron_lock_skipped_total';
 /** Refresh slot_generation lock every 2 min so long runs do not lose lock before TTL (10 min). */
 export const CRON_SLOT_GENERATION_LOCK_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 export const METRICS_INVALID_STATE_TRANSITION_TOTAL = 'invalid_state_transition_total';
+
+/** Fraud detection: risk score 0–100; flag accounts above threshold. */
+export const FRAUD_RISK_FLAG_THRESHOLD = 70;
+export const FRAUD_RISK_WEIGHT_CANCELLATION = 0.4;
+export const FRAUD_RISK_WEIGHT_ATTEMPT_RATE = 0.3;
+export const FRAUD_RISK_WEIGHT_ACCOUNTS_PER_IP = 0.3;
+export const FRAUD_BOOKING_ATTEMPT_RATE_CAP = 10;
+export const FRAUD_ACCOUNTS_PER_IP_CAP = 5;
+export const FRAUD_LOOKBACK_DAYS = 30;
+
+/** Observability: alert thresholds (configurable). */
+export const ALERT_CANCELLATION_RATIO_MAX = 0.5;
+export const ALERT_BOOKING_SUCCESS_RATE_MIN = 0.2;
+export const ALERT_CRON_HEALTH_STALE_MINUTES = 15;
 
 /** Phase 5: Rate limits (security). Booking creation per IP + per user. */
 export const RATE_LIMIT_BOOKING_WINDOW_MS = 60_000;
