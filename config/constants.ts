@@ -410,6 +410,26 @@ export const GEO_IP_CACHE_MAX_ENTRIES = 5000;
 /** Nearby/search: max businesses to enrich with routed distance (avoids N parallel routing calls). */
 export const ROUTING_ENRICH_MAX_BUSINESSES = 15;
 
+/** Business discovery: weighted ranking weights (multiplicative score factors). Sum need not equal 1. */
+export const DISCOVERY_WEIGHT_DISTANCE = 0.25;
+export const DISCOVERY_WEIGHT_RATING = 0.25;
+export const DISCOVERY_WEIGHT_AVAILABILITY = 0.2;
+export const DISCOVERY_WEIGHT_POPULARITY = 0.15;
+export const DISCOVERY_WEIGHT_REPEAT_CUSTOMER = 0.15;
+/** Rating scale max for normalization (e.g. 5 = 0–5 stars). */
+export const DISCOVERY_RATING_SCALE_MAX = 5;
+/** Cap for normalizing booking_count_30d to 0–1 (popularity). */
+export const DISCOVERY_POPULARITY_CAP = 100;
+/** Slot availability window (days ahead) for ratio. */
+export const DISCOVERY_SLOT_WINDOW_DAYS = 30;
+/** Search: default radius (km), pagination bounds. */
+export const DISCOVERY_DEFAULT_RADIUS_KM = 10;
+export const DISCOVERY_PAGE_MIN = 1;
+export const DISCOVERY_PAGE_MAX = 100;
+export const DISCOVERY_LIMIT_MIN = 1;
+export const DISCOVERY_LIMIT_MAX = 50;
+export const DISCOVERY_DEFAULT_LIMIT = 20;
+
 /** Geocoding: default Nominatim API base when NOMINATIM_URL is not set. */
 export const GEO_NOMINATIM_DEFAULT_BASE = 'https://nominatim.openstreetmap.org';
 /** OSM data: Geofabrik download site (documentation / external reference). */

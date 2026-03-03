@@ -5,9 +5,24 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { getServerUser } from '@/lib/supabase/server-auth';
-import { haversineDistance, parseAndValidateCoordinates, validateRadius } from '@/lib/utils/geo';
-import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
+import { parseAndValidateCoordinates, validateRadius } from '@/lib/utils/geo';
 import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@/config/constants';
+import {
+  DISCOVERY_WEIGHT_DISTANCE,
+  DISCOVERY_WEIGHT_RATING,
+  DISCOVERY_WEIGHT_AVAILABILITY,
+  DISCOVERY_WEIGHT_POPULARITY,
+  DISCOVERY_WEIGHT_REPEAT_CUSTOMER,
+  DISCOVERY_RATING_SCALE_MAX,
+  DISCOVERY_POPULARITY_CAP,
+  DISCOVERY_SLOT_WINDOW_DAYS,
+  DISCOVERY_DEFAULT_RADIUS_KM,
+  DISCOVERY_PAGE_MIN,
+  DISCOVERY_PAGE_MAX,
+  DISCOVERY_LIMIT_MIN,
+  DISCOVERY_LIMIT_MAX,
+  DISCOVERY_DEFAULT_LIMIT,
+} from '@/config/constants';
 
 const searchRateLimit = enhancedRateLimit({
   maxRequests: 20,
@@ -58,6 +73,7 @@ export async function POST(request: NextRequest) {
       'limit',
       'sort_by',
       'sort_order',
+      'explain',
     ] as const;
 
     const filteredBody = filterFields(body, allowedFields);
@@ -82,117 +98,116 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate radius
-    if (filteredBody.radius_km !== undefined && !validateRadius(filteredBody.radius_km)) {
+    const radiusKm =
+      filteredBody.radius_km !== undefined ? filteredBody.radius_km : DISCOVERY_DEFAULT_RADIUS_KM;
+    if (!validateRadius(radiusKm)) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
-    const page = Math.max(1, Math.min(100, filteredBody.page || 1));
-    const limit = Math.max(1, Math.min(50, filteredBody.limit || 20));
+    // Pagination mandatory: clamp to configured bounds
+    const page = Math.max(
+      DISCOVERY_PAGE_MIN,
+      Math.min(DISCOVERY_PAGE_MAX, filteredBody.page ?? DISCOVERY_PAGE_MIN)
+    );
+    const limit = Math.max(
+      DISCOVERY_LIMIT_MIN,
+      Math.min(DISCOVERY_LIMIT_MAX, filteredBody.limit ?? DISCOVERY_DEFAULT_LIMIT)
+    );
     const offset = (page - 1) * limit;
 
     if (!supabaseAdmin) {
       return errorResponse('Service unavailable', 503);
     }
 
-    let query = supabaseAdmin
-      .from('businesses')
-      .select('id, salon_name, location, category, latitude, longitude, area');
+    const hasGeo =
+      filteredBody.latitude !== undefined &&
+      filteredBody.longitude !== undefined &&
+      Number.isFinite(Number(filteredBody.latitude)) &&
+      Number.isFinite(Number(filteredBody.longitude));
 
-    // Only active & non-deleted businesses
-    query = applyActiveBusinessFilters(query);
-
-    // Category filter
-    if (filteredBody.category) {
-      query = query.eq('category', filteredBody.category);
-    }
-
-    // Location filters
-    if (filteredBody.pincode) {
-      query = query.eq('pincode', filteredBody.pincode);
-    } else if (filteredBody.city) {
-      query = query.eq('city', filteredBody.city);
-      if (filteredBody.area) {
-        query = query.eq('area', filteredBody.area);
+    let lat: number | null = null;
+    let lng: number | null = null;
+    if (hasGeo) {
+      try {
+        const coords = parseAndValidateCoordinates(filteredBody.latitude, filteredBody.longitude);
+        lat = coords.lat;
+        lng = coords.lng;
+      } catch {
+        return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
       }
     }
 
-    const { data: businesses, error } = await query.range(offset, offset + limit);
+    const { data: ranked, error } = await supabaseAdmin.rpc('search_businesses_ranked', {
+      p_lat: lat,
+      p_lng: lng,
+      p_radius_km: radiusKm,
+      p_city: filteredBody.city ?? null,
+      p_area: filteredBody.area ?? null,
+      p_pincode: filteredBody.pincode ?? null,
+      p_category: filteredBody.category ?? null,
+      p_available_today: !!filteredBody.available_today,
+      p_min_rating: filteredBody.min_rating ?? null,
+      p_limit: limit,
+      p_offset: offset,
+      p_distance_weight: DISCOVERY_WEIGHT_DISTANCE,
+      p_rating_weight: DISCOVERY_WEIGHT_RATING,
+      p_availability_weight: DISCOVERY_WEIGHT_AVAILABILITY,
+      p_popularity_weight: DISCOVERY_WEIGHT_POPULARITY,
+      p_repeat_weight: DISCOVERY_WEIGHT_REPEAT_CUSTOMER,
+      p_rating_scale_max: DISCOVERY_RATING_SCALE_MAX,
+      p_popularity_cap: DISCOVERY_POPULARITY_CAP,
+      p_slot_window_days: DISCOVERY_SLOT_WINDOW_DAYS,
+    });
 
     if (error) {
-      console.error('[GEO_SEARCH] Database error:', error);
-      return errorResponse('Search failed', 500);
+      console.error('[GEO_SEARCH] RPC error:', error);
+      return errorResponse(ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
-    if (!businesses) {
-      return successResponse({
-        businesses: [],
-        pagination: { page, limit, total: 0, has_more: false },
-      });
-    }
-
-    type BusinessResult = {
-      id: string;
+    type RankedRow = {
+      business_id: string;
       salon_name: string | null;
       location: string | null;
       category: string | null;
       latitude: number | null;
       longitude: number | null;
-      area?: string | null;
-      distance_km?: number;
-      estimated_time_minutes?: number;
-      is_routed?: boolean;
-      route_source?: string;
+      area: string | null;
+      distance_km: number | null;
+      score: number;
+      rating_avg: number;
+      booking_count_30d: number;
+      repeat_customer_ratio: number;
+      slot_availability_ratio: number;
     };
 
-    let results: BusinessResult[] = businesses as BusinessResult[];
-    const hasMore = results.length > limit;
+    const results: RankedRow[] = (ranked ?? []) as RankedRow[];
+    const hasMore = results.length === limit;
 
-    if (hasMore) {
-      results = results.slice(0, limit);
-    }
+    // Optional: enrich top N with routed distance/time when geo provided
+    let toReturn = results.map((r) => ({
+      id: r.business_id,
+      salon_name: r.salon_name,
+      location: r.location || r.area || '',
+      distance_km: r.distance_km ?? undefined,
+      category: r.category || 'salon',
+      latitude: r.latitude,
+      longitude: r.longitude,
+    }));
 
-    // Distance filtering
-    if (filteredBody.latitude !== undefined && filteredBody.longitude !== undefined) {
-      const radius = filteredBody.radius_km || 10;
-      if (!validateRadius(radius)) return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
-
-      const { lat: userLat, lng: userLng } = parseAndValidateCoordinates(
-        filteredBody.latitude,
-        filteredBody.longitude
-      );
-
-      results = results
-        .map((business): BusinessResult | null => {
-          const bizLat = Number(business.latitude);
-          const bizLng = Number(business.longitude);
-          if (!Number.isFinite(bizLat) || !Number.isFinite(bizLng)) return null;
-
-          const distance = haversineDistance(userLat, userLng, bizLat, bizLng);
-          if (!Number.isFinite(distance) || distance > radius) return null;
-
-          return {
-            ...business,
-            // keep raw distance (km). Presentation layer should round.
-            distance_km: distance,
-          };
-        })
-        .filter((b): b is BusinessResult => b !== null);
-
-      if (filteredBody.sort_by === 'distance') {
-        results.sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0));
-      }
-
-      // Enrich only first N with routed distance/time to limit parallel routing calls
-      const toEnrich = results.slice(0, ROUTING_ENRICH_MAX_BUSINESSES);
+    if (hasGeo && lat !== null && lng !== null && toReturn.length > 0) {
       const { getRoute } = await import('@/lib/routing');
+      const toEnrich = toReturn.slice(0, ROUTING_ENRICH_MAX_BUSINESSES);
       const enriched = await Promise.all(
         toEnrich.map(async (biz) => {
+          const latNum = biz.latitude ?? 0;
+          const lngNum = biz.longitude ?? 0;
+          if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return biz;
           try {
             const route = await getRoute({
-              startLat: userLat,
-              startLng: userLng,
-              endLat: Number(biz.latitude),
-              endLng: Number(biz.longitude),
+              startLat: lat,
+              startLng: lng,
+              endLat: latNum,
+              endLng: lngNum,
               mode: 'walking',
             });
             return {
@@ -201,33 +216,77 @@ export async function POST(request: NextRequest) {
               estimated_time_minutes: route.estimated_time_minutes,
               is_routed: route.routed,
               route_source: route.source,
-            } as BusinessResult;
+            };
           } catch {
             return biz;
           }
         })
       );
-      const rest = results.slice(ROUTING_ENRICH_MAX_BUSINESSES);
-      results = [...enriched, ...rest];
+      const rest = toReturn.slice(ROUTING_ENRICH_MAX_BUSINESSES);
+      toReturn = [...enriched, ...rest];
     }
 
-    const sanitized = results.map((business) => ({
-      id: business.id,
-      salon_name: business.salon_name,
-      location: business.location || business.area || '',
-      distance_km: business.distance_km,
-      category: business.category || 'salon',
-    }));
-
-    return successResponse({
-      businesses: sanitized,
+    type BusinessResponseItem = {
+      id: string;
+      salon_name: string | null;
+      location: string;
+      distance_km?: number;
+      category: string;
+      estimated_time_minutes?: number;
+      is_routed?: boolean;
+      route_source?: string;
+    };
+    const response: {
+      businesses: BusinessResponseItem[];
+      pagination: { page: number; limit: number; total: number; has_more: boolean };
+      explain_plan?: string[];
+    } = {
+      businesses: toReturn.map((b): BusinessResponseItem => {
+        const item: BusinessResponseItem = {
+          id: b.id,
+          salon_name: b.salon_name,
+          location: b.location,
+          distance_km: b.distance_km,
+          category: b.category,
+        };
+        const ext = b as {
+          estimated_time_minutes?: number;
+          is_routed?: boolean;
+          route_source?: string;
+        };
+        if (ext.estimated_time_minutes !== undefined)
+          item.estimated_time_minutes = ext.estimated_time_minutes;
+        if (ext.is_routed !== undefined) item.is_routed = ext.is_routed;
+        if (ext.route_source !== undefined) item.route_source = ext.route_source;
+        return item;
+      }),
       pagination: {
         page,
         limit,
-        total: hasMore ? page * limit + 1 : sanitized.length,
+        total: (page - 1) * limit + results.length,
         has_more: hasMore,
       },
-    });
+    };
+
+    if (filteredBody.explain === true) {
+      const { data: explainRows } = await supabaseAdmin.rpc(
+        'get_search_businesses_ranked_explain',
+        {
+          p_lat: lat,
+          p_lng: lng,
+          p_radius_km: radiusKm,
+          p_city: filteredBody.city ?? null,
+          p_category: filteredBody.category ?? null,
+          p_limit: limit,
+          p_offset: offset,
+        }
+      );
+      response.explain_plan = Array.isArray(explainRows)
+        ? (explainRows as Record<string, string>[]).map((r) => r.plan_line ?? r['Query Plan'] ?? '')
+        : [];
+    }
+
+    return successResponse(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Search failed';
     return errorResponse(message, 500);
