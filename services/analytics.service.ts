@@ -41,6 +41,17 @@ export interface DailyAnalytics {
   revenue: number;
 }
 
+export interface OwnerAnalyticsAdvanced {
+  peakHoursHeatmap: { hour: number; bookingCount: number }[];
+  repeatCustomerPercentage: number;
+  cancellationRate: number;
+  revenueTrend: { date: string; revenueCents: number }[];
+  servicePopularityRanking: { serviceId: string; serviceName: string; bookingCount: number }[];
+  totalConfirmed: number;
+  totalCancelled: number;
+  totalAttempts: number;
+}
+
 export class AnalyticsService {
   private toIsoDate(value: string): string {
     return value.split('T')[0];
@@ -467,6 +478,56 @@ export class AnalyticsService {
       }))
       .sort((a, b) => b.totalBookings - a.totalBookings)
       .slice(0, 100);
+  }
+
+  /** Advanced owner analytics via RPC: peak hours heatmap, repeat %, cancellation rate, revenue trend, service ranking. */
+  async getOwnerAnalyticsAdvanced(
+    businessId: string,
+    startDate: string,
+    endDate: string,
+    serviceRankLimit?: number
+  ): Promise<OwnerAnalyticsAdvanced> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
+    }
+    const { data, error } = await supabaseAdmin.rpc('get_owner_analytics_advanced', {
+      p_business_id: businessId,
+      p_start_date: startDate,
+      p_end_date: endDate,
+      p_service_rank_limit: serviceRankLimit ?? 50,
+    });
+    if (error) {
+      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    const raw = data as {
+      peakHoursHeatmap?: { hour: number; bookingCount: number }[] | null;
+      repeatCustomerPercentage?: number;
+      cancellationRate?: number;
+      revenueTrend?: { date: string; revenueCents: number }[] | null;
+      servicePopularityRanking?:
+        | {
+            serviceId: string;
+            serviceName: string;
+            bookingCount: number;
+          }[]
+        | null;
+      totalConfirmed?: number;
+      totalCancelled?: number;
+      totalAttempts?: number;
+    };
+    return {
+      peakHoursHeatmap: raw?.peakHoursHeatmap ?? [],
+      repeatCustomerPercentage: raw?.repeatCustomerPercentage ?? 0,
+      cancellationRate: raw?.cancellationRate ?? 0,
+      revenueTrend: (raw?.revenueTrend ?? []).map((r) => ({
+        date: typeof r.date === 'string' ? r.date : String(r.date),
+        revenueCents: Number(r.revenueCents ?? 0),
+      })),
+      servicePopularityRanking: raw?.servicePopularityRanking ?? [],
+      totalConfirmed: raw?.totalConfirmed ?? 0,
+      totalCancelled: raw?.totalCancelled ?? 0,
+      totalAttempts: raw?.totalAttempts ?? 0,
+    };
   }
 
   async exportAnalyticsCSV(

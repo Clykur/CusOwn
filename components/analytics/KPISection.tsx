@@ -29,7 +29,18 @@ function KPICompactCard({ title, value }: { title: string; value: string }) {
   );
 }
 
-export default function KPISection({ analytics }: { analytics: any }) {
+type AdvancedAnalytics = {
+  repeatCustomerPercentage: number;
+  cancellationRate: number;
+};
+
+export default function KPISection({
+  analytics,
+  advanced,
+}: {
+  analytics: any;
+  advanced?: AdvancedAnalytics | null;
+}) {
   const bookings = analytics?.totalBookings ?? 0;
   const compactKpis = [
     { title: 'Total Revenue', value: currency(analytics?.totalRevenueCents) },
@@ -41,6 +52,12 @@ export default function KPISection({ analytics }: { analytics: any }) {
     },
     { title: 'No Show Rate', value: `${analytics?.noShowRate ?? 0}%` },
     { title: 'Peak Hour', value: formatPeakHour(analytics?.peakHour) },
+    ...(advanced
+      ? [
+          { title: 'Repeat Customer %', value: `${advanced.repeatCustomerPercentage}%` },
+          { title: 'Cancellation Rate', value: `${advanced.cancellationRate}%` },
+        ]
+      : []),
   ];
 
   return (

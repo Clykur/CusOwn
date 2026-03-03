@@ -463,6 +463,21 @@ export const DISCOVERY_LIMIT_MIN = 1;
 export const DISCOVERY_LIMIT_MAX = 50;
 export const DISCOVERY_DEFAULT_LIMIT = 20;
 
+/** Smart recommendations: weighted scoring (simple sum of normalized components). */
+export const RECOMMENDATION_WEIGHT_PREVIOUSLY_BOOKED = 0.5;
+export const RECOMMENDATION_WEIGHT_FREQUENT_SERVICE = 0.25;
+export const RECOMMENDATION_WEIGHT_NEARBY_POPULAR = 0.25;
+/** Cache results per user (seconds). */
+export const RECOMMENDATION_CACHE_TTL_SECONDS = 300;
+/** Nearby popular: last N days of bookings. */
+export const RECOMMENDATION_NEARBY_DAYS = 30;
+export const RECOMMENDATION_PAGE_MIN = 1;
+export const RECOMMENDATION_PAGE_MAX = 20;
+export const RECOMMENDATION_LIMIT_MIN = 1;
+export const RECOMMENDATION_LIMIT_MAX = 30;
+export const RECOMMENDATION_DEFAULT_LIMIT = 10;
+export const RECOMMENDATION_DEFAULT_RADIUS_KM = 25;
+
 /** Geocoding: default Nominatim API base when NOMINATIM_URL is not set. */
 export const GEO_NOMINATIM_DEFAULT_BASE = 'https://nominatim.openstreetmap.org';
 /** OSM data: Geofabrik download site (documentation / external reference). */
