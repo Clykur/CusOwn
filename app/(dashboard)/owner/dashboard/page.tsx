@@ -36,7 +36,6 @@ export default function OwnerDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('');
 
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
 
@@ -392,21 +391,39 @@ export default function OwnerDashboardPage() {
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4">Your Customers</h2>
         <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4 relative">
             {/* Left */}
             <h2 className="text-lg font-semibold">Bookings</h2>
 
-            {/* Right */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => setShowSearch((prev) => !prev)}
-                className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
-              >
-                <ExploreIcon className="h-4 w-4 text-gray-600" />
-              </button>
+            {/* Right Controls */}
+            <div className="flex items-center gap-3 relative">
+              {/* Search Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSearch((prev) => !prev)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
+                >
+                  <ExploreIcon className="h-4 w-4 text-gray-600" />
+                </button>
+              </div>
 
-              <div className="w-44 lg:w-52 xl:w-56">
-                <DateFilter value={selectedDate} onChange={setSelectedDate} />
+              {/* Date Filters (stay responsive as before) */}
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                {/* From */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                  <span className="text-sm font-semibold text-gray-500">From</span>
+                  <div className="w-full sm:w-40 lg:w-44">
+                    <DateFilter value={fromDate} onChange={setFromDate} />
+                  </div>
+                </div>
+
+                {/* To */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                  <span className="text-sm font-semibold text-gray-500">To</span>
+                  <div className="w-full sm:w-40 lg:w-44">
+                    <DateFilter value={toDate} onChange={setToDate} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

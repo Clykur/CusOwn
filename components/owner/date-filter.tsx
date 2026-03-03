@@ -20,59 +20,49 @@ function formatToYYYYMMDD(date: Date) {
 
 export default function DateFilter({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selected = value ? new Date(value + 'T00:00:00') : undefined;
+  const today = new Date();
+  const selected = value ? new Date(value + 'T00:00:00') : today;
 
   useEffect(() => {
     if (!open || !buttonRef.current || !dropdownRef.current) return;
 
     const rect = buttonRef.current.getBoundingClientRect();
     const dropdownHeight = dropdownRef.current.offsetHeight;
-
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-
-    let top = rect.bottom + 6; // default open down
-
-    // If not enough space below but enough above → open up
-    if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-      top = rect.top - dropdownHeight - 6;
-    }
-
-    // Clamp inside viewport (prevents bottom nav overlap)
-    if (top + dropdownHeight > window.innerHeight - 8) {
-      top = window.innerHeight - dropdownHeight - 8;
-    }
-
-    if (top < 8) {
-      top = 8;
-    }
-
     const dropdownWidth = dropdownRef.current.offsetWidth;
 
-    // Align right edge with input
-    let left = rect.right - dropdownWidth;
+    // ---- Vertical positioning ----
+    let top = rect.bottom + 8;
 
-    // Prevent overflow on left
-    if (left < 8) left = 8;
-
-    // Prevent overflow on right
-    if (left + dropdownWidth > window.innerWidth - 8) {
-      left = window.innerWidth - dropdownWidth - 8;
+    if (top + dropdownHeight > window.innerHeight - 8) {
+      top = rect.top - dropdownHeight - 8;
     }
 
-    setPosition({
-      top,
-      left,
-      width: dropdownWidth,
-    });
+    if (top < 8) top = 8;
+
+    // ---- Horizontal positioning (centered + clamped) ----
+    const viewportWidth = window.innerWidth;
+
+    // Prefer aligning right edge with button
+    let left = rect.right - dropdownWidth;
+
+    // If it overflows left, clamp to padding
+    if (left < 8) {
+      left = 8;
+    }
+
+    // If it still overflows right (very small screens), clamp
+    if (left + dropdownWidth > viewportWidth - 8) {
+      left = viewportWidth - dropdownWidth - 8;
+    }
+
+    setPosition({ top, left });
 
     const close = (e: MouseEvent) => {
       const target = e.target as Node;
-
       if (!buttonRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setOpen(false);
       }
@@ -98,7 +88,7 @@ export default function DateFilter({ value, onChange }: Props) {
           className={`h-10 w-full flex items-center justify-between pl-4 pr-5 text-sm border rounded-lg transition
           ${value ? 'border-black bg-gray-50' : 'border-gray-300 bg-white hover:bg-gray-50'}`}
         >
-          <span>{value || 'Select date'}</span>
+          <span>{value || formatToYYYYMMDD(today)}</span>
           <Calendar className="h-4 w-4 text-gray-600" />
         </button>
       </div>
@@ -113,12 +103,12 @@ export default function DateFilter({ value, onChange }: Props) {
               left: position.left,
               zIndex: 9999,
             }}
-            className="bg-white border border-gray-200 rounded-2xl shadow-xl p-5"
+            className="bg-white border border-gray-200 rounded-xl shadow-lg p-1 max-w-sm sm:max-w-md"
           >
             <DayPicker
               mode="single"
               selected={selected}
-              defaultMonth={selected || new Date()}
+              defaultMonth={selected}
               onSelect={(date) => {
                 if (date) {
                   onChange(formatToYYYYMMDD(date));
@@ -126,19 +116,26 @@ export default function DateFilter({ value, onChange }: Props) {
                 }
               }}
               showOutsideDays
-              className="w-full flex justify-center"
+              captionLayout="dropdown"
+              fromYear={1950}
+              toYear={new Date().getFullYear() + 10}
+              className="w-full"
               classNames={{
                 months: 'flex justify-center w-full',
-                month: 'w-full max-w-[280px] space-y-2',
-                caption: 'flex items-center justify-between text-lg font-semibold',
-                caption_label: 'text-lg font-semibold',
-                nav: 'flex items-center gap-2',
-                nav_button: 'h-8 w-8 flex items-center justify-center rounded-md hover:bg-gray-100',
-                table: 'w-full border-collapse',
-                head_cell: 'text-xs font-medium text-gray-500 text-center py-2',
-                cell: 'text-center',
-                day: 'h-10 w-5 mx-auto text-sm rounded-lg hover:bg-gray-100 transition',
-                day_selected: 'bg-black text-white hover:bg-black rounded-lg',
+                month: 'w-full space-y-3',
+
+                caption: 'flex items-center justify-between px-2',
+                caption_label: 'hidden',
+                dropdown: 'text-sm border rounded-md px-2 py-1 bg-white',
+
+                head_row: 'grid grid-cols-7',
+                head_cell: 'text-xs font-medium text-gray-500 text-center pb-1',
+
+                row: 'grid grid-cols-7 gap-1',
+                cell: 'flex',
+
+                day: 'aspect-square w-full flex items-center justify-center text-sm rounded-md hover:bg-gray-100 transition',
+                day_selected: 'bg-black text-white',
                 day_today: 'font-semibold',
               }}
             />
