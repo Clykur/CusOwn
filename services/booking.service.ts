@@ -529,8 +529,13 @@ export class BookingService {
     if (fromDate || toDate) {
       let slotQuery = supabaseAdmin.from('slots').select('id').eq('business_id', salonId);
 
-      if (fromDate) slotQuery = slotQuery.gte('date', fromDate);
-      if (toDate) slotQuery = slotQuery.lte('date', toDate);
+      // same day filter
+      if (fromDate && toDate && fromDate === toDate) {
+        slotQuery = slotQuery.eq('date', fromDate);
+      } else {
+        if (fromDate) slotQuery = slotQuery.gte('date', fromDate);
+        if (toDate) slotQuery = slotQuery.lte('date', toDate);
+      }
 
       const { data: slots } = await slotQuery;
 

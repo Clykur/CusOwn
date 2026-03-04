@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
@@ -27,7 +27,7 @@ export default function DateFilter({ value, onChange }: Props) {
   const today = new Date();
   const selected = value ? new Date(value + 'T00:00:00') : today;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open || !buttonRef.current || !dropdownRef.current) return;
 
     const rect = buttonRef.current.getBoundingClientRect();
@@ -89,7 +89,7 @@ export default function DateFilter({ value, onChange }: Props) {
           ${value ? 'border-black bg-gray-50' : 'border-gray-300 bg-white hover:bg-gray-50'}`}
         >
           <span>{value || formatToYYYYMMDD(today)}</span>
-          <CalendarIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
+          <CalendarIcon className="h-5 w-5 text-gray-600 flex-shrink-0" aria-hidden="true" />
         </button>
       </div>
 
@@ -103,7 +103,7 @@ export default function DateFilter({ value, onChange }: Props) {
               left: position.left,
               zIndex: 9999,
             }}
-            className="bg-white border border-gray-200 rounded-xl shadow-lg p-1 max-w-sm sm:max-w-md"
+            className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 max-w-[calc(90vw-16px)]"
           >
             <DayPicker
               mode="single"
