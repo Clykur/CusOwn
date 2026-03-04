@@ -36,6 +36,7 @@ export default function OwnerDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
 
@@ -128,6 +129,24 @@ export default function OwnerDashboardPage() {
     fetchBookings(ac.signal);
     return () => ac.abort();
   }, [fetchBookings]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!searchContainerRef.current) return;
+
+      if (!searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearch(false);
+      }
+    };
+
+    if (showSearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSearch]);
 
   // Optimistic Accept/Reject with Undo
   const handleAccept = async (bookingId: string) => {
@@ -391,36 +410,33 @@ export default function OwnerDashboardPage() {
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4">Your Customers</h2>
         <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
-          <div className="flex items-center justify-between mb-4 relative">
-            {/* Left */}
+          {/* HEADER */}
+
+          {/* DESKTOP HEADER (UNCHANGED LAYOUT) */}
+          <div className="hidden md:flex items-center justify-between mb-4 relative">
             <h2 className="text-lg font-semibold">Bookings</h2>
 
-            {/* Right Controls */}
-            <div className="flex items-center gap-3 relative">
+            <div ref={searchContainerRef} className="flex items-center gap-3 relative">
               {/* Search Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSearch((prev) => !prev)}
-                  className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
-                >
-                  <ExploreIcon className="h-4 w-4 text-gray-600" />
-                </button>
-              </div>
+              <button
+                onClick={() => setShowSearch((prev) => !prev)}
+                className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
+              >
+                <ExploreIcon className="h-4 w-4 text-gray-600" />
+              </button>
 
-              {/* Date Filters (stay responsive as before) */}
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {/* From */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+              {/* Date Filters */}
+              <div className="flex flex-row gap-3">
+                <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-gray-500">From</span>
-                  <div className="w-full sm:w-40 lg:w-44">
+                  <div className="w-40 lg:w-44">
                     <DateFilter value={fromDate} onChange={setFromDate} />
                   </div>
                 </div>
 
-                {/* To */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-gray-500">To</span>
-                  <div className="w-full sm:w-40 lg:w-44">
+                  <div className="w-40 lg:w-44">
                     <DateFilter value={toDate} onChange={setToDate} />
                   </div>
                 </div>
@@ -428,8 +444,36 @@ export default function OwnerDashboardPage() {
             </div>
           </div>
 
+          {/* MOBILE HEADER */}
+          <div className="md:hidden mb-4 space-y-3">
+            {/* Top row */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Bookings</h2>
+
+              <button
+                onClick={() => setShowSearch((prev) => !prev)}
+                className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
+              >
+                <ExploreIcon className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Date filters BELOW */}
+            <div className="flex gap-3">
+              <div className="flex flex-col flex-1">
+                <span className="text-xs font-semibold text-gray-500 mb-1">From</span>
+                <DateFilter value={fromDate} onChange={setFromDate} />
+              </div>
+
+              <div className="flex flex-col flex-1">
+                <span className="text-xs font-semibold text-gray-500 mb-1">To</span>
+                <DateFilter value={toDate} onChange={setToDate} />
+              </div>
+            </div>
+          </div>
+
           {showSearch && (
-            <div className="mb-4">
+            <div ref={searchContainerRef} className="mb-4">
               <input
                 type="text"
                 placeholder="Search by name, booking ID, phone..."

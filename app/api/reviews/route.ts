@@ -111,8 +111,20 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await listReviewsByBusiness(businessId, page, limit);
+
+    const reviews = result.reviews ?? [];
+
+    const reviewCount = reviews.length;
+
+    const ratingAvg =
+      reviewCount > 0
+        ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviewCount
+        : 0;
+
     return successResponse({
-      reviews: result.reviews,
+      reviews,
+      rating_avg: Number(ratingAvg.toFixed(1)),
+      review_count: reviewCount,
       pagination: {
         page: result.page,
         limit: result.limit,

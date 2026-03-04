@@ -7,22 +7,32 @@ import { getSecureSalonUrlClient } from '@/lib/utils/navigation';
 import { isValidUUID } from '@/lib/utils/security';
 import MapPinIcon from '@/src/icons/map-pin.svg';
 import ClockIcon from '@/src/icons/clock.svg';
+import StarRating from '@/components/booking/star-rating';
 
 interface SalonCardProps {
-  salon: Salon & { distance_km?: number };
+  salon: Salon & {
+    distance_km?: number;
+    rating_avg?: number | null;
+  };
 }
 
 export default function SalonCard({ salon }: SalonCardProps) {
   const bookingLink = salon?.booking_link;
 
-  // Otherwise, use booking_link directly for public listings
   const [secureUrl, setSecureUrl] = useState<string>(
     bookingLink ? `/salon/${bookingLink}` : '/salon/unknown'
   );
+  // Use rating_avg from salon prop (comes from API) - more efficient than fetching separately
+  const [ratingAvg, setRatingAvg] = useState<number | null>(null);
+
+  // Initialize rating from salon prop (from API)
+  useEffect(() => {
+    if (salon?.rating_avg != null) {
+      setRatingAvg(salon.rating_avg);
+    }
+  }, [salon?.rating_avg]);
 
   useEffect(() => {
-    // If salon has an id (UUID), generate secure URL
-    // Otherwise, use booking_link directly (public listing)
     if (salon?.id && isValidUUID(salon.id)) {
       let isMounted = true;
       let cancelled = false;
@@ -37,7 +47,6 @@ export default function SalonCard({ salon }: SalonCardProps) {
           }
         } catch (error) {
           console.error('Failed to generate secure URL:', error);
-          // Fallback to booking_link if secure URL generation fails
           if (bookingLink && isMounted && !cancelled) {
             setSecureUrl(`/salon/${bookingLink}`);
           }
@@ -45,12 +54,12 @@ export default function SalonCard({ salon }: SalonCardProps) {
       };
 
       generateUrl();
+
       return () => {
         cancelled = true;
         isMounted = false;
       };
     } else {
-      // For public listings without id, just use booking_link
       if (bookingLink) {
         setSecureUrl(`/salon/${bookingLink}`);
       }
@@ -58,7 +67,37 @@ export default function SalonCard({ salon }: SalonCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon?.id, bookingLink]);
 
+  // Fallback: fetch from reviews API if rating_avg not in salon prop
+  useEffect(() => {
+    if (!salon?.id || ratingAvg !== null) return;
+
+    let cancelled = false;
+
+    const loadReviews = async () => {
+      try {
+        const res = await fetch(`/api/reviews?business_id=${salon.id}`);
+        const result = await res.json();
+
+        if (!cancelled && result?.success && result?.data) {
+          const avg = Number(result.data.rating_avg ?? 0);
+          setRatingAvg(avg);
+        }
+      } catch {
+        if (!cancelled) {
+          setRatingAvg(0);
+        }
+      }
+    };
+
+    loadReviews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [salon?.id, ratingAvg]);
+
   const formatTime = (time: string) => time.substring(0, 5);
+
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} min`;
     const hours = Math.floor(minutes / 60);
@@ -70,7 +109,20 @@ export default function SalonCard({ salon }: SalonCardProps) {
     <div className="group relative bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-black hover:shadow-xl transition-all duration-200 h-full flex flex-col">
       <div className="flex-1">
         <div className="flex items-start justify-between mb-3">
-          <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
+          {/* Salon Name + Rating */}
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
+
+            <div className="flex items-center gap-1 mt-1">
+              <StarRating value={Math.round(ratingAvg ?? 0)} readonly size="sm" />
+
+              {ratingAvg && ratingAvg > 0 && (
+                <span className="text-sm font-semibold text-gray-800">{ratingAvg.toFixed(1)}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Distance */}
           {salon.distance_km !== undefined && (
             <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
               {salon.distance_km < 1
@@ -81,6 +133,7 @@ export default function SalonCard({ salon }: SalonCardProps) {
           )}
         </div>
 
+        {/* Location */}
         {salon.location && (
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
             <MapPinIcon className="w-4 h-4 flex-shrink-0" />
@@ -88,11 +141,13 @@ export default function SalonCard({ salon }: SalonCardProps) {
           </div>
         )}
 
+        {/* Address */}
         {salon.address && (
           <div className="mb-4">
             <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] mb-1">
               {salon.address}
             </p>
+
             {salon.latitude && salon.longitude && (
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${salon.latitude},${salon.longitude}`}
@@ -107,6 +162,7 @@ export default function SalonCard({ salon }: SalonCardProps) {
           </div>
         )}
 
+        {/* Time + Slot Duration */}
         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
           {salon.opening_time && salon.closing_time && (
             <div className="flex items-center gap-1.5">

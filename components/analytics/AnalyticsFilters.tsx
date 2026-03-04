@@ -109,7 +109,7 @@ export default function AnalyticsFilters({
   return (
     <div className="flex flex-col gap-4 rounded-xl bg-slate-50/70 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6">
       {/* Business */}
-      <div className="w-full xl:min-w-[190px] xl:flex-1">
+      <div className="w-full sm:w-[260px] xl:flex-1">
         <FilterDropdown
           label="Business"
           options={businessOptions}
@@ -120,19 +120,19 @@ export default function AnalyticsFilters({
       </div>
 
       {/* Start Date */}
-      <div className="w-full sm:w-[260px]">
+      <div className="w-full sm:w-[260px] xl:flex-1">
         <label className={FILTER_TOKENS.label}>Start date</label>
         <DateFilter value={startDate} onChange={setStartDate} />
       </div>
 
       {/* End Date */}
-      <div className="w-full sm:w-[260px]">
+      <div className="w-full sm:w-[260px] xl:flex-1">
         <label className={FILTER_TOKENS.label}>End date</label>
         <DateFilter value={endDate} onChange={setEndDate} />
       </div>
 
       {/* Quick Range */}
-      <div className="w-full sm:w-[190px]">
+      <div className="w-full sm:w-[260px] xl:flex-1">
         <FilterDropdown
           label="Quick range"
           options={quickRangeOptions}

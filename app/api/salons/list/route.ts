@@ -31,11 +31,12 @@ export async function GET(request: NextRequest) {
     }
 
     // SECURITY: Public endpoint - only return safe, minimal fields
-    // Exclude: id (internal UUID), owner_name (PII), created_at (enumeration aid), owner_user_id
+    // Exclude: owner_name (PII), created_at (enumeration aid), owner_user_id
+    // Include: id needed for reviews API, rating_avg and review_count for display
     let query = supabaseAdmin
       .from('businesses')
       .select(
-        'salon_name, booking_link, address, location, category, opening_time, closing_time, slot_duration'
+        'id, salon_name, booking_link, address, location, category, opening_time, closing_time, slot_duration, rating_avg, review_count'
       );
     // Only show active, non-deleted businesses
     query = applyActiveBusinessFilters(query).order('salon_name', {
