@@ -141,6 +141,7 @@ export default function CustomerBookingCard({ booking, onRated }: CustomerBookin
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden hover:shadow-sm transition">
       {/* MOBILE VIEW */}
       <div className="md:hidden p-4 space-y-4">
+        {/* Header: Salon Name / Owner / Phone */}
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-lg font-bold text-slate-900">{providerName}</h3>
@@ -182,8 +183,9 @@ export default function CustomerBookingCard({ booking, onRated }: CustomerBookin
           </div>
         </div>
 
+        {/* Date and Time */}
         {booking.slot && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-500 uppercase">Date</span>
               <span className="font-semibold">{formatDate(booking.slot.date)}</span>
@@ -195,61 +197,245 @@ export default function CustomerBookingCard({ booking, onRated }: CustomerBookin
                 {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
               </span>
             </div>
+          </div>
+        )}
 
-            <div className="flex justify-between text-sm items-center">
-              <span className="text-slate-500 uppercase">{UI_CUSTOMER.LABEL_YOUR_RATING}</span>
+        {/* Appointment ID */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-500">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
+          <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded border">
+            {booking.booking_id}
+          </span>
+        </div>
 
-              {booking.review ? (
-                <StarRating value={booking.review.rating} readonly size="sm" />
-              ) : booking.status === 'confirmed' ? (
-                <StarRating
-                  value={pendingRating}
-                  readonly={false}
-                  size="sm"
-                  disabled={submittingRating}
-                  onChange={async (rating) => {
-                    setPendingRating(rating);
-                    setSubmittingRating(true);
+        {/* Your Rating */}
+        {booking.slot && (
+          <div className="flex justify-between text-sm items-center">
+            <span className="text-slate-500 uppercase">{UI_CUSTOMER.LABEL_YOUR_RATING}</span>
 
-                    try {
-                      const res = await fetch('/api/reviews', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          booking_id: booking.id,
-                          rating,
-                        }),
-                      });
+            {booking.review ? (
+              <StarRating value={booking.review.rating} readonly size="sm" />
+            ) : booking.status === 'confirmed' ? (
+              <StarRating
+                value={pendingRating}
+                readonly={false}
+                size="sm"
+                disabled={submittingRating}
+                onChange={async (rating) => {
+                  setPendingRating(rating);
+                  setSubmittingRating(true);
 
-                      if (res.ok) onRated?.();
-                    } finally {
-                      setSubmittingRating(false);
-                    }
-                  }}
-                />
-              ) : (
-                <p className="text-sm text-slate-500">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
-              )}
+                  try {
+                    const res = await fetch('/api/reviews', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        booking_id: booking.id,
+                        rating,
+                      }),
+                    });
+
+                    if (res.ok) onRated?.();
+                  } finally {
+                    setSubmittingRating(false);
+                  }
+                }}
+              />
+            ) : (
+              <p className="text-sm text-slate-500">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
+            )}
+          </div>
+        )}
+
+        {/* Bottom Action Row: View Details (Left) and Re-Book (Right) */}
+        <div className="flex items-center justify-between gap-3 pt-3 mt-2 border-t border-slate-200">
+          {' '}
+          <Link
+            href={`/booking/${booking.booking_id}`}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            {UI_CUSTOMER.VIEW_DETAILS}
+            <ChevronRightIcon className="w-4 h-4" />
+          </Link>
+          <Link
+            href={`/book/${booking.salon?.booking_link || booking.business?.booking_link}`}
+            onClick={() => {
+              sessionStorage.setItem(
+                'rebookData',
+                JSON.stringify({
+                  name: booking.customer_name,
+                  phone: booking.customer_phone,
+                })
+              );
+            }}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-slate-800 font-semibold rounded-xl border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-sm"
+          >
+            {UI_CUSTOMER.REBOOK}
+            <ChevronRightIcon className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* DESKTOP VIEW */}
+      <div className="hidden md:block p-4 md:p-6 space-y-4">
+        {/* HEADER */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 truncate">{providerName}</h3>
+
+            {location && (
+              <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+                <MapPinIcon className="w-3.5 h-3.5" />
+                <span className="truncate">{location}</span>
+              </div>
+            )}
+
+            {((booking.salon?.review_count ?? booking.business?.review_count ?? 0) > 0 ||
+              booking.salon?.rating_avg != null ||
+              booking.business?.rating_avg != null) && (
+              <div className="mt-1.5 flex items-center gap-1 text-sm text-slate-700">
+                <span className="text-amber-500">★</span>
+                <span>
+                  {UI_CUSTOMER.LABEL_BUSINESS_RATING}:{' '}
+                  {UI_CONTEXT.BUSINESS_RATING_REVIEWS(
+                    String(
+                      (booking.salon?.rating_avg ?? booking.business?.rating_avg)?.toFixed(1) ?? '—'
+                    ),
+                    booking.salon?.review_count ?? booking.business?.review_count ?? 0
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* OWNER */}
+          <div className="flex items-center gap-2">
+            <Image
+              src={ownerImage}
+              alt={ownerName}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full border object-cover"
+              unoptimized={ownerImage.startsWith('data:')}
+            />
+
+            <span className="font-semibold text-sm sm:text-base text-slate-900 truncate max-w-[120px]">
+              {ownerName}
+            </span>
+
+            {ownerPhone ? (
+              <a href={`tel:${ownerPhone}`} className="text-sm text-blue-600 font-medium truncate">
+                {ownerPhone}
+              </a>
+            ) : (
+              <span className="text-sm text-slate-400">N/A</span>
+            )}
+          </div>
+        </div>
+
+        {/* Date, Time, Appointment ID and Rating - All in one row */}
+        {booking.slot && (
+          <div className="grid grid-cols-4 gap-4">
+            {/* Date */}
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-100 rounded-lg p-2">
+                <BookingsIcon className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase">Date</p>
+                <p className="font-semibold text-sm">{formatDate(booking.slot.date)}</p>
+              </div>
+            </div>
+
+            {/* Time */}
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-100 rounded-lg p-2">
+                <ClockIcon className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase">Time</p>
+                <p className="font-semibold text-sm whitespace-nowrap">
+                  {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
+                </p>
+              </div>
+            </div>
+
+            {/* Appointment ID */}
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-100 rounded-lg p-2">
+                <span className="text-xs font-bold text-slate-700">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-4 h-4 text-slate-700"
+                  >
+                    <rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect>
+                    <line x1="7" y1="10" x2="17" y2="10"></line>
+                    <line x1="7" y1="14" x2="13" y2="14"></line>
+                  </svg>
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase">APPOINTMENT ID</p>
+                <p className="font-mono text-xs">{booking.booking_id.slice(-6)}</p>
+              </div>
+            </div>
+
+            {/* Your Rating */}
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-100 rounded-lg p-2">
+                <span className="text-amber-500 font-bold">★</span>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase">Rating</p>
+                {booking.review ? (
+                  <div className="flex items-center gap-1">
+                    <StarRating value={booking.review.rating} readonly size="sm" />
+                    <span className="text-sm font-semibold">{booking.review.rating}</span>
+                  </div>
+                ) : booking.status === 'confirmed' ? (
+                  <StarRating
+                    value={pendingRating}
+                    readonly={false}
+                    size="sm"
+                    disabled={submittingRating}
+                    onChange={async (rating) => {
+                      setPendingRating(rating);
+                      setSubmittingRating(true);
+                      try {
+                        const res = await fetch('/api/reviews', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ booking_id: booking.id, rating }),
+                        });
+                        if (res.ok) onRated?.();
+                      } finally {
+                        setSubmittingRating(false);
+                      }
+                    }}
+                  />
+                ) : (
+                  <p className="text-xs text-slate-500">Not rated</p>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        <Link
-          href={`/booking/${booking.booking_id}`}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800"
-        >
-          {UI_CUSTOMER.VIEW_DETAILS}
-          <ChevronRightIcon className="w-4 h-4" />
-        </Link>
-
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
-
-            <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded border">
-              {booking.booking_id}
-            </span>
-          </div>
+        {/* Bottom Action Row: View Details (Left) and Re-Book (Right) */}
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-200">
+          <Link
+            href={`/booking/${booking.booking_id}`}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            {UI_CUSTOMER.VIEW_DETAILS}
+            <ChevronRightIcon className="w-4 h-4" />
+          </Link>
 
           <Link
             href={`/book/${booking.salon?.booking_link || booking.business?.booking_link}`}
@@ -262,194 +448,11 @@ export default function CustomerBookingCard({ booking, onRated }: CustomerBookin
                 })
               );
             }}
-            className="px-3 py-1.5 text-sm font-semibold border rounded-lg"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-slate-800 font-semibold rounded-xl border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-sm"
           >
             {UI_CUSTOMER.REBOOK}
+            <ChevronRightIcon className="w-4 h-4" />
           </Link>
-        </div>
-      </div>
-
-      {/* DESKTOP VIEW (YOUR ORIGINAL CODE — UNCHANGED) */}
-      <div className="hidden md:block">
-        <div className="p-4 md:p-6">
-          {/* HEADER */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
-                {providerName}
-              </h3>
-
-              {location && (
-                <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
-                  <MapPinIcon className="w-3.5 h-3.5" />
-                  <span className="truncate">{location}</span>
-                </div>
-              )}
-
-              {((booking.salon?.review_count ?? booking.business?.review_count ?? 0) > 0 ||
-                booking.salon?.rating_avg != null ||
-                booking.business?.rating_avg != null) && (
-                <div className="mt-1.5 flex items-center gap-1 text-sm text-slate-700">
-                  <span className="text-amber-500">★</span>
-                  <span>
-                    {UI_CUSTOMER.LABEL_BUSINESS_RATING}:{' '}
-                    {UI_CONTEXT.BUSINESS_RATING_REVIEWS(
-                      String(
-                        (booking.salon?.rating_avg ?? booking.business?.rating_avg)?.toFixed(1) ??
-                          '—'
-                      ),
-                      booking.salon?.review_count ?? booking.business?.review_count ?? 0
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* OWNER */}
-            <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-              <Image
-                src={ownerImage}
-                alt={ownerName}
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded-full border object-cover"
-                unoptimized={ownerImage.startsWith('data:')}
-              />
-
-              <span className="font-semibold text-sm sm:text-base text-slate-900 truncate max-w-[120px]">
-                {ownerName}
-              </span>
-
-              {ownerPhone ? (
-                <a
-                  href={`tel:${ownerPhone}`}
-                  className="text-sm text-blue-600 font-medium truncate"
-                >
-                  {ownerPhone}
-                </a>
-              ) : (
-                <span className="text-sm text-slate-400">N/A</span>
-              )}
-            </div>
-          </div>
-
-          {/* BOOKING INFO */}
-          {booking.slot && (
-            <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-100">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white rounded-lg p-2 border">
-                      <BookingsIcon className="w-4 h-4 text-slate-700" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 uppercase">Date</p>
-                      <p className="font-semibold text-sm sm:text-base">
-                        {formatDate(booking.slot.date)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white rounded-lg p-2 border">
-                      <ClockIcon className="w-4 h-4 text-slate-700" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 uppercase">Time</p>
-                      <p className="font-semibold whitespace-nowrap text-sm sm:text-base">
-                        {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white rounded-lg p-2 border flex items-center justify-center">
-                      <span className="text-amber-500 font-bold">★</span>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-500 uppercase">
-                        {UI_CUSTOMER.LABEL_YOUR_RATING}
-                      </p>
-
-                      {booking.review ? (
-                        <div className="flex items-center gap-2">
-                          <StarRating value={booking.review.rating} readonly size="sm" />
-                          <span className="text-sm font-semibold">{booking.review.rating}/5</span>
-                        </div>
-                      ) : booking.status === 'confirmed' ? (
-                        <StarRating
-                          value={pendingRating}
-                          readonly={false}
-                          size="sm"
-                          disabled={submittingRating}
-                          onChange={async (rating) => {
-                            setPendingRating(rating);
-                            setSubmittingRating(true);
-
-                            try {
-                              const res = await fetch('/api/reviews', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  booking_id: booking.id,
-                                  rating,
-                                }),
-                              });
-
-                              if (res.ok) onRated?.();
-                            } finally {
-                              setSubmittingRating(false);
-                            }
-                          }}
-                        />
-                      ) : (
-                        <p className="text-sm text-slate-500">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href={`/booking/${booking.booking_id}`}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800"
-                >
-                  {UI_CUSTOMER.VIEW_DETAILS}
-                  <ChevronRightIcon className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* FOOTER */}
-          <div className="mt-3 pt-3 border-t border-slate-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-slate-500">{UI_CUSTOMER.LABEL_BOOKING_ID}:</p>
-
-                <span className="font-mono text-xs bg-slate-50 px-2 py-1 rounded border">
-                  {booking.booking_id}
-                </span>
-              </div>
-
-              <Link
-                href={`/book/${booking.salon?.booking_link || booking.business?.booking_link}`}
-                onClick={() => {
-                  sessionStorage.setItem(
-                    'rebookData',
-                    JSON.stringify({
-                      name: booking.customer_name,
-                      phone: booking.customer_phone,
-                    })
-                  );
-                }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-800 font-semibold rounded-xl border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-sm"
-              >
-                {UI_CUSTOMER.REBOOK}
-                <ChevronRightIcon className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     </div>
