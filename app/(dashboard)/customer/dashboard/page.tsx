@@ -183,8 +183,8 @@ export default function CustomerDashboardPage() {
             <h2 className="text-xl font-semibold text-slate-900 mb-4">
               {UI_CUSTOMER.SECTION_APPOINTMENTS}
             </h2>
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              {bookings.length === 0 ? (
+            {bookings.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <div className="text-center py-12">
                   <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                     <BookingsIcon className="w-8 h-8 text-slate-400" aria-hidden="true" />
@@ -197,8 +197,24 @@ export default function CustomerDashboardPage() {
                     {UI_CUSTOMER.CTA_EXPLORE_SERVICES}
                   </Link>
                 </div>
-              ) : (
-                <div className="space-y-4">
+              </div>
+            ) : (
+              <>
+                {/* Desktop: with outer container */}
+                <div className="hidden md:block bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <div className="space-y-4">
+                    {bookings.map((booking) => (
+                      <CustomerBookingCard
+                        key={booking.id}
+                        booking={booking}
+                        onRated={refetchBookings}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile: without outer container */}
+                <div className="md:hidden space-y-4">
                   {bookings.map((booking) => (
                     <CustomerBookingCard
                       key={booking.id}
@@ -207,8 +223,8 @@ export default function CustomerDashboardPage() {
                     />
                   ))}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </>
       )}

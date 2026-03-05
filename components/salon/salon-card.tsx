@@ -113,13 +113,13 @@ export default function SalonCard({ salon }: SalonCardProps) {
           <div>
             <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
 
-            <div className="flex items-center gap-1 mt-1">
-              <StarRating value={Math.round(ratingAvg ?? 0)} readonly size="sm" />
+            {ratingAvg != null && ratingAvg > 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                <StarRating value={Math.round(ratingAvg)} readonly size="sm" />
 
-              {ratingAvg && ratingAvg > 0 && (
                 <span className="text-sm font-semibold text-gray-800">{ratingAvg.toFixed(1)}</span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Distance */}

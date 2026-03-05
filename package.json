@@ -5,6 +5,10 @@
   "engines": {
     "node": ">=20 <23"
   },
+  "overrides": {
+    "dompurify": "3.2.7",
+    "immutable": "^4.3.8"
+  },
   "scripts": {
     "predev": "node scripts/check-node-version.js",
     "prebuild": "node scripts/check-node-version.js",
@@ -89,7 +93,7 @@
     "react-icons": "^5.5.0",
     "recharts": "^3.7.0",
     "sharp": "^0.34.5",
-    "swagger-ui-react": "^5.31.2",
+    "swagger-ui-react": "^5.17.10",
     "tailwind-merge": "^2.0.0",
     "uuidv7": "^1.1.0",
     "zod": "^3.22.0"
