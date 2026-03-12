@@ -5,6 +5,7 @@ const nextConfig = {
   // Allow strict/CI builds to use an isolated dist directory
   // so dev `.next` artifacts cannot interfere with production builds.
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  outputFileTracingRoot: path.join(__dirname),
   images: {
     remotePatterns: [
       {

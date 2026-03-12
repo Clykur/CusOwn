@@ -3,6 +3,7 @@ import { bookingService } from './booking.service';
 import { slotService } from './slot.service';
 import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
 import { env } from '@/config/env';
+import { bookingEventsAnalyticsService } from '@/services/booking-events-analytics.service';
 
 export interface RescheduleInput {
   bookingId: string;
@@ -49,8 +50,24 @@ export class RescheduleService {
 
     if (error) {
       const msg = error.message ?? ERROR_MESSAGES.DATABASE_ERROR;
+      // Normalize known conflict/validation messages
       if (msg.includes('Max reschedule count exceeded')) {
         throw new Error(ERROR_MESSAGES.RESCHEDULE_MAX_EXCEEDED);
+      }
+      if (msg.includes('New slot is already booked')) {
+        throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
+      }
+      if (
+        msg.includes('New slot is reserved') ||
+        msg.includes('New slot overlaps with an existing booking')
+      ) {
+        throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
+      }
+      if (msg.includes('New slot not found or does not belong to business')) {
+        throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
+      }
+      if (msg.includes('Booking not found')) {
+        throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
       }
       throw new Error(msg);
     }
@@ -61,10 +78,44 @@ export class RescheduleService {
       if (err.includes('Max reschedule count exceeded')) {
         throw new Error(ERROR_MESSAGES.RESCHEDULE_MAX_EXCEEDED);
       }
+      if (err.includes('New slot is already booked')) {
+        throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
+      }
+      if (
+        err.includes('New slot is reserved') ||
+        err.includes('New slot overlaps with an existing booking')
+      ) {
+        throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
+      }
+      if (err.includes('New slot not found or does not belong to business')) {
+        throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
+      }
+      if (err.includes('Booking not found')) {
+        throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+      }
+      // Idempotent behavior: if new slot equals current slot, treat as success and return latest booking.
+      if (err.includes('New slot must be different from current slot')) {
+        const latest = await bookingService.getBookingByUuidWithDetails(input.bookingId);
+        if (!latest) {
+          throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+        }
+        return latest;
+      }
       throw new Error(err);
     }
 
-    return bookingService.getBookingByUuidWithDetails(input.bookingId);
+    const updated = await bookingService.getBookingByUuidWithDetails(input.bookingId);
+    if (updated) {
+      void bookingEventsAnalyticsService.recordEvent({
+        bookingId: updated.id,
+        eventType: 'rescheduled',
+        actorType: input.rescheduledBy,
+        actorId: updated.customer_user_id ?? null,
+        source: 'api',
+      });
+    }
+
+    return updated;
   }
 
   /**
