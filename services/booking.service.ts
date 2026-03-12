@@ -18,7 +18,7 @@ import {
   emitBookingRejected,
   emitBookingCancelled,
 } from '@/lib/events/booking-events';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { auditService } from '@/services/audit.service';
 import { getReviewsByBookingIds } from '@/services/review.service';
 import { logBookingLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
@@ -163,8 +163,8 @@ export class BookingService {
         console.error('Notification/event failed after booking created:', notifyErr);
         // Booking already committed; do not fail the request (failure handling: notification fail ≠ booking fail).
       }
-      await metricsService.increment('bookings.created');
-      await metricsService.increment(METRICS_BOOKING_CREATED);
+      safeMetrics.increment('bookings.created');
+      safeMetrics.increment(METRICS_BOOKING_CREATED);
       logBookingLifecycle({
         booking_id: booking.id,
         slot_id: booking.slot_id,
@@ -290,7 +290,7 @@ export class BookingService {
 
     if (funcError) {
       if (String(funcError.message || '').includes('Invalid booking transition')) {
-        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+        safeMetrics.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
       }
       throw new Error(funcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
@@ -298,7 +298,7 @@ export class BookingService {
     if (!result || !result.success) {
       const errorMsg = result?.error || 'Booking confirmation failed';
       if (String(errorMsg).includes('Invalid booking transition')) {
-        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+        safeMetrics.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
       }
       if (errorMsg.includes('Another booking for this slot is already confirmed')) {
         throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
@@ -314,9 +314,9 @@ export class BookingService {
     const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
     if (bookingWithDetails) {
       await emitBookingConfirmed(bookingWithDetails);
-      await metricsService.increment('bookings.confirmed');
-      await metricsService.increment(METRICS_BOOKING_CONFIRMED);
-      await metricsService.increment(METRICS_OBSERVABILITY_BOOKING_SUCCESS_TOTAL);
+      safeMetrics.increment('bookings.confirmed');
+      safeMetrics.increment(METRICS_BOOKING_CONFIRMED);
+      safeMetrics.increment(METRICS_OBSERVABILITY_BOOKING_SUCCESS_TOTAL);
       logBookingLifecycle({
         booking_id: bookingId,
         slot_id: bookingWithDetails.slot_id,
@@ -352,7 +352,7 @@ export class BookingService {
 
     if (rpcError) {
       if (String(rpcError.message || '').includes('Invalid booking transition')) {
-        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+        safeMetrics.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
       }
       throw new Error(rpcError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
@@ -360,7 +360,7 @@ export class BookingService {
     if (!result?.success) {
       const errMsg = (result?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
       if (String(errMsg).includes('Invalid booking transition')) {
-        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+        safeMetrics.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
       }
       throw new Error(errMsg);
     }
@@ -373,8 +373,8 @@ export class BookingService {
 
     if (bookingWithDetails) {
       await emitBookingRejected(bookingWithDetails);
-      await metricsService.increment('bookings.rejected');
-      await metricsService.increment(METRICS_BOOKING_REJECTED);
+      safeMetrics.increment('bookings.rejected');
+      safeMetrics.increment(METRICS_BOOKING_REJECTED);
       logBookingLifecycle({
         booking_id: bookingId,
         slot_id: booking.slot_id,
@@ -666,9 +666,9 @@ export class BookingService {
       const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
       if (bookingWithDetails) {
         await emitBookingCancelled(bookingWithDetails, 'system');
-        await metricsService.increment(metricName);
-        await metricsService.increment(METRICS_BOOKING_CANCELLED_SYSTEM);
-        await metricsService.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
+        safeMetrics.increment(metricName);
+        safeMetrics.increment(METRICS_BOOKING_CANCELLED_SYSTEM);
+        safeMetrics.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
         logBookingLifecycle({
           booking_id: bookingId,
           slot_id: bookingWithDetails.slot_id,
@@ -748,7 +748,7 @@ export class BookingService {
 
     if (error) {
       if (String(error.message || '').includes('Invalid booking transition')) {
-        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+        safeMetrics.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
@@ -766,9 +766,9 @@ export class BookingService {
     const updatedWithDetails = await this.getBookingByUuidWithDetails(bookingId);
     if (updatedWithDetails) {
       await emitBookingCancelled(updatedWithDetails, 'customer');
-      await metricsService.increment('bookings.cancelled');
-      await metricsService.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
-      await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
+      safeMetrics.increment('bookings.cancelled');
+      safeMetrics.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
+      safeMetrics.increment(METRICS_BOOKING_CANCELLED_USER);
       logBookingLifecycle({
         booking_id: bookingId,
         slot_id: booking.slot_id,
@@ -814,7 +814,7 @@ export class BookingService {
 
     if (error) {
       if (String(error.message || '').includes('Invalid booking transition')) {
-        metricsService.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
+        safeMetrics.increment(METRICS_INVALID_STATE_TRANSITION_TOTAL);
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
@@ -832,9 +832,9 @@ export class BookingService {
     const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
     if (bookingWithDetails) {
       await emitBookingCancelled(bookingWithDetails, 'owner');
-      await metricsService.increment('bookings.cancelled');
-      await metricsService.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
-      await metricsService.increment(METRICS_BOOKING_CANCELLED_USER);
+      safeMetrics.increment('bookings.cancelled');
+      safeMetrics.increment(METRICS_OBSERVABILITY_CANCELLATION_TOTAL);
+      safeMetrics.increment(METRICS_BOOKING_CANCELLED_USER);
       logBookingLifecycle({
         booking_id: bookingId,
         slot_id: booking.slot_id,

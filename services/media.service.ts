@@ -36,7 +36,7 @@ import {
   recordUploadFailure,
   recordUploadSuccess,
 } from '@/lib/media/circuit-breaker';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import type { Media, MediaListItem } from '@/types';
 import type { NextRequest } from 'next/server';
 import { MEDIA_CACHE_CONTROL_HEADER } from '@/config/constants';
@@ -226,8 +226,8 @@ export class MediaService {
         description: 'Profile image uploaded',
       });
       recordUploadSuccess(circuitKey);
-      await metricsService.increment(METRICS_MEDIA_UPLOAD_SUCCESS);
-      await metricsService.recordTiming(METRICS_MEDIA_UPLOAD_DURATION_MS, Date.now() - startMs);
+      safeMetrics.increment(METRICS_MEDIA_UPLOAD_SUCCESS);
+      safeMetrics.recordTiming(METRICS_MEDIA_UPLOAD_DURATION_MS, Date.now() - startMs);
 
       const item = toListItem(media);
       if (input.idempotencyKey) {
@@ -241,7 +241,7 @@ export class MediaService {
       return item;
     } catch (err) {
       recordUploadFailure(circuitKey);
-      await metricsService.increment(METRICS_MEDIA_UPLOAD_FAILURE);
+      safeMetrics.increment(METRICS_MEDIA_UPLOAD_FAILURE);
       await logMediaSecurityEvent({
         eventType: MEDIA_SECURITY_EVENTS.UPLOAD_FAILED,
         userId: input.userId,
@@ -382,8 +382,8 @@ export class MediaService {
         description: 'Business image uploaded',
       });
       recordUploadSuccess(circuitKey);
-      await metricsService.increment(METRICS_MEDIA_UPLOAD_SUCCESS);
-      await metricsService.recordTiming(METRICS_MEDIA_UPLOAD_DURATION_MS, Date.now() - startMs);
+      safeMetrics.increment(METRICS_MEDIA_UPLOAD_SUCCESS);
+      safeMetrics.recordTiming(METRICS_MEDIA_UPLOAD_DURATION_MS, Date.now() - startMs);
 
       const item = toListItem(media);
       if (input.idempotencyKey) {
@@ -397,7 +397,7 @@ export class MediaService {
       return item;
     } catch (err) {
       recordUploadFailure(circuitKey);
-      await metricsService.increment(METRICS_MEDIA_UPLOAD_FAILURE);
+      safeMetrics.increment(METRICS_MEDIA_UPLOAD_FAILURE);
       try {
         await supabaseStorageProvider.remove(bucket(), [storagePath]);
       } catch {
@@ -433,8 +433,8 @@ export class MediaService {
       { expiresInSeconds: ttl }
     );
     if (result) {
-      await metricsService.increment(METRICS_MEDIA_SIGNED_URL_GENERATED);
-      await metricsService.recordTiming(METRICS_MEDIA_SIGNED_URL_DURATION_MS, Date.now() - startMs);
+      safeMetrics.increment(METRICS_MEDIA_SIGNED_URL_GENERATED);
+      safeMetrics.recordTiming(METRICS_MEDIA_SIGNED_URL_DURATION_MS, Date.now() - startMs);
     }
     return result;
   }

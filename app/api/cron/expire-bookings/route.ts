@@ -3,7 +3,7 @@ import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { validateCronSecret } from '@/lib/security/cron-auth';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import {
   METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN,
   METRICS_OBSERVABILITY_CRON_HEALTH_STATUS,
@@ -17,15 +17,12 @@ export async function POST(request: NextRequest) {
 
     return await withCronRunLog('expire-bookings', async () => {
       await bookingService.expireOldBookings({ source: 'cron' });
-      await metricsService.setGauge(
-        METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN,
-        Math.floor(Date.now() / 1000)
-      );
-      await metricsService.setGauge(METRICS_OBSERVABILITY_CRON_HEALTH_STATUS, 1);
+      safeMetrics.setGauge(METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN, Math.floor(Date.now() / 1000));
+      safeMetrics.setGauge(METRICS_OBSERVABILITY_CRON_HEALTH_STATUS, 1);
       return successResponse(null, 'Expired bookings processed successfully');
     });
   } catch (error) {
-    await metricsService.setGauge(METRICS_OBSERVABILITY_CRON_HEALTH_STATUS, 0).catch(() => {});
+    safeMetrics.setGauge(METRICS_OBSERVABILITY_CRON_HEALTH_STATUS, 0);
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }

@@ -69,14 +69,14 @@ export function getCachedApiResponse<T>(key: string): T | null {
 }
 
 function recordCacheHit(): void {
-  import('@/lib/monitoring/metrics').then(({ metricsService }) => {
-    void metricsService.increment('api.cache.hit');
+  import('@/lib/monitoring/safe-metrics').then(({ safeMetrics }) => {
+    safeMetrics.increment('api.cache.hit');
   });
 }
 
 function recordCacheMiss(): void {
-  import('@/lib/monitoring/metrics').then(({ metricsService }) => {
-    void metricsService.increment('api.cache.miss');
+  import('@/lib/monitoring/safe-metrics').then(({ safeMetrics }) => {
+    safeMetrics.increment('api.cache.miss');
   });
 }
 

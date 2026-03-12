@@ -15,7 +15,7 @@ import {
   METRICS_PAYMENT_SUCCEEDED,
   METRICS_PAYMENT_FAILED,
 } from '@/config/constants';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 
 export type PaymentProvider = 'razorpay' | 'stripe' | 'cash' | 'upi';
 export type PaymentStatus =
@@ -114,7 +114,7 @@ export class PaymentService {
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_created:', auditErr);
     }
-    await metricsService.increment(METRICS_PAYMENT_CREATED);
+    safeMetrics.increment(METRICS_PAYMENT_CREATED);
     logPaymentLifecycle({
       payment_id: payment.id,
       booking_id: bookingId,
@@ -216,7 +216,7 @@ export class PaymentService {
         console.error('[AUDIT] Failed to log payment state change:', auditErr);
       }
       if (status === 'completed') {
-        await metricsService.increment(METRICS_PAYMENT_SUCCEEDED);
+        safeMetrics.increment(METRICS_PAYMENT_SUCCEEDED);
         logPaymentLifecycle({
           payment_id: paymentId,
           booking_id: payment.booking_id,
@@ -224,7 +224,7 @@ export class PaymentService {
           actor: 'system',
         });
       } else if (status === 'failed') {
-        await metricsService.increment(METRICS_PAYMENT_FAILED);
+        safeMetrics.increment(METRICS_PAYMENT_FAILED);
         logPaymentLifecycle({
           payment_id: paymentId,
           booking_id: payment.booking_id,
@@ -365,7 +365,7 @@ export class PaymentService {
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_created:', auditErr);
     }
-    await metricsService.increment(METRICS_PAYMENT_CREATED);
+    safeMetrics.increment(METRICS_PAYMENT_CREATED);
     logPaymentLifecycle({
       payment_id: payment.id,
       booking_id: bookingId,
@@ -471,7 +471,7 @@ export class PaymentService {
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_succeeded:', auditErr);
     }
-    await metricsService.increment(METRICS_PAYMENT_SUCCEEDED);
+    safeMetrics.increment(METRICS_PAYMENT_SUCCEEDED);
     logPaymentLifecycle({
       payment_id: paymentId,
       booking_id: payment.booking_id,
@@ -559,7 +559,7 @@ export class PaymentService {
     } catch (auditErr) {
       console.error('[AUDIT] Failed to log payment_failed:', auditErr);
     }
-    await metricsService.increment(METRICS_PAYMENT_FAILED);
+    safeMetrics.increment(METRICS_PAYMENT_FAILED);
     logPaymentLifecycle({
       payment_id: paymentId,
       booking_id: payment.booking_id,

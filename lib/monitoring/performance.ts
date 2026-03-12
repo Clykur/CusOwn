@@ -1,17 +1,17 @@
-import { metricsService } from './metrics';
+import { safeMetrics } from './safe-metrics';
 
 export class PerformanceMonitor {
-  async recordAPITiming(endpoint: string, durationMs: number): Promise<void> {
-    await metricsService.recordTiming(`api.${endpoint}`, durationMs);
+  recordAPITiming(endpoint: string, durationMs: number, requestId?: string | null): void {
+    safeMetrics.recordTiming(`api.${endpoint}`, durationMs, requestId);
   }
 
-  async recordSlowRequest(
+  recordSlowRequest(
     endpoint: string,
     durationMs: number,
-    meta?: { query?: string; route?: string }
-  ): Promise<void> {
-    await metricsService.increment('api.slow_requests');
-    await metricsService.recordTiming('api.slow_request_ms', durationMs);
+    meta?: { query?: string; route?: string; requestId?: string | null }
+  ): void {
+    safeMetrics.increment('api.slow_requests', 1, meta?.requestId);
+    safeMetrics.recordTiming('api.slow_request_ms', durationMs, meta?.requestId);
     if (process.env.NODE_ENV === 'development') {
       const route = meta?.route ?? endpoint;
       const parts = [`[perf] Slow API: ${route} ${durationMs}ms`];
@@ -20,19 +20,19 @@ export class PerformanceMonitor {
     }
   }
 
-  async recordDBTiming(query: string, durationMs: number): Promise<void> {
-    await metricsService.recordTiming(`db.${query}`, durationMs);
+  recordDBTiming(query: string, durationMs: number, requestId?: string | null): void {
+    safeMetrics.recordTiming(`db.${query}`, durationMs, requestId);
   }
 
-  async recordError(endpoint: string, error: Error): Promise<void> {
-    await metricsService.increment(`api.${endpoint}.errors`);
-    await metricsService.increment('api.errors.total');
+  recordError(endpoint: string, _error: Error, requestId?: string | null): void {
+    safeMetrics.increment(`api.${endpoint}.errors`, 1, requestId);
+    safeMetrics.increment('api.errors.total', 1, requestId);
   }
 
-  async recordHealthCheck(success: boolean, durationMs: number): Promise<void> {
-    await metricsService.recordTiming('health.check', durationMs);
+  recordHealthCheck(success: boolean, durationMs: number): void {
+    safeMetrics.recordTiming('health.check', durationMs);
     if (!success) {
-      await metricsService.increment('health.check.failures');
+      safeMetrics.increment('health.check.failures');
     }
   }
 
@@ -42,9 +42,11 @@ export class PerformanceMonitor {
     errorRate: number;
     totalRequests: number;
   }> {
-    const timings = await metricsService.getTimings('api.total');
-    const errorCount = await metricsService.getCount('api.errors.total');
-    const requestCount = await metricsService.getCount('api.requests.total');
+    const [timings, errorCount, requestCount] = await Promise.all([
+      safeMetrics.getTimings('api.total'),
+      safeMetrics.getCount('api.errors.total'),
+      safeMetrics.getCount('api.requests.total'),
+    ]);
 
     if (timings.length === 0) {
       return {

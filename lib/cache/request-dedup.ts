@@ -8,8 +8,8 @@ const inFlight = new Map<string, Promise<unknown>>();
 export async function dedupe<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const existing = inFlight.get(key);
   if (existing) {
-    import('@/lib/monitoring/metrics').then(({ metricsService }) => {
-      void metricsService.increment('api.deduped_requests');
+    import('@/lib/monitoring/safe-metrics').then(({ safeMetrics }) => {
+      safeMetrics.increment('api.deduped_requests');
     });
     return existing as Promise<T>;
   }

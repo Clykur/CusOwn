@@ -23,6 +23,7 @@ import { runUnitRescheduleCancellationTests } from './unit-reschedule-cancellati
 import { runUnitRecommendationsAnalyticsTests } from './unit-recommendations-analytics.test';
 import { runUnitFraudObservabilityTests } from './unit-fraud-observability.test';
 import { runGeoFallbackHardeningTests } from './geo-fallback-hardening.test';
+import { runMetricsReliabilityHardeningTests } from './metrics-reliability-hardening.test';
 
 const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'lib/utils/string', run: runUnitUtilsStringTests },
@@ -44,6 +45,7 @@ const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'recommendations & analytics', run: runUnitRecommendationsAnalyticsTests },
   { name: 'fraud & observability', run: runUnitFraudObservabilityTests },
   { name: 'geo fallback hardening', run: () => runGeoFallbackHardeningTests() },
+  { name: 'metrics reliability hardening', run: () => runMetricsReliabilityHardeningTests() },
 ];
 
 async function main(): Promise<void> {

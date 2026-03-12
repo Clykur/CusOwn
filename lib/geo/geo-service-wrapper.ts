@@ -5,7 +5,7 @@ import {
   METRICS_GEO_DEGRADATION,
 } from '@/config/constants';
 import { logStructured } from '@/lib/observability/structured-log';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { isGeoCircuitOpen, recordGeoFailure, recordGeoSuccess } from '@/lib/geo/geo-cooldown-store';
 
 export interface IpLookupResult {
@@ -33,7 +33,7 @@ function recordFailureAndLog(reason: string, context: GeoDegradationContext): vo
     request_id: context.requestId ?? undefined,
     endpoint: context.endpoint ?? undefined,
   });
-  void metricsService.increment(METRICS_GEO_DEGRADATION);
+  safeMetrics.increment(METRICS_GEO_DEGRADATION);
 }
 
 function classifyError(error: unknown): string {

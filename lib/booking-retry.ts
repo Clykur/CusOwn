@@ -9,7 +9,7 @@ import {
   BOOKING_RETRY_BACKOFF_MS,
   METRICS_BOOKING_DEADLOCK_RETRY_TOTAL,
 } from '@/config/constants';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 
 const RETRYABLE_CODES = new Set(['40P01', '40001']);
 
@@ -44,7 +44,7 @@ export async function withBookingRetry<T>(options: RetryBookingOptions<T>): Prom
         throw err;
       }
       const backoffMs = BOOKING_RETRY_BACKOFF_MS[attempt] ?? 200;
-      await metricsService.increment(METRICS_BOOKING_DEADLOCK_RETRY_TOTAL);
+      safeMetrics.increment(METRICS_BOOKING_DEADLOCK_RETRY_TOTAL);
       if (onRetry) onRetry(attempt + 1, err);
       else console.warn('[booking-retry] Retry after deadlock/serialization', attempt + 1, err);
       await sleep(backoffMs);
