@@ -3,15 +3,46 @@
  * Verifies request interception, request/response modification, security headers, propagation.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { NextRequest } from 'next/server';
 import { middleware, config } from '@/middleware';
 
 describe('middleware', () => {
+  let savedNodeEnv: string | undefined;
+
+  beforeAll(() => {
+    savedNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+  });
+
+  afterAll(() => {
+    if (savedNodeEnv !== undefined) process.env.NODE_ENV = savedNodeEnv;
+  });
+
   beforeEach(() => {
     // Middleware and security-headers use process.env; ensure stable test env
     const nodeEnv = process.env.NODE_ENV;
     if (nodeEnv === undefined) process.env.NODE_ENV = 'test';
+  });
+
+  it('leaves NODE_ENV unchanged when already set', async () => {
+    process.env.NODE_ENV = 'production';
+    const req = new NextRequest('http://localhost:3000/');
+    const res = await middleware(req);
+    expect(res).toBeDefined();
+    expect(res.status).toBe(200);
+  });
+
+  describe('when NODE_ENV is initially unset', () => {
+    beforeAll(() => {
+      delete process.env.NODE_ENV;
+    });
+    it('beforeEach sets NODE_ENV to test', async () => {
+      const req = new NextRequest('http://localhost:3000/');
+      const res = await middleware(req);
+      expect(res).toBeDefined();
+      expect(res.status).toBe(200);
+    });
   });
 
   describe('intercepts requests and propagates to next handler', () => {

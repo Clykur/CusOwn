@@ -51,6 +51,12 @@ vi.mock('@/lib/security/rate-limit-api.security', () => ({
       mockEnhancedRateLimit(...args),
 }));
 
+vi.mock('@/lib/cache/api-response-cache', () => ({
+  buildApiCacheKey: (method: string, path: string) => `mock:${method}:${path}`,
+  getCachedApiResponse: () => null,
+  setCachedApiResponse: () => {},
+}));
+
 describe('GET /api/bookings/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();

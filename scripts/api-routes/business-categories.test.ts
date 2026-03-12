@@ -19,9 +19,30 @@ vi.mock('@/services/business-category.service', () => ({
   getBusinessCategories: (...args: unknown[]) => mockGetBusinessCategories(...args),
 }));
 
+const mockGetCachedApiResponse = vi.fn();
+vi.mock('@/lib/cache/api-response-cache', () => ({
+  buildApiCacheKey: (method: string, path: string) => `mock:${method}:${path}`,
+  getCachedApiResponse: (...args: unknown[]) => mockGetCachedApiResponse(...args),
+  setCachedApiResponse: () => {},
+}));
+
 describe('GET /api/business-categories', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetCachedApiResponse.mockReturnValue(null);
+  });
+
+  it('returns 200 from cache when getCachedApiResponse returns data', async () => {
+    const cached = [{ value: 'salon', label: 'Salon' }];
+    mockGetCachedApiResponse.mockReturnValue({ data: cached });
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { success?: boolean; data?: unknown };
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual(cached);
+    expect(mockGetBusinessCategories).not.toHaveBeenCalled();
   });
 
   it('returns 200 with categories on success', async () => {
@@ -60,5 +81,16 @@ describe('GET /api/business-categories', () => {
     expect(body.success).toBe(false);
     expect(body.error).toBeDefined();
     expect(body.error).toBe('DB connection failed');
+  });
+
+  it('returns 500 with generic message when error is not Error instance', async () => {
+    mockGetBusinessCategories.mockRejectedValue('string error');
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { success?: boolean; error?: string };
+    expect(body.success).toBe(false);
+    expect(body.error).toBeDefined();
   });
 });

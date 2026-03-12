@@ -197,11 +197,41 @@ describe('audit.service', () => {
         limit: () => chainWithDedupe,
         is: () => chainWithDedupe,
         maybeSingle: () => Promise.resolve({ data: { id: 'existing' } }),
+      };
+      mockFrom.mockReturnValueOnce(chainWithDedupe);
+      const result = await auditService.createAuditLog(
+        null,
+        'booking_confirmed' as AuditActionType,
+        'booking',
+        { entityId: 'book-1' }
+      );
+      expect(result).toBeNull();
+    });
+
+    it('returns null when insert single returns no data', async () => {
+      const dedupeChain = {
+        select: () => dedupeChain,
+        eq: () => dedupeChain,
+        gte: () => dedupeChain,
+        limit: () => dedupeChain,
+        is: () => dedupeChain,
+        maybeSingle: () => Promise.resolve({ data: null }),
         insert: () => ({
           select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
         }),
       };
-      mockFrom.mockReturnValueOnce(chainWithDedupe);
+      const insertChain = {
+        select: () => insertChain,
+        eq: () => insertChain,
+        gte: () => insertChain,
+        limit: () => insertChain,
+        is: () => insertChain,
+        maybeSingle: () => Promise.resolve({ data: null }),
+        insert: () => ({
+          select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
+        }),
+      };
+      mockFrom.mockReturnValueOnce(dedupeChain).mockReturnValueOnce(insertChain);
       const result = await auditService.createAuditLog(
         null,
         'booking_confirmed' as AuditActionType,

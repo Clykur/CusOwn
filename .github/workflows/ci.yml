@@ -388,11 +388,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Depcheck (unused deps)
-        run: npm run quality:depcheck
-        continue-on-error: true
+        run: node scripts/infrastructure/run-quality-gate.js quality:depcheck
       - name: Unused exports (ts-prune)
-        run: npm run quality:ts-prune
-        continue-on-error: true
+        run: node scripts/infrastructure/run-quality-gate.js quality:ts-prune
 
   # ---------------------------------------------------------------------------
   # Build: strict build, no warnings.
@@ -469,6 +467,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       pull-requests: write

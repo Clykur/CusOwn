@@ -70,6 +70,9 @@
     "test:phase8": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/e2e/audit-logging.test.ts",
     "test:phase9": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/e2e/e2e-flows.test.ts",
     "test:unit": "npx dotenv-cli -e .env.test -- ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/run-unit-tests.ts",
+    "test:unit:vitest": "npx dotenv-cli -e .env.test -- npx vitest run --config vitest.unit.config.mts --coverage",
+    "test:coverage:test-classes": "npx dotenv-cli -e .env.test -- npx vitest run --config vitest.coverage-test-files.config.mts --coverage",
+    "test:coverage:all": "npm run test:unit:vitest && npm run test:coverage:test-classes",
     "test:api-health": "npx dotenv-cli -e .env.test -- ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/api-routes/api-health-route.test.ts",
     "test:api-routes": "npx dotenv-cli -e .env.test -- npx vitest run --config vitest.config.mts",
     "test:unit-services": "npx dotenv-cli -e .env.test -- npx vitest run scripts/unit-services --config vitest.config.mts",
@@ -126,6 +129,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/swagger-ui-react": "^5.18.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "autoprefixer": "^10.4.0",
     "c8": "^10.0.0",
     "depcheck": "^1.4.7",
@@ -141,8 +145,8 @@
     "prettier": "^3.0.0",
     "tailwindcss": "^3.3.0",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "ts-prune": "^0.10.3",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.0",
     "vitest": "^2.1.9"
   }

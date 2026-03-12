@@ -15,8 +15,7 @@ import {
   simulateUserAction,
 } from '../test-utils';
 
-// Import slotService using require for CommonJS compatibility
-const { slotService } = require('../services/slot.service');
+import { slotService } from '@/services/slot.service';
 
 async function testSlotServiceComprehensive() {
   const runner = new TestRunner();

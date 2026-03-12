@@ -3,12 +3,22 @@
  * Verifies getSecurityHeaders and applySecurityHeaders behavior.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest';
 import { NextResponse } from 'next/server';
 import { getSecurityHeaders, applySecurityHeaders } from '@/lib/security/security-headers';
 
 describe('security-headers', () => {
   let savedEnv: Record<string, string | undefined>;
+
+  beforeAll(() => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
+  });
+
+  it('beforeEach uses default URLs when env vars are unset', () => {
+    expect(process.env.NEXT_PUBLIC_SUPABASE_URL).toBe('https://test.supabase.co');
+    expect(process.env.NEXT_PUBLIC_APP_URL).toBe('http://localhost:3000');
+  });
 
   beforeEach(() => {
     savedEnv = {
@@ -30,6 +40,20 @@ describe('security-headers', () => {
     if (savedEnv.NEXT_PUBLIC_APP_URL !== undefined) {
       process.env.NEXT_PUBLIC_APP_URL = savedEnv.NEXT_PUBLIC_APP_URL;
     }
+  });
+
+  describe('with URLs set', () => {
+    beforeAll(() => {
+      process.env.NEXT_PUBLIC_APP_URL = 'http://to-restore.example.com';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://to-restore.supabase.co';
+    });
+
+    it('afterEach restores NEXT_PUBLIC_APP_URL and NEXT_PUBLIC_SUPABASE_URL when saved', () => {
+      process.env.NEXT_PUBLIC_APP_URL = 'http://changed.example.com';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://changed.supabase.co';
+      expect(process.env.NEXT_PUBLIC_APP_URL).toBe('http://changed.example.com');
+      expect(process.env.NEXT_PUBLIC_SUPABASE_URL).toBe('https://changed.supabase.co');
+    });
   });
 
   describe('getSecurityHeaders', () => {

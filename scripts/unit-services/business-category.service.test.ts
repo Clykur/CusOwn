@@ -7,6 +7,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import {
   getBusinessCategories,
   getAllowedCategoryValues,
+  __clearCategoriesCacheForTesting,
 } from '@/services/business-category.service';
 
 const mockRequireSupabaseAdmin = vi.fn();
@@ -18,6 +19,7 @@ vi.mock('@/lib/supabase/server', () => ({
 describe('business-category.service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __clearCategoriesCacheForTesting();
   });
 
   describe('getBusinessCategories', () => {

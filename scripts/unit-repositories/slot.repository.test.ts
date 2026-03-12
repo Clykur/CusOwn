@@ -392,37 +392,37 @@ describe('slot.repository', () => {
     });
 
     it('returns count and triggers update when expired slots exist', async () => {
-      mockRequireSupabaseAdmin.mockReturnValue({
-        from: vi.fn().mockImplementation((table: string) => {
-          if (table === 'slots') {
-            return {
-              select: () => ({
+      const fromMock = vi.fn().mockImplementation((table: string) => {
+        if (table === 'slots') {
+          return {
+            select: () => ({
+              eq: () => ({
                 eq: () => ({
                   eq: () => ({
-                    eq: () => ({
-                      lt: () =>
-                        Promise.resolve({
-                          data: [{ id: 's1' }, { id: 's2' }],
-                          error: null,
-                        }),
-                    }),
+                    lt: () =>
+                      Promise.resolve({
+                        data: [{ id: 's1' }, { id: 's2' }],
+                        error: null,
+                      }),
                   }),
                 }),
               }),
-              update: () => ({
-                in: () => Promise.resolve({ error: null }),
-              }),
-            };
-          }
-          return {};
-        }),
+            }),
+            update: () => ({
+              in: () => Promise.resolve({ error: null }),
+            }),
+          };
+        }
+        return {};
       });
+      mockRequireSupabaseAdmin.mockReturnValue({ from: fromMock });
       const out = await releaseExpiredReservationsForBusinessDate(
         'b1',
         '2025-03-15',
         '2025-03-15T12:00:00Z'
       );
       expect(out).toBe(2);
+      expect(fromMock('other_table')).toEqual({});
     });
   });
 

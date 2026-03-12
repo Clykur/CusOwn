@@ -83,4 +83,28 @@ describe('GET /api/admin/users', () => {
     expect(body).toHaveProperty('success', true);
     expect(body).toHaveProperty('data');
   });
+
+  it('returns 500 when getAllUsers throws', async () => {
+    mockRequireAdmin.mockResolvedValue({ user: { id: 'admin-1' }, profile: null });
+    mockGetAllUsers.mockRejectedValue(new Error('Database error'));
+    const { GET } = await import('@/app/api/admin/users/route');
+    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { success?: boolean; error?: string };
+    expect(body.success).toBe(false);
+    expect(body.error).toBeDefined();
+  });
+
+  it('returns 500 with DATABASE_ERROR when getAllUsers throws non-Error', async () => {
+    mockRequireAdmin.mockResolvedValue({ user: { id: 'admin-1' }, profile: null });
+    mockGetAllUsers.mockRejectedValue('string throw');
+    const { GET } = await import('@/app/api/admin/users/route');
+    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { success?: boolean; error?: string };
+    expect(body.success).toBe(false);
+    expect(body.error).toBeDefined();
+  });
 });

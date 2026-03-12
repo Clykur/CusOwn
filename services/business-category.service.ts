@@ -7,6 +7,11 @@ export type BusinessCategoryItem = { value: string; label: string };
 /** In-memory TTL cache for categories (reduces DB load across requests). */
 let categoriesCache: { data: BusinessCategoryItem[]; expiresAt: number } | null = null;
 
+/** Clears in-memory categories cache (test-only; avoids cross-test pollution). */
+export function __clearCategoriesCacheForTesting(): void {
+  categoriesCache = null;
+}
+
 function getCategoriesFromMemory(): BusinessCategoryItem[] | null {
   if (!categoriesCache || Date.now() > categoriesCache.expiresAt) return null;
   return categoriesCache.data;
