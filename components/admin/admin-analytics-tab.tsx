@@ -9,6 +9,7 @@ import {
   getAdminAnalyticsCacheKey,
 } from '@/components/admin/admin-cache';
 import { adminFetch } from '@/lib/utils/admin-fetch.client';
+import DateFilter from '@/components/owner/date-filter';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -244,23 +245,17 @@ export default function AdminAnalyticsTab() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
-            <span className="text-xs font-medium text-slate-500">From</span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border-0 p-0 text-sm font-medium text-slate-900 bg-transparent focus:ring-0"
-            />
+          <div className="w-[180px]">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              From
+            </label>
+            <DateFilter value={startDate} onChange={setStartDate} />
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
-            <span className="text-xs font-medium text-slate-500">To</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border-0 p-0 text-sm font-medium text-slate-900 bg-transparent focus:ring-0"
-            />
+          <div className="w-[180px]">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              To
+            </label>
+            <DateFilter value={endDate} onChange={setEndDate} />
           </div>
           <button
             type="button"

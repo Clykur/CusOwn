@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminFetch } from '@/lib/utils/admin-fetch.client';
 import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
+import DateFilter from '@/components/owner/date-filter';
 import { CRON_JOB_NAMES } from '@/config/constants';
+
+const FILTER_LABEL_CLASS =
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
 
 interface CronRun {
   id: string;
@@ -68,6 +73,23 @@ export function AdminCronMonitorTab() {
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
+  const jobOptions = useMemo(
+    () => [
+      { value: '', label: 'All jobs', checked: jobName === '' },
+      ...CRON_JOB_NAMES.map((name) => ({ value: name, label: name, checked: jobName === name })),
+    ],
+    [jobName]
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { value: '', label: 'All statuses', checked: status === '' },
+      { value: 'success', label: 'Success', checked: status === 'success' },
+      { value: 'failed', label: 'Failed', checked: status === 'failed' },
+    ],
+    [status]
+  );
+
   return (
     <div className="space-y-8">
       <div>
@@ -76,56 +98,51 @@ export function AdminCronMonitorTab() {
       </div>
 
       <AdminSectionWrapper title="Filters" subtitle="Filter by job, status, or date">
-        <div className="flex flex-wrap gap-4">
-          <select
-            value={jobName}
-            onChange={(e) => {
-              setJobName(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            aria-label="Job name"
-          >
-            <option value="">All jobs</option>
-            {CRON_JOB_NAMES.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            aria-label="Status"
-          >
-            <option value="">All statuses</option>
-            <option value="success">Success</option>
-            <option value="failed">Failed</option>
-          </select>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            aria-label="Start date"
-          />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            aria-label="End date"
-          />
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="w-full min-w-[180px] sm:w-[200px]">
+            <FilterDropdown
+              label="Job name"
+              options={jobOptions}
+              onToggle={(value, checked) => {
+                if (checked) {
+                  setJobName(value);
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
+          <div className="w-full min-w-[180px] sm:w-[200px]">
+            <FilterDropdown
+              label="Status"
+              options={statusOptions}
+              onToggle={(value, checked) => {
+                if (checked) {
+                  setStatus(value);
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
+          <div className="w-full min-w-[160px] sm:w-[180px]">
+            <label className={FILTER_LABEL_CLASS}>Start date</label>
+            <DateFilter
+              value={startDate}
+              onChange={(d) => {
+                setStartDate(d);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="w-full min-w-[160px] sm:w-[180px]">
+            <label className={FILTER_LABEL_CLASS}>End date</label>
+            <DateFilter
+              value={endDate}
+              onChange={(d) => {
+                setEndDate(d);
+                setPage(1);
+              }}
+            />
+          </div>
           <button
             type="button"
             onClick={() => fetchRuns()}

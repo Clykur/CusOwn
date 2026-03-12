@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import DateFilter from '@/components/owner/date-filter';
 
 export default function AnalyticsHeader({
   startDate,
@@ -34,7 +35,7 @@ export default function AnalyticsHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-end gap-2">
         <div className="hidden sm:flex gap-2">
           <button
             onClick={() => applyQuick(1)}
@@ -62,18 +63,18 @@ export default function AnalyticsHeader({
           </button>
         </div>
 
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-        />
+        <div className="w-[160px]">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            From
+          </label>
+          <DateFilter value={startDate} onChange={setStartDate} />
+        </div>
+        <div className="w-[160px]">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            To
+          </label>
+          <DateFilter value={endDate} onChange={setEndDate} />
+        </div>
 
         <button
           onClick={onExport}

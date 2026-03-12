@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SuccessMetricsDashboard from '@/components/admin/success-metrics-dashboard';
 import AdminAnalyticsTab from '@/components/admin/admin-analytics-tab';
@@ -27,6 +27,7 @@ import {
   OverviewSkeleton,
   UsersTableBodySkeleton,
 } from '@/components/ui/skeleton';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
 import { ROUTES, getAdminDashboardUrl } from '@/lib/utils/navigation';
 import { SUCCESS_MESSAGES } from '@/config/constants';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
@@ -1805,6 +1806,23 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     filterActorRole !== '' ||
     filterActionGroup !== '';
 
+  const severityOptions = useMemo(
+    () => AUDIT_SEVERITY_OPTIONS.map((o) => ({ ...o, checked: filterSeverity === o.value })),
+    [filterSeverity]
+  );
+  const statusOptions = useMemo(
+    () => AUDIT_STATUS_OPTIONS.map((o) => ({ ...o, checked: filterStatus === o.value })),
+    [filterStatus]
+  );
+  const actionGroupOptions = useMemo(
+    () => AUDIT_ACTION_GROUP_OPTIONS.map((o) => ({ ...o, checked: filterActionGroup === o.value })),
+    [filterActionGroup]
+  );
+  const actorRoleOptions = useMemo(
+    () => AUDIT_ACTOR_ROLE_OPTIONS.map((o) => ({ ...o, checked: filterActorRole === o.value })),
+    [filterActorRole]
+  );
+
   useEffect(() => {
     setError(null);
     if (!hasFilters) {
@@ -2095,67 +2113,55 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Activity log</h3>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={filterSeverity}
-              onChange={(e) => {
-                setFilterSeverity(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Filter by severity"
-            >
-              {AUDIT_SEVERITY_OPTIONS.map((o) => (
-                <option key={o.value || 'all'} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Filter by status"
-            >
-              {AUDIT_STATUS_OPTIONS.map((o) => (
-                <option key={o.value || 'all'} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterActionGroup}
-              onChange={(e) => {
-                setFilterActionGroup(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Filter by action group"
-            >
-              {AUDIT_ACTION_GROUP_OPTIONS.map((o) => (
-                <option key={o.value || 'all'} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterActorRole}
-              onChange={(e) => {
-                setFilterActorRole(e.target.value);
-                setPage(1);
-              }}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Filter by actor role"
-            >
-              {AUDIT_ACTOR_ROLE_OPTIONS.map((o) => (
-                <option key={o.value || 'all'} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-[160px]">
+              <FilterDropdown
+                label="Severity"
+                options={severityOptions}
+                onToggle={(value, checked) => {
+                  if (checked) {
+                    setFilterSeverity(value);
+                    setPage(1);
+                  }
+                }}
+              />
+            </div>
+            <div className="w-[160px]">
+              <FilterDropdown
+                label="Status"
+                options={statusOptions}
+                onToggle={(value, checked) => {
+                  if (checked) {
+                    setFilterStatus(value);
+                    setPage(1);
+                  }
+                }}
+              />
+            </div>
+            <div className="w-[160px]">
+              <FilterDropdown
+                label="Action group"
+                options={actionGroupOptions}
+                onToggle={(value, checked) => {
+                  if (checked) {
+                    setFilterActionGroup(value);
+                    setPage(1);
+                  }
+                }}
+              />
+            </div>
+            <div className="w-[160px]">
+              <FilterDropdown
+                label="Actor role"
+                options={actorRoleOptions}
+                onToggle={(value, checked) => {
+                  if (checked) {
+                    setFilterActorRole(value);
+                    setPage(1);
+                  }
+                }}
+              />
+            </div>
             {(logs.length > 0 || loading) && (
               <input
                 type="search"

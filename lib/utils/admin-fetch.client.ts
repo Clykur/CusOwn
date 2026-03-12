@@ -21,7 +21,7 @@ const inFlight = new Map<string, Promise<Response>>();
  * Admin API fetch with in-flight deduplication and bounded retries on 5xx (except 502/503).
  * Retries are capped by ADMIN_FETCH_MAX_RETRIES (never unlimited). On 401: clear cache and redirect.
  */
-export async function adminFetch(url: string, options: AdminFetchOptions): Promise<Response> {
+export async function adminFetch(url: string, options: AdminFetchOptions = {}): Promise<Response> {
   const { token, loginPath = ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD), ...init } = options;
   const headers = new Headers(init.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
