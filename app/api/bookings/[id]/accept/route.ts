@@ -6,6 +6,7 @@ import { reminderService } from '@/services/reminder.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { invalidateBookingCache } from '@/lib/cache/api-response-cache';
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
@@ -169,6 +170,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       booking_id: id,
     });
 
+    invalidateBookingCache(id);
     const payload =
       whatsappUrl !== undefined
         ? { ...confirmedBooking, whatsapp_url: whatsappUrl }

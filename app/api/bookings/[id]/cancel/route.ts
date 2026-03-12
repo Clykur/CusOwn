@@ -4,12 +4,14 @@ import { whatsappService } from '@/services/whatsapp.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { invalidateBookingCache } from '@/lib/cache/api-response-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
 import { userService } from '@/services/user.service';
 import { auditService } from '@/services/audit.service';
 import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
+import { logStructured } from '@/lib/observability/structured-log';
 
 const ROUTE = 'POST /api/bookings/[id]/cancel';
 
@@ -102,6 +104,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Idempotency: already cancelled → return 200 with current state (same result as success)
     if (booking.status === 'cancelled') {
+      invalidateBookingCache(id);
       const response = successResponse(booking, SUCCESS_MESSAGES.BOOKING_CANCELLED);
       setNoCacheHeaders(response);
       return response;
@@ -123,15 +126,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           request,
         });
       } catch (auditError) {
-        // Log audit error but don't fail the request
-        console.error('[SECURITY] Failed to create audit log:', auditError);
+        logStructured('warn', 'Audit log failed on cancel', {
+          action: 'audit_failed',
+          booking_id: id,
+          error: auditError instanceof Error ? auditError.message : String(auditError),
+        });
       }
     }
 
-    console.log(
-      `[SECURITY] Booking cancelled: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., Method: ${cancelMethod}, User: ${user?.id.substring(0, 8) || 'unauthenticated'}...`
-    );
+    logStructured('info', 'Booking cancelled', {
+      action: 'booking_cancelled',
+      booking_id: id,
+      client_ip: clientIP ?? null,
+      cancel_method: cancelMethod,
+      user_id: user?.id ?? null,
+    });
 
+    invalidateBookingCache(id);
     const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
     if (!bookingWithDetails || !bookingWithDetails.salon) {
       return successResponse(cancelledBooking, SUCCESS_MESSAGES.BOOKING_CANCELLED);

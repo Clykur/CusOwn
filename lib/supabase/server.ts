@@ -16,7 +16,7 @@ const createSupabaseAdmin = (): SupabaseClient | null => {
   if (!url || !serviceRoleKey || url === '' || serviceRoleKey === '') {
     // Only warn in development and if we're actually missing values
     // Check if we're in Node.js environment (not browser)
-    const isServer = typeof window === 'undefined';
+    const isServer = typeof (globalThis as Record<string, unknown>).window === 'undefined';
     if (process.env.NODE_ENV === 'development' && isServer) {
       console.warn(
         '⚠️  Supabase credentials not configured. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local'

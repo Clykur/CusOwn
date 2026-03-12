@@ -3,7 +3,13 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID } from '@/lib/utils/security';
 import { serviceService } from '@/services/service.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
-import { ERROR_MESSAGES } from '@/config/constants';
+import {
+  buildApiCacheKey,
+  getCachedApiResponse,
+  setCachedApiResponse,
+} from '@/lib/cache/api-response-cache';
+import { dedupe } from '@/lib/cache/request-dedup';
+import { ERROR_MESSAGES, CACHE_TTL_API_LONG_MS } from '@/config/constants';
 
 const servicesListRateLimit = enhancedRateLimit({
   maxRequests: 50,
@@ -25,8 +31,19 @@ export async function GET(request: NextRequest) {
     }
 
     const activeOnly = request.nextUrl.searchParams.get('active_only') !== 'false';
-    const services = await serviceService.getServicesByBusiness(businessId, activeOnly);
+    const cacheKey = buildApiCacheKey('GET', '/api/services/list', {
+      businessId,
+      active_only: String(activeOnly),
+    });
+    const cached = getCachedApiResponse<{ data: unknown }>(cacheKey);
+    if (cached) {
+      return successResponse(cached.data);
+    }
 
+    const services = await dedupe(`services:${businessId}:${activeOnly}`, () =>
+      serviceService.getServicesByBusiness(businessId, activeOnly)
+    );
+    setCachedApiResponse(cacheKey, { data: services }, CACHE_TTL_API_LONG_MS);
     return successResponse(services);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

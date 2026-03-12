@@ -57,6 +57,9 @@ export interface AuditLog {
   created_at: string;
 }
 
+const AUDIT_LOG_SELECT =
+  'id, admin_user_id, actor_role, action_type, entity_type, entity_id, status, severity, old_data, new_data, description, metadata, ip_address, user_agent, created_at';
+
 const CRITICAL_ACTIONS = new Set<AuditActionType>([
   'login_failed',
   'cron_failed',
@@ -240,7 +243,7 @@ export class AuditService {
   }): Promise<AuditLog[]> {
     if (!supabaseAdmin) return [];
 
-    let query = supabaseAdmin.from('audit_logs').select('*');
+    let query = supabaseAdmin.from('audit_logs').select(AUDIT_LOG_SELECT);
 
     if (filters?.adminUserId) query = query.eq('admin_user_id', filters.adminUserId);
     if (filters?.actionType) query = query.eq('action_type', filters.actionType);
@@ -325,7 +328,7 @@ export class AuditService {
   }): Promise<number> {
     if (!supabaseAdmin) return 0;
 
-    let query = supabaseAdmin.from('audit_logs').select('*', { count: 'exact', head: true });
+    let query = supabaseAdmin.from('audit_logs').select('id', { count: 'exact', head: true });
 
     if (filters?.adminUserId) query = query.eq('admin_user_id', filters.adminUserId);
     if (filters?.actionType) query = query.eq('action_type', filters.actionType);

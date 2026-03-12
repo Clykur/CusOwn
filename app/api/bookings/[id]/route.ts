@@ -9,6 +9,7 @@ import {
   SECURE_LINK_RESPONSE_CODE,
   RATE_LIMIT_ACTION_LINK_WINDOW_MS,
   RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW,
+  CACHE_TTL_BOOKING_MS,
 } from '@/config/constants';
 import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
 import { userService } from '@/services/user.service';
@@ -16,6 +17,13 @@ import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 import { validateOwnerActionLink } from '@/lib/utils/secure-link-validation.server';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
+import {
+  buildApiCacheKey,
+  getCachedApiResponse,
+  setCachedApiResponse,
+} from '@/lib/cache/api-response-cache';
+import { dedupe } from '@/lib/cache/request-dedup';
+import { runWithTiming } from '@/lib/monitoring/performance';
 
 const ROUTE = 'GET /api/bookings/[id]';
 
@@ -70,9 +78,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    const booking = await bookingService.getBookingByUuidWithDetails(id);
+    const cacheKey = buildApiCacheKey('GET', `/api/bookings/${id}`);
+    const cached = getCachedApiResponse<{ data: unknown }>(cacheKey);
+    const booking = cached
+      ? (cached.data as Awaited<ReturnType<typeof bookingService.getBookingByUuidWithDetails>>)
+      : await dedupe(`booking:${id}`, () =>
+          runWithTiming(
+            `getBookingWithDetails:${id}`,
+            () => bookingService.getBookingByUuidWithDetails(id),
+            { route: ROUTE }
+          )
+        );
     if (!booking) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
+    }
+    if (!cached) {
+      setCachedApiResponse(cacheKey, { data: booking }, CACHE_TTL_BOOKING_MS);
     }
 
     const ctx = await getAuthContext(request);

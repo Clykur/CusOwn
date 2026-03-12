@@ -56,6 +56,10 @@ export type Payment = {
   webhook_payload_hash?: string | null;
 };
 
+/** Explicit column list for payments table to avoid SELECT * and reduce I/O. */
+const PAYMENT_SELECT =
+  'id, booking_id, provider, provider_payment_id, amount_cents, currency, status, payment_method, payment_intent_id, order_id, idempotency_key, payment_id, upi_payment_link, upi_qr_code, expires_at, transaction_id, verified_at, verified_by, verification_method, upi_app_used, failure_reason, attempt_count, created_at, updated_at, webhook_payload_hash';
+
 export class PaymentService {
   async createPayment(
     bookingId: string,
@@ -69,7 +73,7 @@ export class PaymentService {
     if (idempotencyKey) {
       const { data: existing } = await supabaseAdmin
         .from('payments')
-        .select('*')
+        .select(PAYMENT_SELECT)
         .eq('idempotency_key', idempotencyKey)
         .single();
 
@@ -89,7 +93,7 @@ export class PaymentService {
         status: 'pending',
         idempotency_key: idempotencyKey || null,
       })
-      .select()
+      .select(PAYMENT_SELECT)
       .single();
 
     if (error) {
@@ -135,7 +139,7 @@ export class PaymentService {
 
     const { data: currentPayment, error: fetchError } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('id', paymentId)
       .single();
 
@@ -185,7 +189,7 @@ export class PaymentService {
       .from('payments')
       .update(updateData)
       .eq('id', paymentId)
-      .select()
+      .select(PAYMENT_SELECT)
       .single();
 
     if (error) {
@@ -242,7 +246,7 @@ export class PaymentService {
 
     const { data, error } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('booking_id', bookingId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -263,7 +267,7 @@ export class PaymentService {
 
     const { data, error } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('idempotency_key', idempotencyKey)
       .single();
 
@@ -335,7 +339,7 @@ export class PaymentService {
         transaction_id: transactionId,
         attempt_count: 1,
       })
-      .select()
+      .select(PAYMENT_SELECT)
       .single();
 
     if (error) {
@@ -387,7 +391,7 @@ export class PaymentService {
 
     const { data: payment, error: fetchError } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('id', paymentId)
       .single();
 
@@ -435,7 +439,7 @@ export class PaymentService {
       .from('payments')
       .update(updateData)
       .eq('id', paymentId)
-      .select()
+      .select(PAYMENT_SELECT)
       .single();
 
     if (error) {
@@ -487,7 +491,7 @@ export class PaymentService {
 
     const { data: payment } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('id', paymentId)
       .single();
 
@@ -520,7 +524,7 @@ export class PaymentService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', paymentId)
-      .select()
+      .select(PAYMENT_SELECT)
       .single();
 
     if (error) {
@@ -625,7 +629,7 @@ export class PaymentService {
 
     const { data, error } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('payment_id', paymentId)
       .single();
 
@@ -644,7 +648,7 @@ export class PaymentService {
 
     const { data, error } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select(PAYMENT_SELECT)
       .eq('transaction_id', transactionId)
       .single();
 

@@ -7,7 +7,10 @@ import { adminNotificationService } from '@/services/admin-notification.service'
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES, AUDIT_STATUS, ADMIN_DELETION_OUTCOME } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
-import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
+import {
+  invalidateApiCacheByPrefix,
+  invalidateBusinessCacheBySlug,
+} from '@/lib/cache/api-response-cache';
 import { getClientIp } from '@/lib/utils/security';
 import {
   validateAdminDeletionReason,
@@ -155,8 +158,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     invalidateApiCacheByPrefix('GET|/api/admin/businesses');
     invalidateApiCacheByPrefix('GET|/api/admin/metrics');
-    // Invalidate public salon caches so status changes (suspend/unsuspend) are reflected immediately
-    invalidateApiCacheByPrefix('GET|/api/salons');
+    if (updatedBusiness?.booking_link) {
+      invalidateBusinessCacheBySlug(updatedBusiness.booking_link);
+    }
     return successResponse(updatedBusiness, 'Business updated successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "DOM"],
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -22,5 +22,12 @@
       "module": "commonjs"
     }
   },
-  "include": ["*.ts"]
+  "include": [
+    "*.ts",
+    "unit-utils/**/*.ts",
+    "api-routes/**/*.ts",
+    "e2e/**/*.ts",
+    "integration/**/*.ts",
+    "security/**/*.ts"
+  ]
 }

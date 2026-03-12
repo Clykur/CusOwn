@@ -6,6 +6,7 @@ import {
   BOOKING_STATUS,
   SLOT_STATUS,
   UNDO_ACCEPT_REJECT_WINDOW_MINUTES,
+  BOOKING_LIST_MAX_PAGE_SIZE,
 } from '@/config/constants';
 import { env } from '@/config/env';
 import { slotService } from './slot.service';
@@ -520,6 +521,50 @@ export class BookingService {
   private static BOOKING_SELECT_WITHOUT_UNDO =
     'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at';
 
+  /**
+   * Batch-fetch bookings with details by UUIDs. Used to avoid N+1 in expireOldBookings.
+   */
+  private async getBookingsWithDetailsBatch(ids: string[]): Promise<BookingWithDetails[]> {
+    if (!supabaseAdmin || ids.length === 0) return [];
+    const { data: rows, error } = await supabaseAdmin
+      .from('bookings')
+      .select(BookingService.BOOKING_SELECT_WITHOUT_UNDO)
+      .in('id', ids);
+    if (error || !rows || rows.length === 0) return [];
+    const bookings = rows as unknown as Booking[];
+    const businessIds = [...new Set(bookings.map((b) => b.business_id))];
+    const slotIds = [...new Set(bookings.map((b) => b.slot_id))];
+    const [businessesRes, slotsRes, reviewMap] = await Promise.all([
+      businessIds.length
+        ? supabaseAdmin
+            .from('businesses')
+            .select(
+              'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, rating_avg, review_count'
+            )
+            .in('id', businessIds)
+        : Promise.resolve({ data: [] }),
+      slotIds.length
+        ? supabaseAdmin
+            .from('slots')
+            .select('id, business_id, date, start_time, end_time, status, reserved_until')
+            .in('id', slotIds)
+        : Promise.resolve({ data: [] }),
+      getReviewsByBookingIds(bookings.map((b) => b.id)),
+    ]);
+    const salonList = (businessesRes.data ?? []) as Salon[];
+    const slotList = (slotsRes.data ?? []) as Slot[];
+    const salonMap = new Map<string, Salon>();
+    salonList.forEach((s) => salonMap.set(s.id, s));
+    const slotMap = new Map<string, Slot>();
+    slotList.forEach((s) => slotMap.set(s.id, s));
+    return bookings.map((booking) => ({
+      ...booking,
+      salon: salonMap.get(booking.business_id) ?? undefined,
+      slot: slotMap.get(booking.slot_id) ?? undefined,
+      review: reviewMap.get(booking.id) ?? undefined,
+    }));
+  }
+
   async getSalonBookings(
     salonId: string,
     fromDate?: string,
@@ -532,7 +577,8 @@ export class BookingService {
       .from('bookings')
       .select(BookingService.BOOKING_SELECT)
       .eq('business_id', salonId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(BOOKING_LIST_MAX_PAGE_SIZE);
 
     if (fromDate || toDate) {
       let slotQuery = supabaseAdmin.from('slots').select('id').eq('business_id', salonId);
@@ -563,7 +609,8 @@ export class BookingService {
         .from('bookings')
         .select(BookingService.BOOKING_SELECT_WITHOUT_UNDO)
         .eq('business_id', salonId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(BOOKING_LIST_MAX_PAGE_SIZE);
       if (fromDate || toDate) {
         let slotQuery = supabaseAdmin.from('slots').select('id').eq('business_id', salonId);
 
@@ -662,8 +709,11 @@ export class BookingService {
       return;
     }
 
+    const bookingsWithDetails = await this.getBookingsWithDetailsBatch(bookingIds);
+    const detailsById = new Map(bookingsWithDetails.map((b) => [b.id, b]));
+
     for (const bookingId of bookingIds) {
-      const bookingWithDetails = await this.getBookingByUuidWithDetails(bookingId);
+      const bookingWithDetails = detailsById.get(bookingId);
       if (bookingWithDetails) {
         await emitBookingCancelled(bookingWithDetails, 'system');
         safeMetrics.increment(metricName);
@@ -866,7 +916,8 @@ export class BookingService {
         'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
       )
       .eq('customer_user_id', customerUserId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(BOOKING_LIST_MAX_PAGE_SIZE);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);

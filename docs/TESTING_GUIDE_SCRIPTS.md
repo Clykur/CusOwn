@@ -168,6 +168,16 @@ Each test provides step-by-step output:
 **"Missing Supabase credentials"**
 → Check `.env.local` file
 
+## 📊 Test coverage commands
+
+| Command                              | What it measures                                                                             |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `npm run test:unit:vitest`           | Unit tests + **source code** coverage (4 API routes at 100%)                                 |
+| `npm run test:coverage:test-classes` | Unit tests + **test-class** coverage (how much of the test files are executed; targets 100%) |
+| `npm run test:coverage:all`          | Runs both: source coverage then test-class coverage                                          |
+
+Use **test-class coverage** to ensure every line in your test files is run when the suite executes.
+
 ## 📈 Success Criteria
 
 All tests should:

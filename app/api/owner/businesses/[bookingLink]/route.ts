@@ -12,7 +12,10 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
 import { filterOwnerBusinessUpdateFields, validateStringLength } from '@/lib/security/input-filter';
-import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
+import {
+  invalidateApiCacheByPrefix,
+  invalidateBusinessCacheBySlug,
+} from '@/lib/cache/api-response-cache';
 import { getClientIp } from '@/lib/utils/security';
 
 const ROUTE_PATCH = 'PATCH /api/owner/businesses/[bookingLink]';
@@ -94,8 +97,7 @@ export async function PATCH(
       return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
-    invalidateApiCacheByPrefix('GET|/api/owner/businesses');
-    invalidateApiCacheByPrefix('GET|/api/salons');
+    invalidateBusinessCacheBySlug(bookingLink);
     return successResponse(updated, 'Business updated successfully');
   } catch (err) {
     const message = err instanceof Error ? err.message : ERROR_MESSAGES.DATABASE_ERROR;
@@ -132,7 +134,7 @@ export async function DELETE(
     );
 
     invalidateApiCacheByPrefix('GET|/api/owner/businesses');
-    invalidateApiCacheByPrefix('GET|/api/salons');
+    invalidateBusinessCacheBySlug(bookingLink);
     return successResponse(null, 'Business deleted successfully');
   } catch (err) {
     const message = err instanceof Error ? err.message : ERROR_MESSAGES.DATABASE_ERROR;

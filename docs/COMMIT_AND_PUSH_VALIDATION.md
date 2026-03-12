@@ -48,15 +48,15 @@ If any step fails, the push is **blocked**.
 
 ## package.json scripts
 
-| Script           | Command / purpose                                                          |
-| ---------------- | -------------------------------------------------------------------------- |
-| `lint`           | next lint                                                                  |
-| `typecheck`      | tsc --noEmit                                                               |
-| `type-check`     | same as typecheck                                                          |
-| `security`       | npm audit --omit=dev                                                       |
-| `security-check` | Lockfile + dangerous-pattern scan (see scripts/security-check-pre-push.js) |
-| `validate`       | lint && type-check && build                                                |
-| `format:check`   | Prettier --check (optional, not in hooks)                                  |
+| Script           | Command / purpose                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `lint`           | next lint                                                                                 |
+| `typecheck`      | tsc --noEmit                                                                              |
+| `type-check`     | same as typecheck                                                                         |
+| `security`       | npm audit --omit=dev                                                                      |
+| `security-check` | Lockfile + dangerous-pattern scan (see scripts/infrastructure/security-check-pre-push.js) |
+| `validate`       | lint && type-check && build                                                               |
+| `format:check`   | Prettier --check (optional, not in hooks)                                                 |
 
 ---
 

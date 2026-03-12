@@ -3,6 +3,7 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { dedupe } from '@/lib/cache/request-dedup';
 import { validateCSRFToken } from '@/lib/security/csrf';
 import { getClientIp } from '@/lib/utils/security';
 
@@ -17,8 +18,10 @@ export async function GET(request: NextRequest) {
       return errorResponse('Authentication required', 401);
     }
 
-    // Get user profile
-    const profile = await userService.getUserProfile(user.id);
+    // Get user profile (dedupe concurrent identical requests)
+    const profile = await dedupe(`user:profile:${user.id}`, () =>
+      userService.getUserProfile(user.id)
+    );
 
     // Get additional account data
     let businessCount = 0;

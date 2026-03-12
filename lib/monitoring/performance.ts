@@ -1,4 +1,35 @@
 import { safeMetrics } from './safe-metrics';
+import { SLOW_REQUEST_MS } from '@/config/constants';
+import { env } from '@/config/env';
+import { logStructured } from '@/lib/observability/structured-log';
+
+/**
+ * Run an async operation and log + metric if it exceeds SLOW_REQUEST_MS.
+ * Use for DB queries or service calls to detect slow paths.
+ */
+export async function runWithTiming<T>(
+  label: string,
+  fn: () => Promise<T>,
+  meta?: { route?: string; requestId?: string | null }
+): Promise<T> {
+  const start = Date.now();
+  try {
+    return await fn();
+  } finally {
+    const durationMs = Date.now() - start;
+    if (durationMs >= SLOW_REQUEST_MS) {
+      safeMetrics.increment('api.slow_requests');
+      safeMetrics.recordTiming('api.slow_request_ms', durationMs, meta?.requestId);
+      logStructured('warn', 'Slow operation', {
+        operation: label,
+        duration_ms: durationMs,
+        threshold_ms: SLOW_REQUEST_MS,
+        route: meta?.route,
+        request_id: meta?.requestId,
+      });
+    }
+  }
+}
 
 export class PerformanceMonitor {
   recordAPITiming(endpoint: string, durationMs: number, requestId?: string | null): void {
@@ -12,11 +43,13 @@ export class PerformanceMonitor {
   ): void {
     safeMetrics.increment('api.slow_requests', 1, meta?.requestId);
     safeMetrics.recordTiming('api.slow_request_ms', durationMs, meta?.requestId);
-    if (process.env.NODE_ENV === 'development') {
+    if (env.nodeEnv === 'development') {
       const route = meta?.route ?? endpoint;
-      const parts = [`[perf] Slow API: ${route} ${durationMs}ms`];
-      if (meta?.query) parts.push(`query=${meta.query}`);
-      console.warn(parts.join(' '));
+      logStructured('warn', 'Slow API request', {
+        route,
+        duration_ms: durationMs,
+        query: meta?.query ?? undefined,
+      });
     }
   }
 

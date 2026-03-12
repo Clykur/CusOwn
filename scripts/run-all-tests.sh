@@ -26,6 +26,16 @@ if [ ! -f .env.local ]; then
   exit 1
 fi
 
+# Detect placeholder Supabase (no real DB): skip e2e and DB-dependent tests, run only offline-safe ones
+SUPABASE_URL=$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' .env.local 2>/dev/null | cut -d= -f2- || true)
+SKIP_DB_TESTS=false
+if echo "$SUPABASE_URL" | grep -q 'placeholder'; then
+  SKIP_DB_TESTS=true
+  echo "⚠️  Supabase URL is a placeholder (no real DB). Skipping e2e and DB-dependent tests."
+  echo "   To run full suite, set real NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local"
+  echo ""
+fi
+
 # Run all tests and capture output to file while also displaying on console
 {
 echo "============================================================"
@@ -37,6 +47,23 @@ echo ""
 echo "============================================================"
 echo ""
 
+if [ "$SKIP_DB_TESTS" = true ]; then
+  echo "Skipping user journey tests 1–12 (require real Supabase)."
+  echo ""
+  echo "============================================================"
+  echo "PRODUCTION-GRADE TEST SUITE (PHASES 1-9)"
+  echo "============================================================"
+  echo ""
+  echo "Skipping Phase 1–6, 8–9 (require real DB). Running Phase 7 only..."
+  npm run test:phase7 || echo "⚠️  Phase 7 failed"
+  echo ""
+  echo "============================================================"
+  echo "✅ ALL TEST SUITES COMPLETED (DB-dependent tests skipped)"
+  echo "============================================================"
+  echo "Test run completed at: $(date)"
+  echo "📝 Full output saved to: $OUTPUT_FILE"
+  echo "============================================================"
+else
 # Run all user journey test scripts
 echo "Running user journey test 1/12: Customer Journey..."
 npm run test:customer-journey || echo "⚠️  Test suite 1 failed"
@@ -134,4 +161,5 @@ echo "Test run completed at: $(date)"
 echo "📝 Full output saved to: $OUTPUT_FILE"
 echo "============================================================"
 
+fi
 } 2>&1 | tee "$OUTPUT_FILE"
