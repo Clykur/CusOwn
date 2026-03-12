@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const DEFAULT_LIMIT_KB = 1024 * 2; // 2MB for first JS chunk as a safe default
+// Total .next JS+CSS; allow typical Next.js app (admin, analytics, booking). Override via BUNDLE_SIZE_LIMIT_KB.
+const DEFAULT_LIMIT_KB = 1024 * 16; // 16MB
 const limitKb = Number(process.env.BUNDLE_SIZE_LIMIT_KB) || DEFAULT_LIMIT_KB;
 
 function getSizeKB(filePath) {
