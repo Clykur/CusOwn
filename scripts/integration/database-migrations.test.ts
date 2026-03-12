@@ -95,6 +95,10 @@ function expectArray(val: unknown): void {
 }
 
 if (require.main === module) {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {
+    console.log('Skipping database-migrations tests (no real DB in CI).');
+    process.exit(0);
+  }
   runDatabaseMigrationsTests()
     .then(() => process.exit(0))
     .catch((e) => {

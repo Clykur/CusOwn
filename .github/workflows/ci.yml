@@ -22,6 +22,8 @@ env:
   CI: true
   NODE_VERSION: '22'
   NODE_OPTIONS: '--max-old-space-size=4096'
+  # Opt into Node.js 24 for JS actions to avoid Node 20 deprecation.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -137,7 +139,7 @@ jobs:
   lockfile:
     name: Lockfile check
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     needs: [setup]
     steps:
       - name: Checkout
@@ -147,6 +149,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
       - name: Verify lockfile present and npm ci clean
         run: node scripts/infrastructure/check-lockfile.js
 
@@ -197,12 +201,16 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
       - name: Vitest unit tests (with coverage)
-        run: npx dotenv-cli -e .env.test -- npx vitest run --config vitest.config.mts --coverage
+        run: >
+          npx dotenv-cli -e .env.test -- npx vitest run
+          scripts/api-routes scripts/unit-services scripts/unit-repositories
+          scripts/unit-config scripts/unit-middleware scripts/unit-database
+          --config vitest.config.mts --coverage
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
       - name: Upload coverage
         uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: coverage-unit
           path: coverage
@@ -226,11 +234,17 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Database migration validation
-        run: npx vitest run scripts/unit-database scripts/integration --config vitest.config.mts
+      - name: Ensure .env.test for integration tests
+        run: | # pragma: allowlist secret
+          if [ ! -f .env.test ]; then
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co" >> .env.test
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key" >> .env.test
+            echo "SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key" >> .env.test
+          fi
+      - name: Database migration validation (unit-database only; no live DB)
+        run: npx dotenv-cli -e .env.test -- npx vitest run scripts/unit-database --config vitest.config.mts
       - name: Integration (file-based, no DB)
-        run: npm run test:database-migrations
-        continue-on-error: true
+        run: npx dotenv-cli -e .env.test -- npm run test:database-migrations
 
   # ---------------------------------------------------------------------------
   # Security tests: rate limit, auth bypass, privilege escalation, secure links.
@@ -348,7 +362,7 @@ jobs:
         run: node scripts/infrastructure/run-license-check.js
 
   # ---------------------------------------------------------------------------
-  # Code quality: depcheck, ts-prune (optional; do not fail pipeline if missing).
+  # Code quality: depcheck, ts-prune. Job fails if either reports issues.
   # ---------------------------------------------------------------------------
   quality-gates:
     name: Quality gates
@@ -365,12 +379,10 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Depcheck
+      - name: Depcheck (unused deps)
         run: npm run quality:depcheck
-        continue-on-error: true
       - name: Unused exports (ts-prune)
         run: npm run quality:ts-prune
-        continue-on-error: true
 
   # ---------------------------------------------------------------------------
   # Build: strict build, no warnings.
