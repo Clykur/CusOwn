@@ -86,9 +86,19 @@ function main() {
       : ['-m', 'detect_secrets.pre_commit_hook', '--baseline', BASELINE, ...files];
 
   const run = spawnSync(python, args, { stdio: 'inherit', cwd: ROOT });
-  if (run.status !== 0) {
-    process.exit(run.status || 1);
+  if (run.status === 0) return;
+  // Exit code 3: baseline was updated (line numbers refreshed). Stage it so the commit can include it.
+  if (run.status === 3) {
+    try {
+      execSync('git add .secrets.baseline', { cwd: ROOT, stdio: 'pipe' });
+      // eslint-disable-next-line no-console
+      console.log('.secrets.baseline was updated and staged. Include it in your commit.');
+    } catch {
+      // Ignore if git add fails (e.g. not a repo).
+    }
+    process.exit(0);
   }
+  process.exit(run.status || 1);
 }
 
 main();

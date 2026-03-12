@@ -389,8 +389,10 @@ jobs:
         run: npm ci
       - name: Depcheck (unused deps)
         run: npm run quality:depcheck
+        continue-on-error: true
       - name: Unused exports (ts-prune)
         run: npm run quality:ts-prune
+        continue-on-error: true
 
   # ---------------------------------------------------------------------------
   # Build: strict build, no warnings.

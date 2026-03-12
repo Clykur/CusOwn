@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 // Load .env.test first (CI/placeholders), then .env.local (local overrides).
@@ -7,19 +8,35 @@ dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const isCiPlaceholder =
+  process.env.CI === 'true' &&
+  (!supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('placeholder'));
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error(
-    'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local or .env.test'
-  );
+function createStubSupabase(): SupabaseClient {
+  const stub = new Proxy({} as SupabaseClient, {
+    get() {
+      throw new Error(
+        'No real Supabase in CI. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local for local e2e/integration tests.'
+      );
+    },
+  });
+  return stub;
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+export const supabase: SupabaseClient = isCiPlaceholder
+  ? createStubSupabase()
+  : !supabaseUrl || !supabaseServiceKey
+    ? (() => {
+        throw new Error(
+          'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local or .env.test'
+        );
+      })()
+    : createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
 
 export interface TestResult {
   name: string;
