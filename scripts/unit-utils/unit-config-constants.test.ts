@@ -34,7 +34,7 @@ export function runUnitConfigConstantsTests(): void {
       'Customer',
       '2025-01-15',
       '10:00',
-      'bid-123' // pragma: allowlist secret
+      'bid-123'
     );
     assert(typeof msg === 'string', 'Expected string');
     assert(
@@ -54,7 +54,7 @@ export function runUnitConfigConstantsTests(): void {
       '10:00',
       'Salon Name',
       '123 Street',
-      'https://maps.link' // pragma: allowlist secret
+      'https://maps.link'
     );
     assert(typeof msg === 'string', 'Expected string');
     assert(
@@ -65,7 +65,7 @@ export function runUnitConfigConstantsTests(): void {
 
   runTest('should_WHATSAPP_MESSAGE_TEMPLATES_REJECTION_return_string', () => {
     // pragma: allowlist secret
-    const msg = WHATSAPP_MESSAGE_TEMPLATES.REJECTION('Customer', 'https://book.link'); // pragma: allowlist secret
+    const msg = WHATSAPP_MESSAGE_TEMPLATES.REJECTION('Customer', 'https://book.link');
     assert(typeof msg === 'string', 'Expected string');
     assert(msg.includes('Customer') && msg.includes('book.link'), 'Expected params');
   });
