@@ -591,8 +591,44 @@ export const AUDIT_SEVERITY = {
 } as const;
 export type AuditSeverity = (typeof AUDIT_SEVERITY)[keyof typeof AUDIT_SEVERITY];
 
+export const AUDIT_ENTITY_TYPES = [
+  'business',
+  'user',
+  'booking',
+  'system',
+  'slot',
+  'payment',
+] as const;
+export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
+
 export const AUDIT_STATUS = { SUCCESS: 'success', FAILED: 'failed' } as const;
 export type AuditStatus = (typeof AUDIT_STATUS)[keyof typeof AUDIT_STATUS];
+
+/** Admin audit log filter validation messages (shown as notes, not errors). */
+export const AUDIT_FILTER_NOTES = {
+  INVALID_ACTOR_ID: 'Actor ID must be a valid UUID. Filter not applied.',
+  INVALID_ENTITY_TYPE: 'Invalid entity type. Filter not applied.',
+  INVALID_SEVERITY: 'Invalid severity. Filter not applied.',
+  INVALID_START_TIME: 'Invalid start time. Filter not applied.',
+  INVALID_END_TIME: 'Invalid end time. Filter not applied.',
+  START_AFTER_END: 'Start time must be before end time. Date range not applied.',
+} as const;
+
+/** Design tokens: Tailwind classes for audit severity (badge/pill). */
+export const AUDIT_SEVERITY_STYLE: Record<AuditSeverity, string> = {
+  [AUDIT_SEVERITY.INFO]: 'bg-sky-100 text-sky-800 border-sky-200',
+  [AUDIT_SEVERITY.WARNING]: 'bg-amber-100 text-amber-800 border-amber-200',
+  [AUDIT_SEVERITY.CRITICAL]: 'bg-rose-100 text-rose-800 border-rose-200',
+};
+
+/** Design tokens: Tailwind classes for audit status (badge/pill). */
+export const AUDIT_STATUS_STYLE: Record<AuditStatus, string> = {
+  [AUDIT_STATUS.SUCCESS]: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  [AUDIT_STATUS.FAILED]: 'bg-rose-100 text-rose-800 border-rose-200',
+};
+
+/** Fallback style for unknown severity/status. */
+export const AUDIT_STYLE_NEUTRAL = 'bg-slate-100 text-slate-700 border-slate-200';
 
 /** Dedupe: skip insert if same action_type + entity_id + actor_id within this window (ms). */
 export const AUDIT_DEDUPE_WINDOW_MS = 5000;

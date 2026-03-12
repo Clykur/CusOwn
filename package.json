@@ -52,6 +52,8 @@
     "test:admin-as-owner": "ts-node --project scripts/tsconfig.json scripts/user-admin-as-owner.test.ts",
     "test:concurrent-ops": "ts-node --project scripts/tsconfig.json scripts/user-concurrent-operations.test.ts",
     "test:slot-management": "ts-node --project scripts/tsconfig.json scripts/user-slot-management.test.ts",
+    "test:slots-rls": "ts-node --project scripts/tsconfig.json scripts/slots-rls-policies.test.ts",
+    "test:bookings-rls": "ts-node --project scripts/tsconfig.json scripts/bookings-rls-policies.test.ts",
     "test:error-scenarios": "ts-node --project scripts/tsconfig.json scripts/user-error-scenarios.test.ts",
     "test:edge-cases": "ts-node --project scripts/tsconfig.json scripts/edge-cases-comprehensive.test.ts",
     "test:slot-service": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/slot-service-comprehensive.test.ts",

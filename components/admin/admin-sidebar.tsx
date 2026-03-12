@@ -43,7 +43,7 @@ const navigation: NavItem[] = [
   },
   {
     name: 'Audit Logs',
-    href: getAdminDashboardUrl('audit'),
+    href: '/admin/audit-logs',
     icon: AuditLogsIcon,
   },
   {

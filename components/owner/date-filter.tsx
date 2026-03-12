@@ -18,6 +18,30 @@ function formatToYYYYMMDD(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
+function updatePosition(
+  buttonEl: HTMLDivElement,
+  dropdownEl: HTMLDivElement
+): { top: number; left: number } {
+  const rect = buttonEl.getBoundingClientRect();
+  const dropdownHeight = dropdownEl.offsetHeight;
+  const dropdownWidth = dropdownEl.offsetWidth;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let top = rect.bottom + 8;
+  if (top + dropdownHeight > viewportHeight - 8) {
+    top = rect.top - dropdownHeight - 8;
+  }
+  if (top < 8) top = 8;
+
+  let left = rect.right - dropdownWidth;
+  if (left < 8) left = 8;
+  if (left + dropdownWidth > viewportWidth - 8) {
+    left = viewportWidth - dropdownWidth - 8;
+  }
+  return { top, left };
+}
+
 export default function DateFilter({ value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -28,38 +52,13 @@ export default function DateFilter({ value, onChange }: Props) {
   const selected = value ? new Date(value + 'T00:00:00') : today;
 
   useLayoutEffect(() => {
-    if (!open || !buttonRef.current || !dropdownRef.current) return;
+    if (!open || !buttonRef.current) return;
 
     const rect = buttonRef.current.getBoundingClientRect();
-    const dropdownHeight = dropdownRef.current.offsetHeight;
-    const dropdownWidth = dropdownRef.current.offsetWidth;
-
-    // ---- Vertical positioning ----
-    let top = rect.bottom + 8;
-
-    if (top + dropdownHeight > window.innerHeight - 8) {
-      top = rect.top - dropdownHeight - 8;
-    }
-
-    if (top < 8) top = 8;
-
-    // ---- Horizontal positioning (centered + clamped) ----
-    const viewportWidth = window.innerWidth;
-
-    // Prefer aligning right edge with button
-    let left = rect.right - dropdownWidth;
-
-    // If it overflows left, clamp to padding
-    if (left < 8) {
-      left = 8;
-    }
-
-    // If it still overflows right (very small screens), clamp
-    if (left + dropdownWidth > viewportWidth - 8) {
-      left = viewportWidth - dropdownWidth - 8;
-    }
-
-    setPosition({ top, left });
+    setPosition((prev) => ({
+      top: rect.bottom + 8,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 300)),
+    }));
 
     const close = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -72,7 +71,13 @@ export default function DateFilter({ value, onChange }: Props) {
     window.addEventListener('resize', () => setOpen(false));
     window.addEventListener('scroll', () => setOpen(false), true);
 
+    const rafId = requestAnimationFrame(() => {
+      if (!buttonRef.current || !dropdownRef.current) return;
+      setPosition(updatePosition(buttonRef.current, dropdownRef.current));
+    });
+
     return () => {
+      cancelAnimationFrame(rafId);
       document.removeEventListener('mousedown', close);
       window.removeEventListener('resize', () => setOpen(false));
       window.removeEventListener('scroll', () => setOpen(false), true);
@@ -101,9 +106,9 @@ export default function DateFilter({ value, onChange }: Props) {
               position: 'fixed',
               top: position.top,
               left: position.left,
-              zIndex: 9999,
+              zIndex: 99999,
             }}
-            className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 max-w-[calc(90vw-16px)]"
+            className="bg-white border border-gray-200 rounded-xl shadow-lg p-2 min-w-[280px]"
           >
             <DayPicker
               mode="single"

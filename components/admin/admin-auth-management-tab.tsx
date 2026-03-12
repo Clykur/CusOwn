@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminFetch } from '@/lib/utils/admin-fetch.client';
 import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
 import { ROUTES } from '@/lib/utils/navigation';
 
 interface AuthUser {
@@ -93,6 +94,26 @@ export function AdminAuthManagementTab() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const roleOptions = useMemo(
+    () => [
+      { value: '', label: 'All roles', checked: role === '' },
+      { value: 'admin', label: 'Admin', checked: role === 'admin' },
+      { value: 'owner', label: 'Owner', checked: role === 'owner' },
+      { value: 'customer', label: 'Customer', checked: role === 'customer' },
+      { value: 'both', label: 'Both', checked: role === 'both' },
+    ],
+    [role]
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { value: '', label: 'All statuses', checked: status === '' },
+      { value: 'active', label: 'Active', checked: status === 'active' },
+      { value: 'banned', label: 'Banned', checked: status === 'banned' },
+    ],
+    [status]
+  );
+
   return (
     <div className="space-y-8">
       <div>
@@ -152,34 +173,30 @@ export function AdminAuthManagementTab() {
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 w-48"
             aria-label="Search email"
           />
-          <select
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            aria-label="Role"
-          >
-            <option value="">All roles</option>
-            <option value="admin">Admin</option>
-            <option value="owner">Owner</option>
-            <option value="customer">Customer</option>
-            <option value="both">Both</option>
-          </select>
-          <select
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            aria-label="Status"
-          >
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="banned">Banned</option>
-          </select>
+          <div className="w-[180px]">
+            <FilterDropdown
+              label="Role"
+              options={roleOptions}
+              onToggle={(value, checked) => {
+                if (checked) {
+                  setRole(value);
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
+          <div className="w-[180px]">
+            <FilterDropdown
+              label="Status"
+              options={statusOptions}
+              onToggle={(value, checked) => {
+                if (checked) {
+                  setStatus(value);
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
         </div>
         {error && (
           <div className="mb-4 rounded-xl border border-red-200 bg-red-50/50 py-2 text-sm text-red-800">

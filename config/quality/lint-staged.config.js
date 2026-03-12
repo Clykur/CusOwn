@@ -4,7 +4,7 @@ const SOURCE_DIRS = ['app/', 'components/', 'lib/', 'services/', 'repositories/'
 
 module.exports = {
   '*.{js,jsx,ts,tsx,json,css,md,yml,yaml}': [
-    'prettier --check --config config/quality/prettier.config.js',
+    'prettier --write --config config/quality/prettier.config.js',
   ],
 
   '*.{js,jsx,ts,tsx}': (files) => {
