@@ -10,7 +10,7 @@ import { withCronRunLog } from '@/services/cron-run.service';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { env } from '@/config/env';
 import { METRICS_MEDIA_PURGE_COUNT } from '@/config/constants';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { supabaseStorageProvider } from '@/lib/media/storage-provider-supabase';
 
 export async function POST(request: NextRequest) {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       });
       if (rpcError) throw new Error(rpcError.message);
       const count = (deleted as number) ?? 0;
-      await metricsService.increment(METRICS_MEDIA_PURGE_COUNT, count);
+      safeMetrics.increment(METRICS_MEDIA_PURGE_COUNT, count);
       return successResponse(
         { purged: count, retentionDays },
         `Purged ${count} soft-deleted media rows`

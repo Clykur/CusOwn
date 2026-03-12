@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { validateCronSecret } from '@/lib/security/cron-auth';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { METRICS_EXPIRED_HOLD_CLEANUP_TOTAL } from '@/config/constants';
 import { ERROR_MESSAGES } from '@/config/constants';
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const result = data as { success?: boolean; expired_count?: number } | null;
     const count = result?.expired_count ?? 0;
     if (count > 0) {
-      await metricsService.increment(METRICS_EXPIRED_HOLD_CLEANUP_TOTAL, count);
+      safeMetrics.increment(METRICS_EXPIRED_HOLD_CLEANUP_TOTAL, count);
     }
 
     return successResponse(

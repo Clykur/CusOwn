@@ -9,7 +9,7 @@ import { parseAndValidateCoordinates, validateRadius } from '@/lib/utils/geo';
 import { ipLookupWithFallback } from '@/lib/geo/geo-service-wrapper';
 import { queryDiscoveryFallback } from '@/lib/db/discovery-fallback';
 import { logStructured } from '@/lib/observability/structured-log';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@/config/constants';
 import {
   DISCOVERY_WEIGHT_DISTANCE,
@@ -337,9 +337,9 @@ export async function POST(request: NextRequest) {
 
     if (fallbackContext.usedFallback && fallbackContext.reason) {
       if (fallbackContext.reason === 'geo_provider') {
-        void metricsService.increment(METRICS_DISCOVERY_FALLBACK_GEO);
+        safeMetrics.increment(METRICS_DISCOVERY_FALLBACK_GEO);
       } else {
-        void metricsService.increment(METRICS_DISCOVERY_FALLBACK_RPC);
+        safeMetrics.increment(METRICS_DISCOVERY_FALLBACK_RPC);
       }
     }
 

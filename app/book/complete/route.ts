@@ -16,7 +16,7 @@ import { reminderService } from '@/services/reminder.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { auditService } from '@/services/audit.service';
 import { emitBookingCreated } from '@/lib/events/booking-events';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { logBookingLifecycle } from '@/lib/monitoring/lifecycle-structured-log';
 import { getBookingStatusUrl } from '@/lib/utils/url';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
@@ -131,8 +131,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    await metricsService.increment('bookings.created');
-    await metricsService.increment(METRICS_BOOKING_CREATED);
+    safeMetrics.increment('bookings.created');
+    safeMetrics.increment(METRICS_BOOKING_CREATED);
     logBookingLifecycle({
       booking_id: booking.id,
       slot_id: booking.slot_id,

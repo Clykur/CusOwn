@@ -26,7 +26,7 @@ import { subtractOccupiedFromFullDay } from '@/lib/slot-availability-intervals';
 const INITIAL_SLOT_DAYS = DAYS_TO_GENERATE_SLOTS;
 import { slotStateMachine } from '@/lib/state/slot-state-machine';
 import { emitSlotReserved, emitSlotBooked, emitSlotReleased } from '@/lib/events/slot-events';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { auditService } from '@/services/audit.service';
 
 type SalonTimeConfig = {
@@ -204,7 +204,7 @@ export class SlotService {
     }
 
     if (!salonConfig) {
-      void metricsService.recordTiming('slots.fetch', Date.now() - startTime);
+      safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
       return [];
     }
 
@@ -214,7 +214,7 @@ export class SlotService {
       salonConfig.slot_duration
     );
     if (fullDayIntervals.length === 0) {
-      void metricsService.recordTiming('slots.fetch', Date.now() - startTime);
+      safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
       return [];
     }
 
@@ -247,7 +247,7 @@ export class SlotService {
 
     processedSlots.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-    void metricsService.recordTiming('slots.fetch', Date.now() - startTime);
+    safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
     return processedSlots;
   }
 

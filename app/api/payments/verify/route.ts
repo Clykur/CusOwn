@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
         const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(booking.id);
         if (bookingWithDetails) {
           const { emitBookingConfirmed } = await import('@/lib/events/booking-events');
-          const { metricsService } = await import('@/lib/monitoring/metrics');
+          const { safeMetrics } = await import('@/lib/monitoring/safe-metrics');
           await emitBookingConfirmed(bookingWithDetails);
-          await metricsService.increment('bookings.confirmed');
+          safeMetrics.increment('bookings.confirmed');
         }
       } catch (confirmError) {
         await paymentService.markPaymentFailed(payment.id, 'Booking confirmation failed', user.id);

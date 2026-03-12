@@ -15,7 +15,7 @@ import {
   METRICS_CRON_LOCK_SKIPPED_TOTAL,
   CRON_SLOT_GENERATION_LOCK_REFRESH_INTERVAL_MS,
 } from '@/config/constants';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 
 export async function POST(request: NextRequest) {
   let refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const acquired =
       lockAcquired === true || (Array.isArray(lockAcquired) && lockAcquired[0] === true);
     if (!acquired) {
-      await metricsService.increment(METRICS_CRON_LOCK_SKIPPED_TOTAL);
+      safeMetrics.increment(METRICS_CRON_LOCK_SKIPPED_TOTAL);
       return successResponse(null, 'Slot generation skipped: lock held by another instance');
     }
 

@@ -386,6 +386,9 @@ export const UI_LINK_EXPIRED = {
 /** Owner undo: 5 min window. Undo allowed only once per accept/reject and only within this period; after undo or expiry the undo button is hidden. */
 export const UNDO_ACCEPT_REJECT_WINDOW_MINUTES = 5;
 
+/** Service name for structured metrics failure logs. */
+export const METRICS_SERVICE_NAME = 'cusown-api';
+
 /** Phase 3: Metric names for SRE. Alert if GET /api/health checks.cron_expire_bookings_last_run_ts is older than X minutes. */
 export const METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN = 'cron.expire_bookings.last_run_ts';
 export const METRICS_EXPIRED_BY_CRON = 'bookings.expired_by_cron';

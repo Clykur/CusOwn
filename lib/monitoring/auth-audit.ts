@@ -9,7 +9,7 @@ import {
   METRICS_AUTH_INVALID_TOKEN,
 } from '@/config/constants';
 import { env } from '@/config/env';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { logStructured } from '@/lib/observability/structured-log';
 
 export type AuthDenyReason = 'auth_missing' | 'auth_denied' | 'auth_invalid_token';
@@ -59,5 +59,5 @@ export function logAuthDeny(payload: AuthDenyPayload): void {
   if (env.nodeEnv === 'development') {
     logStructured('warn', 'Auth deny', context);
   }
-  metricsService.increment(metric).catch(() => {});
+  safeMetrics.increment(metric);
 }

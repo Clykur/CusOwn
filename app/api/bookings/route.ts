@@ -25,7 +25,7 @@ import {
 import { BookingWithDetails } from '@/types';
 import { auditService } from '@/services/audit.service';
 import { emitBookingCreated } from '@/lib/events/booking-events';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
 import { recordIpUserSighting, computeAndStoreRisk } from '@/services/fraud.service';
@@ -191,8 +191,9 @@ export async function POST(request: NextRequest) {
       return response;
     }
     if (status === 'in_progress') {
-      await metricsService.increment(METRICS_BOOKING_CONFLICT_TOTAL);
-      await metricsService.increment(METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL);
+      const requestId = request.headers.get('x-request-id');
+      safeMetrics.increment(METRICS_BOOKING_CONFLICT_TOTAL, 1, requestId);
+      safeMetrics.increment(METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL, 1, requestId);
       logStructured('warn', 'Slot conflict: booking in progress', {
         metric: 'slot_conflict_total',
       });
@@ -213,8 +214,12 @@ export async function POST(request: NextRequest) {
     };
 
     await emitBookingCreated(bookingWithDetails);
-    await metricsService.increment(METRICS_BOOKING_CREATED);
-    await metricsService.increment(METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL);
+    safeMetrics.increment(METRICS_BOOKING_CREATED, 1, request.headers.get('x-request-id'));
+    safeMetrics.increment(
+      METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL,
+      1,
+      request.headers.get('x-request-id')
+    );
     const serverUser = await getServerUser(request);
     if (serverUser?.id) {
       recordIpUserSighting(hashIp(clientIP), serverUser.id).catch(() => {});

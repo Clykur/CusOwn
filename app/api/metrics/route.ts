@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { metricsService } from '@/lib/monitoring/metrics';
+import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { isAdmin } from '@/lib/supabase/auth';
@@ -41,16 +41,16 @@ export async function GET(request: NextRequest) {
       paymentSucceeded,
       paymentFailed,
     ] = await Promise.all([
-      metricsService.getCount(METRICS_BOOKING_CREATED),
-      metricsService.getCount(METRICS_BOOKING_CONFIRMED),
-      metricsService.getCount(METRICS_BOOKING_REJECTED),
-      metricsService.getCount(METRICS_BOOKING_CANCELLED_USER),
-      metricsService.getCount(METRICS_BOOKING_CANCELLED_SYSTEM),
-      metricsService.getCount(METRICS_EXPIRED_BY_CRON),
-      metricsService.getCount(METRICS_EXPIRED_BY_LAZY_HEAL),
-      metricsService.getCount(METRICS_PAYMENT_CREATED),
-      metricsService.getCount(METRICS_PAYMENT_SUCCEEDED),
-      metricsService.getCount(METRICS_PAYMENT_FAILED),
+      safeMetrics.getCount(METRICS_BOOKING_CREATED),
+      safeMetrics.getCount(METRICS_BOOKING_CONFIRMED),
+      safeMetrics.getCount(METRICS_BOOKING_REJECTED),
+      safeMetrics.getCount(METRICS_BOOKING_CANCELLED_USER),
+      safeMetrics.getCount(METRICS_BOOKING_CANCELLED_SYSTEM),
+      safeMetrics.getCount(METRICS_EXPIRED_BY_CRON),
+      safeMetrics.getCount(METRICS_EXPIRED_BY_LAZY_HEAL),
+      safeMetrics.getCount(METRICS_PAYMENT_CREATED),
+      safeMetrics.getCount(METRICS_PAYMENT_SUCCEEDED),
+      safeMetrics.getCount(METRICS_PAYMENT_FAILED),
     ]);
 
     const totalExpired = expiredByCron + expiredByLazyHeal;
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     const paymentSuccessRate = paymentSucceeded / paymentTotal;
     const paymentFailureRate = paymentFailed / paymentTotal;
 
-    const slotFetchTimings = await metricsService.getTimings('slots.fetch');
+    const slotFetchTimings = await safeMetrics.getTimings('slots.fetch');
     const avgSlotFetchTime =
       slotFetchTimings.length > 0
         ? slotFetchTimings.reduce((a, b) => a + b, 0) / slotFetchTimings.length

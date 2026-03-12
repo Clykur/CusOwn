@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { performanceMonitor } from './performance';
-import { metricsService } from './metrics';
+import { safeMetrics } from './safe-metrics';
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy';
@@ -31,7 +31,7 @@ export const checkHealth = async (): Promise<HealthStatus> => {
     }
   }
 
-  const lastRunTsRaw = await metricsService.getCount('cron.expire_bookings.last_run_ts');
+  const lastRunTsRaw = await safeMetrics.getCount('cron.expire_bookings.last_run_ts');
   const lastRunTs = typeof lastRunTsRaw === 'number' ? lastRunTsRaw : Number(lastRunTsRaw);
   if (lastRunTs > 0 && !Number.isNaN(lastRunTs)) {
     checks.cron_expire_bookings_last_run_ts = lastRunTs;
