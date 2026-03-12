@@ -40,17 +40,9 @@ export default function RevenueTrendChart({
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number | string | undefined, name?: string) => {
-                if (name === 'revenue') {
-                  return [formatCurrency(Number(value || 0)), 'Revenue'];
-                }
-                return [value, name || 'Value'];
-              }}
               contentStyle={{ borderRadius: 10, borderColor: '#e2e8f0' }}
-              labelFormatter={(label, payload) => {
-                const bookings = payload?.[0]?.payload?.totalBookings ?? 0;
-                return `${label} • ${bookings} bookings`;
-              }}
+              formatter={(value, name) => [formatCurrency(value as number), name as string]}
+              labelFormatter={(label) => label.toString()}
             />
             <Area
               type="monotone"

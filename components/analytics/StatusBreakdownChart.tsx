@@ -45,12 +45,7 @@ export default function StatusBreakdownChart({
                   ))}
                 </Pie>
 
-                <Tooltip
-                  formatter={(value: number | undefined, name?: string) => [
-                    value ?? 0,
-                    name || 'Value',
-                  ]}
-                />
+                <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </div>

@@ -699,6 +699,9 @@ export const CLIENT_RETRY_BACKOFF_MS = 500;
 /** Admin fetch: max number of retries (0 = no retry, 1 = one retry after first attempt). Never unlimited. */
 export const ADMIN_FETCH_MAX_RETRIES = 1;
 
+/** Client: booking status polling interval (ms). */
+export const BOOKING_STATUS_POLL_INTERVAL_MS = 5000;
+
 /** Admin session: proactive refresh interval so token stays valid. */
 export const ADMIN_SESSION_REFRESH_INTERVAL_MS = 55 * 60 * 1000; // 55 min (before default 1h JWT expiry)
 /** Auth cookie max-age (seconds) so admin can stay logged in 24h. Set JWT expiry to 86400 in Supabase Dashboard for 24h. */

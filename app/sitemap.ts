@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic salon pages
   try {
     if (!supabaseAdmin) {
-      console.warn('Supabase admin not configured, returning static sitemap only');
+      // Silenced for build (admin client unavailable during static generation)
       return staticPages;
     }
 
@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .limit(1000); // Limit to prevent too large sitemap
 
     if (error) {
-      console.error('Error fetching businesses for sitemap:', error);
+      // Silenced for build/network timeouts (fallback to static)
       return staticPages;
     }
 
@@ -57,8 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticPages, ...bookingLinkPages];
   } catch (error) {
-    // If database query fails, return only static pages
-    console.error('Error generating sitemap:', error);
+    // Silenced for build (network/DB unavailable during static generation)
     return staticPages;
   }
 }

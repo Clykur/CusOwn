@@ -9,6 +9,8 @@ import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { auditService } from '@/services/audit.service';
+import { slotService } from '@/services/slot.service';
+import { businessHoursService } from '@/services/business-hours.service';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -69,6 +71,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
+    // Business hours + availability validation for the target slot
+    const targetSlot = await slotService.getSlotById(new_slot_id);
+    if (!targetSlot) {
+      return errorResponse(ERROR_MESSAGES.SLOT_NOT_FOUND, 404);
+    }
+    if (targetSlot.business_id !== booking.business_id) {
+      return errorResponse('Slot does not belong to this salon', 400);
+    }
+
+    const hoursValidation = await businessHoursService.validateSlot(
+      booking.business_id,
+      targetSlot.date,
+      targetSlot.start_time,
+      targetSlot.end_time
+    );
+    if (!hoursValidation.valid) {
+      return errorResponse(hoursValidation.reason || 'Invalid slot', 400);
+    }
+
     const rescheduledBooking = await rescheduleService.rescheduleBooking({
       bookingId: id,
       newSlotId: new_slot_id,
@@ -108,6 +129,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+
+    if (
+      message === ERROR_MESSAGES.SLOT_ALREADY_BOOKED ||
+      message === ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE ||
+      message === ERROR_MESSAGES.RESCHEDULE_MAX_EXCEEDED
+    ) {
+      return errorResponse(message, 409);
+    }
+
+    if (message === ERROR_MESSAGES.BOOKING_NOT_FOUND || message === ERROR_MESSAGES.SLOT_NOT_FOUND) {
+      return errorResponse(message, 404);
+    }
+
     return errorResponse(message, 400);
   }
 }
