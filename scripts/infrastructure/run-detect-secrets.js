@@ -42,6 +42,12 @@ function getFileList() {
     MODE === 'staged' ? 'git diff --cached --name-only --diff-filter=ACMR' : 'git ls-files';
   const output = execSync(command, { cwd: ROOT, encoding: 'utf8' }).trim();
   if (!output) return [];
+  /** Test files with known false positives (template/URL literals flagged as high-entropy). */
+  const SECRET_SCAN_SKIP_FILES = new Set([
+    'scripts/unit-utils/unit-config-constants.test.ts',
+    'scripts/unit-utils/unit-utils-url.test.ts',
+  ]);
+
   return output
     .split('\n')
     .map((entry) => entry.trim())
@@ -52,7 +58,8 @@ function getFileList() {
         !filePath.startsWith('.next/') &&
         filePath !== '.secrets.baseline' &&
         filePath !== 'licenses.json' &&
-        filePath !== 'audit.log'
+        filePath !== 'audit.log' &&
+        !SECRET_SCAN_SKIP_FILES.has(filePath)
     );
 }
 
