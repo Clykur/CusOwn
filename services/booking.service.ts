@@ -33,6 +33,7 @@ import {
   METRICS_INVALID_STATE_TRANSITION_TOTAL,
 } from '@/config/constants';
 import { cache } from 'react';
+import { bookingEventsAnalyticsService } from '@/services/booking-events-analytics.service';
 
 export type CreateBookingRpcParams = {
   p_business_id: string;
@@ -169,6 +170,13 @@ export class BookingService {
         slot_id: booking.slot_id,
         action: 'booking_created',
         actor: customerUserId || 'anonymous',
+        source: 'api',
+      });
+      void bookingEventsAnalyticsService.recordEvent({
+        bookingId: booking.id,
+        eventType: 'created',
+        actorType: customerUserId ? 'customer' : 'system',
+        actorId: customerUserId ?? null,
         source: 'api',
       });
     }
@@ -769,6 +777,13 @@ export class BookingService {
         source: 'api',
         reason: reason || undefined,
       });
+      void bookingEventsAnalyticsService.recordEvent({
+        bookingId,
+        eventType: 'cancelled',
+        actorType: 'customer',
+        actorId: booking.customer_user_id ?? null,
+        source: 'api',
+      });
     }
 
     return data;
@@ -827,6 +842,13 @@ export class BookingService {
         actor: 'owner',
         source: 'api',
         reason: reason || undefined,
+      });
+      void bookingEventsAnalyticsService.recordEvent({
+        bookingId,
+        eventType: 'cancelled',
+        actorType: 'owner',
+        actorId: null,
+        source: 'api',
       });
     }
 

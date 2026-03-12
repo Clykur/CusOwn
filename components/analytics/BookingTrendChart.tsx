@@ -25,13 +25,7 @@ export default function BookingTrendChart({
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-            <Tooltip
-              formatter={(value: number | string | undefined, name?: string) => [
-                value ?? 0,
-                name === 'totalBookings' ? 'Bookings' : name || 'Value',
-              ]}
-              labelFormatter={(label) => `Date: ${label}`}
-            />
+            <Tooltip content={<CustomTooltip data={dailyData} />} />
             <Line
               type="monotone"
               dataKey="totalBookings"
@@ -45,4 +39,20 @@ export default function BookingTrendChart({
       </div>
     </Card>
   );
+}
+
+function CustomTooltip({ data, active, payload, label }: any) {
+  if (active && payload && payload.length) {
+    const value = payload[0].value ?? 0;
+    const name = payload[0].name || 'Bookings';
+    return (
+      <div className="p-2 bg-white border rounded shadow-lg">
+        <p className="font-bold">{label}</p>
+        <p>
+          {name}: {value}
+        </p>
+      </div>
+    );
+  }
+  return null;
 }

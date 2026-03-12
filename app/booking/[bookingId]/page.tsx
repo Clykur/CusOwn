@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -25,6 +25,7 @@ import BookingsIcon from '@/src/icons/bookings.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
 import RefreshIcon from '@/src/icons/refresh.svg';
 import StarRating from '@/components/booking/star-rating';
+import { useBookingStatusPolling } from '@/lib/hooks/use-booking-status-polling';
 
 export default function BookingStatusPage() {
   const params = useParams();
@@ -162,6 +163,29 @@ export default function BookingStatusPage() {
       if (!silent) setLoading(false);
     }
   };
+
+  const refreshBookingSilent = useCallback(
+    () => fetchBooking({ silent: true }),
+    // bookingId change is what matters for polling; fetchBooking is stable within this component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [bookingId]
+  );
+
+  useBookingStatusPolling({
+    bookingId,
+    booking,
+    refresh: refreshBookingSilent,
+    isEnabled: Boolean(bookingId),
+    onTransition: (event) => {
+      // Keep UI simple for now; the status banner already reflects latest state.
+      // This callback can later be wired to toasts or analytics.
+      // eslint-disable-next-line no-console
+      console.info('[booking-status] transition', event.type, {
+        previousStatus: event.previous.status,
+        currentStatus: event.current.status,
+      });
+    },
+  });
 
   const fetchAvailableSlots = async (businessId: string, date: string) => {
     try {
