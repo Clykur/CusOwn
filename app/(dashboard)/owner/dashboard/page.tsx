@@ -13,6 +13,7 @@ import { Toast } from '@/components/ui/toast';
 import UndoIcon from '@/src/icons/undo.svg';
 import ExploreIcon from '@/src/icons/explore.svg';
 import DateFilter from '@/components/owner/date-filter';
+import { useBookingSyncChannel } from '@/lib/hooks/use-booking-sync-channel';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -39,6 +40,25 @@ export default function OwnerDashboardPage() {
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   const undoWindowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
+
+  const { publishBookingUpdated, publishRefreshAll } = useBookingSyncChannel({
+    onBookingUpdated: (event) => {
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === event.bookingId
+            ? {
+                ...b,
+                status: (event.status ?? b.status) as BookingWithDetails['status'],
+              }
+            : b
+        )
+      );
+    },
+    onRefreshAll: () => {
+      const ac = new AbortController();
+      fetchBookings(ac.signal);
+    },
+  });
 
   useEffect(() => {
     if (!initialUser?.id) {
@@ -182,6 +202,7 @@ export default function OwnerDashboardPage() {
       if (response.ok) {
         setActionSuccess('Booking accepted');
         setTimeout(() => setActionSuccess(null), 2000);
+        publishBookingUpdated(bookingId, 'confirmed');
       } else {
         // Rollback on failure
         setBookings(prevBookings);
@@ -229,6 +250,7 @@ export default function OwnerDashboardPage() {
       if (response.ok) {
         setActionSuccess('Booking rejected');
         setTimeout(() => setActionSuccess(null), 2000);
+        publishBookingUpdated(bookingId, 'rejected');
       } else {
         // Rollback on failure
         setBookings(prevBookings);
@@ -281,6 +303,7 @@ export default function OwnerDashboardPage() {
         if (res.ok) {
           setActionSuccess(UI_CONTEXT.REVERTED_TO_PENDING);
           setTimeout(() => setActionSuccess(null), 2000);
+          publishBookingUpdated(bookingId, 'pending');
         } else {
           // Rollback on failure
           setBookings(prevSnapshot);
@@ -294,7 +317,7 @@ export default function OwnerDashboardPage() {
         setProcessingBookingId(null);
       }
     },
-    [processingBookingId]
+    [processingBookingId, publishBookingUpdated]
   );
 
   const handleUndoReject = useCallback(
