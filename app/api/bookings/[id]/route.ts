@@ -1,14 +1,30 @@
 import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID, validateResourceToken } from '@/lib/utils/security';
-import { ERROR_MESSAGES } from '@/config/constants';
-import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline';
+import {
+  ERROR_MESSAGES,
+  UI_ERROR_CONTEXT,
+  SECURE_LINK_RESPONSE_CODE,
+  RATE_LIMIT_ACTION_LINK_WINDOW_MS,
+  RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW,
+} from '@/config/constants';
+import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
 import { userService } from '@/services/user.service';
 import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
+import { validateOwnerActionLink } from '@/lib/utils/secure-link-validation.server';
+import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 
 const ROUTE = 'GET /api/bookings/[id]';
+
+const getBookingWithTokenRateLimit = enhancedRateLimit({
+  maxRequests: RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW,
+  windowMs: RATE_LIMIT_ACTION_LINK_WINDOW_MS,
+  perIP: true,
+  keyPrefix: 'booking_get_token',
+});
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -21,6 +37,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const token = request.nextUrl.searchParams.get('token');
     if (token) {
+      const rateLimitResponse = await getBookingWithTokenRateLimit(request);
+      if (rateLimitResponse) return rateLimitResponse;
       const decodedToken = (() => {
         try {
           return decodeURIComponent(token);
@@ -28,8 +46,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           return token;
         }
       })();
-      if (!validateResourceToken('booking-status', id, decodedToken)) {
-        return denyInvalidToken(request, ROUTE, id);
+      const statusValid = validateResourceToken('booking-status', id, decodedToken);
+      if (!statusValid) {
+        const acceptValid = await validateOwnerActionLink('accept', id, decodedToken);
+        const rejectValid = await validateOwnerActionLink('reject', id, decodedToken);
+        if (!acceptValid.valid && !rejectValid.valid) {
+          const reason = acceptValid.valid === false ? acceptValid.reason : 'invalid';
+          logAuthDeny({
+            route: ROUTE,
+            reason: 'auth_invalid_token',
+            resource: id,
+            audit_metadata: { link_validation_reason: reason },
+          });
+          return NextResponse.json(
+            {
+              success: false,
+              error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+              code: SECURE_LINK_RESPONSE_CODE,
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 

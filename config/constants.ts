@@ -371,6 +371,16 @@ export const UI_ERROR_CONTEXT = {
   GENERIC: 'Something went wrong. Try again.',
 } as const;
 
+export const SECURE_LINK_RESPONSE_CODE = 'LINK_EXPIRED_OR_INVALID' as const;
+
+export const UI_LINK_EXPIRED = {
+  TITLE: 'Link expired or invalid',
+  MESSAGE: 'This link has expired, has already been used, or is no longer valid.',
+  NEXT_STEP: 'Go to your dashboard to manage bookings, or ask the customer to send a new request.',
+  CTA_HOME: 'Go to home',
+  CTA_DASHBOARD: 'Go to owner dashboard',
+} as const;
+
 /** Booking/reminder/cancellation hours are on env.booking (config/env.ts). */
 
 /** Owner undo: 5 min window. Undo allowed only once per accept/reject and only within this period; after undo or expiry the undo button is hidden. */
@@ -458,6 +468,13 @@ export const GEO_PROVIDER_MAX_RETRIES = 1;
 /** In-memory IP lookup cache: TTL (ms), max entries. */
 export const GEO_IP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 export const GEO_IP_CACHE_MAX_ENTRIES = 5000;
+export const GEO_SERVICE_NAME = 'geo_service';
+export const METRICS_GEO_DEGRADATION = 'geo.service.degradation';
+export const GEO_DEGRADATION_COOLDOWN_MS = 60_000;
+export const GEO_COOLDOWN_KEY = 'geo_provider';
+export const GEO_CIRCUIT_BREAKER_THRESHOLD = 3;
+export const METRICS_DISCOVERY_FALLBACK_GEO = 'discovery.fallback.geo_provider';
+export const METRICS_DISCOVERY_FALLBACK_RPC = 'discovery.fallback.rpc';
 
 /** Nearby/search: max businesses to enrich with routed distance (avoids N parallel routing calls). */
 export const ROUTING_ENRICH_MAX_BUSINESSES = 15;
@@ -525,6 +542,13 @@ export const CRON_RUN_STATUS_SUCCESS = 'success';
 export const CRON_RUN_STATUS_FAILED = 'failed';
 
 /** Cron job names for run logging (must match route identifiers). */
+export const ACTION_LINK_USAGE_RETENTION_DAYS = 90;
+
+export const RATE_LIMIT_ACTION_LINK_WINDOW_MS = 60_000;
+export const RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW = 30;
+
+export const SECURE_LINK_INVALID_RESPONSE_DELAY_MS = 80;
+
 export const CRON_JOB_NAMES = [
   'expire-bookings',
   'expire-payments',
@@ -535,6 +559,8 @@ export const CRON_JOB_NAMES = [
   'health-check',
   'purge-soft-deleted-media',
   'mark-no-show',
+  'cleanup-action-link-usage',
+  'cleanup-geo-cooldown',
 ] as const;
 export type CronJobName = (typeof CRON_JOB_NAMES)[number];
 

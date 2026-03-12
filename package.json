@@ -6,7 +6,7 @@
     "node": ">=20 <23"
   },
   "overrides": {
-    "dompurify": "^3.3.2",
+    "dompurify": "3.3.3",
     "immutable": "^4.3.8"
   },
   "scripts": {
@@ -54,6 +54,7 @@
     "test:slot-management": "ts-node --project scripts/tsconfig.json scripts/user-slot-management.test.ts",
     "test:slots-rls": "ts-node --project scripts/tsconfig.json scripts/slots-rls-policies.test.ts",
     "test:bookings-rls": "ts-node --project scripts/tsconfig.json scripts/bookings-rls-policies.test.ts",
+    "test:secure-action-link": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/secure-action-link-hardening.test.ts",
     "test:error-scenarios": "ts-node --project scripts/tsconfig.json scripts/user-error-scenarios.test.ts",
     "test:edge-cases": "ts-node --project scripts/tsconfig.json scripts/edge-cases-comprehensive.test.ts",
     "test:slot-service": "ts-node -r tsconfig-paths/register --project scripts/tsconfig.json scripts/slot-service-comprehensive.test.ts",

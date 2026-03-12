@@ -6,6 +6,10 @@ import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { parseAndValidateCoordinates, validateRadius } from '@/lib/utils/geo';
+import { ipLookupWithFallback } from '@/lib/geo/geo-service-wrapper';
+import { queryDiscoveryFallback } from '@/lib/db/discovery-fallback';
+import { logStructured } from '@/lib/observability/structured-log';
+import { metricsService } from '@/lib/monitoring/metrics';
 import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@/config/constants';
 import {
   DISCOVERY_WEIGHT_DISTANCE,
@@ -22,7 +26,18 @@ import {
   DISCOVERY_LIMIT_MIN,
   DISCOVERY_LIMIT_MAX,
   DISCOVERY_DEFAULT_LIMIT,
+  METRICS_DISCOVERY_FALLBACK_GEO,
+  METRICS_DISCOVERY_FALLBACK_RPC,
 } from '@/config/constants';
+
+const DISCOVERY_ENDPOINT = 'POST /api/businesses/search';
+
+export type DiscoveryFallbackReason = 'geo_provider' | 'rpc';
+
+export interface DiscoveryFallbackContext {
+  usedFallback: boolean;
+  reason?: DiscoveryFallbackReason;
+}
 
 const searchRateLimit = enhancedRateLimit({
   maxRequests: 20,
@@ -119,7 +134,9 @@ export async function POST(request: NextRequest) {
       return errorResponse('Service unavailable', 503);
     }
 
-    const hasGeo =
+    const fallbackContext: DiscoveryFallbackContext = { usedFallback: false };
+
+    const hasGeoFromBody =
       filteredBody.latitude !== undefined &&
       filteredBody.longitude !== undefined &&
       Number.isFinite(Number(filteredBody.latitude)) &&
@@ -127,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     let lat: number | null = null;
     let lng: number | null = null;
-    if (hasGeo) {
+    if (hasGeoFromBody) {
       try {
         const coords = parseAndValidateCoordinates(filteredBody.latitude, filteredBody.longitude);
         lat = coords.lat;
@@ -135,9 +152,34 @@ export async function POST(request: NextRequest) {
       } catch {
         return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
       }
+    } else {
+      const geoOutcome = await ipLookupWithFallback(clientIP, {
+        requestId: requestId ?? undefined,
+        endpoint: DISCOVERY_ENDPOINT,
+      });
+      if (geoOutcome.ok) {
+        lat = geoOutcome.data.latitude;
+        lng = geoOutcome.data.longitude;
+      } else {
+        fallbackContext.usedFallback = true;
+        fallbackContext.reason = 'geo_provider';
+        logStructured('warn', 'Discovery fallback: geo provider unavailable', {
+          service: 'geo_service',
+          failure_reason: 'geo_provider',
+          timestamp: new Date().toISOString(),
+          request_id: requestId ?? undefined,
+          endpoint: DISCOVERY_ENDPOINT,
+          fallback_used: true,
+          fallback_reason: 'geo_provider',
+        });
+      }
     }
 
-    const { data: ranked, error } = await supabaseAdmin.rpc('search_businesses_ranked', {
+    const hasGeo = lat !== null && lng !== null;
+
+    let ranked: unknown[] | null = null;
+    let rpcError: unknown = null;
+    const rpcResult = await supabaseAdmin.rpc('search_businesses_ranked', {
       p_lat: lat,
       p_lng: lng,
       p_radius_km: radiusKm,
@@ -158,9 +200,34 @@ export async function POST(request: NextRequest) {
       p_popularity_cap: DISCOVERY_POPULARITY_CAP,
       p_slot_window_days: DISCOVERY_SLOT_WINDOW_DAYS,
     });
+    if (rpcResult.error) {
+      rpcError = rpcResult.error;
+      fallbackContext.usedFallback = true;
+      fallbackContext.reason = 'rpc';
+      const fallbackRows = await queryDiscoveryFallback(supabaseAdmin, {
+        p_city: filteredBody.city ?? null,
+        p_area: filteredBody.area ?? null,
+        p_pincode: filteredBody.pincode ?? null,
+        p_category: filteredBody.category ?? null,
+        limit,
+        offset,
+      });
+      ranked = fallbackRows as unknown[];
+      logStructured('warn', 'Discovery fallback: RPC failed', {
+        service: 'geo_service',
+        failure_reason: 'rpc_error',
+        timestamp: new Date().toISOString(),
+        request_id: requestId ?? undefined,
+        endpoint: DISCOVERY_ENDPOINT,
+        fallback_used: true,
+        fallback_reason: 'rpc',
+      });
+    } else {
+      ranked = rpcResult.data ?? [];
+    }
 
-    if (error) {
-      console.error('[GEO_SEARCH] RPC error:', error);
+    if (rpcError !== null && ranked === null) {
+      console.error('[GEO_SEARCH] RPC error:', rpcError);
       return errorResponse(ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
@@ -268,7 +335,15 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    if (filteredBody.explain === true) {
+    if (fallbackContext.usedFallback && fallbackContext.reason) {
+      if (fallbackContext.reason === 'geo_provider') {
+        void metricsService.increment(METRICS_DISCOVERY_FALLBACK_GEO);
+      } else {
+        void metricsService.increment(METRICS_DISCOVERY_FALLBACK_RPC);
+      }
+    }
+
+    if (filteredBody.explain === true && rpcError === null) {
       const { data: explainRows } = await supabaseAdmin.rpc(
         'get_search_businesses_ranked_explain',
         {

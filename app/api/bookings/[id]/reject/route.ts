@@ -1,16 +1,27 @@
 import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getClientIp, isValidUUID, validateResourceToken } from '@/lib/utils/security';
+import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
-import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
-import { getAuthContext, denyInvalidToken } from '@/lib/utils/api-auth-pipeline';
+import {
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  UI_ERROR_CONTEXT,
+  SECURE_LINK_RESPONSE_CODE,
+} from '@/config/constants';
+import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
+import {
+  validateOwnerActionLink,
+  recordOwnerActionLinkUsed,
+} from '@/lib/utils/secure-link-validation.server';
 import { userService } from '@/services/user.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { auditService } from '@/services/audit.service';
 import { hasPermission, PERMISSIONS } from '@/services/permission.service';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
+import { logStructured } from '@/lib/observability/structured-log';
 
 const rejectRateLimit = enhancedRateLimit({
   maxRequests: 10,
@@ -35,16 +46,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const token = request.nextUrl.searchParams.get('token');
+    let decodedToken: string | null = null;
     if (token) {
-      const decodedToken = (() => {
+      decodedToken = (() => {
         try {
           return decodeURIComponent(token);
         } catch {
           return token;
         }
       })();
-      if (!validateResourceToken('reject', id, decodedToken)) {
-        return denyInvalidToken(request, ROUTE, id);
+      const linkValidation = await validateOwnerActionLink('reject', id, decodedToken);
+      if (!linkValidation.valid) {
+        logAuthDeny({
+          route: ROUTE,
+          reason: 'auth_invalid_token',
+          resource: id,
+          audit_metadata: { link_validation_reason: linkValidation.reason },
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+            code: SECURE_LINK_RESPONSE_CODE,
+          },
+          { status: 403 }
+        );
       }
     }
 
@@ -103,6 +129,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const rejectedBooking = await bookingService.rejectBooking(id, ctx?.user?.id);
+    if (decodedToken) {
+      await recordOwnerActionLinkUsed(id, 'reject', decodedToken);
+    }
     const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
 
     if (!bookingWithDetails || !bookingWithDetails.salon || !bookingWithDetails.slot) {
@@ -128,9 +157,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    console.log(
-      `[SECURITY] Booking rejected: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${user?.id.substring(0, 8) || 'token-based'}...`
-    );
+    logStructured('info', 'Booking rejected', {
+      action: 'booking_rejected',
+      booking_id: id,
+    });
 
     const response = successResponse(
       {
