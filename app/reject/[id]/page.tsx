@@ -8,6 +8,7 @@ import {
   UI_IDEMPOTENT,
   UI_CONTEXT,
   UI_ERROR_CONTEXT,
+  SECURE_LINK_RESPONSE_CODE,
 } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
@@ -50,6 +51,10 @@ export default function RejectPage() {
         const result = await response.json();
 
         if (!response.ok) {
+          if (response.status === 403 && result?.code === SECURE_LINK_RESPONSE_CODE) {
+            router.replace('/link-expired');
+            return;
+          }
           throw new Error(result.error || 'Booking not found');
         }
 
@@ -64,7 +69,7 @@ export default function RejectPage() {
     };
 
     fetchBooking();
-  }, [id]);
+  }, [id, router]);
 
   const handleReject = async () => {
     if (!id) return;
@@ -97,6 +102,10 @@ export default function RejectPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        if (response.status === 403 && errorData?.code === SECURE_LINK_RESPONSE_CODE) {
+          router.replace('/link-expired');
+          return;
+        }
         throw new Error(errorData.error || `Failed to reject booking (${response.status})`);
       }
 
