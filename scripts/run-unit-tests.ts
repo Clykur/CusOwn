@@ -23,7 +23,9 @@ import { runUnitRescheduleCancellationTests } from './unit-reschedule-cancellati
 import { runUnitRecommendationsAnalyticsTests } from './unit-recommendations-analytics.test';
 import { runUnitFraudObservabilityTests } from './unit-fraud-observability.test';
 import { runGeoFallbackHardeningTests } from './geo-fallback-hardening.test';
+import { runGeoSearchValidationTests } from './geo-search-validation.test';
 import { runMetricsReliabilityHardeningTests } from './metrics-reliability-hardening.test';
+import { runAdminDeletionRulesTests } from './admin-deletion-rules.test';
 
 const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'lib/utils/string', run: runUnitUtilsStringTests },
@@ -45,7 +47,9 @@ const suites: Array<{ name: string; run: () => void | Promise<void> }> = [
   { name: 'recommendations & analytics', run: runUnitRecommendationsAnalyticsTests },
   { name: 'fraud & observability', run: runUnitFraudObservabilityTests },
   { name: 'geo fallback hardening', run: () => runGeoFallbackHardeningTests() },
+  { name: 'geo search validation', run: runGeoSearchValidationTests },
   { name: 'metrics reliability hardening', run: () => runMetricsReliabilityHardeningTests() },
+  { name: 'admin deletion rules', run: runAdminDeletionRulesTests },
 ];
 
 async function main(): Promise<void> {

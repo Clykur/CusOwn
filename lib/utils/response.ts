@@ -9,12 +9,12 @@ export const successResponse = <T>(data: T, message?: string): NextResponse<ApiR
   });
 };
 
-export const errorResponse = (error: string, status: number = 400): NextResponse<ApiResponse> => {
-  return NextResponse.json(
-    {
-      success: false,
-      error,
-    },
-    { status }
-  );
+export const errorResponse = (
+  error: string,
+  status: number = 400,
+  code?: string
+): NextResponse<ApiResponse> => {
+  const body: ApiResponse = { success: false, error };
+  if (code !== undefined) body.code = code;
+  return NextResponse.json(body, { status });
 };

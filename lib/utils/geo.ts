@@ -22,8 +22,16 @@ export function assertValidCoordinates(lat: number, lng: number): void {
 
 export function validateRadius(radius: number): boolean {
   if (!Number.isFinite(radius)) return false;
-  // Allow 0.1km to 200km as reasonable application bounds; callers can further restrict.
   return radius >= 0.1 && radius <= 200;
+}
+
+export function validateSearchRadius(radius: number, maxKm: number): boolean {
+  if (!Number.isFinite(radius)) return false;
+  return radius > 0 && radius <= maxKm;
+}
+
+export function isCoordinatePairConsistent(latPresent: boolean, lngPresent: boolean): boolean {
+  return latPresent === lngPresent;
 }
 
 // Haversine formula (inputs in degrees). Returns distance in kilometers.
