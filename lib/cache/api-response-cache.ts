@@ -125,6 +125,17 @@ export function invalidateApiCacheByPrefix(prefix: string): void {
   }
 }
 
+/** Invalidate cached GET booking response after mutation (accept/reject/cancel/reschedule). */
+export function invalidateBookingCache(bookingId: string): void {
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/bookings/${bookingId}`));
+}
+
+/** Invalidate cached GET business/salon by slug after business update. */
+export function invalidateBusinessCacheBySlug(bookingLink: string): void {
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/book/business/${bookingLink}`));
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/salons/${bookingLink}`));
+}
+
 export const API_CACHE_TTL = {
   DEFAULT: CACHE_TTL_API_DEFAULT_MS,
   LONG: CACHE_TTL_API_LONG_MS,

@@ -2,6 +2,7 @@ import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { generateSlug, generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateSalonInput, Salon } from '@/types';
 import { ERROR_MESSAGES } from '@/config/constants';
+import { logStructured } from '@/lib/observability/structured-log';
 import { slotService } from './slot.service';
 import { cache } from 'react';
 
@@ -56,7 +57,9 @@ export class SalonService {
         owner_user_id: ownerUserId || null,
         category: data.category || 'salon',
       })
-      .select()
+      .select(
+        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude'
+      )
       .single();
 
     if (error) {
@@ -75,14 +78,15 @@ export class SalonService {
         closing_time: salon.closing_time,
         slot_duration: salon.slot_duration,
       });
-      console.log(
-        `✅ Slots generated for new business: ${salon.salon_name} (${salon.id.substring(0, 8)}...)`
-      );
+      logStructured('info', 'Slots generated for new business', {
+        business_id: salon.id,
+        salon_name: salon.salon_name,
+      });
     } catch (slotError) {
-      // Log error but don't fail business creation
-      // Slots can be generated lazily later via getAvailableSlots
-      console.error(`⚠️  Failed to generate initial slots for business ${salon.id}:`, slotError);
-      console.error('Slots will be generated lazily when requested');
+      logStructured('warn', 'Initial slot generation failed; slots will be generated lazily', {
+        business_id: salon.id,
+        error: slotError instanceof Error ? slotError.message : String(slotError),
+      });
     }
 
     // QR code will be generated asynchronously via API route

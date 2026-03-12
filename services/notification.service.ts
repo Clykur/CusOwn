@@ -26,7 +26,9 @@ export class NotificationService {
       throw new Error('Database not configured');
     }
 
-    let query = supabaseAdmin.from('notification_preferences').select('*');
+    const NOTIFICATION_PREFS_SELECT =
+      'user_id, customer_phone, email_enabled, sms_enabled, whatsapp_enabled, email_address, phone_number, updated_at';
+    let query = supabaseAdmin.from('notification_preferences').select(NOTIFICATION_PREFS_SELECT);
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -140,7 +142,7 @@ export class NotificationService {
         error_message: errorMessage,
         sent_at: sentAt,
       })
-      .select()
+      .select('id, booking_id, notification_type, recipient, status, sent_at, created_at')
       .single();
 
     if (error) {
@@ -157,7 +159,9 @@ export class NotificationService {
 
     const { data, error } = await supabaseAdmin
       .from('notification_history')
-      .select('*')
+      .select(
+        'id, booking_id, notification_type, recipient, status, message, error_message, sent_at, created_at'
+      )
       .eq('booking_id', bookingId)
       .order('created_at', { ascending: false });
 

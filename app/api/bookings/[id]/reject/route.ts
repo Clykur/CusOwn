@@ -5,6 +5,7 @@ import { whatsappService } from '@/services/whatsapp.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { invalidateBookingCache } from '@/lib/cache/api-response-cache';
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const whatsappUrl = booking.salon
         ? whatsappService.getRejectionWhatsAppUrl(booking, booking.salon, request)
         : undefined;
+      invalidateBookingCache(id);
       const payload = whatsappUrl ? { ...booking, whatsapp_url: whatsappUrl } : booking;
       const response = successResponse(payload, SUCCESS_MESSAGES.BOOKING_REJECTED);
       setNoCacheHeaders(response);
@@ -162,6 +164,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       booking_id: id,
     });
 
+    invalidateBookingCache(id);
     const response = successResponse(
       {
         ...rejectedBooking,

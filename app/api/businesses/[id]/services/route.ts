@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID } from '@/lib/utils/security';
 import { serviceService } from '@/services/service.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
+import { dedupe } from '@/lib/cache/request-dedup';
 
 const servicesRateLimit = enhancedRateLimit({
   maxRequests: 50,
@@ -24,7 +25,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const activeOnly = request.nextUrl.searchParams.get('active_only') !== 'false';
-    const services = await serviceService.getServicesByBusiness(businessId, activeOnly);
+    const services = await dedupe(`services:${businessId}:${activeOnly}`, () =>
+      serviceService.getServicesByBusiness(businessId, activeOnly)
+    );
 
     return successResponse(services);
   } catch (error) {

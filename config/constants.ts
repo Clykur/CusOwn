@@ -685,11 +685,20 @@ export const AUDIT_DEDUPE_WINDOW_MS = 5000;
 export const CACHE_TTL_AUTH_MS = 5 * 60 * 1000; // 5 min auth verification cache
 export const CACHE_TTL_API_DEFAULT_MS = 60 * 1000; // 1 min for mutable GETs
 export const CACHE_TTL_API_LONG_MS = 300 * 1000; // 5 min for stable GETs
+/** Static metadata (e.g. categories): 10 min. */
+export const CACHE_TTL_STATIC_MS = 10 * 60 * 1000;
+/** Booking lookup: short TTL so status updates are visible. */
+export const CACHE_TTL_BOOKING_MS = 30 * 1000;
+/** Search results: 60 s. */
+export const CACHE_TTL_SEARCH_MS = 60 * 1000;
 export const CACHE_STALE_GRACE_MS = 30 * 1000; // Serve stale up to 30s while revalidating (API)
 export const API_CACHE_MAX_KEYS = 500;
 export const SLOW_REQUEST_MS = 200; // Log and flag requests above this
 export const API_PAGINATION_DEFAULT_LIMIT = 25;
 export const API_PAGINATION_MAX_LIMIT = 100;
+
+/** Max bookings per list response (salon/customer) to avoid oversized payloads and timeouts. */
+export const BOOKING_LIST_MAX_PAGE_SIZE = 500;
 
 /** Client admin cache: TTL, stale grace, max entries (no hardcoded values in components). */
 export const ADMIN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min

@@ -6,6 +6,7 @@ import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { invalidateBookingCache } from '@/lib/cache/api-response-cache';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { auditService } from '@/services/audit.service';
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       } catch {}
     }
 
+    invalidateBookingCache(id);
     const response = successResponse(rescheduledBooking);
     setNoCacheHeaders(response);
     return response;

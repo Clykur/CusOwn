@@ -15,14 +15,14 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@babel/runtime",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@babel/runtime/LICENSE"
   },
-  "@floating-ui/core@1.7.4": {
+  "@floating-ui/core@1.7.5": {
     "licenses": "MIT",
     "repository": "https://github.com/floating-ui/floating-ui",
     "publisher": "atomiks",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@floating-ui/core",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@floating-ui/core/LICENSE"
   },
-  "@floating-ui/dom@1.7.5": {
+  "@floating-ui/dom@1.7.6": {
     "licenses": "MIT",
     "repository": "https://github.com/floating-ui/floating-ui",
     "publisher": "atomiks",
@@ -36,7 +36,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@floating-ui/react-dom",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@floating-ui/react-dom/LICENSE"
   },
-  "@floating-ui/react-dom@2.1.7": {
+  "@floating-ui/react-dom@2.1.8": {
     "licenses": "MIT",
     "repository": "https://github.com/floating-ui/floating-ui",
     "publisher": "atomiks",
@@ -57,7 +57,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@headlessui/react/node_modules/@floating-ui/react",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@headlessui/react/node_modules/@floating-ui/react/LICENSE"
   },
-  "@floating-ui/utils@0.2.10": {
+  "@floating-ui/utils@0.2.11": {
     "licenses": "MIT",
     "repository": "https://github.com/floating-ui/floating-ui",
     "publisher": "atomiks",
@@ -70,7 +70,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@headlessui/react",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@headlessui/react/LICENSE"
   },
-  "@img/colour@1.0.0": {
+  "@img/colour@1.1.0": {
     "licenses": "MIT",
     "repository": "https://github.com/lovell/colour",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@img/colour",
@@ -113,13 +113,13 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@next/swc-darwin-arm64",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@next/swc-darwin-arm64/README.md"
   },
-  "@react-aria/focus@3.21.4": {
+  "@react-aria/focus@3.21.5": {
     "licenses": "Apache-2.0",
     "repository": "https://github.com/adobe/react-spectrum",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-aria/focus",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-aria/focus/LICENSE"
   },
-  "@react-aria/interactions@3.27.0": {
+  "@react-aria/interactions@3.27.1": {
     "licenses": "Apache-2.0",
     "repository": "https://github.com/adobe/react-spectrum",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-aria/interactions",
@@ -131,7 +131,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-aria/ssr",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-aria/ssr/LICENSE"
   },
-  "@react-aria/utils@3.33.0": {
+  "@react-aria/utils@3.33.1": {
     "licenses": "Apache-2.0",
     "repository": "https://github.com/adobe/react-spectrum",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-aria/utils",
@@ -149,7 +149,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-stately/utils",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-stately/utils/LICENSE"
   },
-  "@react-types/shared@3.33.0": {
+  "@react-types/shared@3.33.1": {
     "licenses": "Apache-2.0",
     "repository": "https://github.com/adobe/react-spectrum",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@react-types/shared",
@@ -184,28 +184,28 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@standard-schema/utils",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@standard-schema/utils/LICENSE"
   },
-  "@supabase/auth-js@2.89.0": {
+  "@supabase/auth-js@2.99.1": {
     "licenses": "MIT",
     "repository": "https://github.com/supabase/supabase-js",
     "publisher": "Supabase",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/auth-js",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/auth-js/LICENSE"
   },
-  "@supabase/functions-js@2.89.0": {
+  "@supabase/functions-js@2.99.1": {
     "licenses": "MIT",
     "repository": "https://github.com/supabase/supabase-js",
     "publisher": "Supabase",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/functions-js",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/functions-js/README.md"
   },
-  "@supabase/postgrest-js@2.89.0": {
+  "@supabase/postgrest-js@2.99.1": {
     "licenses": "MIT",
     "repository": "https://github.com/supabase/supabase-js",
     "publisher": "Supabase",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/postgrest-js",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/postgrest-js/README.md"
   },
-  "@supabase/realtime-js@2.89.0": {
+  "@supabase/realtime-js@2.99.1": {
     "licenses": "MIT",
     "repository": "https://github.com/supabase/supabase-js",
     "publisher": "Supabase",
@@ -219,14 +219,14 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/ssr",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/ssr/LICENSE"
   },
-  "@supabase/storage-js@2.89.0": {
+  "@supabase/storage-js@2.99.1": {
     "licenses": "MIT",
     "repository": "https://github.com/supabase/supabase-js",
     "publisher": "Supabase",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/storage-js",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@supabase/storage-js/README.md"
   },
-  "@supabase/supabase-js@2.89.0": {
+  "@supabase/supabase-js@2.99.1": {
     "licenses": "MIT",
     "repository": "https://github.com/supabase/supabase-js",
     "publisher": "Supabase",
@@ -544,17 +544,25 @@
     "repository": "https://github.com/swc-project/swc",
     "publisher": "강동윤",
     "email": "kdy1997.dev@gmail.com",
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/next/node_modules/@swc/helpers",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/next/node_modules/@swc/helpers/LICENSE"
+  },
+  "@swc/helpers@0.5.19": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/swc-project/swc",
+    "publisher": "강동윤",
+    "email": "kdy1997.dev@gmail.com",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@swc/helpers",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@swc/helpers/LICENSE"
   },
-  "@tanstack/react-virtual@3.13.19": {
+  "@tanstack/react-virtual@3.13.21": {
     "licenses": "MIT",
     "repository": "https://github.com/TanStack/virtual",
     "publisher": "Tanner Linsley",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@tanstack/react-virtual",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@tanstack/react-virtual/LICENSE"
   },
-  "@tanstack/virtual-core@3.13.19": {
+  "@tanstack/virtual-core@3.13.21": {
     "licenses": "MIT",
     "repository": "https://github.com/TanStack/virtual",
     "publisher": "Tanner Linsley",
@@ -637,7 +645,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@types/hast",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@types/hast/LICENSE"
   },
-  "@types/node@20.19.27": {
+  "@types/node@20.19.37": {
     "licenses": "MIT",
     "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@types/node",
@@ -673,7 +681,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@types/ramda",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@types/ramda/LICENSE"
   },
-  "@types/react@18.3.27": {
+  "@types/react@18.3.28": {
     "licenses": "MIT",
     "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@types/react",
@@ -786,7 +794,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/available-typed-arrays",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/available-typed-arrays/LICENSE"
   },
-  "axios@1.13.5": {
+  "axios@1.13.6": {
     "licenses": "MIT",
     "repository": "https://github.com/axios/axios",
     "publisher": "Matt Zabriskie",
@@ -819,8 +827,8 @@
     "publisher": "Feross Aboukhadijeh",
     "email": "feross@feross.org",
     "url": "https://feross.org",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/swagger-ui-react/node_modules/buffer",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/swagger-ui-react/node_modules/buffer/LICENSE"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/buffer",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/buffer/LICENSE"
   },
   "call-bind-apply-helpers@1.0.2": {
     "licenses": "MIT",
@@ -852,10 +860,10 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/camelcase",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/camelcase/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/camelcase",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/camelcase/license"
   },
-  "caniuse-lite@1.0.30001762": {
+  "caniuse-lite@1.0.30001778": {
     "licenses": "CC-BY-4.0",
     "repository": "https://github.com/browserslist/caniuse-lite",
     "publisher": "Ben Briggs",
@@ -913,8 +921,8 @@
     "repository": "https://github.com/yargs/cliui",
     "publisher": "Ben Coe",
     "email": "ben@npmjs.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/LICENSE.txt"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/cliui",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/cliui/LICENSE.txt"
   },
   "clsx@2.1.1": {
     "licenses": "MIT",
@@ -1179,7 +1187,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/dom-helpers",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/dom-helpers/LICENSE"
   },
-  "dompurify@3.2.6": {
+  "dompurify@3.3.3": {
     "licenses": "(MPL-2.0 OR Apache-2.0)",
     "repository": "https://github.com/cure53/DOMPurify",
     "publisher": "Dr.-Ing. Mario Heiderich, Cure53",
@@ -1209,8 +1217,8 @@
     "repository": "https://github.com/mathiasbynens/emoji-regex",
     "publisher": "Mathias Bynens",
     "url": "https://mathiasbynens.be/",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/node_modules/emoji-regex",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/node_modules/emoji-regex/LICENSE-MIT.txt"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/emoji-regex",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/emoji-regex/LICENSE-MIT.txt"
   },
   "es-define-property@1.0.1": {
     "licenses": "MIT",
@@ -1244,7 +1252,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/es-set-tostringtag",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/es-set-tostringtag/LICENSE"
   },
-  "es-toolkit@1.44.0": {
+  "es-toolkit@1.45.1": {
     "licenses": "MIT",
     "repository": "https://github.com/toss/es-toolkit",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/es-toolkit",
@@ -1295,8 +1303,8 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/find-up",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/find-up/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/find-up",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/find-up/license"
   },
   "follow-redirects@1.15.11": {
     "licenses": "MIT",
@@ -1332,7 +1340,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/format",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/format/Readme.md"
   },
-  "framer-motion@12.34.3": {
+  "framer-motion@12.36.0": {
     "licenses": "MIT",
     "repository": "https://github.com/motiondivision/motion",
     "publisher": "Matt Perry",
@@ -1479,9 +1487,9 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@reduxjs/toolkit/node_modules/immer",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@reduxjs/toolkit/node_modules/immer/LICENSE"
   },
-  "immutable@3.8.2": {
+  "immutable@4.3.8": {
     "licenses": "MIT",
-    "repository": "https://github.com/facebook/immutable-js",
+    "repository": "https://github.com/immutable-js/immutable-js",
     "publisher": "Lee Byron",
     "url": "https://github.com/leebyron",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/immutable",
@@ -1551,8 +1559,8 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/is-fullwidth-code-point",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/is-fullwidth-code-point/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/is-fullwidth-code-point",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/is-fullwidth-code-point/license"
   },
   "is-hexadecimal@2.0.1": {
     "licenses": "MIT",
@@ -1610,8 +1618,8 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/locate-path",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/locate-path/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/locate-path",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/locate-path/license"
   },
   "lodash.debounce@4.0.8": {
     "licenses": "MIT",
@@ -1646,6 +1654,13 @@
     "url": "https://wooorm.com",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/lowlight",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/lowlight/license"
+  },
+  "lucide-react@0.576.0": {
+    "licenses": "ISC",
+    "repository": "https://github.com/lucide-icons/lucide",
+    "publisher": "Eric Fennis",
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/lucide-react",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/lucide-react/LICENSE"
   },
   "math-intrinsics@1.1.0": {
     "licenses": "MIT",
@@ -1683,14 +1698,14 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@swagger-api/apidom-reference/node_modules/minimatch",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@swagger-api/apidom-reference/node_modules/minimatch/LICENSE.md"
   },
-  "motion-dom@12.34.3": {
+  "motion-dom@12.36.0": {
     "licenses": "MIT",
     "repository": "https://github.com/motiondivision/motion",
     "publisher": "Matt Perry",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/motion-dom",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/motion-dom/LICENSE.md"
   },
-  "motion-utils@12.29.2": {
+  "motion-utils@12.36.0": {
     "licenses": "MIT",
     "repository": "https://github.com/motiondivision/motion",
     "publisher": "Matt Perry",
@@ -1726,7 +1741,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/node-abort-controller",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/node-abort-controller/LICENSE"
   },
-  "node-addon-api@8.5.0": {
+  "node-addon-api@8.6.0": {
     "licenses": "MIT",
     "repository": "https://github.com/nodejs/node-addon-api",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/node-addon-api",
@@ -1787,8 +1802,8 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/p-limit",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/p-limit/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/p-limit",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/p-limit/license"
   },
   "p-locate@4.1.0": {
     "licenses": "MIT",
@@ -1796,8 +1811,8 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/p-locate",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/node_modules/p-locate/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/p-locate",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/p-locate/license"
   },
   "p-try@2.2.0": {
     "licenses": "MIT",
@@ -1971,6 +1986,13 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-dom",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-dom/LICENSE"
   },
+  "react-icons@5.6.0": {
+    "licenses": "MIT",
+    "repository": "https://github.com/react-icons/react-icons",
+    "publisher": "Goran Gajic",
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-icons",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-icons/LICENSE"
+  },
   "react-immutable-proptypes@2.2.0": {
     "licenses": "MIT",
     "repository": "https://github.com/HurricaneJames/react-immutable-proptypes",
@@ -1999,14 +2021,20 @@
   "react-is@16.13.1": {
     "licenses": "MIT",
     "repository": "https://github.com/facebook/react",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-is",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-is/LICENSE"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/prop-types/node_modules/react-is",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/prop-types/node_modules/react-is/LICENSE"
   },
   "react-is@18.3.1": {
     "licenses": "MIT",
     "repository": "https://github.com/facebook/react",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@tremor/react/node_modules/react-is",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@tremor/react/node_modules/react-is/LICENSE"
+  },
+  "react-is@19.2.4": {
+    "licenses": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-is",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/react-is/LICENSE"
   },
   "react-redux@9.2.0": {
     "licenses": "MIT",
@@ -2064,7 +2092,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@tremor/react/node_modules/recharts",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/@tremor/react/node_modules/recharts/LICENSE"
   },
-  "recharts@3.7.0": {
+  "recharts@3.8.0": {
     "licenses": "MIT",
     "repository": "https://github.com/recharts/recharts",
     "publisher": "recharts group",
@@ -2170,12 +2198,12 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/scheduler",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/scheduler/LICENSE"
   },
-  "semver@7.7.3": {
+  "semver@7.7.4": {
     "licenses": "ISC",
     "repository": "https://github.com/npm/node-semver",
     "publisher": "GitHub Inc.",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/semver",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/semver/LICENSE"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/sharp/node_modules/semver",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/sharp/node_modules/semver/LICENSE"
   },
   "serialize-error@8.1.0": {
     "licenses": "MIT",
@@ -2257,8 +2285,8 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/node_modules/string-width",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/node_modules/string-width/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/string-width",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/string-width/license"
   },
   "strip-ansi@6.0.1": {
     "licenses": "MIT",
@@ -2282,7 +2310,7 @@
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/swagger-client/LICENSE",
     "noticeFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/swagger-client/NOTICE"
   },
-  "swagger-ui-react@5.31.2": {
+  "swagger-ui-react@5.32.0": {
     "licenses": "Apache-2.0",
     "repository": "https://github.com/swagger-api/swagger-ui",
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/swagger-ui-react",
@@ -2297,7 +2325,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/tabbable",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/tabbable/LICENSE"
   },
-  "tailwind-merge@2.6.0": {
+  "tailwind-merge@2.6.1": {
     "licenses": "MIT",
     "repository": "https://github.com/dcastil/tailwind-merge",
     "publisher": "Dany Castillo",
@@ -2470,7 +2498,7 @@
     "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/which-module",
     "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/which-module/LICENSE"
   },
-  "which-typed-array@1.1.19": {
+  "which-typed-array@1.1.20": {
     "licenses": "MIT",
     "repository": "https://github.com/inspect-js/which-typed-array",
     "publisher": "Jordan Harband",
@@ -2485,10 +2513,10 @@
     "publisher": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
     "url": "sindresorhus.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/node_modules/wrap-ansi",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/cliui/node_modules/wrap-ansi/license"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/wrap-ansi",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/wrap-ansi/license"
   },
-  "ws@8.18.3": {
+  "ws@8.19.0": {
     "licenses": "MIT",
     "repository": "https://github.com/websockets/ws",
     "publisher": "Einar Otto Stangvik",
@@ -2518,22 +2546,22 @@
     "repository": "https://github.com/yargs/y18n",
     "publisher": "Ben Coe",
     "email": "ben@npmjs.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/y18n",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/y18n/LICENSE"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/y18n",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/y18n/LICENSE"
   },
   "yargs-parser@18.1.3": {
     "licenses": "ISC",
     "repository": "https://github.com/yargs/yargs-parser",
     "publisher": "Ben Coe",
     "email": "ben@npmjs.com",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs-parser",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs-parser/LICENSE.txt"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/yargs-parser",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/yargs-parser/LICENSE.txt"
   },
   "yargs@15.4.1": {
     "licenses": "MIT",
     "repository": "https://github.com/yargs/yargs",
-    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs",
-    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/yargs/LICENSE"
+    "path": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/yargs",
+    "licenseFile": "/Users/chandukalluru/Desktop/CusOwn/node_modules/qrcode/node_modules/yargs/LICENSE"
   },
   "zenscroll@4.0.2": {
     "licenses": "Unlicense",

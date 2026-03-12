@@ -3,8 +3,14 @@ import { salonService } from '@/services/salon.service';
 import { mediaService } from '@/services/media.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getClientIp, isValidUUID, validateSalonToken } from '@/lib/utils/security';
-import { ERROR_MESSAGES } from '@/config/constants';
+import { ERROR_MESSAGES, CACHE_TTL_API_LONG_MS } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
+import {
+  buildApiCacheKey,
+  getCachedApiResponse,
+  setCachedApiResponse,
+} from '@/lib/cache/api-response-cache';
+import { dedupe } from '@/lib/cache/request-dedup';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { env } from '@/config/env';
@@ -59,11 +65,22 @@ export async function GET(
       }
     }
 
-    let salon;
-    if (isUUID) {
-      salon = await salonService.getSalonById(bookingLink);
-    } else {
-      salon = await salonService.getSalonByBookingLink(bookingLink);
+    const cacheKey = buildApiCacheKey('GET', `/api/salons/${bookingLink}`);
+    let cachedSalon = getCachedApiResponse<{ data: unknown }>(cacheKey)?.data;
+    let salon = cachedSalon as Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
+    if (!salon) {
+      if (isUUID) {
+        salon = await dedupe(`salon:id:${bookingLink}`, () =>
+          salonService.getSalonById(bookingLink)
+        );
+      } else {
+        salon = await dedupe(`salon:slug:${bookingLink}`, () =>
+          salonService.getSalonByBookingLink(bookingLink)
+        );
+      }
+      if (salon) {
+        setCachedApiResponse(cacheKey, { data: salon }, CACHE_TTL_API_LONG_MS);
+      }
     }
 
     if (!salon) {
