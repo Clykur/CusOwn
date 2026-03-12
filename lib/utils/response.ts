@@ -22,13 +22,12 @@ export const successResponse = <T>(data: T, message?: string): NextResponse<ApiR
   return attachCorrelation(res);
 };
 
-export const errorResponse = (error: string, status: number = 400): NextResponse<ApiResponse> => {
-  const correlationId = getCorrelationId();
-  const body: ApiResponse = {
-    success: false,
-    error,
-    ...(correlationId ? { correlationId } : {}),
-  };
-  const res = NextResponse.json(body, { status });
-  return attachCorrelation(res);
+export const errorResponse = (
+  error: string,
+  status: number = 400,
+  code?: string
+): NextResponse<ApiResponse> => {
+  const body: ApiResponse = { success: false, error };
+  if (code !== undefined) body.code = code;
+  return NextResponse.json(body, { status });
 };

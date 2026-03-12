@@ -5,10 +5,14 @@ import { adminService } from '@/services/admin.service';
 import { auditService } from '@/services/audit.service';
 import { adminNotificationService } from '@/services/admin-notification.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { ERROR_MESSAGES } from '@/config/constants';
+import { ERROR_MESSAGES, AUDIT_STATUS, ADMIN_DELETION_OUTCOME } from '@/config/constants';
 import { formatPhoneNumber } from '@/lib/utils/string';
 import { invalidateApiCacheByPrefix } from '@/lib/cache/api-response-cache';
 import { getClientIp } from '@/lib/utils/security';
+import {
+  validateAdminDeletionReason,
+  isDependencyBlockError,
+} from '@/lib/utils/admin-deletion.server';
 
 const ROUTE_GET = 'GET /api/admin/businesses/[id]';
 const ROUTE_PATCH = 'PATCH /api/admin/businesses/[id]';
@@ -164,12 +168,20 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let adminId: string | null = null;
   try {
     const auth = await requireAdmin(request, ROUTE_DELETE);
     if (auth instanceof Response) return auth;
+    adminId = auth.user.id;
 
     const { id } = await params;
     const supabase = requireSupabaseAdmin();
+
+    const body = await request.json().catch(() => ({}));
+    const reasonError = validateAdminDeletionReason(body.reason);
+    if (reasonError) return errorResponse(reasonError, 400);
+
+    const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
 
     const { data: business } = await supabase.from('businesses').select('*').eq('id', id).single();
 
@@ -178,11 +190,18 @@ export async function DELETE(
     }
 
     if (business.deleted_at) {
-      return errorResponse('Business is already deleted', 409);
+      await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
+        entityId: id,
+        request,
+        actorRole: 'admin',
+        status: AUDIT_STATUS.FAILED,
+        metadata: { outcome: ADMIN_DELETION_OUTCOME.ALREADY_DELETED, deletion_reason: reason },
+      });
+      return errorResponse(ERROR_MESSAGES.BUSINESS_ALREADY_DELETED, 409);
     }
 
     const clientIp = getClientIp(request);
-    await adminService.softDeleteBusiness(id, auth.user.id, 'Deleted by admin', {
+    await adminService.softDeleteBusiness(id, auth.user.id, reason, {
       ip: clientIp ?? null,
       overrideLegalHold: true,
     });
@@ -192,15 +211,30 @@ export async function DELETE(
       oldData: business,
       actorRole: 'admin',
       request,
+      status: AUDIT_STATUS.SUCCESS,
+      metadata: { outcome: ADMIN_DELETION_OUTCOME.SUCCESS, deletion_reason: reason },
     });
 
     invalidateApiCacheByPrefix('GET|/api/admin/businesses');
     invalidateApiCacheByPrefix('GET|/api/admin/metrics');
-    // Invalidate public salon caches so deleted business disappears from customer pages
     invalidateApiCacheByPrefix('GET|/api/salons');
     return successResponse(null, 'Business deleted successfully');
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const body = await request.json().catch(() => ({}));
+    const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
+    const { id } = await params;
+
+    if (error instanceof Error && isDependencyBlockError(message) && adminId) {
+      await auditService.createAuditLog(adminId, 'business_deleted', 'business', {
+        entityId: id,
+        request,
+        actorRole: 'admin',
+        status: AUDIT_STATUS.FAILED,
+        metadata: { outcome: ADMIN_DELETION_OUTCOME.BLOCKED, deletion_reason: reason },
+      });
+      return errorResponse(ERROR_MESSAGES.DELETION_BLOCKED_DEPENDENCIES, 409);
+    }
     return errorResponse(message, 500);
   }
 }

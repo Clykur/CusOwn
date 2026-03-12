@@ -121,6 +121,7 @@ export const VALIDATION = {
   REVIEW_COMMENT_MAX_LENGTH: 2000,
   REVIEW_RATING_MIN: 1,
   REVIEW_RATING_MAX: 5,
+  ADMIN_DELETION_REASON_MIN_LENGTH: 10,
 } as const;
 
 /** Simple email format for input validation (local + @ + domain). */
@@ -185,6 +186,11 @@ export const ERROR_MESSAGES = {
   LAST_ADMIN_BLOCK: 'Cannot delete the last admin',
   OUTSTANDING_PAYMENTS_BLOCK: 'User has outstanding payments; resolve before deletion',
   DELETION_REASON_REQUIRED: 'Deletion reason is mandatory',
+  DELETION_REASON_TOO_SHORT: `Deletion reason must be at least ${VALIDATION.ADMIN_DELETION_REASON_MIN_LENGTH} characters`,
+  DELETION_BLOCKED_DEPENDENCIES:
+    'Deletion cannot be completed because related records exist. Resolve or remove dependencies first.',
+  USER_ALREADY_DELETED: 'User account is already deleted',
+  BUSINESS_ALREADY_DELETED: 'Business is already deleted',
   UNDO_WINDOW_EXPIRED: 'Undo window has expired',
   SLOT_NO_LONGER_AVAILABLE: 'Slot is no longer available; cannot undo reject',
   BOOKING_NOT_CONFIRMED: 'Booking is not confirmed',
@@ -196,6 +202,12 @@ export const ERROR_MESSAGES = {
   MEDIA_UPLOAD_FAILED: 'Upload failed. Please try again.',
   MEDIA_NOT_FOUND: 'Image not found',
   GEO_INVALID_COORDINATES: 'Invalid latitude or longitude',
+  GEO_INVALID_LATITUDE: 'Latitude must be numeric and between -90 and 90',
+  GEO_INVALID_LONGITUDE: 'Longitude must be numeric and between -180 and 180',
+  GEO_INVALID_RADIUS:
+    'Search radius must be numeric, greater than 0, and not exceed the maximum allowed',
+  GEO_COORDINATES_PAIR_REQUIRED: 'Latitude and longitude must both be provided or both be omitted',
+  VALIDATION_ERROR_CODE: 'VALIDATION_ERROR',
   GEO_SERVICE_UNAVAILABLE: 'Location service is temporarily unavailable',
   LOCATION_REQUIRED: 'Location is required',
   LOCATION_INVALID: 'Invalid location data',
@@ -494,6 +506,7 @@ export const DISCOVERY_RATING_SCALE_MAX = 5;
 export const DISCOVERY_POPULARITY_CAP = 100;
 /** Slot availability window (days ahead) for ratio. */
 export const DISCOVERY_SLOT_WINDOW_DAYS = 30;
+export const MAX_SEARCH_RADIUS_KM = 200;
 /** Search: default radius (km), pagination bounds. */
 export const DISCOVERY_DEFAULT_RADIUS_KM = 10;
 export const DISCOVERY_PAGE_MIN = 1;
@@ -659,6 +672,12 @@ export const AUDIT_STATUS_STYLE: Record<AuditStatus, string> = {
 /** Fallback style for unknown severity/status. */
 export const AUDIT_STYLE_NEUTRAL = 'bg-slate-100 text-slate-700 border-slate-200';
 
+export const ADMIN_DELETION_OUTCOME = {
+  SUCCESS: 'success',
+  BLOCKED: 'blocked',
+  ALREADY_DELETED: 'already_deleted',
+} as const;
+
 /** Dedupe: skip insert if same action_type + entity_id + actor_id within this window (ms). */
 export const AUDIT_DEDUPE_WINDOW_MS = 5000;
 
@@ -815,3 +834,15 @@ export const ROLE_CAPABILITIES: Record<RoleName, CapabilityName[]> = {
   owner: [CAPABILITIES.ACCESS_OWNER_DASHBOARD, CAPABILITIES.ACCESS_SETUP],
   customer: [CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD],
 };
+
+export const STRESS_TEST_DEFAULT_CONCURRENT_USERS = 20;
+export const STRESS_TEST_DEFAULT_DURATION_SEC = 60;
+export const STRESS_TEST_DEFAULT_REQUESTS_PER_SEC = 10;
+export const STRESS_TEST_DEFAULT_MIN_BUSINESSES = 1;
+export const STRESS_TEST_DEFAULT_MIN_SLOTS = 5;
+export const STRESS_TEST_LOG_INTERVAL_MS = 5000;
+export const STRESS_MONITOR_INTERVAL_MS = 5000;
+export const STRESS_EVENT_LOOP_LAG_THRESHOLD_MS = 500;
+export const STRESS_CPU_LIMIT_PCT = 95;
+export const STRESS_CPU_SUSTAINED_SAMPLES = 3;
+export const STRESS_POOL_EXHAUSTION_PCT = 95;

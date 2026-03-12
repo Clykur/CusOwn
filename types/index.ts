@@ -154,6 +154,7 @@ export type ApiResponse<T = unknown> = {
   data?: T;
   error?: string;
   message?: string;
+  code?: string;
 };
 
 /** Admin analytics: revenue metrics response */

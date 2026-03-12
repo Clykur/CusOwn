@@ -5,7 +5,11 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { getServerUser } from '@/lib/supabase/server-auth';
-import { parseAndValidateCoordinates, validateRadius } from '@/lib/utils/geo';
+import {
+  parseAndValidateCoordinates,
+  validateSearchRadius,
+  isCoordinatePairConsistent,
+} from '@/lib/utils/geo';
 import { ipLookupWithFallback } from '@/lib/geo/geo-service-wrapper';
 import { queryDiscoveryFallback } from '@/lib/db/discovery-fallback';
 import { logStructured } from '@/lib/observability/structured-log';
@@ -26,6 +30,7 @@ import {
   DISCOVERY_LIMIT_MIN,
   DISCOVERY_LIMIT_MAX,
   DISCOVERY_DEFAULT_LIMIT,
+  MAX_SEARCH_RADIUS_KM,
   METRICS_DISCOVERY_FALLBACK_GEO,
   METRICS_DISCOVERY_FALLBACK_RPC,
 } from '@/config/constants';
@@ -93,16 +98,81 @@ export async function POST(request: NextRequest) {
 
     const filteredBody = filterFields(body, allowedFields);
 
-    // Validate coordinates (if present)
-    if (filteredBody.latitude !== undefined || filteredBody.longitude !== undefined) {
-      try {
-        parseAndValidateCoordinates(filteredBody.latitude, filteredBody.longitude);
-      } catch {
-        return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
+    if (filteredBody.latitude !== undefined) {
+      const latNum =
+        typeof filteredBody.latitude === 'string'
+          ? parseFloat(filteredBody.latitude)
+          : Number(filteredBody.latitude);
+      if (!Number.isFinite(latNum) || latNum < -90 || latNum > 90) {
+        logStructured('warn', 'Discovery validation: invalid latitude', {
+          endpoint: DISCOVERY_ENDPOINT,
+          request_id: requestId ?? undefined,
+          validation_failure: 'latitude',
+        });
+        return errorResponse(
+          ERROR_MESSAGES.GEO_INVALID_LATITUDE,
+          400,
+          ERROR_MESSAGES.VALIDATION_ERROR_CODE
+        );
       }
     }
 
-    // Require at least one location filter
+    if (filteredBody.longitude !== undefined) {
+      const lngNum =
+        typeof filteredBody.longitude === 'string'
+          ? parseFloat(filteredBody.longitude)
+          : Number(filteredBody.longitude);
+      if (!Number.isFinite(lngNum) || lngNum < -180 || lngNum > 180) {
+        logStructured('warn', 'Discovery validation: invalid longitude', {
+          endpoint: DISCOVERY_ENDPOINT,
+          request_id: requestId ?? undefined,
+          validation_failure: 'longitude',
+        });
+        return errorResponse(
+          ERROR_MESSAGES.GEO_INVALID_LONGITUDE,
+          400,
+          ERROR_MESSAGES.VALIDATION_ERROR_CODE
+        );
+      }
+    }
+
+    if (
+      !isCoordinatePairConsistent(
+        filteredBody.latitude !== undefined,
+        filteredBody.longitude !== undefined
+      )
+    ) {
+      logStructured('warn', 'Discovery validation: coordinate pair inconsistent', {
+        endpoint: DISCOVERY_ENDPOINT,
+        request_id: requestId ?? undefined,
+        validation_failure: 'coordinates_pair',
+      });
+      return errorResponse(
+        ERROR_MESSAGES.GEO_COORDINATES_PAIR_REQUIRED,
+        400,
+        ERROR_MESSAGES.VALIDATION_ERROR_CODE
+      );
+    }
+
+    const radiusKm =
+      filteredBody.radius_km !== undefined
+        ? typeof filteredBody.radius_km === 'string'
+          ? parseFloat(filteredBody.radius_km)
+          : Number(filteredBody.radius_km)
+        : DISCOVERY_DEFAULT_RADIUS_KM;
+    if (!validateSearchRadius(radiusKm, MAX_SEARCH_RADIUS_KM)) {
+      logStructured('warn', 'Discovery validation: invalid radius', {
+        endpoint: DISCOVERY_ENDPOINT,
+        request_id: requestId ?? undefined,
+        validation_failure: 'radius_km',
+      });
+      return errorResponse(
+        ERROR_MESSAGES.GEO_INVALID_RADIUS,
+        400,
+        ERROR_MESSAGES.VALIDATION_ERROR_CODE
+      );
+    }
+
     if (
       !filteredBody.latitude &&
       !filteredBody.city &&
@@ -110,13 +180,6 @@ export async function POST(request: NextRequest) {
       !filteredBody.pincode
     ) {
       return errorResponse(ERROR_MESSAGES.LOCATION_REQUIRED, 400);
-    }
-
-    // Validate radius
-    const radiusKm =
-      filteredBody.radius_km !== undefined ? filteredBody.radius_km : DISCOVERY_DEFAULT_RADIUS_KM;
-    if (!validateRadius(radiusKm)) {
-      return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
     // Pagination mandatory: clamp to configured bounds
@@ -150,7 +213,11 @@ export async function POST(request: NextRequest) {
         lat = coords.lat;
         lng = coords.lng;
       } catch {
-        return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
+        return errorResponse(
+          ERROR_MESSAGES.GEO_INVALID_COORDINATES,
+          400,
+          ERROR_MESSAGES.VALIDATION_ERROR_CODE
+        );
       }
     } else {
       const geoOutcome = await ipLookupWithFallback(clientIP, {
