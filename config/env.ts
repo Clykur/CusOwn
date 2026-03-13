@@ -67,6 +67,14 @@ const envSchema = z.object({
   FEATURE_PAYMENT_CANARY: z.string().default('true'),
   FEATURE_RESCHEDULE: z.string().default('true'),
   FEATURE_NO_SHOW: z.string().default('true'),
+  /** Redis URL for caching (optional; caching disabled if not set). */
+  REDIS_URL: z.string().url().optional(),
+  /** Enable Redis caching (set to 'false' to disable even if REDIS_URL is set). */
+  REDIS_ENABLED: z.string().default('true'),
+  /** Vercel deployment metadata (auto-populated by Vercel). */
+  NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: z.string().optional(),
+  NEXT_PUBLIC_VERCEL_ENV: z.string().optional(),
+  NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
 });
 
 const rawEnv = envSchema.parse(process.env);
@@ -149,6 +157,16 @@ export const env = {
     nominatimUrl: rawEnv.NOMINATIM_URL || '',
     osrmUrl: rawEnv.OSRM_URL || '',
   },
+  redis: {
+    url: rawEnv.REDIS_URL || '',
+    enabled: rawEnv.REDIS_ENABLED !== 'false',
+  },
+  deployment: {
+    gitCommitSha: rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
+    environment: rawEnv.NEXT_PUBLIC_VERCEL_ENV || null,
+    url: rawEnv.NEXT_PUBLIC_VERCEL_URL || null,
+  },
+  nextPublicVercelGitCommitSha: rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
 } as const;
 
 export const validateEnv = (): void => {

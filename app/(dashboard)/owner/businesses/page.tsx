@@ -8,6 +8,7 @@ import { Toast } from '@/components/ui/toast';
 import { ROUTES } from '@/lib/utils/navigation';
 import { formatDate } from '@/lib/utils/string';
 import { Salon } from '@/types';
+import { getCachedSession } from '@/lib/utils/session-cache';
 import MapPinIcon from '@/src/icons/map-pin.svg';
 
 export default function OwnerBusinessesPage() {
@@ -28,19 +29,17 @@ export default function OwnerBusinessesPage() {
   useEffect(() => {
     const run = async () => {
       try {
-        const sessionRes = await fetch('/api/auth/session', {
-          credentials: 'include',
-        });
-        const sessionJson = await sessionRes.json();
-        if (!sessionRes.ok || !sessionJson?.data?.user) {
+        const [user, businessesRes] = await Promise.all([
+          getCachedSession(),
+          fetch('/api/owner/businesses', { credentials: 'include' }),
+        ]);
+
+        if (!user) {
           router.replace(ROUTES.AUTH_LOGIN('/owner/businesses'));
           return;
         }
 
-        const res = await fetch('/api/owner/businesses', {
-          credentials: 'include',
-        });
-        const json = await res.json();
+        const json = await businessesRes.json();
         setBusinesses(json.data || []);
       } finally {
         setLoading(false);

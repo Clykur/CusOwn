@@ -17,6 +17,7 @@ const nextConfig = {
         pathname: '/storage/v1/**',
       },
     ],
+    qualities: [75, 85, 95],
   },
   // Keep console logs in development, strip noisy logs in production bundles.
   compiler: {

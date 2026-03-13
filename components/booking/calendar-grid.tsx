@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import type { Slot } from '@/types';
 
 type CalendarGridProps = {
@@ -55,7 +55,7 @@ function formatDateShort(dateStr: string): string {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function CalendarGrid({
+function CalendarGridComponent({
   selectedDate,
   setSelectedDate,
   datesWithSlots,
@@ -134,55 +134,96 @@ export default function CalendarGrid({
           const hasSlots = !slots || slots.length > 0;
           const isClosed = closedDates.has(dateStr);
           const isSelected = dateStr === selectedDate;
-          const isDisabled = isPast || !hasSlots || isClosed;
 
           return (
-            <button
+            <DayButton
               key={dateStr}
-              ref={isSelected ? selectedDateRef : null}
-              type="button"
-              onClick={() => !isDisabled && setSelectedDate(dateStr)}
-              disabled={isDisabled}
-              className={`
-                h-12 sm:h-14 flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm font-medium transition-all
-              ${
-                isSelected
-                  ? 'border-slate-900 bg-slate-100 text-slate-900 border-2'
-                  : isPast
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                    : isClosed
-                      ? 'bg-amber-50 border border-amber-200 text-amber-700 cursor-not-allowed'
-                      : !hasSlots
-                        ? 'bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
-              }
-                ${isTodayDay && !isSelected ? 'ring-2 ring-slate-400 ring-offset-1' : ''}
-                ${isClosed && !isPast ? 'bg-amber-50 border-amber-200 text-amber-700' : ''}
-                ${!hasSlots && !isPast && !isClosed ? 'bg-slate-50 border-slate-200 text-slate-400' : ''}
-              `}
-              title={
-                isClosed
-                  ? 'Shop is closed on this day'
-                  : !hasSlots && !isPast
-                    ? 'No slots available'
-                    : ''
-              }
-            >
-              <span className="text-sm sm:text-base font-semibold">
-                {parseInt(dateStr.split('-')[2], 10)}
-              </span>
-
-              {isClosed && !isPast && (
-                <span className="text-[8px] sm:text-[10px] text-amber-600 font-normal">Closed</span>
-              )}
-
-              {!hasSlots && !isPast && !isClosed && (
-                <span className="text-[8px] sm:text-[10px] text-slate-400 font-normal">Full</span>
-              )}
-            </button>
+              dateStr={dateStr}
+              isPast={isPast}
+              isTodayDay={isTodayDay}
+              hasSlots={hasSlots}
+              isClosed={isClosed}
+              isSelected={isSelected}
+              selectedDateRef={isSelected ? selectedDateRef : null}
+              onSelectDate={setSelectedDate}
+            />
           );
         })}
       </div>
     </div>
   );
 }
+
+interface DayButtonProps {
+  dateStr: string;
+  isPast: boolean;
+  isTodayDay: boolean;
+  hasSlots: boolean;
+  isClosed: boolean;
+  isSelected: boolean;
+  selectedDateRef: React.RefObject<HTMLButtonElement> | null;
+  onSelectDate: (date: string) => void;
+}
+
+const DayButton = memo(function DayButton({
+  dateStr,
+  isPast,
+  isTodayDay,
+  hasSlots,
+  isClosed,
+  isSelected,
+  selectedDateRef,
+  onSelectDate,
+}: DayButtonProps) {
+  const isDisabled = isPast || !hasSlots || isClosed;
+
+  const handleClick = useCallback(() => {
+    if (!isDisabled) {
+      onSelectDate(dateStr);
+    }
+  }, [isDisabled, onSelectDate, dateStr]);
+
+  const dayNumber = useMemo(() => parseInt(dateStr.split('-')[2], 10), [dateStr]);
+
+  return (
+    <button
+      ref={selectedDateRef ?? undefined}
+      type="button"
+      onClick={handleClick}
+      disabled={isDisabled}
+      className={`
+        h-12 sm:h-14 flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm font-medium transition-all
+      ${
+        isSelected
+          ? 'border-slate-900 bg-slate-100 text-slate-900 border-2'
+          : isPast
+            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+            : isClosed
+              ? 'bg-amber-50 border border-amber-200 text-amber-700 cursor-not-allowed'
+              : !hasSlots
+                ? 'bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed'
+                : 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+      }
+        ${isTodayDay && !isSelected ? 'ring-2 ring-slate-400 ring-offset-1' : ''}
+        ${isClosed && !isPast ? 'bg-amber-50 border-amber-200 text-amber-700' : ''}
+        ${!hasSlots && !isPast && !isClosed ? 'bg-slate-50 border-slate-200 text-slate-400' : ''}
+      `}
+      title={
+        isClosed ? 'Shop is closed on this day' : !hasSlots && !isPast ? 'No slots available' : ''
+      }
+    >
+      <span className="text-sm sm:text-base font-semibold">{dayNumber}</span>
+
+      {isClosed && !isPast && (
+        <span className="text-[8px] sm:text-[10px] text-amber-600 font-normal">Closed</span>
+      )}
+
+      {!hasSlots && !isPast && !isClosed && (
+        <span className="text-[8px] sm:text-[10px] text-slate-400 font-normal">Full</span>
+      )}
+    </button>
+  );
+});
+
+const CalendarGrid = memo(CalendarGridComponent);
+export default CalendarGrid;

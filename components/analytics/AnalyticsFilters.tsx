@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import FilterDropdown from '@/components/analytics/FilterDropdown';
 import DateFilter from '@/components/owner/date-filter';
 
@@ -14,17 +14,7 @@ const FILTER_TOKENS = {
     'h-11 whitespace-nowrap rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60',
 };
 
-export default function AnalyticsFilters({
-  businesses,
-  selectedBusinessId,
-  onBusinessChange,
-  startDate,
-  endDate,
-  setStartDate,
-  setEndDate,
-  onExport,
-  exporting,
-}: {
+interface AnalyticsFiltersProps {
   businesses: { id: string; salon_name: string; created_at?: string }[];
   selectedBusinessId: string;
   onBusinessChange: (value: string) => void;
@@ -34,7 +24,19 @@ export default function AnalyticsFilters({
   setEndDate: (v: string) => void;
   onExport: () => void;
   exporting: boolean;
-}) {
+}
+
+function AnalyticsFiltersComponent({
+  businesses,
+  selectedBusinessId,
+  onBusinessChange,
+  startDate,
+  endDate,
+  setStartDate,
+  setEndDate,
+  onExport,
+  exporting,
+}: AnalyticsFiltersProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>('30');
 
   const overallStartDate = useMemo(() => {
@@ -57,21 +59,24 @@ export default function AnalyticsFilters({
     return toDateInputValue(new Date(selectedBusiness.created_at));
   }, [businesses, selectedBusinessId]);
 
-  const applyPreset = (days: number) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - (days - 1));
+  const applyPreset = useCallback(
+    (days: number) => {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - (days - 1));
 
-    setStartDate(toDateInputValue(start));
-    setEndDate(toDateInputValue(end));
-    setSelectedPreset(String(days));
-  };
+      setStartDate(toDateInputValue(start));
+      setEndDate(toDateInputValue(end));
+      setSelectedPreset(String(days));
+    },
+    [setStartDate, setEndDate]
+  );
 
-  const applyOverallRange = () => {
+  const applyOverallRange = useCallback(() => {
     setStartDate(overallStartDate);
     setEndDate(toDateInputValue(new Date()));
     setSelectedPreset('all');
-  };
+  }, [overallStartDate, setStartDate, setEndDate]);
 
   useEffect(() => {
     if (selectedPreset !== 'all') return;
@@ -106,6 +111,27 @@ export default function AnalyticsFilters({
     [selectedPreset]
   );
 
+  const handleBusinessToggle = useCallback(
+    (value: string, checked: boolean) => {
+      if (checked) onBusinessChange(value);
+    },
+    [onBusinessChange]
+  );
+
+  const handleQuickRangeToggle = useCallback(
+    (value: string, checked: boolean) => {
+      if (!checked) return;
+
+      if (value === 'all') {
+        applyOverallRange();
+        return;
+      }
+
+      applyPreset(Number(value));
+    },
+    [applyOverallRange, applyPreset]
+  );
+
   return (
     <div className="flex flex-col gap-4 rounded-xl bg-slate-100/60 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6">
       {/* Business */}
@@ -113,9 +139,7 @@ export default function AnalyticsFilters({
         <FilterDropdown
           label="Business"
           options={businessOptions}
-          onToggle={(value, checked) => {
-            if (checked) onBusinessChange(value);
-          }}
+          onToggle={handleBusinessToggle}
         />
       </div>
 
@@ -136,16 +160,7 @@ export default function AnalyticsFilters({
         <FilterDropdown
           label="Quick range"
           options={quickRangeOptions}
-          onToggle={(value, checked) => {
-            if (!checked) return;
-
-            if (value === 'all') {
-              applyOverallRange();
-              return;
-            }
-
-            applyPreset(Number(value));
-          }}
+          onToggle={handleQuickRangeToggle}
         />
       </div>
 
@@ -163,3 +178,6 @@ export default function AnalyticsFilters({
     </div>
   );
 }
+
+const AnalyticsFilters = memo(AnalyticsFiltersComponent);
+export default AnalyticsFilters;

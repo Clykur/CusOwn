@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { pollWithRetry } from '@/lib/resilience/poll-with-retry';
 import {
   ADMIN_FETCH_MAX_RETRIES,
@@ -109,15 +109,8 @@ export const useBookingStatusPolling = <TBooking extends BookingLike>(
     }
   }, [booking, onTransition]);
 
-  // Polling loop with retry + exponential backoff per attempt
-  useEffect(() => {
-    if (!isEnabled || !bookingId) {
-      if (stopRef.current) {
-        stopRef.current();
-        stopRef.current = null;
-      }
-      return undefined;
-    }
+  const startPolling = useCallback(() => {
+    if (stopRef.current) return;
 
     setIsPolling(true);
     setError(null);
@@ -125,6 +118,7 @@ export const useBookingStatusPolling = <TBooking extends BookingLike>(
     const controller = new AbortController();
     const handle = pollWithRetry<void>({
       fn: async () => {
+        if (document.hidden) return;
         await Promise.resolve(refresh());
       },
       intervalMs,
@@ -142,19 +136,44 @@ export const useBookingStatusPolling = <TBooking extends BookingLike>(
       signal: controller.signal,
     });
 
-    stopRef.current = handle.stop;
+    stopRef.current = () => {
+      controller.abort();
+      handle.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intervalMs]);
+
+  const stopPolling = useCallback(() => {
+    if (stopRef.current) {
+      stopRef.current();
+      stopRef.current = null;
+    }
+    setIsPolling(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isEnabled || !bookingId) {
+      stopPolling();
+      return undefined;
+    }
+
+    startPolling();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      controller.abort();
-      if (stopRef.current) {
-        stopRef.current();
-        stopRef.current = null;
-      }
-      setIsPolling(false);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopPolling();
     };
-    // We intentionally exclude `refresh` from deps to avoid resetting polling on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingId, isEnabled, intervalMs]);
+  }, [bookingId, isEnabled, startPolling, stopPolling]);
 
   return { isPolling, error };
 };

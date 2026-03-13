@@ -1,5 +1,11 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { ERROR_MESSAGES } from '@/config/constants';
+import {
+  buildQueryCacheKey,
+  withQueryCache,
+  QUERY_CACHE_TTL,
+  QUERY_CACHE_PREFIX,
+} from '@/lib/cache/query-cache';
 
 export interface BookingAnalytics {
   totalBookings: number;
@@ -81,10 +87,6 @@ export class AnalyticsService {
     startDate: string,
     endDate: string
   ): Promise<BookingAnalytics> {
-    if (!supabaseAdmin) {
-      throw new Error('Database not configured');
-    }
-
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
       return {
@@ -101,6 +103,27 @@ export class AnalyticsService {
         averageTicketCents: 0,
         services: [],
       };
+    }
+
+    // Build cache key for analytics
+    const cacheKey = buildQueryCacheKey(
+      `${QUERY_CACHE_PREFIX.ANALYTICS}booking:`,
+      normalizedBusinessIds.join(','),
+      { startDate, endDate }
+    );
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.DASHBOARD_STATS, async () => {
+      return this._getBookingAnalyticsUncached(normalizedBusinessIds, startDate, endDate);
+    });
+  }
+
+  private async _getBookingAnalyticsUncached(
+    normalizedBusinessIds: string[],
+    startDate: string,
+    endDate: string
+  ): Promise<BookingAnalytics> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
     }
 
     let bookingsQuery = supabaseAdmin
@@ -259,13 +282,30 @@ export class AnalyticsService {
     startDate: string,
     endDate: string
   ): Promise<DailyAnalytics[]> {
-    if (!supabaseAdmin) {
-      throw new Error('Database not configured');
-    }
-
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
       return [];
+    }
+
+    // Build cache key for daily analytics
+    const cacheKey = buildQueryCacheKey(
+      `${QUERY_CACHE_PREFIX.ANALYTICS}daily:`,
+      normalizedBusinessIds.join(','),
+      { startDate, endDate }
+    );
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.DASHBOARD_STATS, async () => {
+      return this._getDailyAnalyticsUncached(normalizedBusinessIds, startDate, endDate);
+    });
+  }
+
+  private async _getDailyAnalyticsUncached(
+    normalizedBusinessIds: string[],
+    startDate: string,
+    endDate: string
+  ): Promise<DailyAnalytics[]> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
     }
 
     let dailyQuery = supabaseAdmin.from('booking_analytics_daily').select('*');
@@ -348,13 +388,30 @@ export class AnalyticsService {
     startDate: string,
     endDate: string
   ): Promise<PeakHoursData[]> {
-    if (!supabaseAdmin) {
-      throw new Error('Database not configured');
-    }
-
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
       return [];
+    }
+
+    // Build cache key for peak hours
+    const cacheKey = buildQueryCacheKey(
+      `${QUERY_CACHE_PREFIX.ANALYTICS}peakhours:`,
+      normalizedBusinessIds.join(','),
+      { startDate, endDate }
+    );
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.PEAK_HOURS, async () => {
+      return this._getPeakHoursUncached(normalizedBusinessIds, startDate, endDate);
+    });
+  }
+
+  private async _getPeakHoursUncached(
+    normalizedBusinessIds: string[],
+    startDate: string,
+    endDate: string
+  ): Promise<PeakHoursData[]> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
     }
 
     let peakHoursQuery = supabaseAdmin.from('booking_analytics_hourly').select('*');
@@ -390,13 +447,28 @@ export class AnalyticsService {
   }
 
   async getCustomerRetentionForBusinesses(businessIds: string[]): Promise<CustomerRetentionData[]> {
-    if (!supabaseAdmin) {
-      throw new Error('Database not configured');
-    }
-
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
       return [];
+    }
+
+    // Build cache key for customer retention
+    const cacheKey = buildQueryCacheKey(
+      `${QUERY_CACHE_PREFIX.ANALYTICS}retention:`,
+      normalizedBusinessIds.join(','),
+      {}
+    );
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.RETENTION, async () => {
+      return this._getCustomerRetentionUncached(normalizedBusinessIds);
+    });
+  }
+
+  private async _getCustomerRetentionUncached(
+    normalizedBusinessIds: string[]
+  ): Promise<CustomerRetentionData[]> {
+    if (!supabaseAdmin) {
+      throw new Error('Database not configured');
     }
 
     let retentionQuery = supabaseAdmin.from('customer_retention').select('*');
@@ -487,6 +559,29 @@ export class AnalyticsService {
     endDate: string,
     serviceRankLimit?: number
   ): Promise<OwnerAnalyticsAdvanced> {
+    // Build cache key for owner advanced analytics
+    const cacheKey = buildQueryCacheKey(`${QUERY_CACHE_PREFIX.DASHBOARD}advanced:`, businessId, {
+      startDate,
+      endDate,
+      serviceRankLimit,
+    });
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.DASHBOARD_STATS, async () => {
+      return this._getOwnerAnalyticsAdvancedUncached(
+        businessId,
+        startDate,
+        endDate,
+        serviceRankLimit
+      );
+    });
+  }
+
+  private async _getOwnerAnalyticsAdvancedUncached(
+    businessId: string,
+    startDate: string,
+    endDate: string,
+    serviceRankLimit?: number
+  ): Promise<OwnerAnalyticsAdvanced> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
@@ -559,6 +654,63 @@ export class AnalyticsService {
 
     return csv;
   }
+
+  /**
+   * Aggregated analytics: combines overview, daily, peak-hours, retention into single response.
+   * Reduces 4-5 parallel API calls to 1.
+   */
+  async getAggregatedAnalytics(
+    businessIds: string[],
+    startDate: string,
+    endDate: string,
+    includeAdvanced: boolean = false
+  ): Promise<AggregatedAnalytics> {
+    const normalizedIds = this.normalizeBusinessIds(businessIds);
+    const isSingleBusiness = normalizedIds.length === 1;
+
+    const promises: Promise<any>[] = [
+      this.getBookingAnalyticsForBusinesses(normalizedIds, startDate, endDate),
+      this.getDailyAnalyticsForBusinesses(normalizedIds, startDate, endDate),
+      this.getPeakHoursForBusinesses(normalizedIds, startDate, endDate),
+      this.getCustomerRetentionForBusinesses(normalizedIds),
+    ];
+
+    if (includeAdvanced && isSingleBusiness) {
+      promises.push(this.getOwnerAnalyticsAdvanced(normalizedIds[0], startDate, endDate));
+    }
+
+    const results = await Promise.allSettled(promises);
+
+    const overview =
+      results[0].status === 'fulfilled' ? (results[0].value as BookingAnalytics) : null;
+    const daily = results[1].status === 'fulfilled' ? (results[1].value as DailyAnalytics[]) : [];
+    const peakHours =
+      results[2].status === 'fulfilled'
+        ? (results[2].value as { hour: number; bookingCount: number }[])
+        : [];
+    const retention =
+      results[3].status === 'fulfilled' ? (results[3].value as { totalBookings: number }[]) : [];
+    const advanced =
+      includeAdvanced && isSingleBusiness && results[4]?.status === 'fulfilled'
+        ? (results[4].value as OwnerAnalyticsAdvanced)
+        : null;
+
+    return {
+      overview,
+      daily,
+      peakHours,
+      retention,
+      advanced,
+    };
+  }
+}
+
+export interface AggregatedAnalytics {
+  overview: BookingAnalytics | null;
+  daily: DailyAnalytics[];
+  peakHours: { hour: number; bookingCount: number }[];
+  retention: { totalBookings: number }[];
+  advanced: OwnerAnalyticsAdvanced | null;
 }
 
 export const analyticsService = new AnalyticsService();

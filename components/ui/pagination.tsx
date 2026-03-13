@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo, useCallback } from 'react';
 import { Button } from './button';
 import ChevronLeftIcon from '@/src/icons/chevron-left.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
@@ -12,19 +13,17 @@ interface PaginationProps {
   itemsPerPage: number;
 }
 
-export default function Pagination({
+function PaginationComponent({
   currentPage,
   totalPages,
   onPageChange,
   totalItems,
   itemsPerPage,
 }: PaginationProps) {
-  if (totalPages <= 1) return null;
-
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-  const getPageNumbers = () => {
+  const pageNumbers = useMemo(() => {
     const pages: (number | string)[] = [];
     const maxVisible = 5;
 
@@ -57,7 +56,17 @@ export default function Pagination({
     }
 
     return pages;
-  };
+  }, [currentPage, totalPages]);
+
+  const handlePrevious = useCallback(() => {
+    onPageChange(currentPage - 1);
+  }, [onPageChange, currentPage]);
+
+  const handleNext = useCallback(() => {
+    onPageChange(currentPage + 1);
+  }, [onPageChange, currentPage]);
+
+  if (totalPages <= 1) return null;
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200">
@@ -71,7 +80,7 @@ export default function Pagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
+          onClick={handlePrevious}
           disabled={currentPage === 1}
           className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -80,7 +89,7 @@ export default function Pagination({
         </Button>
 
         <div className="flex items-center gap-1">
-          {getPageNumbers().map((page, index) => {
+          {pageNumbers.map((page, index) => {
             if (page === 'ellipsis') {
               return (
                 <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
@@ -93,19 +102,12 @@ export default function Pagination({
             const isActive = pageNum === currentPage;
 
             return (
-              <button
+              <PageButton
                 key={pageNum}
-                onClick={() => onPageChange(pageNum)}
-                className={`min-w-[2.5rem] h-10 px-3 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-black text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                }`}
-                aria-label={`Go to page ${pageNum}`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {pageNum}
-              </button>
+                pageNum={pageNum}
+                isActive={isActive}
+                onPageChange={onPageChange}
+              />
             );
           })}
         </div>
@@ -113,7 +115,7 @@ export default function Pagination({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
+          onClick={handleNext}
           disabled={currentPage === totalPages}
           className="disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -124,3 +126,35 @@ export default function Pagination({
     </div>
   );
 }
+
+const PageButton = memo(function PageButton({
+  pageNum,
+  isActive,
+  onPageChange,
+}: {
+  pageNum: number;
+  isActive: boolean;
+  onPageChange: (page: number) => void;
+}) {
+  const handleClick = useCallback(() => {
+    onPageChange(pageNum);
+  }, [onPageChange, pageNum]);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`min-w-[2.5rem] h-10 px-3 rounded-lg text-sm font-medium transition-colors ${
+        isActive
+          ? 'bg-black text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+      }`}
+      aria-label={`Go to page ${pageNum}`}
+      aria-current={isActive ? 'page' : undefined}
+    >
+      {pageNum}
+    </button>
+  );
+});
+
+const Pagination = memo(PaginationComponent);
+export default Pagination;

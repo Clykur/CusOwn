@@ -1,175 +1,44 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import {
-  UI_BOOKING_STATE,
-  UI_CONTEXT,
-  UI_CUSTOMER,
-  UI_ERROR_CONTEXT,
-  ERROR_MESSAGES,
-} from '@/config/constants';
+import { UI_CUSTOMER, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
 import { env } from '@/config/env';
-import { formatDate, formatTime } from '@/lib/utils/string';
-import RescheduleButton from '@/components/booking/reschedule-button';
-import { ROUTES, getSecureSalonUrlClient } from '@/lib/utils/navigation';
-import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { ROUTES } from '@/lib/utils/navigation';
+import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingStatusSkeleton } from '@/components/ui/skeleton';
-import { supabaseAuth } from '@/lib/supabase/auth';
-import WarningIcon from '@/src/icons/warning.svg';
-import CheckIcon from '@/src/icons/check.svg';
-import ClockIcon from '@/src/icons/clock.svg';
-import BusinessesIcon from '@/src/icons/businesses.svg';
-import BookingsIcon from '@/src/icons/bookings.svg';
-import ProfileIcon from '@/src/icons/profile.svg';
 import RefreshIcon from '@/src/icons/refresh.svg';
-import StarRating from '@/components/booking/star-rating';
 import { useBookingStatusPolling } from '@/lib/hooks/use-booking-status-polling';
+import {
+  useBookingData,
+  BookingStatusBanner,
+  BusinessDetailsCard,
+  AppointmentDetailsCard,
+  CustomerDetailsCard,
+  BookingActions,
+} from '@/components/booking/booking-status';
 
 export default function BookingStatusPage() {
   const params = useParams();
   const bookingId = typeof params?.bookingId === 'string' ? params.bookingId : '';
-  const [booking, setBooking] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [cancelling, setCancelling] = useState(false);
-  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
-  const [salonSecureUrl, setSalonSecureUrl] = useState<string>('');
-  const [secureBookingUrls, setSecureBookingUrls] = useState<Map<string, string>>(new Map());
-  const [refreshingStatus, setRefreshingStatus] = useState(false);
-  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
-  const [whatsappMessage, setWhatsappMessage] = useState<string | null>(null);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState('');
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const {
+    booking,
+    setBooking,
+    loading,
+    error,
+    availableSlots,
+    refreshingStatus,
+    whatsappUrl,
+    handleRefreshStatus,
+    refreshBookingSilent,
+    fetchBooking,
+  } = useBookingData({ bookingId });
 
   useEffect(() => {
-    // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
   }, []);
-
-  useEffect(() => {
-    if (!bookingId) return;
-    fetchBooking();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingId]);
-
-  // Refetch when user returns to the tab so status updates (e.g. owner undo) are visible
-  useEffect(() => {
-    if (!bookingId || !booking) return;
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') fetchBooking({ silent: true });
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingId, booking]);
-
-  const handleRefreshStatus = async () => {
-    if (refreshingStatus || !bookingId) return;
-    setRefreshingStatus(true);
-    await fetchBooking({ silent: true });
-    setRefreshingStatus(false);
-  };
-
-  const fetchBooking = async (options?: { silent?: boolean }) => {
-    const silent = options?.silent === true;
-    // Extract token from URL if present (for secure access)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-
-    if (!silent) setLoading(true);
-    try {
-      // Build URL with token if available
-      let url = `/api/bookings/booking-id/${bookingId}`;
-      if (token) {
-        url += `?token=${encodeURIComponent(token)}`;
-      }
-
-      // If token is missing and bookingId is a UUID, try to generate secure URL
-      if (
-        !token &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId)
-      ) {
-        try {
-          const { getSecureBookingStatusUrlClient } = await import('@/lib/utils/navigation');
-          const secureUrl = await getSecureBookingStatusUrlClient(bookingId);
-          // Redirect to secure URL
-          window.location.href = secureUrl;
-          return;
-        } catch (urlError) {
-          console.error('Failed to generate secure URL:', urlError);
-        }
-      }
-
-      const {
-        data: { session },
-      } = await supabaseAuth.auth.getSession();
-
-      const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const response = await fetch(url, {
-        credentials: 'include',
-        cache: 'no-store',
-        headers: Object.keys(headers).length > 0 ? headers : undefined,
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Booking not found');
-      }
-
-      if (result.success && result.data) {
-        setBooking(result.data);
-
-        // Generate secure URL for this booking
-        try {
-          const { getSecureBookingStatusUrlClient } = await import('@/lib/utils/navigation');
-          const secureUrl = await getSecureBookingStatusUrlClient(result.data.booking_id);
-          setSecureBookingUrls(new Map([[result.data.booking_id, secureUrl]]));
-        } catch (urlError) {
-          console.error('Failed to generate secure booking URL:', urlError);
-        }
-
-        if (result.data.salon && result.data.slot) {
-          fetchAvailableSlots(result.data.salon.id, result.data.slot.date);
-        }
-        // Generate secure URL for salon
-        if (result.data.salon?.id) {
-          getSecureSalonUrlClient(result.data.salon.id)
-            .then((url) => setSalonSecureUrl(url))
-            .catch(() => {});
-        }
-
-        // Request server-derived WhatsApp link (no query params used)
-        try {
-          const wRes = await fetch(`/api/bookings/${result.data.booking_id}/whatsapp`, {
-            credentials: 'include',
-          });
-          const wj = await wRes.json();
-          if (wj?.success && wj?.data?.whatsapp_url) setWhatsappUrl(wj.data.whatsapp_url);
-        } catch (e) {
-          // ignore — non-fatal
-        }
-      }
-    } catch (err) {
-      if (!silent) setError(err instanceof Error ? err.message : 'Failed to load booking');
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
-
-  const refreshBookingSilent = useCallback(
-    () => fetchBooking({ silent: true }),
-    // bookingId change is what matters for polling; fetchBooking is stable within this component.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bookingId]
-  );
 
   useBookingStatusPolling({
     bookingId,
@@ -177,69 +46,12 @@ export default function BookingStatusPage() {
     refresh: refreshBookingSilent,
     isEnabled: Boolean(bookingId),
     onTransition: (event) => {
-      // Keep UI simple for now; the status banner already reflects latest state.
-      // This callback can later be wired to toasts or analytics.
-      // eslint-disable-next-line no-console
       console.info('[booking-status] transition', event.type, {
         previousStatus: event.previous.status,
         currentStatus: event.current.status,
       });
     },
   });
-
-  const fetchAvailableSlots = async (businessId: string, date: string) => {
-    try {
-      const response = await fetch(`/api/slots?salon_id=${businessId}&date=${date}`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        const slotsArr = Array.isArray(result.data) ? result.data : (result.data.slots ?? []);
-        setAvailableSlots(slotsArr);
-      }
-    } catch (err) {
-      console.error('Failed to fetch slots:', err);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (cancelling) return;
-    if (isCancellationTooLate) return;
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-
-    setCancelling(true);
-    try {
-      const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
-      const response = await fetch(`/api/bookings/${booking.id}/cancel`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ cancelled_by: 'customer' }),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to cancel booking');
-      }
-
-      // Optimistic state update
-      setBooking((prev: any) => ({
-        ...prev,
-        status: 'cancelled',
-        cancelled_by: 'customer',
-        cancelled_at: new Date().toISOString(),
-      }));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to cancel booking');
-      clearCSRFToken();
-    } finally {
-      setCancelling(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -270,56 +82,27 @@ export default function BookingStatusPage() {
     );
   }
 
-  const getStatusMessage = (status: string) => {
-    if (status === 'confirmed' && booking.no_show) return UI_BOOKING_STATE.NO_SHOW;
-    switch (status) {
-      case 'confirmed':
-        return UI_BOOKING_STATE.CONFIRMED;
-      case 'pending':
-        return UI_BOOKING_STATE.PENDING;
-      case 'rejected':
-        return UI_BOOKING_STATE.REJECTED;
-      case 'cancelled':
-        return booking.cancelled_by === 'system'
-          ? UI_BOOKING_STATE.EXPIRED
-          : UI_BOOKING_STATE.CANCELLED;
-      default:
-        return status;
-    }
-  };
-
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
+  const cancellationMinHoursMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
 
-  const canCancelByStatus = booking.status === 'confirmed' || booking.status === 'pending';
-  const appointmentDateTime = (() => {
-    if (!booking?.slot?.date || !booking?.slot?.start_time) return null;
-    const startTimeRaw = String(booking.slot.start_time);
-    const startTime = startTimeRaw.includes('T')
-      ? new Date(startTimeRaw)
-      : new Date(`${booking.slot.date}T${startTimeRaw}`);
-    const timeMs = startTime.getTime();
-    if (!Number.isFinite(timeMs)) return null;
-    return startTime;
-  })();
-  const msUntilAppointment = appointmentDateTime
-    ? appointmentDateTime.getTime() - Date.now()
-    : Number.POSITIVE_INFINITY;
-  const minCancellationWindowMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
-  const isCancellationTooLate =
-    canCancelByStatus &&
-    Number.isFinite(msUntilAppointment) &&
-    msUntilAppointment < minCancellationWindowMs;
-  const canCancel = canCancelByStatus;
+  const handleCancelled = () => {
+    setBooking((prev: any) => ({
+      ...prev,
+      status: 'cancelled',
+      cancelled_by: 'customer',
+      cancelled_at: new Date().toISOString(),
+    }));
+  };
 
   return (
     <div className="w-full pb-24 flex flex-col gap-8">
       <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <h1 className="text-xl font-semibold text-slate-900">
               {UI_CUSTOMER.HEADER_BOOKING_DETAILS}
             </h1>
-
             <button
               type="button"
               onClick={handleRefreshStatus}
@@ -349,200 +132,32 @@ export default function BookingStatusPage() {
           </div>
         </div>
 
-        <div
-          className={`px-6 py-4 rounded-xl mb-8 border-2 ${
-            isNoShow
-              ? 'bg-amber-50 border-amber-200 text-amber-800'
-              : booking.status === 'confirmed'
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : booking.status === 'pending'
-                  ? 'bg-amber-50 border-amber-200 text-amber-800'
-                  : booking.status === 'rejected'
-                    ? 'bg-red-50 border-red-200 text-red-800'
-                    : 'bg-slate-50 border-slate-200 text-slate-800'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {isNoShow ? (
-              <WarningIcon className="w-6 h-6 shrink-0" aria-hidden="true" />
-            ) : booking.status === 'confirmed' ? (
-              <CheckIcon className="w-6 h-6" aria-hidden="true" />
-            ) : booking.status === 'pending' ? (
-              <ClockIcon className="w-6 h-6" aria-hidden="true" />
-            ) : null}
-            <p className="font-bold text-lg">{getStatusMessage(booking.status)}</p>
-          </div>
-        </div>
+        <BookingStatusBanner
+          status={booking.status}
+          isNoShow={isNoShow}
+          cancelledBy={booking.cancelled_by}
+        />
 
+        {/* Details grid */}
         <div className="grid gap-6 md:grid-cols-2 mb-8">
-          {booking.salon && (
-            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <BusinessesIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
-                Business Details
-              </h2>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                    Business Name
-                  </p>
-                  <p className="font-semibold text-slate-900">{booking.salon.salon_name}</p>
-                </div>
-                {booking.salon.location && (
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Location</p>
-                    <p className="text-slate-700">{booking.salon.location}</p>
-                  </div>
-                )}
-                {booking.salon.address && (
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Address</p>
-                    <p className="text-sm text-slate-600">{booking.salon.address}</p>
-                  </div>
-                )}
-                {((booking.salon.review_count ?? 0) > 0 || booking.salon.rating_avg != null) && (
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                      {UI_CUSTOMER.LABEL_BUSINESS_RATING}
-                    </p>
-                    <p className="font-semibold text-slate-900">
-                      {UI_CONTEXT.BUSINESS_RATING_REVIEWS(
-                        (booking.salon.rating_avg ?? 0).toFixed(1),
-                        booking.salon.review_count ?? 0
-                      )}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
+          {booking.salon && <BusinessDetailsCard salon={booking.salon} />}
           {booking.slot && (
-            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <BookingsIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
-                Appointment Details
-              </h2>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Date</p>
-                  <p className="font-semibold text-slate-900">{formatDate(booking.slot.date)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Time</p>
-                  <p className="font-semibold text-slate-900">
-                    {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
-                  </p>
-                </div>
-                {/* Rating: show in detail when exists, or form to submit when confirmed and not yet rated */}
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                    {UI_CUSTOMER.LABEL_YOUR_RATING}
-                  </p>
-                  {booking.review ? (
-                    <div className="space-y-2">
-                      <StarRating value={booking.review.rating} readonly size="md" />
-                      <p className="text-sm font-semibold text-slate-900">
-                        {booking.review.rating} out of 5
-                      </p>
-                      {booking.review.comment && (
-                        <p className="text-sm text-slate-600 mt-2 p-3 bg-slate-100 rounded-lg">
-                          {booking.review.comment}
-                        </p>
-                      )}
-                    </div>
-                  ) : booking.status === 'confirmed' ? (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        if (reviewRating < 1 || reviewRating > 5) return;
-                        setReviewError(null);
-                        setSubmittingReview(true);
-                        try {
-                          const res = await fetch('/api/reviews', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                              booking_id: booking.id,
-                              rating: reviewRating,
-                              comment: reviewComment.trim() || undefined,
-                            }),
-                          });
-                          const data = await res.json();
-                          if (!res.ok) {
-                            setReviewError(data?.error || 'Failed to submit rating');
-                            return;
-                          }
-                          setReviewRating(0);
-                          setReviewComment('');
-                          await fetchBooking({ silent: true });
-                        } catch {
-                          setReviewError(ERROR_MESSAGES.DATABASE_ERROR);
-                        } finally {
-                          setSubmittingReview(false);
-                        }
-                      }}
-                      className="space-y-3"
-                    >
-                      <p className="text-sm text-slate-600 mb-2">{UI_CUSTOMER.RATE_YOUR_VISIT}</p>
-                      <StarRating
-                        value={reviewRating}
-                        readonly={false}
-                        size="md"
-                        onChange={setReviewRating}
-                        disabled={submittingReview}
-                      />
-                      <label className="block">
-                        <span className="text-xs text-slate-500 uppercase tracking-wide">
-                          {UI_CUSTOMER.ADD_COMMENT_OPTIONAL}
-                        </span>
-                        <textarea
-                          value={reviewComment}
-                          onChange={(e) => setReviewComment(e.target.value)}
-                          disabled={submittingReview}
-                          rows={3}
-                          className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:opacity-50"
-                          placeholder="Share your experience..."
-                        />
-                      </label>
-                      {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
-                      <button
-                        type="submit"
-                        disabled={submittingReview || reviewRating < 1}
-                        className="px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      >
-                        {submittingReview
-                          ? UI_CUSTOMER.SUBMITTING_RATING
-                          : UI_CUSTOMER.SUBMIT_RATING}
-                      </button>
-                    </form>
-                  ) : (
-                    <p className="text-sm text-slate-500">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <AppointmentDetailsCard
+              slot={booking.slot}
+              review={booking.review}
+              status={booking.status}
+              bookingId={booking.id}
+              onReviewSubmitted={() => fetchBooking({ silent: true })}
+            />
           )}
         </div>
 
-        <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 mb-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <ProfileIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
-            Your Details
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Name</p>
-              <p className="font-semibold text-slate-900">{booking.customer_name}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Phone</p>
-              <p className="font-semibold text-slate-900">{booking.customer_phone}</p>
-            </div>
-          </div>
-        </div>
+        <CustomerDetailsCard
+          customerName={booking.customer_name}
+          customerPhone={booking.customer_phone}
+        />
 
+        {/* Cancellation details */}
         {booking.cancelled_at && (
           <div className="mb-6 bg-slate-100 p-4 rounded-xl">
             <p className="font-medium text-slate-900">Cancellation Details</p>
@@ -561,47 +176,13 @@ export default function BookingStatusPage() {
           </div>
         )}
 
-        {canCancel && (
-          <div className="mb-6 space-y-3">
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={cancelling || isCancellationTooLate}
-              title={isCancellationTooLate ? ERROR_MESSAGES.CANCELLATION_TOO_LATE : undefined}
-              className="w-full bg-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {cancelling ? 'Cancelling...' : 'Cancel Booking'}
-            </button>
-            {isCancellationTooLate && (
-              <p className="text-sm text-slate-500">{ERROR_MESSAGES.CANCELLATION_TOO_LATE}</p>
-            )}
-            {booking.slot && booking.salon && availableSlots.length > 0 && !booking.no_show && (
-              <div className="flex justify-center">
-                <RescheduleButton
-                  bookingId={booking.id}
-                  currentSlot={booking.slot}
-                  businessId={booking.business_id}
-                  availableSlots={availableSlots}
-                  onRescheduled={() => {
-                    // Refetch booking to get updated slot data after reschedule
-                    fetchBooking({ silent: true });
-                  }}
-                  rescheduledBy="customer"
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-200">
-          <Link
-            href={ROUTES.CUSTOMER_DASHBOARD}
-            className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-slate-100 text-slate-800 font-semibold py-3 px-6 rounded-xl hover:bg-slate-200 transition-all"
-          >
-            <BookingsIcon className="w-5 h-5" aria-hidden="true" />
-            {UI_CUSTOMER.NAV_MY_ACTIVITY}
-          </Link>
-        </div>
+        <BookingActions
+          booking={booking}
+          availableSlots={availableSlots}
+          cancellationMinHoursMs={cancellationMinHoursMs}
+          onCancelled={handleCancelled}
+          onRescheduled={() => fetchBooking({ silent: true })}
+        />
       </div>
     </div>
   );

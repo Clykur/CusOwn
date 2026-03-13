@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, ChangeEvent, memo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ export default function CustomerSalonListPage() {
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const handleUseMyLocation = () => {
+  const handleUseMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser');
       return;
@@ -35,7 +35,6 @@ export default function CustomerSalonListPage() {
 
     setLoading(true);
 
-    // Fallback function for IP-based geolocation
     const fallbackToIp = async () => {
       try {
         const res = await fetch('/api/geo/ip');
@@ -45,7 +44,6 @@ export default function CustomerSalonListPage() {
         if (result.success && result.data) {
           const { latitude, longitude, city } = result.data;
 
-          // If we have coordinates, use them
           if (
             typeof latitude === 'number' &&
             typeof longitude === 'number' &&
@@ -53,7 +51,6 @@ export default function CustomerSalonListPage() {
           ) {
             setUserLocation({ lat: latitude, lng: longitude });
 
-            // Persist location (approximate from IP)
             await fetch('/api/user/location', {
               method: 'POST',
               body: JSON.stringify({
@@ -66,7 +63,6 @@ export default function CustomerSalonListPage() {
             return;
           }
 
-          // If no coordinates but we have a city, search by city
           if (city) {
             setSelectedLocation(city);
             setLoading(false);
@@ -78,7 +74,6 @@ export default function CustomerSalonListPage() {
       } catch (e) {
         console.error('IP fallback failed:', e);
         setLoading(false);
-        // Don't show blocking alert, just let them use manual search
       }
     };
 
@@ -88,7 +83,6 @@ export default function CustomerSalonListPage() {
         setUserLocation({ lat: latitude, lng: longitude });
         setLoading(false);
 
-        // Persist location in background (non-blocking)
         try {
           await fetch('/api/user/location', {
             method: 'POST',
@@ -101,14 +95,12 @@ export default function CustomerSalonListPage() {
       async (err) => {
         console.warn('Geolocation error:', err);
 
-        // Code 3 is timeout, Code 2 is position unavailable
         if (err.code === 3 || err.code === 2) {
           await fallbackToIp();
         } else {
           setLoading(false);
-          // Handle specific geolocation error codes
           switch (err.code) {
-            case 1: // PERMISSION_DENIED
+            case 1:
               alert(
                 'Geolocation permission denied. Please enable location access in your browser settings to use this feature.'
               );
@@ -119,12 +111,35 @@ export default function CustomerSalonListPage() {
         }
       },
       {
-        timeout: 6000, // Reduced timeout to 6s for better UX with fallback
-        maximumAge: 300000, // Cache location for 5 minutes
-        enableHighAccuracy: false, // Don't force GPS if not needed, faster for desktop
+        timeout: 6000,
+        maximumAge: 300000,
+        enableHighAccuracy: false,
       }
     );
-  };
+  }, []);
+
+  const handleSearchChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleLocationChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedLocation(e.target.value);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('');
+    setSelectedLocation('');
+    setUserLocation(null);
+  }, []);
+
+  const handleClearSearchFilters = useCallback(() => {
+    setSearchTerm('');
+    setSelectedLocation('');
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
 
   const filteredSalons = useMemo(() => {
     let filtered = allSalons;
@@ -289,7 +304,7 @@ export default function CustomerSalonListPage() {
               type="text"
               placeholder={UI_CUSTOMER.SEARCH_PLACEHOLDER}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-10"
             />
           </div>
@@ -299,7 +314,7 @@ export default function CustomerSalonListPage() {
             </div>
             <select
               value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
+              onChange={handleLocationChange}
               disabled={locationsLoading}
               className="flex h-10 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
             >
@@ -333,11 +348,7 @@ export default function CustomerSalonListPage() {
             </span>
             {(searchTerm || selectedLocation || userLocation) && (
               <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedLocation('');
-                  setUserLocation(null);
-                }}
+                onClick={handleClearFilters}
                 className="text-sm text-slate-900 hover:text-slate-700 font-medium underline ml-2"
               >
                 {UI_CUSTOMER.CTA_ADJUST_FILTERS}
@@ -378,10 +389,7 @@ export default function CustomerSalonListPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {(searchTerm || selectedLocation) && (
               <Button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedLocation('');
-                }}
+                onClick={handleClearSearchFilters}
                 className="bg-slate-900 text-white hover:bg-slate-800 rounded-xl"
               >
                 {UI_CUSTOMER.CTA_ADJUST_FILTERS}
@@ -406,7 +414,7 @@ export default function CustomerSalonListPage() {
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
             totalItems={filteredSalons.length}
             itemsPerPage={ITEMS_PER_PAGE}
           />

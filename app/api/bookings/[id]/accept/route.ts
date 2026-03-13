@@ -24,6 +24,7 @@ import { auditService } from '@/services/audit.service';
 import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 import { logStructured } from '@/lib/observability/structured-log';
+import { enqueueScheduleReminders, isQueueAvailable } from '@/lib/queue';
 
 const acceptRateLimit = enhancedRateLimit({
   maxRequests: 10,
@@ -149,7 +150,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         )
       : undefined;
 
-    await reminderService.scheduleBookingReminders(id);
+    // Schedule reminders via queue (background) or directly
+    if (isQueueAvailable()) {
+      void enqueueScheduleReminders(id);
+    } else {
+      await reminderService.scheduleBookingReminders(id);
+    }
 
     // SECURITY: Log mutation for audit
     if (user) {

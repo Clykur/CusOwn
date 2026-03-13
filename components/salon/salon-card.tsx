@@ -1,13 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useMemo } from 'react';
 import Link from 'next/link';
 import { Salon } from '@/types';
 import { getSecureSalonUrlClient } from '@/lib/utils/navigation';
 import { isValidUUID } from '@/lib/utils/security';
+import { getCachedReviews, getReviewsFromCache } from '@/lib/cache/reviews-cache';
 import MapPinIcon from '@/src/icons/map-pin.svg';
 import ClockIcon from '@/src/icons/clock.svg';
 import StarRating from '@/components/booking/star-rating';
+
+const formatTime = (time: string) => time.substring(0, 5);
+
+const formatDuration = (minutes: number) => {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+};
 
 interface SalonCardProps {
   salon: Salon & {
@@ -16,7 +26,7 @@ interface SalonCardProps {
   };
 }
 
-export default function SalonCard({ salon }: SalonCardProps) {
+function SalonCardComponent({ salon }: SalonCardProps) {
   const bookingLink = salon?.booking_link;
 
   const [secureUrl, setSecureUrl] = useState<string>(
@@ -67,43 +77,36 @@ export default function SalonCard({ salon }: SalonCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon?.id, bookingLink]);
 
-  // Fallback: fetch from reviews API if rating_avg not in salon prop
   useEffect(() => {
     if (!salon?.id || ratingAvg !== null) return;
 
     let cancelled = false;
 
-    const loadReviews = async () => {
-      try {
-        const res = await fetch(`/api/reviews?business_id=${salon.id}`);
-        const result = await res.json();
+    const cached = getReviewsFromCache(salon.id);
+    if (cached) {
+      setRatingAvg(cached.rating_avg);
+      return;
+    }
 
-        if (!cancelled && result?.success && result?.data) {
-          const avg = Number(result.data.rating_avg ?? 0);
-          setRatingAvg(avg);
-        }
-      } catch {
-        if (!cancelled) {
-          setRatingAvg(0);
-        }
+    getCachedReviews(salon.id).then((data) => {
+      if (!cancelled && data) {
+        setRatingAvg(data.rating_avg);
+      } else if (!cancelled) {
+        setRatingAvg(0);
       }
-    };
-
-    loadReviews();
+    });
 
     return () => {
       cancelled = true;
     };
   }, [salon?.id, ratingAvg]);
 
-  const formatTime = (time: string) => time.substring(0, 5);
-
-  const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-  };
+  const mapsUrl = useMemo(() => {
+    if (salon.latitude && salon.longitude) {
+      return `https://www.google.com/maps/search/?api=1&query=${salon.latitude},${salon.longitude}`;
+    }
+    return null;
+  }, [salon.latitude, salon.longitude]);
 
   return (
     <div className="group relative bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-black hover:shadow-xl transition-all duration-200 h-full flex flex-col">
@@ -148,9 +151,9 @@ export default function SalonCard({ salon }: SalonCardProps) {
               {salon.address}
             </p>
 
-            {salon.latitude && salon.longitude && (
+            {mapsUrl && (
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${salon.latitude},${salon.longitude}`}
+                href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[10px] text-blue-600 hover:underline inline-flex items-center gap-1"
@@ -201,3 +204,13 @@ export default function SalonCard({ salon }: SalonCardProps) {
     </div>
   );
 }
+
+const SalonCard = memo(SalonCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.salon.id === nextProps.salon.id &&
+    prevProps.salon.rating_avg === nextProps.salon.rating_avg &&
+    prevProps.salon.distance_km === nextProps.salon.distance_km
+  );
+});
+
+export default SalonCard;

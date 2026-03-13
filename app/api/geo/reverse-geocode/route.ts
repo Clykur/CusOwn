@@ -16,6 +16,12 @@ import {
   GEO_CACHE_MAX_AGE_SECONDS,
 } from '@/config/constants';
 import { validateCoordinates } from '@/lib/utils/geo';
+import {
+  buildApiRedisKeyFromPath,
+  getApiRedisCache,
+  setApiRedisCache,
+  API_REDIS_TTL,
+} from '@/lib/cache/api-redis-cache';
 
 const geoRateLimit = enhancedRateLimit({
   maxRequests: GEO_RATE_LIMIT_MAX_PER_WINDOW,
@@ -48,12 +54,33 @@ export async function GET(request: NextRequest) {
     return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
   }
 
+  // Check Redis cache first (reverse geocode results are highly cacheable)
+  const redisKey = buildApiRedisKeyFromPath('/api/geo/reverse-geocode', {
+    latitude: latitude.toFixed(6),
+    longitude: longitude.toFixed(6),
+  });
+  const redisCached = await getApiRedisCache<{
+    city: string;
+    region: string;
+    countryCode: string;
+    countryName: string;
+    latitude: number;
+    longitude: number;
+    address_line1?: string;
+    postal_code?: string;
+  }>(redisKey);
+  if (redisCached) {
+    const response = successResponse(redisCached);
+    setCacheHeaders(response, GEO_CACHE_MAX_AGE_SECONDS, GEO_CACHE_MAX_AGE_SECONDS * 2);
+    return response;
+  }
+
   const data = await geolocationService.reverseGeocode(latitude, longitude);
   if (!data) {
     return errorResponse(ERROR_MESSAGES.GEO_SERVICE_UNAVAILABLE, 503);
   }
 
-  const response = successResponse({
+  const responseData = {
     city: data.city || data.locality,
     region: data.state || data.principalSubdivision,
     countryCode: data.countryCode,
@@ -62,7 +89,12 @@ export async function GET(request: NextRequest) {
     longitude: data.longitude,
     address_line1: data.address_line1,
     postal_code: data.postal_code,
-  });
+  };
+
+  // Cache in Redis (geo data changes rarely)
+  await setApiRedisCache(redisKey, responseData, API_REDIS_TTL.GEO);
+
+  const response = successResponse(responseData);
   setCacheHeaders(response, GEO_CACHE_MAX_AGE_SECONDS, GEO_CACHE_MAX_AGE_SECONDS * 2);
   return response;
 }

@@ -3,11 +3,13 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import { Suspense } from 'react';
 import { AnalyticsClient } from '@/components/analytics-client';
+import { PerformanceMonitor } from '@/components/performance-monitor';
 import { AuthFlowDebug } from '@/components/auth/auth-flow-debug';
+import { env } from '@/config/env';
 import './globals.css';
 import '@/lib/init/events';
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = env.nodeEnv === 'development';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -36,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
         {children}
         <AnalyticsClient />
+        <PerformanceMonitor enableDevTools={isDev} sampleRate={isDev ? 1.0 : 0.1} />
       </body>
     </html>
   );

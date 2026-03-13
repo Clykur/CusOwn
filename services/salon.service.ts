@@ -5,6 +5,13 @@ import { ERROR_MESSAGES } from '@/config/constants';
 import { logStructured } from '@/lib/observability/structured-log';
 import { slotService } from './slot.service';
 import { cache } from 'react';
+import {
+  buildQueryCacheKey,
+  withQueryCache,
+  invalidateBusinessProfileCache,
+  QUERY_CACHE_TTL,
+  QUERY_CACHE_PREFIX,
+} from '@/lib/cache/query-cache';
 
 export class SalonService {
   async createSalon(data: CreateSalonInput, ownerUserId?: string): Promise<Salon> {
@@ -96,51 +103,20 @@ export class SalonService {
   }
 
   getSalonByBookingLink = cache(async (bookingLink: string): Promise<Salon | null> => {
-    const supabaseAdmin = requireSupabaseAdmin();
-    const { data, error } = await supabaseAdmin
-      .from('businesses')
-      .select(
-        'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code'
-      )
-      .eq('booking_link', bookingLink)
-      .eq('suspended', false)
-      .is('deleted_at', null)
-      .single();
+    // Build cache key for business by booking link
+    const cacheKey = buildQueryCacheKey(`${QUERY_CACHE_PREFIX.BUSINESS}link:`, bookingLink, {});
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
-    }
-
-    return data;
-  });
-
-  getSalonById = cache(
-    async (
-      salonId: string,
-      includeSuspended = false,
-      includeDeleted = false
-    ): Promise<Salon | null> => {
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.BUSINESS_PROFILE, async () => {
       const supabaseAdmin = requireSupabaseAdmin();
-      let query = supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from('businesses')
         .select(
-          'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, rating_avg, review_count'
+          'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code'
         )
-        .eq('id', salonId);
-
-      if (!includeSuspended) {
-        query = query.eq('suspended', false);
-      }
-
-      // Filter out soft-deleted businesses unless explicitly requested (admin use)
-      if (!includeDeleted) {
-        query = query.is('deleted_at', null);
-      }
-
-      const { data, error } = await query.single();
+        .eq('booking_link', bookingLink)
+        .eq('suspended', false)
+        .is('deleted_at', null)
+        .single();
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -150,6 +126,50 @@ export class SalonService {
       }
 
       return data;
+    });
+  });
+
+  getSalonById = cache(
+    async (
+      salonId: string,
+      includeSuspended = false,
+      includeDeleted = false
+    ): Promise<Salon | null> => {
+      // Build cache key for business by ID
+      const cacheKey = buildQueryCacheKey(`${QUERY_CACHE_PREFIX.BUSINESS}id:`, salonId, {
+        includeSuspended,
+        includeDeleted,
+      });
+
+      return withQueryCache(cacheKey, QUERY_CACHE_TTL.BUSINESS_PROFILE, async () => {
+        const supabaseAdmin = requireSupabaseAdmin();
+        let query = supabaseAdmin
+          .from('businesses')
+          .select(
+            'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, rating_avg, review_count'
+          )
+          .eq('id', salonId);
+
+        if (!includeSuspended) {
+          query = query.eq('suspended', false);
+        }
+
+        // Filter out soft-deleted businesses unless explicitly requested (admin use)
+        if (!includeDeleted) {
+          query = query.is('deleted_at', null);
+        }
+
+        const { data, error } = await query.single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            return null;
+          }
+          throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+        }
+
+        return data;
+      });
     }
   );
 }

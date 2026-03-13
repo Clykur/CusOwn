@@ -270,7 +270,7 @@ export class AdminService {
       ...new Set(businesses.map((b) => b.owner_user_id).filter(Boolean)),
     ] as string[];
 
-    const [profilesRes, bookingCountsRes, recentBookingsRes, ...authUsers] = await Promise.all([
+    const [profilesRes, bookingCountsRes, recentBookingsRes, authUsersRes] = await Promise.all([
       ownerIds.length > 0
         ? supabase.from('user_profiles').select('id, user_type, full_name').in('id', ownerIds)
         : Promise.resolve({ data: [] }),
@@ -281,7 +281,7 @@ export class AdminService {
         .in('business_id', businessIds)
         .order('created_at', { ascending: false })
         .limit(Math.min(500, businesses.length * 5)),
-      ...ownerIds.map((id) => supabase.auth.admin.getUserById(id)),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     ]);
 
     const profileMap = new Map<
@@ -317,12 +317,9 @@ export class AdminService {
     });
 
     const emailByOwnerId = new Map<string, string>();
-    authUsers.forEach((res: unknown, i: number) => {
-      const id = ownerIds[i];
-      const user = (res as { data?: { user?: { email?: string } | null } })?.data?.user;
-      if (id && user && typeof user === 'object' && 'email' in user)
-        emailByOwnerId.set(id, String((user as { email?: string }).email ?? ''));
-    });
+    for (const u of authUsersRes.data?.users ?? []) {
+      if (u.id && u.email) emailByOwnerId.set(u.id, u.email);
+    }
 
     return businesses.map((business) => {
       let owner: BusinessWithOwner['owner'] = null;
@@ -349,6 +346,7 @@ export class AdminService {
   /**
    * List users for admin auth management: email, role, created_at, last_sign_in_at, status.
    * Filters: role (user_type), status (active|banned), email (substring).
+   * Optimized to use batch auth user lookup via listUsers.
    */
   async getAuthManagementUsers(filters?: {
     limit?: number;
@@ -364,46 +362,43 @@ export class AdminService {
     let profileQuery = supabase
       .from('user_profiles')
       .select('*', { count: 'exact' })
-      //.is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (filters?.role) {
       profileQuery = profileQuery.eq('user_type', filters.role);
     }
 
-    const { data: profiles, error, count } = await profileQuery.range(offset, offset + limit - 1);
+    const [profilesRes, authUsersRes] = await Promise.all([
+      profileQuery.range(offset, offset + limit - 1),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
 
-    if (error) {
-      throw new Error(`Failed to fetch users: ${error.message}`);
+    if (profilesRes.error) {
+      throw new Error(`Failed to fetch users: ${profilesRes.error.message}`);
     }
 
-    if (!profiles?.length) {
-      return { users: [], total: count ?? 0 };
-    }
+    const profiles = profilesRes.data ?? [];
+    const count = profilesRes.count ?? 0;
 
-    const profileIds = profiles.map((p) => p.id);
-    const authResults = await Promise.all(
-      profileIds.map((id) => supabase.auth.admin.getUserById(id))
-    );
+    if (!profiles.length) {
+      return { users: [], total: count };
+    }
 
     const authById = new Map<
       string,
       { email: string; last_sign_in_at: string | null; banned: boolean }
     >();
-    authResults.forEach((res: unknown, i: number) => {
-      const id = profileIds[i];
-      const u = (res as { data?: { user?: Record<string, unknown> | null } })?.data?.user;
-      if (!id || !u) return;
-      const email = typeof u.email === 'string' ? u.email : '';
-      const lastSignIn =
-        typeof (u as { last_sign_in_at?: string }).last_sign_in_at === 'string'
-          ? (u as { last_sign_in_at: string }).last_sign_in_at
-          : null;
+    for (const u of authUsersRes.data?.users ?? []) {
+      if (!u.id) continue;
       const banned =
         typeof (u as { banned_until?: string }).banned_until === 'string' &&
         (u as { banned_until: string }).banned_until !== null;
-      authById.set(id, { email, last_sign_in_at: lastSignIn, banned });
-    });
+      authById.set(u.id, {
+        email: u.email ?? '',
+        last_sign_in_at: (u as { last_sign_in_at?: string }).last_sign_in_at ?? null,
+        banned,
+      });
+    }
 
     let combined = profiles.map((p) => {
       const auth = authById.get(p.id);
@@ -427,7 +422,7 @@ export class AdminService {
       combined = combined.filter((u) => u.email.toLowerCase().includes(term));
     }
 
-    return { users: combined, total: count ?? 0 };
+    return { users: combined, total: count };
   }
 
   async getAllUsers(options?: { limit?: number; offset?: number }): Promise<any[]> {
@@ -438,7 +433,6 @@ export class AdminService {
     const { data: profiles, error } = await supabase
       .from('user_profiles')
       .select('*')
-      //.is('deleted_at', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -450,44 +444,40 @@ export class AdminService {
 
     const profileIds = profiles.map((p) => p.id);
 
-    // Batch: all businesses for these owners
-    const { data: allBusinesses } = await supabase
-      .from('businesses')
-      .select('id, salon_name, booking_link, owner_user_id')
-      .in('owner_user_id', profileIds);
+    const [businessesRes, bookingRowsRes, authUsersRes] = await Promise.all([
+      supabase
+        .from('businesses')
+        .select('id, salon_name, booking_link, owner_user_id')
+        .in('owner_user_id', profileIds),
+      supabase.from('bookings').select('customer_user_id').in('customer_user_id', profileIds),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
+
     const businessesByOwner = new Map<string, any[]>();
-    for (const b of allBusinesses ?? []) {
+    for (const b of businessesRes.data ?? []) {
       const id = b.owner_user_id;
       if (!businessesByOwner.has(id)) businessesByOwner.set(id, []);
       businessesByOwner.get(id)!.push(b);
     }
 
-    // Batch: booking counts per customer
-    const { data: bookingRows } = await supabase
-      .from('bookings')
-      .select('customer_user_id')
-      .in('customer_user_id', profileIds);
     const countByCustomer = new Map<string, number>();
     for (const id of profileIds) countByCustomer.set(id, 0);
-    for (const row of bookingRows ?? []) {
+    for (const row of bookingRowsRes.data ?? []) {
       const id = row.customer_user_id;
       if (id != null) countByCustomer.set(id, (countByCustomer.get(id) ?? 0) + 1);
     }
 
-    // Auth email per profile (no batch API)
-    const usersWithDetails = await Promise.all(
-      profiles.map(async (profile) => {
-        const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-        return {
-          ...profile,
-          email: authUser?.user?.email ?? '',
-          businesses: businessesByOwner.get(profile.id) ?? [],
-          bookingCount: countByCustomer.get(profile.id) ?? 0,
-        };
-      })
-    );
+    const authEmailMap = new Map<string, string>();
+    for (const u of authUsersRes.data?.users ?? []) {
+      if (u.id && u.email) authEmailMap.set(u.id, u.email);
+    }
 
-    return usersWithDetails;
+    return profiles.map((profile) => ({
+      ...profile,
+      email: authEmailMap.get(profile.id) ?? '',
+      businesses: businessesByOwner.get(profile.id) ?? [],
+      bookingCount: countByCustomer.get(profile.id) ?? 0,
+    }));
   }
 
   /** Get a single user by id for admin user detail page. */
@@ -819,6 +809,71 @@ export class AdminService {
     }
     return map;
   }
+
+  /**
+   * Aggregated admin dashboard overview: combines metrics, trends, revenue, and system health
+   * into a single response to reduce parallel API calls (4 -> 1).
+   */
+  async getFullAdminOverview(days: number = 30): Promise<FullAdminOverview> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const endDate = new Date();
+
+    const dateRange = { startDate, endDate, days };
+
+    const [metrics, trends, revenueMetrics, overview] = await Promise.all([
+      this.getPlatformMetrics(),
+      this.getBookingTrends(days),
+      adminAnalyticsService.getRevenueMetrics(dateRange),
+      this.getAdminOverview(),
+    ]);
+
+    return {
+      metrics,
+      trends,
+      revenueSnapshot: {
+        totalRevenue: revenueMetrics.totalRevenue ?? 0,
+        revenueToday: revenueMetrics.revenueToday ?? 0,
+        revenueWeek: revenueMetrics.revenueWeek ?? 0,
+        revenueMonth: revenueMetrics.revenueMonth ?? 0,
+        paymentSuccessRate: revenueMetrics.paymentSuccessRate ?? 0,
+        failedPayments: revenueMetrics.failedPayments ?? 0,
+      },
+      overviewExtras: {
+        failedBookingsLast24h: overview.failedBookingsLast24h,
+        cronRunsLast24h: overview.cronRunsLast24h,
+        systemHealth: overview.systemHealth,
+      },
+    };
+  }
+}
+
+export interface FullAdminOverview {
+  metrics: PlatformMetrics;
+  trends: Array<{
+    date: string;
+    total: number;
+    confirmed: number;
+    rejected: number;
+  }>;
+  revenueSnapshot: {
+    totalRevenue: number;
+    revenueToday: number;
+    revenueWeek: number;
+    revenueMonth: number;
+    paymentSuccessRate: number;
+    failedPayments: number;
+  };
+  overviewExtras: {
+    failedBookingsLast24h: number;
+    cronRunsLast24h: number;
+    systemHealth: {
+      status: 'healthy' | 'unhealthy';
+      database: string;
+      cronExpireBookingsOk: boolean;
+      cronExpireBookingsLastRun: string | null;
+    };
+  };
 }
 
 export const adminService = new AdminService();

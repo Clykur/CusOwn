@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import NoShowButton from '@/components/booking/no-show-button';
 import { IconCheck, IconCross } from '@/components/ui/status-icons';
@@ -21,7 +21,7 @@ interface BookingCardProps {
   undoWindowMinutes?: number;
 }
 
-export default function BookingCard({
+function BookingCardComponent({
   booking,
   onAccept,
   onReject,
@@ -241,3 +241,16 @@ export default function BookingCard({
     </div>
   );
 }
+
+const BookingCard = memo(BookingCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.booking.id === nextProps.booking.id &&
+    prevProps.booking.status === nextProps.booking.status &&
+    prevProps.booking.no_show === nextProps.booking.no_show &&
+    prevProps.booking.undo_used_at === nextProps.booking.undo_used_at &&
+    prevProps.booking.updated_at === nextProps.booking.updated_at &&
+    prevProps.processingId === nextProps.processingId
+  );
+});
+
+export default BookingCard;

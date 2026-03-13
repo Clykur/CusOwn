@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import CustomerHeader from '@/components/customer/customer-header';
-import CustomerSidebar from '@/components/customer/customer-sidebar';
-import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
 import {
   CustomerSessionProvider,
   type CustomerInitialUser,
@@ -12,6 +11,14 @@ import {
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CUSTOMER } from '@/config/constants';
 import { env } from '@/config/env';
+
+const CustomerSidebar = dynamic(() => import('@/components/customer/customer-sidebar'), {
+  ssr: false,
+});
+
+const CustomerMobileBottomNav = dynamic(() => import('@/components/customer/mobile-bottom-nav'), {
+  ssr: false,
+});
 
 function getCustomerHeader(pathname: string): {
   title: string;

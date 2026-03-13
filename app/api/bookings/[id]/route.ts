@@ -80,8 +80,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const cacheKey = buildApiCacheKey('GET', `/api/bookings/${id}`);
     const cached = getCachedApiResponse<{ data: unknown }>(cacheKey);
-    const booking = cached
-      ? (cached.data as Awaited<ReturnType<typeof bookingService.getBookingByUuidWithDetails>>)
+    type BookingWithDetails = Awaited<
+      ReturnType<typeof bookingService.getBookingByUuidWithDetails>
+    >;
+    const booking: BookingWithDetails = cached
+      ? (cached.data as BookingWithDetails)
       : await dedupe(`booking:${id}`, () =>
           runWithTiming(
             `getBookingWithDetails:${id}`,
@@ -98,11 +101,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const ctx = await getAuthContext(request);
     if (ctx) {
-      const isCustomer = booking.customer_user_id === ctx.user.id;
+      const isCustomer = (booking as any).customer_user_id === ctx.user.id;
       let isOwner = false;
-      if (booking.business_id) {
+      const businessId = (booking as any).business_id;
+      if (businessId) {
         const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-        isOwner = userBusinesses.some((b) => b.id === booking.business_id);
+        isOwner = userBusinesses.some((b) => b.id === businessId);
       }
       const isAdmin = isAdminProfile(ctx.profile);
       if (!isCustomer && !isOwner && !isAdmin && !token) {

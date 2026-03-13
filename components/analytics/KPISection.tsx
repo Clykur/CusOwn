@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@tremor/react';
 
@@ -20,45 +21,61 @@ function formatPeakHour(value: string | null | undefined): string {
   return `${String(hour).padStart(2, '0')}:00`;
 }
 
-function KPICompactCard({ title, value }: { title: string; value: string }) {
+const KPICompactCard = memo(function KPICompactCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: string;
+}) {
   return (
     <Card className="rounded-xl border border-slate-200 p-3.5 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</p>
       <p className="mt-1.5 text-xl font-semibold text-slate-900">{value}</p>
     </Card>
   );
-}
+});
 
 type AdvancedAnalytics = {
   repeatCustomerPercentage: number;
   cancellationRate: number;
 };
 
-export default function KPISection({
+function KPISectionComponent({
   analytics,
   advanced,
 }: {
   analytics: any;
   advanced?: AdvancedAnalytics | null;
 }) {
-  const bookings = analytics?.totalBookings ?? 0;
-  const compactKpis = [
-    { title: 'Total Revenue', value: currency(analytics?.totalRevenueCents) },
-    { title: 'Total Bookings', value: String(bookings) },
-    { title: 'Conversion Rate', value: `${analytics?.conversionRate ?? 0}%` },
-    {
-      title: 'Avg Ticket Size',
-      value: currency(analytics?.averageTicketCents),
-    },
-    { title: 'No Show Rate', value: `${analytics?.noShowRate ?? 0}%` },
-    { title: 'Peak Hour', value: formatPeakHour(analytics?.peakHour) },
-    ...(advanced
-      ? [
-          { title: 'Repeat Customer %', value: `${advanced.repeatCustomerPercentage}%` },
-          { title: 'Cancellation Rate', value: `${advanced.cancellationRate}%` },
-        ]
-      : []),
-  ];
+  const memoizedKpis = useMemo(() => {
+    const bookings = analytics?.totalBookings ?? 0;
+    return [
+      { title: 'Total Revenue', value: currency(analytics?.totalRevenueCents) },
+      { title: 'Total Bookings', value: String(bookings) },
+      { title: 'Conversion Rate', value: `${analytics?.conversionRate ?? 0}%` },
+      {
+        title: 'Avg Ticket Size',
+        value: currency(analytics?.averageTicketCents),
+      },
+      { title: 'No Show Rate', value: `${analytics?.noShowRate ?? 0}%` },
+      { title: 'Peak Hour', value: formatPeakHour(analytics?.peakHour) },
+      ...(advanced
+        ? [
+            { title: 'Repeat Customer %', value: `${advanced.repeatCustomerPercentage}%` },
+            { title: 'Cancellation Rate', value: `${advanced.cancellationRate}%` },
+          ]
+        : []),
+    ];
+  }, [
+    analytics?.totalRevenueCents,
+    analytics?.totalBookings,
+    analytics?.conversionRate,
+    analytics?.averageTicketCents,
+    analytics?.noShowRate,
+    analytics?.peakHour,
+    advanced,
+  ]);
 
   return (
     <motion.div
@@ -67,10 +84,13 @@ export default function KPISection({
       transition={{ duration: 0.2 }}
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {compactKpis.map((kpi) => (
+        {memoizedKpis.map((kpi) => (
           <KPICompactCard key={kpi.title} title={kpi.title} value={kpi.value} />
         ))}
       </div>
     </motion.div>
   );
 }
+
+const KPISection = memo(KPISectionComponent);
+export default KPISection;

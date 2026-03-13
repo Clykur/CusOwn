@@ -2,8 +2,31 @@ import { NextRequest } from 'next/server';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { getCache, setCache, buildCacheKey, CACHE_PREFIX, CACHE_TTL } from '@/lib/cache/cache';
+
+interface DashboardStats {
+  totalBusinesses: number;
+  totalBookings: number;
+  confirmedBookings: number;
+  pendingBookings: number;
+  rejectedBookings: number;
+  cancelledBookings: number;
+  noShowCount: number;
+  conversionRate: number;
+  cancellationRate: number;
+  noShowRate: number;
+  recentBookings: Array<{
+    id: string;
+    booking_id: string;
+    status: string;
+    customer_name: string;
+    customer_phone: string;
+    created_at: string;
+    business_id: string;
+  }>;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,14 +36,28 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const fromDate = searchParams.get('fromDate');
-    const toDate = searchParams.get('toDate');
+    const fromDate = searchParams.get('fromDate') || '';
+    const toDate = searchParams.get('toDate') || '';
 
-    // Get all businesses for the user
+    const cacheKey = buildCacheKey(
+      CACHE_PREFIX.DASHBOARD,
+      'owner-stats',
+      user.id,
+      fromDate,
+      toDate
+    );
+
+    const { hit, data: cachedStats } = await getCache<DashboardStats>(cacheKey);
+    if (hit && cachedStats) {
+      const response = successResponse(cachedStats);
+      setCacheHeaders(response, CACHE_TTL.DASHBOARD, CACHE_TTL.DASHBOARD * 2);
+      return response;
+    }
+
     const businesses = await userService.getUserBusinesses(user.id);
 
     if (businesses.length === 0) {
-      return successResponse({
+      const emptyStats: DashboardStats = {
         totalBusinesses: 0,
         totalBookings: 0,
         confirmedBookings: 0,
@@ -32,12 +69,13 @@ export async function GET(request: NextRequest) {
         cancellationRate: 0,
         noShowRate: 0,
         recentBookings: [],
-      });
+      };
+      await setCache(cacheKey, emptyStats, CACHE_TTL.DASHBOARD);
+      return successResponse(emptyStats);
     }
 
     const businessIds = businesses.map((b) => b.id);
 
-    // Get all bookings across all businesses
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }
@@ -63,7 +101,7 @@ export async function GET(request: NextRequest) {
           slots.map((s) => s.id)
         );
       } else {
-        return successResponse({
+        const emptyStats: DashboardStats = {
           totalBusinesses: businesses.length,
           totalBookings: 0,
           confirmedBookings: 0,
@@ -75,7 +113,9 @@ export async function GET(request: NextRequest) {
           cancellationRate: 0,
           noShowRate: 0,
           recentBookings: [],
-        });
+        };
+        await setCache(cacheKey, emptyStats, CACHE_TTL.DASHBOARD);
+        return successResponse(emptyStats);
       }
     }
 
@@ -98,7 +138,6 @@ export async function GET(request: NextRequest) {
     const cancellationRate = totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
     const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
-    // Get recent bookings (last 10)
     const recentBookings = allBookings.slice(0, 10).map((booking) => ({
       id: booking.id,
       booking_id: booking.booking_id,
@@ -109,7 +148,7 @@ export async function GET(request: NextRequest) {
       business_id: booking.business_id,
     }));
 
-    const stats = {
+    const stats: DashboardStats = {
       totalBusinesses: businesses.length,
       totalBookings,
       confirmedBookings,
@@ -123,8 +162,10 @@ export async function GET(request: NextRequest) {
       recentBookings,
     };
 
+    await setCache(cacheKey, stats, CACHE_TTL.DASHBOARD);
+
     const response = successResponse(stats);
-    setNoCacheHeaders(response);
+    setCacheHeaders(response, CACHE_TTL.DASHBOARD, CACHE_TTL.DASHBOARD * 2);
     return response;
   } catch (error) {
     console.error('[OWNER_DASHBOARD_STATS] Error:', error);
