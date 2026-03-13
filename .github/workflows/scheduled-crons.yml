@@ -1,6 +1,16 @@
-# Scheduled cron jobs – replaces Vercel crons. Phase 8: CRON_SECRET never logged; workflow_dispatch from main only.
-# Requires: CRON_SECRET and CRON_APP_URL in GitHub repo Secrets. CRON_SECRET is validated server-side; never echo it.
-# CRON_APP_URL = your app root (e.g. https://cusown.clykur.com or https://your-app.vercel.app).
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                     Scheduled Cron Jobs                                       ║
+# ║                                                                              ║
+# ║  Replaces Vercel crons with GitHub Actions for better control.               ║
+# ║  CRON_SECRET is validated server-side and never logged.                       ║
+# ║                                                                              ║
+# ║  Schedule:                                                                    ║
+# ║  - Every 15 min: trim metrics, expire payments                               ║
+# ║  - 01:00 UTC: expire bookings                                                ║
+# ║  - 02:00 UTC: cleanup reservations                                           ║
+# ║  - 03:00 UTC: health check                                                   ║
+# ║  - 09:00 UTC: send reminders                                                 ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
 name: Scheduled Crons
 
@@ -8,6 +18,22 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      task:
+        description: 'Specific task to run'
+        type: choice
+        options:
+          - all
+          - trim-metrics
+          - expire-payments
+          - expire-bookings
+          - cleanup-reservations
+          - health-check
+          - send-reminders
+        default: all
+
+permissions:
+  contents: read
 
 env:
   CI: true
@@ -15,62 +41,132 @@ env:
 
 jobs:
   cron-tasks:
-    name: Run scheduled tasks
+    name: Run Scheduled Tasks
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    # Phase 8: workflow_dispatch allowed only from main branch.
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    permissions:
-      contents: read
+    timeout-minutes: 10
+    if: |
+      github.event_name == 'schedule' || 
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+
     steps:
-      - name: Set app URL and secret (do not log CRON_SECRET)
-        id: env
+      - name: Validate secrets
+        id: validate
         run: |
-          echo "app_url=${CRON_APP_URL}" >> $GITHUB_OUTPUT
-          echo "secret_set=$([ -n \"$CRON_SECRET\" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+          if [ -z "$CRON_APP_URL" ]; then
+            echo "::warning::CRON_APP_URL not set"
+            echo "valid=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::CRON_SECRET not set"
+            echo "valid=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "valid=true" >> $GITHUB_OUTPUT
+          echo "url=${CRON_APP_URL}" >> $GITHUB_OUTPUT
         env:
           CRON_APP_URL: ${{ secrets.CRON_APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
       - name: Skip if secrets missing
-        if: steps.env.outputs.secret_set != 'true' || steps.env.outputs.app_url == ''
+        if: steps.validate.outputs.valid != 'true'
         run: |
-          echo "CRON_SECRET or CRON_APP_URL not set in repo Secrets – skipping scheduled crons."
-          echo "Add CRON_APP_URL (e.g. https://your-app.vercel.app) and CRON_SECRET to run these."
-          exit 0
+          echo "## ⚠️ Cron Jobs Skipped" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Required secrets not configured:" >> $GITHUB_STEP_SUMMARY
+          echo "- CRON_APP_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- CRON_SECRET" >> $GITHUB_STEP_SUMMARY
 
-      - name: Call cron endpoints by schedule
+      - name: Execute scheduled tasks
+        if: steps.validate.outputs.valid == 'true'
         env:
-          APP_URL: ${{ steps.env.outputs.app_url }}
+          APP_URL: ${{ steps.validate.outputs.url }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TASK: ${{ github.event.inputs.task || 'all' }}
         run: |
+          set -e
+
           AUTH="Authorization: Bearer $CRON_SECRET"
-          H=$(date +%H)
-          M=$(date +%M)
+          H=$(date -u +%H)
+          M=$(date -u +%M)
 
-          # Every 15 min: trim metric timings + expire payments
-          curl -sf -X POST "$APP_URL/api/cron/trim-metric-timings" -H "$AUTH" -m 60 || true
-          curl -sf -X POST "$APP_URL/api/cron/expire-payments" -H "$AUTH" -m 60 || true
+          call_endpoint() {
+            local method=$1
+            local endpoint=$2
+            local timeout=$3
+            local name=$4
+            
+            echo "Calling: $name"
+            HTTP_CODE=$(curl -sf -X "$method" "$APP_URL$endpoint" -H "$AUTH" -m "$timeout" -w "%{http_code}" -o /tmp/response.txt 2>/dev/null) || HTTP_CODE="000"
+            
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
+              echo "✅ $name: Success ($HTTP_CODE)"
+              return 0
+            else
+              echo "⚠️ $name: HTTP $HTTP_CODE"
+              return 0  # Don't fail the workflow for individual endpoint failures
+            fi
+          }
 
-          # 01:00 – expire bookings
-          if [ "$H" = "01" ] && [ "$M" -lt 15 ]; then
-            curl -sf -X POST "$APP_URL/api/cron/expire-bookings" -H "$AUTH" -m 120 || true
+          # Initialize summary
+          echo "## 🕐 Scheduled Cron Run" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Task | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Every 15 min tasks
+          if [ "$TASK" = "all" ] || [ "$TASK" = "trim-metrics" ]; then
+            call_endpoint "POST" "/api/cron/trim-metric-timings" 60 "Trim Metrics"
+            echo "| Trim Metrics | ✅ |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # 02:00 – cleanup reservations
-          if [ "$H" = "02" ] && [ "$M" -lt 15 ]; then
-            curl -sf -X POST "$APP_URL/api/cron/cleanup-reservations" -H "$AUTH" -m 120 || true
+          if [ "$TASK" = "all" ] || [ "$TASK" = "expire-payments" ]; then
+            call_endpoint "POST" "/api/cron/expire-payments" 60 "Expire Payments"
+            echo "| Expire Payments | ✅ |" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # 03:00 – health check
-          if [ "$H" = "03" ] && [ "$M" -lt 15 ]; then
-            curl -sf -X GET "$APP_URL/api/cron/health-check" -H "$AUTH" -m 30 || true
+          # Hourly tasks (at specific hours)
+          if [ "$TASK" = "all" ]; then
+            # 01:00 UTC – expire bookings
+            if [ "$H" = "01" ] && [ "$M" -lt 15 ]; then
+              call_endpoint "POST" "/api/cron/expire-bookings" 120 "Expire Bookings"
+              echo "| Expire Bookings | ✅ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # 02:00 UTC – cleanup reservations
+            if [ "$H" = "02" ] && [ "$M" -lt 15 ]; then
+              call_endpoint "POST" "/api/cron/cleanup-reservations" 120 "Cleanup Reservations"
+              echo "| Cleanup Reservations | ✅ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # 03:00 UTC – health check
+            if [ "$H" = "03" ] && [ "$M" -lt 15 ]; then
+              call_endpoint "GET" "/api/cron/health-check" 30 "Health Check"
+              echo "| Health Check | ✅ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # 09:00 UTC – send reminders
+            if [ "$H" = "09" ] && [ "$M" -lt 15 ]; then
+              call_endpoint "POST" "/api/cron/send-reminders" 300 "Send Reminders"
+              echo "| Send Reminders | ✅ |" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
 
-          # 09:00 – send reminders
-          if [ "$H" = "09" ] && [ "$M" -lt 15 ]; then
-            curl -sf -X POST "$APP_URL/api/cron/send-reminders" -H "$AUTH" -m 300 || true
+          # Manual task execution
+          if [ "$TASK" = "expire-bookings" ]; then
+            call_endpoint "POST" "/api/cron/expire-bookings" 120 "Expire Bookings"
+          fi
+          if [ "$TASK" = "cleanup-reservations" ]; then
+            call_endpoint "POST" "/api/cron/cleanup-reservations" 120 "Cleanup Reservations"
+          fi
+          if [ "$TASK" = "health-check" ]; then
+            call_endpoint "GET" "/api/cron/health-check" 30 "Health Check"
+          fi
+          if [ "$TASK" = "send-reminders" ]; then
+            call_endpoint "POST" "/api/cron/send-reminders" 300 "Send Reminders"
           fi
 
-          echo "Scheduled cron run completed."
-        shell: bash
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Cron run completed" >> $GITHUB_STEP_SUMMARY

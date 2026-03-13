@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+const optionalUrl = z
+  .string()
+  .optional()
+  .transform((val) => (val === '' || val === undefined ? undefined : val))
+  .pipe(z.string().url().optional());
+
 /** In dev, ensure localhost has port 3000 so redirects (e.g. sign-out) work. */
 function normalizeAppBaseUrl(url: string): string {
   if (process.env.NODE_ENV !== 'development') return url;
@@ -61,14 +67,14 @@ const envSchema = z.object({
   /** BigDataCloud geo APIs: optional key for higher limits / IP lookup when required. */
   BIGDATACLOUD_API_KEY: z.string().optional(),
   /** Nominatim geocoding base URL (optional; fallback from constants). */
-  NOMINATIM_URL: z.string().url().optional(),
+  NOMINATIM_URL: optionalUrl,
   /** OSRM routing server URL (optional; when unset, internal graph/fallback is used). */
-  OSRM_URL: z.string().url().optional(),
+  OSRM_URL: optionalUrl,
   FEATURE_PAYMENT_CANARY: z.string().default('true'),
   FEATURE_RESCHEDULE: z.string().default('true'),
   FEATURE_NO_SHOW: z.string().default('true'),
   /** Redis URL for caching (optional; caching disabled if not set). */
-  REDIS_URL: z.string().url().optional(),
+  REDIS_URL: optionalUrl,
   /** Enable Redis caching (set to 'false' to disable even if REDIS_URL is set). */
   REDIS_ENABLED: z.string().default('true'),
   /** Vercel deployment metadata (auto-populated by Vercel). */
