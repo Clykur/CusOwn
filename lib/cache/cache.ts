@@ -9,6 +9,10 @@ import { env } from '@/config/env';
 
 const isDev = env.nodeEnv === 'development';
 
+function sanitizeKeyForLog(key: string): string {
+  return key.replace(/[\r\n]/g, '').slice(0, 200);
+}
+
 /** TTL presets in seconds */
 export const CACHE_TTL = {
   /** Public data (business profiles, categories) */
@@ -69,7 +73,7 @@ export async function getCache<T>(key: string): Promise<CacheResult<T>> {
     return { hit: true, data: parsed };
   } catch (err) {
     if (isDev) {
-      console.error(`[Cache] GET error for ${key}:`, err);
+      console.error('[Cache] GET error for key:', sanitizeKeyForLog(key), err);
     }
     return { hit: false, data: null };
   }
@@ -93,7 +97,7 @@ export async function setCache<T>(key: string, data: T, ttlSeconds: number): Pro
     return true;
   } catch (err) {
     if (isDev) {
-      console.error(`[Cache] SET error for ${key}:`, err);
+      console.error('[Cache] SET error for key:', sanitizeKeyForLog(key), err);
     }
     return false;
   }

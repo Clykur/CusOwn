@@ -10,6 +10,10 @@ import crypto from 'crypto';
 
 const isDev = env.nodeEnv === 'development';
 
+function sanitizeKeyForLog(key: string): string {
+  return key.replace(/[\r\n]/g, '').slice(0, 200);
+}
+
 /** TTL values for query caching (in seconds) */
 export const QUERY_CACHE_TTL = {
   /** Bookings list queries */
@@ -66,7 +70,7 @@ export async function getQueryCache<T>(cacheKey: string): Promise<T | null> {
     return hit ? data : null;
   } catch (err) {
     if (isDev) {
-      console.error(`[Query Cache] GET error for ${cacheKey}:`, err);
+      console.error('[Query Cache] GET error for key:', sanitizeKeyForLog(cacheKey), err);
     }
     return null;
   }
@@ -84,7 +88,7 @@ export async function setQueryCache<T>(
     await setCache(cacheKey, data, ttlSeconds);
   } catch (err) {
     if (isDev) {
-      console.error(`[Query Cache] SET error for ${cacheKey}:`, err);
+      console.error('[Query Cache] SET error for key:', sanitizeKeyForLog(cacheKey), err);
     }
   }
 }

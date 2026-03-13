@@ -102,6 +102,12 @@ export async function GET() {
   return successResponse(stats);
 }
 
+const ALLOWED_WEB_VITALS = new Set(['CLS', 'FCP', 'FID', 'INP', 'LCP', 'TTFB']);
+
+function isAllowedVitalName(name: string): boolean {
+  return ALLOWED_WEB_VITALS.has(name);
+}
+
 function calculateAggregatedVitals(
   data: PerformancePayload[]
 ): Record<string, { avg: number; p95: number; poor: number }> {
@@ -110,6 +116,9 @@ function calculateAggregatedVitals(
 
   data.forEach((d) => {
     Object.entries(d.webVitals || {}).forEach(([name, { value, rating }]) => {
+      if (!isAllowedVitalName(name)) {
+        return;
+      }
       if (!vitals[name]) {
         vitals[name] = [];
         ratings[name] = [];
