@@ -107,7 +107,7 @@ export default function AnalyticsFilters({
   );
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-slate-50/70 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6">
+    <div className="flex flex-col gap-4 rounded-xl bg-slate-100/60 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6">
       {/* Business */}
       <div className="w-full sm:w-[260px] xl:flex-1">
         <FilterDropdown
