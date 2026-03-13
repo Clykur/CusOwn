@@ -90,8 +90,7 @@ export default function DateFilter({ value, onChange }: Props) {
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className={`h-10 w-full flex items-center justify-between pl-4 pr-5 text-sm border rounded-lg transition
-          ${value ? 'border-black bg-gray-50' : 'border-gray-300 bg-white hover:bg-gray-50'}`}
+          className="h-11 w-full flex items-center justify-between rounded-xl border border-slate-300 bg-white px-4 text-sm text-black transition hover:bg-slate-50"
         >
           <span>{value || formatToYYYYMMDD(today)}</span>
           <CalendarIcon className="h-5 w-5 text-gray-600 flex-shrink-0" aria-hidden="true" />
