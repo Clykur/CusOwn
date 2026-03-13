@@ -12,7 +12,7 @@
 # ║  Layer 5: Build & Artifacts (strict build, SBOM, attestation)                ║
 # ║  Layer 6: Quality Gates (depcheck, ts-prune, bundle size)                    ║
 # ║  Layer 7: Pre-deploy Gate (all validations must pass)                        ║
-# ║  Layer 8: Deploy (staging → production with approval)                        ║
+# ║  Layer 8: Deploy to Production (main branch only)                            ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 name: CI
@@ -32,13 +32,6 @@ on:
         description: 'Force full CI (skip change detection)'
         type: boolean
         default: false
-      environment:
-        description: 'Deployment environment'
-        type: choice
-        options:
-          - staging
-          - production
-        default: production
 
 # Minimal permissions - jobs elevate as needed
 permissions:
@@ -745,53 +738,8 @@ jobs:
           echo "- ✅ Node version policy" >> $GITHUB_STEP_SUMMARY
 
   # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 8: DEPLOYMENT
+  # LAYER 8: DEPLOYMENT (Production only)
   # ═══════════════════════════════════════════════════════════════════════════════
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [pre-deploy-gate, setup]
-    if: |
-      github.ref == 'refs/heads/develop' &&
-      github.event_name != 'pull_request' &&
-      needs.pre-deploy-gate.result == 'success'
-    environment:
-      name: staging
-      url: https://staging.cusown.clykur.com
-    permissions:
-      contents: read
-      deployments: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Check Vercel secrets
-        id: vercel-check
-        run: |
-          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "::warning::Vercel secrets not configured"
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-      - name: Deploy to Vercel (Staging)
-        if: steps.vercel-check.outputs.skip != 'true'
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--force'
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-          alias-domains: staging.cusown.clykur.com
 
   deploy-production:
     name: Deploy to Production
@@ -860,7 +808,7 @@ jobs:
     name: Cleanup
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [deploy-production, deploy-staging]
+    needs: [deploy-production]
     if: always()
     permissions:
       actions: write

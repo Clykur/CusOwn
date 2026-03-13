@@ -82,19 +82,18 @@ This document describes the enterprise-grade CI/CD pipeline architecture for Cus
 │  │      └──────────────────────────────────────────────────────────────────┘        │    │
 │  └─────────────────────────────────────────────────────────────────────────────────┘    │
 │                                           │                                              │
-│                          ┌────────────────┴────────────────┐                            │
-│                          │                                  │                            │
-│                          ▼                                  ▼                            │
-│  ┌─────────────────────────────────┐    ┌─────────────────────────────────┐            │
-│  │   LAYER 8A: STAGING DEPLOY      │    │   LAYER 8B: PRODUCTION DEPLOY   │            │
-│  │   (develop branch)              │    │   (main branch)                  │            │
-│  │                                  │    │                                  │            │
-│  │   ┌─────────────────────────┐   │    │   ┌─────────────────────────┐   │            │
-│  │   │  Environment: staging   │   │    │   │ Environment: production │   │            │
-│  │   │  URL: staging.cusown... │   │    │   │ URL: cusown.clykur.com  │   │            │
-│  │   │  Auto-deploy            │   │    │   │ Manual approval         │   │            │
-│  │   └─────────────────────────┘   │    │   └─────────────────────────┘   │            │
-│  └─────────────────────────────────┘    └─────────────────────────────────┘            │
+│                                           │                                              │
+│                                           ▼                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐    │
+│  │                      LAYER 8: PRODUCTION DEPLOY                                  │    │
+│  │                         (main branch only)                                       │    │
+│  │                                                                                    │    │
+│  │                    ┌─────────────────────────────────┐                           │    │
+│  │                    │   Environment: production       │                           │    │
+│  │                    │   URL: cusown.clykur.com        │                           │    │
+│  │                    │   Requires: all gates pass      │                           │    │
+│  │                    └─────────────────────────────────┘                           │    │
+│  └─────────────────────────────────────────────────────────────────────────────────┘    │
 │                                                                                          │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -133,10 +132,9 @@ setup
                                            ▼
                                     pre-deploy-gate
                                            │
-                        ┌──────────────────┴──────────────────┐
-                        ▼                                      ▼
-                 deploy-staging                         deploy-production
-                (develop branch)                         (main branch)
+                                           ▼
+                                   deploy-production
+                                    (main branch)
 ```
 
 ## Caching Strategy
@@ -206,10 +204,11 @@ setup
 
 ## Deployment Environments
 
-| Environment | Branch  | Approval | URL                       |
-| ----------- | ------- | -------- | ------------------------- |
-| Staging     | develop | Auto     | staging.cusown.clykur.com |
-| Production  | main    | Required | cusown.clykur.com         |
+| Environment | Branch | Approval             | URL               |
+| ----------- | ------ | -------------------- | ----------------- |
+| Production  | main   | Required (all gates) | cusown.clykur.com |
+
+**Note:** Preview deployments are handled natively by Vercel for pull requests.
 
 ## Scheduled Jobs
 
