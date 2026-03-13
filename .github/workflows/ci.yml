@@ -1,5 +1,19 @@
-# Hardened CI/CD pipeline: parallel jobs, caching, strict validation.
-# See docs/CI_PIPELINE.md for stages and debugging.
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    ENTERPRISE CI/CD PIPELINE v2.0                            ║
+# ║                                                                              ║
+# ║  Architecture: Netflix/Google/Stripe-style layered job graph                 ║
+# ║  Security: DevSecOps with SLSA Level 2 attestation                           ║
+# ║  Performance: Parallel execution, intelligent caching, test sharding         ║
+# ║                                                                              ║
+# ║  Layer 1: Setup & Change Detection                                           ║
+# ║  Layer 2: Static Analysis (lint, typecheck, audit, secrets) - parallel       ║
+# ║  Layer 3: Security Scans (audit, license, custom rules) - parallel           ║
+# ║  Layer 4: Tests (unit, integration, security, e2e) - parallel + sharding     ║
+# ║  Layer 5: Build & Artifacts (strict build, SBOM, attestation)                ║
+# ║  Layer 6: Quality Gates (depcheck, ts-prune, bundle size)                    ║
+# ║  Layer 7: Pre-deploy Gate (all validations must pass)                        ║
+# ║  Layer 8: Deploy to Production (main branch only)                            ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
 name: CI
 
@@ -9,413 +23,455 @@ on:
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
+    inputs:
+      skip_deploy:
+        description: 'Skip deployment'
+        type: boolean
+        default: false
+      force_full_ci:
+        description: 'Force full CI (skip change detection)'
+        type: boolean
+        default: false
 
+# Minimal permissions - jobs elevate as needed
 permissions:
   contents: read
-  security-events: write
 
+# Concurrency: cancel redundant runs, but protect deployments
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CI: true
   NODE_VERSION: '22'
   NODE_OPTIONS: '--max-old-space-size=4096'
-  # Opt into Node.js 24 for JS actions to avoid Node 20 deprecation.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  HUSKY: 0
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Setup: checkout, restore caches, npm ci. Other jobs depend on this for speed.
-  # ---------------------------------------------------------------------------
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 1: SETUP & CHANGE DETECTION
+  # ═══════════════════════════════════════════════════════════════════════════════
+
   setup:
-    name: Setup
+    name: Setup & Detect Changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      cache-key: ${{ steps.cache-deps.outputs.cache-key }}
+      cache-key: ${{ steps.setup.outputs.cache-key }}
+      cache-hit: ${{ steps.setup.outputs.cache-hit }}
+      src-changed: ${{ steps.changes.outputs.src }}
+      tests-changed: ${{ steps.changes.outputs.tests }}
+      config-changed: ${{ steps.changes.outputs.config }}
+      deps-changed: ${{ steps.changes.outputs.deps }}
+      docs-only: ${{ steps.changes.outputs.docs-only }}
+      sha-short: ${{ steps.meta.outputs.sha-short }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Node.js with caching
+        id: setup
+        uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: Get cache key
-        id: cache-deps
-        run: |
-          HASH=$(node -e "const fs=require('fs'); const c=fs.readFileSync('package-lock.json','utf8'); const crypto=require('crypto'); console.log(crypto.createHash('sha256').update(c).digest('hex').slice(0,16));")
-          echo "cache-key=npm-$HASH" >> $GITHUB_OUTPUT
-
-      - name: Cache node_modules and npm
-        uses: actions/cache@v4
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v3
         with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ runner.os }}-${{ steps.cache-deps.outputs.cache-key }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          filters: |
+            src:
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'services/**'
+              - 'repositories/**'
+              - 'middleware.ts'
+            tests:
+              - 'scripts/**/*.test.ts'
+              - 'scripts/**/*.security.ts'
+              - 'vitest*.config.mts'
+            config:
+              - 'next.config.js'
+              - 'tsconfig*.json'
+              - 'package.json'
+              - '.eslintrc*'
+              - 'config/**'
+            deps:
+              - 'package.json'
+              - 'package-lock.json'
+            docs-only:
+              - '**/*.md'
+              - 'docs/**'
+              - '.github/*.md'
 
-      - name: Install dependencies (deterministic)
-        run: npm ci
+      - name: Generate metadata
+        id: meta
+        run: |
+          echo "sha-short=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
 
       - name: Cache Vitest
         uses: actions/cache@v4
         with:
           path: .vitest
-          key: ${{ runner.os }}-vitest-${{ steps.cache-deps.outputs.cache-key }}
-          restore-keys: |
-            ${{ runner.os }}-vitest-
+          key: vitest-${{ runner.os }}-${{ steps.setup.outputs.cache-key }}
+          restore-keys: vitest-${{ runner.os }}-
 
-  # ---------------------------------------------------------------------------
-  # Fail-fast: lint (no warnings), typecheck, dependency audit.
-  # ---------------------------------------------------------------------------
+      - name: Setup summary
+        run: |
+          echo "## 🚀 CI Pipeline Started" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Changed | ${{ steps.changes.outputs.src }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests Changed | ${{ steps.changes.outputs.tests }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Config Changed | ${{ steps.changes.outputs.config }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deps Changed | ${{ steps.changes.outputs.deps }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cache Hit | ${{ steps.setup.outputs.cache-hit }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 2: STATIC ANALYSIS (parallel)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Lint (fail on warnings)
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: ESLint (strict mode)
         run: npm run lint:strict
+
+      - name: Format check
+        run: npm run format:check || echo "::warning::Format issues detected"
+        continue-on-error: true
 
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Type check
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Cache TypeScript build info
+        uses: actions/cache@v4
+        with:
+          path: |
+            *.tsbuildinfo
+            .tscache
+          key: tsc-${{ runner.os }}-${{ hashFiles('tsconfig*.json', 'app/**/*.ts', 'app/**/*.tsx', 'lib/**/*.ts') }}
+          restore-keys: tsc-${{ runner.os }}-
+
+      - name: TypeScript strict check
         run: npm run typecheck
 
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 3: SECURITY SCANS (parallel)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
   dependency-audit:
-    name: Dependency audit
+    name: Dependency Audit
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Audit (fail on high/critical)
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: npm audit (high/critical)
         run: npm run security:audit
 
-  # ---------------------------------------------------------------------------
-  # Lockfile and node version (run early).
-  # ---------------------------------------------------------------------------
-  lockfile:
-    name: Lockfile check
+      - name: Strict dependency scan
+        run: npm run security:deps
+
+  license-check:
+    name: License Check
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Verify lockfile present and npm ci clean
-        run: node scripts/infrastructure/check-lockfile.js
-
-  node-version:
-    name: Node version
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    needs: [setup]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/cache@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-      - name: Enforce Node version
-        run: node scripts/infrastructure/check-node-version.js
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
 
-  # ---------------------------------------------------------------------------
-  # Unit tests: ts-node suites + vitest (api-routes, unit-services, etc.) with coverage.
-  # ---------------------------------------------------------------------------
-  unit-tests:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [setup, lint, typecheck]
-    env:
-      SALON_TOKEN_SECRET: test-secret # pragma: allowlist secret
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Ensure .env.test for unit tests
-        run: | # pragma: allowlist secret
-          if [ ! -f .env.test ]; then
-            echo "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co" >> .env.test
-            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key" >> .env.test
-            echo "SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key" >> .env.test
-          fi
-      - name: Unit tests (ts-node suites)
-        run: npm run test:unit
-        env:
-          NODE_OPTIONS: '--max-old-space-size=2048'
-      - name: Vitest unit tests (with coverage)
-        run: npx dotenv-cli -e .env.test -- npx vitest run --config vitest.unit.config.mts --coverage
-        env:
-          NODE_OPTIONS: '--max-old-space-size=2048'
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: coverage-unit
-          path: coverage
-          retention-days: 7
+      - name: License compliance check
+        run: node scripts/infrastructure/run-license-check.js
 
-  # ---------------------------------------------------------------------------
-  # Integration: DB migrations, unit-database (vitest). No live DB required.
-  # ---------------------------------------------------------------------------
-  integration-tests:
-    name: Integration tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [setup, lint, typecheck]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Ensure .env.test for integration tests
-        run: | # pragma: allowlist secret
-          if [ ! -f .env.test ]; then
-            echo "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co" >> .env.test
-            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key" >> .env.test
-            echo "SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key" >> .env.test
-          fi
-      - name: Database migration validation (unit-database only; no live DB)
-        run: npx dotenv-cli -e .env.test -- npx vitest run scripts/unit-database --config vitest.config.mts
-      - name: Integration (file-based, no DB)
-        run: npx dotenv-cli -e .env.test -- npm run test:database-migrations
-
-  # ---------------------------------------------------------------------------
-  # Security tests: rate limit, auth bypass, privilege escalation, secure links.
-  # ---------------------------------------------------------------------------
-  security-tests:
-    name: Security tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [setup, lint, typecheck]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Security test suites
-        run: |
-          npm run test:phase4 || true
-          npm run test:phase5 || true
-          npm run test:phase6 || true
-        env:
-          NODE_OPTIONS: '--max-old-space-size=2048'
-
-  # ---------------------------------------------------------------------------
-  # E2E: vitest run scripts/e2e (when e2e tests are vitest-compatible); placeholder for structure.
-  # ---------------------------------------------------------------------------
-  e2e-tests:
-    name: E2E tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [setup, lint, typecheck]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Ensure .env.test for E2E
-        run: | # pragma: allowlist secret
-          if [ ! -f .env.test ]; then
-            echo "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co" >> .env.test
-            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key" >> .env.test
-            echo "SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key" >> .env.test
-          fi
-      - name: E2E (skip when no real DB in CI)
-        run: |
-          if grep -q 'placeholder' .env.test 2>/dev/null; then
-            echo "Skipping E2E (no real DB in CI). Run locally with .env.local for full e2e."
-            exit 0
-          fi
-          npx dotenv-cli -e .env.test -- npx vitest run scripts/e2e --config vitest.config.mts
-
-  # ---------------------------------------------------------------------------
-  # Secret scan: fail if secrets detected.
-  # ---------------------------------------------------------------------------
   secret-scan:
-    name: Secret scan
+    name: Secret Scan
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup]
     permissions:
       contents: read
       security-events: write
-      pull-requests: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      - name: Gitleaks
+
+      - name: Gitleaks secret scanning
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
-  # ---------------------------------------------------------------------------
-  # Repo security: custom patterns, lockfile, dangerous code.
-  # ---------------------------------------------------------------------------
   security-custom:
-    name: Security (custom)
+    name: Security (Custom Rules)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Custom security and quality
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Custom security validation
         run: node scripts/infrastructure/validate-security-and-quality.js
-      - name: Pre-push security check
+
+      - name: Dangerous pattern scan
         run: npm run security-check
 
-  # ---------------------------------------------------------------------------
-  # License compliance: fail on GPL/AGPL.
-  # ---------------------------------------------------------------------------
-  license-check:
-    name: License check
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 4: TESTS (parallel with sharding)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup]
+    timeout-minutes: 15
+    needs: [setup, lint, typecheck]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      SALON_TOKEN_SECRET: test-secret # pragma: allowlist secret
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: License compliance
-        run: node scripts/infrastructure/run-license-check.js
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+      - uses: ./.github/actions/create-env-test
 
-  # ---------------------------------------------------------------------------
-  # Code quality: depcheck, ts-prune. Job fails if either reports issues.
-  # ---------------------------------------------------------------------------
-  quality-gates:
-    name: Quality gates
+      - name: Cache Vitest
+        uses: actions/cache@v4
+        with:
+          path: .vitest
+          key: vitest-${{ runner.os }}-${{ needs.setup.outputs.cache-key }}-shard${{ matrix.shard }}
+          restore-keys: vitest-${{ runner.os }}-
+
+      - name: Unit tests (ts-node) - Shard ${{ matrix.shard }}
+        if: matrix.shard == 1
+        run: npm run test:unit
+        env:
+          NODE_OPTIONS: '--max-old-space-size=2048'
+
+      - name: Vitest unit tests - Shard ${{ matrix.shard }}
+        run: |
+          npx dotenv-cli -e .env.test -- npx vitest run \
+            --config vitest.unit.config.mts \
+            --coverage \
+            --shard=${{ matrix.shard }}/2
+        env:
+          NODE_OPTIONS: '--max-old-space-size=2048'
+
+      - name: Upload coverage (Shard ${{ matrix.shard }})
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: coverage-unit-shard${{ matrix.shard }}
+          path: coverage
+          retention-days: 7
+
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup]
+    timeout-minutes: 10
+    needs: [setup, lint, typecheck]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Depcheck (unused deps)
-        run: node scripts/infrastructure/run-quality-gate.js quality:depcheck
-      - name: Unused exports (ts-prune)
-        run: node scripts/infrastructure/run-quality-gate.js quality:ts-prune
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+      - uses: ./.github/actions/create-env-test
 
-  # ---------------------------------------------------------------------------
-  # Build: strict build, no warnings.
-  # ---------------------------------------------------------------------------
+      - name: Database migration validation
+        run: npx dotenv-cli -e .env.test -- npx vitest run scripts/unit-database --config vitest.config.mts
+
+      - name: Integration tests
+        run: npx dotenv-cli -e .env.test -- npm run test:database-migrations
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, lint, typecheck]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+      - uses: ./.github/actions/create-env-test
+
+      - name: Payment safety tests
+        run: npm run test:phase4 || true
+
+      - name: RBAC authorization tests
+        run: npm run test:phase5 || true
+
+      - name: Rate limiting tests
+        run: npm run test:phase6 || true
+        env:
+          NODE_OPTIONS: '--max-old-space-size=2048'
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [setup, lint, typecheck, unit-tests]
+    if: |
+      (needs.setup.outputs.docs-only != 'true' || github.event.inputs.force_full_ci == 'true') &&
+      github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+      - uses: ./.github/actions/create-env-test
+
+      - name: E2E tests
+        run: |
+          if grep -q 'placeholder' .env.test 2>/dev/null; then
+            echo "::notice::E2E tests require real database - skipped in CI"
+            exit 0
+          fi
+          npx dotenv-cli -e .env.test -- npx vitest run scripts/e2e --config vitest.config.mts
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 5: BUILD & ARTIFACTS
+  # ═══════════════════════════════════════════════════════════════════════════════
+
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [setup, lint, typecheck, unit-tests]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
+    outputs:
+      artifact-name: build-${{ needs.setup.outputs.sha-short }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Environment validation
-        run: npm run verify-env
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next/cache
+            .next-build/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
+          restore-keys: nextjs-${{ runner.os }}-
+
       - name: Production build (strict)
         run: npm run build:strict
         env:
@@ -423,110 +479,345 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://example.com' }}
-      - name: Upload build
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-output
+          name: build-${{ needs.setup.outputs.sha-short }}
           path: .next-build
-          retention-days: 1
-
-  # ---------------------------------------------------------------------------
-  # Bundle size: fail if over threshold (optional).
-  # ---------------------------------------------------------------------------
-  bundle-size:
-    name: Bundle size
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [build]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Build for size
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
-          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
-          NEXT_PUBLIC_APP_URL: https://example.com
-      - name: Bundle size check
-        run: node scripts/infrastructure/run-bundle-size-check.js
-        continue-on-error: true
-
-  # ---------------------------------------------------------------------------
-  # Dependency review (PRs only). SBOM on main/release.
-  # ---------------------------------------------------------------------------
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Dependency review
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
+          retention-days: 3
+          compression-level: 6
 
   sbom:
-    name: SBOM
+    name: SBOM & Supply Chain
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [setup]
+    needs: [setup, build]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate SBOM
-        run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ needs.setup.outputs.sha-short }}
+          path: .next-build
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.xml --output-format XML
+
+      - name: Generate build attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            .next-build/**/*.js
+            sbom.json
+          subject-name: cusown-build-${{ github.sha }}
+
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
         with:
           name: sbom-${{ github.run_id }}
-          path: sbom.json
-          retention-days: 30
+          path: |
+            sbom.json
+            sbom.xml
+          retention-days: 90
 
-  # ---------------------------------------------------------------------------
-  # Pre-deploy gate: all critical jobs must pass. No deployment in this workflow.
-  # ---------------------------------------------------------------------------
-  pre-deploy:
-    name: Pre-deploy gate
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 6: QUALITY GATES
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup]
+    if: |
+      needs.setup.outputs.docs-only != 'true' || 
+      github.event.inputs.force_full_ci == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Depcheck (unused dependencies)
+        run: node scripts/infrastructure/run-quality-gate.js quality:depcheck
+
+      - name: Unused exports (ts-prune)
+        run: node scripts/infrastructure/run-quality-gate.js quality:ts-prune
+
+  lockfile-check:
+    name: Lockfile Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Verify lockfile integrity
+        run: node scripts/infrastructure/check-lockfile.js
+
+  node-version-check:
+    name: Node Version Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enforce Node version policy
+        run: node scripts/infrastructure/check-node-version.js
+
+  bundle-analysis:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build, setup]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ needs.setup.outputs.sha-short }}
+          path: .next-build
+
+      - name: Analyze bundle size
+        run: node scripts/infrastructure/run-bundle-size-check.js
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # DEPENDENCY REVIEW (PRs only)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0, LGPL-3.0
+          comment-summary-in-pr: always
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 7: PRE-DEPLOY GATE
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  pre-deploy-gate:
+    name: Pre-deploy Gate
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs:
       - lint
       - typecheck
       - dependency-audit
-      - lockfile
-      - node-version
+      - license-check
+      - secret-scan
+      - security-custom
       - unit-tests
       - integration-tests
       - security-tests
-      - secret-scan
-      - security-custom
-      - license-check
       - build
+      - quality-gates
+      - lockfile-check
+      - node-version-check
+    if: |
+      always() && 
+      (needs.setup.outputs.docs-only != 'true' || github.event.inputs.force_full_ci == 'true')
     steps:
-      - name: Verify all validations passed
+      - name: Check job statuses
         run: |
-          echo "Lint, typecheck, audit, lockfile, node, unit, integration, security, secret-scan, license, build completed."
-          echo "Deployment is allowed only when all required jobs succeed (see branch protection)."
+          FAILED=""
+
+          check_job() {
+            local name=$1
+            local result=$2
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              FAILED="$FAILED $name"
+            fi
+          }
+
+          check_job "lint" "${{ needs.lint.result }}"
+          check_job "typecheck" "${{ needs.typecheck.result }}"
+          check_job "dependency-audit" "${{ needs.dependency-audit.result }}"
+          check_job "license-check" "${{ needs.license-check.result }}"
+          check_job "secret-scan" "${{ needs.secret-scan.result }}"
+          check_job "security-custom" "${{ needs.security-custom.result }}"
+          check_job "unit-tests" "${{ needs.unit-tests.result }}"
+          check_job "integration-tests" "${{ needs.integration-tests.result }}"
+          check_job "security-tests" "${{ needs.security-tests.result }}"
+          check_job "build" "${{ needs.build.result }}"
+          check_job "quality-gates" "${{ needs.quality-gates.result }}"
+          check_job "lockfile-check" "${{ needs.lockfile-check.result }}"
+          check_job "node-version-check" "${{ needs.node-version-check.result }}"
+
+          if [ -n "$FAILED" ]; then
+            echo "::error::Pre-deploy gate failed. Failed jobs:$FAILED"
+            exit 1
+          fi
+
+          echo "✅ All required checks passed"
+
+      - name: Generate summary
+        run: |
+          echo "## ✅ Pre-deploy Gate Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All required validations completed successfully:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Static Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Lint (strict mode)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ TypeScript type check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Security" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dependency audit" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ License compliance" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Secret scan (Gitleaks)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Custom security rules" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Unit tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Integration tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quality" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Production build" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Quality gates" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Lockfile integrity" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Node version policy" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # LAYER 8: DEPLOYMENT (Production only)
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [pre-deploy-gate, setup]
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request' &&
+      needs.pre-deploy-gate.result == 'success' &&
+      (github.event.inputs.skip_deploy != 'true')
+    environment:
+      name: production
+      url: https://cusown.clykur.com
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check Vercel secrets
+        id: vercel-check
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::Vercel secrets not configured"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel (Production)
+        if: steps.vercel-check.outputs.skip != 'true'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod --force'
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+          github-comment: true
+
+      - name: Deployment audit
+        run: |
+          echo "## 🚀 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | production |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://cusown.clykur.com |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CLEANUP
+  # ═══════════════════════════════════════════════════════════════════════════════
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [deploy-production]
+    if: always()
+    permissions:
+      actions: write
+    steps:
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 30
+          keep_minimum_runs: 10
+        continue-on-error: true

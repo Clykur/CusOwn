@@ -1,0 +1,70 @@
+# Reusable composite action for Node.js setup with caching
+# Eliminates duplication across jobs
+
+name: 'Setup Node.js'
+description: 'Setup Node.js with npm caching and dependency installation'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '22'
+  install-deps:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+  cache-key-suffix:
+    description: 'Additional suffix for cache key'
+    required: false
+    default: ''
+
+outputs:
+  cache-hit:
+    description: 'Whether cache was hit'
+    value: ${{ steps.cache.outputs.cache-hit }}
+  cache-key:
+    description: 'The cache key used'
+    value: ${{ steps.cache-key.outputs.key }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Generate cache key
+      id: cache-key
+      shell: bash
+      run: |
+        LOCK_HASH=$(sha256sum package-lock.json | cut -c1-16)
+        SUFFIX="${{ inputs.cache-key-suffix }}"
+        KEY="deps-${{ runner.os }}-node${{ inputs.node-version }}-${LOCK_HASH}${SUFFIX:+-$SUFFIX}"
+        echo "key=${KEY}" >> $GITHUB_OUTPUT
+        echo "lock-hash=${LOCK_HASH}" >> $GITHUB_OUTPUT
+
+    - name: Cache node_modules
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          node_modules
+          ~/.npm
+        key: ${{ steps.cache-key.outputs.key }}
+        restore-keys: |
+          deps-${{ runner.os }}-node${{ inputs.node-version }}-
+
+    - name: Install dependencies
+      if: inputs.install-deps == 'true' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci
+
+    - name: Verify lockfile integrity
+      if: inputs.install-deps == 'true'
+      shell: bash
+      run: |
+        if [ ! -f package-lock.json ]; then
+          echo "::error::package-lock.json missing - required for deterministic builds"
+          exit 1
+        fi

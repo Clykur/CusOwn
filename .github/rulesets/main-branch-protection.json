@@ -24,17 +24,43 @@
       "parameters": {
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
-          { "context": "Validate (lint/type/test/build/security)" },
-          { "context": "Dependency Review" },
-          { "context": "CodeQL analysis" }
+          { "context": "Lint" },
+          { "context": "Typecheck" },
+          { "context": "Dependency Audit" },
+          { "context": "License Check" },
+          { "context": "Secret Scan" },
+          { "context": "Security (Custom Rules)" },
+          { "context": "Unit Tests" },
+          { "context": "Integration Tests" },
+          { "context": "Security Tests" },
+          { "context": "Build" },
+          { "context": "Quality Gates" },
+          { "context": "Lockfile Check" },
+          { "context": "Node Version Check" },
+          { "context": "Pre-deploy Gate" },
+          { "context": "CodeQL Analysis" },
+          { "context": "Dependency Review" }
         ]
       }
+    },
+    {
+      "type": "required_linear_history"
     },
     {
       "type": "non_fast_forward"
     },
     {
       "type": "deletion"
+    },
+    {
+      "type": "creation"
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": 1,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "pull_request"
     }
   ]
 }

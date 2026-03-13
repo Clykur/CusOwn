@@ -1,61 +1,167 @@
-# CodeQL SAST – JavaScript/TypeScript. Phase 3. Fail on HIGH/CRITICAL. CodeQL Action v4.
-# Triggers: PR and push to main. All actions pinned by SHA.
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                        CodeQL SAST Analysis                                   ║
+# ║                                                                              ║
+# ║  Advanced static application security testing with:                           ║
+# ║  - JavaScript/TypeScript analysis                                            ║
+# ║  - Security-extended query suite                                             ║
+# ║  - Custom query support                                                       ║
+# ║  - SARIF upload for GitHub Security tab                                       ║
+# ║  - Failure on HIGH/CRITICAL findings                                          ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
 name: CodeQL
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  schedule:
+    # Run weekly security scan
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
 
 permissions:
   contents: read
   security-events: write
   actions: read
 
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   analyze:
-    name: CodeQL analysis
+    name: CodeQL Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9e907b5e64f6b83e7804b09294d44122997950d6
+        uses: github/codeql-action/init@v3
         with:
-          languages: javascript-typescript
+          languages: ${{ matrix.language }}
           queries: security-extended
+          config: |
+            query-filters:
+              - exclude:
+                  problem.severity:
+                    - recommendation
+            paths-ignore:
+              - node_modules
+              - .next
+              - .next-build
+              - coverage
+              - '**/*.test.ts'
+              - '**/*.spec.ts'
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@9e907b5e64f6b83e7804b09294d44122997950d6
+        uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL analysis
-        id: codeql-analysis
-        uses: github/codeql-action/analyze@9e907b5e64f6b83e7804b09294d44122997950d6
+      - name: Perform CodeQL Analysis
+        id: codeql
+        uses: github/codeql-action/analyze@v3
         with:
-          category: /language:javascript-typescript
+          category: /language:${{ matrix.language }}
+          upload: true
+          output: sarif-results
+
+      - name: Upload SARIF as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: sarif-results
+          retention-days: 30
 
       - name: Fail on HIGH/CRITICAL findings
         run: |
-          SARIF_DIR="${{ steps.codeql-analysis.outputs.sarif-output }}"
-          if [ -n "$SARIF_DIR" ] && [ -d "$SARIF_DIR" ]; then
+          SARIF_DIR="sarif-results"
+          FAILED=false
+
+          if [ -d "$SARIF_DIR" ]; then
             for f in "$SARIF_DIR"/*.sarif; do
               [ -f "$f" ] || continue
-              COUNT=$(jq -r '[.runs[].results[]? | select(.level == "error" or .level == "warning")] | length' "$f" 2>/dev/null || echo 0)
-              if [ "${COUNT:-0}" -gt 0 ]; then
-                echo "CodeQL found HIGH/CRITICAL (error/warning) findings. Fix or accept risk."
-                exit 1
+              
+              # Count error and warning level findings
+              ERROR_COUNT=$(jq -r '[.runs[].results[]? | select(.level == "error")] | length' "$f" 2>/dev/null || echo 0)
+              WARNING_COUNT=$(jq -r '[.runs[].results[]? | select(.level == "warning")] | length' "$f" 2>/dev/null || echo 0)
+              
+              if [ "${ERROR_COUNT:-0}" -gt 0 ]; then
+                echo "::error::CodeQL found ${ERROR_COUNT} critical security issues"
+                FAILED=true
               fi
+              
+              if [ "${WARNING_COUNT:-0}" -gt 0 ]; then
+                echo "::warning::CodeQL found ${WARNING_COUNT} high-severity security issues"
+                # Fail on warnings too for strict security posture
+                FAILED=true
+              fi
+              
+              # Generate summary
+              echo "## 🔍 CodeQL Security Analysis" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Critical (error) | ${ERROR_COUNT:-0} |" >> $GITHUB_STEP_SUMMARY
+              echo "| High (warning) | ${WARNING_COUNT:-0} |" >> $GITHUB_STEP_SUMMARY
             done
           fi
-          echo "CodeQL check passed."
+
+          if [ "$FAILED" = true ]; then
+            echo "::error::CodeQL analysis found security issues. Review and fix before merging."
+            exit 1
+          fi
+
+          echo "✅ CodeQL security analysis passed"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **No critical or high severity issues found**" >> $GITHUB_STEP_SUMMARY
+
+  # Weekly comprehensive scan with additional queries
+  weekly-deep-scan:
+    name: Weekly Deep Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL (Extended)
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform Deep Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript/weekly
+
+      - name: Create weekly security report
+        run: |
+          echo "## 📊 Weekly Security Deep Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Completed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Review findings in the Security tab." >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,18 @@
+# Reusable composite action for creating .env.test file
+# Used by test jobs that need environment variables
+
+name: 'Create Test Environment'
+description: 'Create .env.test with placeholder values for CI'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Create .env.test
+      shell: bash
+      run: | # pragma: allowlist secret
+        cat > .env.test << 'EOF'
+        NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+        SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+        SALON_TOKEN_SECRET=test-secret-for-ci
+        EOF
