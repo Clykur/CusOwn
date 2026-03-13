@@ -13,12 +13,22 @@ const ROOT = process.cwd();
 
 function run(label, cmd, args, opts = {}) {
   process.stdout.write(`\n=== ${label} ===\n`);
-  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: isWindows, cwd: ROOT, ...opts });
+
+  const useShell = cmd === npmCmd;
+
+  const result = spawnSync(cmd, args, {
+    stdio: 'inherit',
+    cwd: ROOT,
+    shell: useShell,
+    ...opts,
+  });
+
   if (result.error) {
     process.stderr.write(`\nFAILED: ${label}\n`);
     process.stderr.write(`${result.error.message}\n`);
     process.exit(1);
   }
+
   if (result.status !== 0) {
     process.stderr.write(`\nFAILED: ${label}\n`);
     process.exit(result.status || 1);
