@@ -21,9 +21,15 @@ function getCspConnectSrc(): string {
   return parts.join(' ');
 }
 
-/** frame-src: OAuth and Supabase. */
+/** frame-src: OAuth, Supabase, and Vercel Live. */
 function getCspFrameSrc(): string {
-  return ["'self'", 'https://accounts.google.com', 'https://*.supabase.co'].join(' ');
+  return [
+    "'self'",
+    'https://accounts.google.com',
+    'https://*.supabase.co',
+    'https://vercel.live',
+    'https://*.vercel.live',
+  ].join(' ');
 }
 
 /** script-src: self, inline/eval for Next, Vercel Analytics. */

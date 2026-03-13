@@ -26,6 +26,7 @@ export {
 export {
   useCustomerBookingsStore,
   selectBookingsStats,
+  useBookingsStats,
   selectHasValidCache as selectCustomerHasValidCache,
   type CustomerBooking,
   type CustomerBookingsStats,

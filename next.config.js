@@ -83,7 +83,7 @@ const nextConfig = {
       "img-src 'self' data: blob: https://*.supabase.co https:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com",
-      "frame-src 'self' https://api.razorpay.com",
+      "frame-src 'self' https://api.razorpay.com https://accounts.google.com https://*.supabase.co https://vercel.live https://*.vercel.live",
       "form-action 'self'",
       'upgrade-insecure-requests',
     ].join('; ');
