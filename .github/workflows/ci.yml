@@ -799,25 +799,3 @@ jobs:
           echo "| Environment | production |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
           echo "| URL | https://cusown.clykur.com |" >> $GITHUB_STEP_SUMMARY
-
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # CLEANUP
-  # ═══════════════════════════════════════════════════════════════════════════════
-
-  cleanup:
-    name: Cleanup
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [deploy-production]
-    if: always()
-    permissions:
-      actions: write
-    steps:
-      - name: Delete old workflow runs
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          retain_days: 30
-          keep_minimum_runs: 10
-        continue-on-error: true
