@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 
 interface CustomerBooking {
   id: string;
@@ -89,11 +90,11 @@ export const useCustomerBookingsStore = create<CustomerBookingsState>()(
   )
 );
 
-export const selectBookingsStats = (state: CustomerBookingsState): CustomerBookingsStats => {
+const computeStats = (bookings: CustomerBooking[]): CustomerBookingsStats => {
   let upcoming = 0;
   let completed = 0;
 
-  for (const b of state.bookings) {
+  for (const b of bookings) {
     if (b.status === 'confirmed' || b.status === 'pending') {
       upcoming++;
     } else if (b.status === 'cancelled' || b.status === 'rejected' || b.status === 'expired') {
@@ -102,11 +103,27 @@ export const selectBookingsStats = (state: CustomerBookingsState): CustomerBooki
   }
 
   return {
-    total: state.bookings.length,
+    total: bookings.length,
     upcoming,
     completed,
   };
 };
+
+let cachedStats: CustomerBookingsStats | null = null;
+let cachedBookingsRef: CustomerBooking[] | null = null;
+
+export const selectBookingsStats = (state: CustomerBookingsState): CustomerBookingsStats => {
+  if (cachedBookingsRef === state.bookings && cachedStats !== null) {
+    return cachedStats;
+  }
+  cachedStats = computeStats(state.bookings);
+  cachedBookingsRef = state.bookings;
+  return cachedStats;
+};
+
+export function useBookingsStats(): CustomerBookingsStats {
+  return useCustomerBookingsStore(useShallow((state) => selectBookingsStats(state)));
+}
 
 export const selectHasValidCache = (state: CustomerBookingsState): boolean => {
   if (!state.lastFetchedAt) return false;

@@ -12,7 +12,7 @@ import BookingsIcon from '@/src/icons/bookings.svg';
 import SummaryCardSkeleton from '@/components/customer/summary-card.skeleton';
 import { dedupFetch, cancelRequests } from '@/lib/utils/fetch-dedup';
 import { useVisibilityRefresh } from '@/lib/hooks/use-visibility-refresh';
-import { useCustomerBookingsStore, selectBookingsStats } from '@/lib/store';
+import { useCustomerBookingsStore, useBookingsStats } from '@/lib/store';
 
 const CACHE_TTL = 30000;
 
@@ -39,7 +39,7 @@ const StatCard = memo(function StatCard({
 });
 
 function StatsSection() {
-  const stats = useCustomerBookingsStore(selectBookingsStats);
+  const stats = useBookingsStats();
   const isRefreshing = useCustomerBookingsStore((state) => state.isRefreshing);
 
   return (
@@ -70,17 +70,22 @@ export default function CustomerDashboardPage() {
   const lastRefetchRef = useRef(0);
   const MIN_REFETCH_INTERVAL = 3000;
   const hasMountedRef = useRef(false);
+  const bookingsLengthRef = useRef(bookings.length);
 
   useEffect(() => {
     hasMountedRef.current = true;
   }, []);
 
+  useEffect(() => {
+    bookingsLengthRef.current = bookings.length;
+  }, [bookings.length]);
+
   const refetchBookings = useCallback(
     async (showRefreshIndicator = true) => {
       try {
-        if (showRefreshIndicator && bookings.length > 0) {
+        if (showRefreshIndicator && bookingsLengthRef.current > 0) {
           setIsRefreshing(true);
-        } else if (bookings.length === 0 && hasMountedRef.current) {
+        } else if (bookingsLengthRef.current === 0 && hasMountedRef.current) {
           setIsInitialLoad(true);
         }
 
@@ -109,7 +114,7 @@ export default function CustomerDashboardPage() {
         setIsRefreshing(false);
       }
     },
-    [bookings.length, setBookings, setIsInitialLoad, setIsRefreshing, setLastFetchedAt]
+    [setBookings, setIsInitialLoad, setIsRefreshing, setLastFetchedAt]
   );
 
   useEffect(() => {
