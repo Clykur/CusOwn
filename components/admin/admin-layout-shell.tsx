@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { AdminSessionProvider, type SessionLike } from '@/components/admin/admin-session-context';
-import AdminSidebar from '@/components/admin/admin-sidebar';
 import { ROUTES } from '@/lib/utils/navigation';
 
-const DEV = process.env.NODE_ENV === 'development';
+const AdminSidebar = dynamic(() => import('@/components/admin/admin-sidebar'), {
+  ssr: false,
+});
 
 type AdminLayoutShellProps = {
   children: React.ReactNode;
@@ -34,16 +36,6 @@ export function AdminLayoutShell({
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
   /** When true, session was missing or not admin after client check; user stays in flow until they click Sign in or Logout. */
   const [sessionMissing, setSessionMissing] = useState(false);
-
-  useEffect(() => {
-    if (DEV && typeof window !== 'undefined') {
-      console.log('[AUTH_FLOW] Admin dashboard shell mounted', {
-        pathname,
-        hasInitialSession: !!initialSession?.user?.id,
-        requireClientAuthCheck,
-      });
-    }
-  }, [pathname, initialSession?.user?.id, requireClientAuthCheck]);
 
   useEffect(() => {
     if (!requireClientAuthCheck) return;

@@ -28,6 +28,13 @@ import { slotStateMachine } from '@/lib/state/slot-state-machine';
 import { emitSlotReserved, emitSlotBooked, emitSlotReleased } from '@/lib/events/slot-events';
 import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 import { auditService } from '@/services/audit.service';
+import {
+  buildQueryCacheKey,
+  withQueryCache,
+  invalidateSlotsCache,
+  QUERY_CACHE_TTL,
+  QUERY_CACHE_PREFIX,
+} from '@/lib/cache/query-cache';
 
 type SalonTimeConfig = {
   opening_time: string;
@@ -168,6 +175,25 @@ export class SlotService {
   ): Promise<Slot[]> {
     const startTime = Date.now();
     const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
+
+    // Build cache key for slot availability
+    const cacheKey = buildQueryCacheKey(`${QUERY_CACHE_PREFIX.SLOTS}${salonId}:`, normalizedDate, {
+      skipCleanup: options?.skipCleanup,
+    });
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.SLOT_AVAILABILITY, async () => {
+      return this._getAvailableSlotsUncached(salonId, normalizedDate, salonConfig, options);
+    }).finally(() => {
+      safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
+    });
+  }
+
+  private async _getAvailableSlotsUncached(
+    salonId: string,
+    normalizedDate: string,
+    salonConfig?: SalonTimeConfig,
+    options?: { skipCleanup?: boolean }
+  ): Promise<Slot[]> {
     const now = new Date();
     const nowIso = now.toISOString();
 
@@ -204,7 +230,6 @@ export class SlotService {
     }
 
     if (!salonConfig) {
-      safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
       return [];
     }
 
@@ -214,7 +239,6 @@ export class SlotService {
       salonConfig.slot_duration
     );
     if (fullDayIntervals.length === 0) {
-      safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
       return [];
     }
 
@@ -247,7 +271,6 @@ export class SlotService {
 
     processedSlots.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
-    safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
     return processedSlots;
   }
 
@@ -297,7 +320,11 @@ export class SlotService {
     }
 
     const updatedSlot = await getSlotById(slotId);
-    if (updatedSlot) await emitSlotReserved(updatedSlot);
+    if (updatedSlot) {
+      await emitSlotReserved(updatedSlot);
+      // Invalidate slots cache after reservation
+      void invalidateSlotsCache(slot.business_id, slot.date);
+    }
 
     try {
       await auditService.createAuditLog(null, 'slot_reserved', 'slot', {
@@ -327,6 +354,8 @@ export class SlotService {
     const updatedSlot = await getSlotById(slotId);
     if (updatedSlot) {
       await emitSlotReleased(updatedSlot);
+      // Invalidate slots cache after release
+      void invalidateSlotsCache(slot.business_id, slot.date);
       try {
         await auditService.createAuditLog(null, 'slot_released', 'slot', {
           entityId: slotId,
@@ -361,6 +390,8 @@ export class SlotService {
     const updatedSlot = await getSlotById(slotId);
     if (updatedSlot) {
       await emitSlotBooked(updatedSlot);
+      // Invalidate slots cache after booking
+      void invalidateSlotsCache(slot.business_id, slot.date);
       try {
         await auditService.createAuditLog(null, 'slot_booked', 'slot', {
           entityId: slotId,

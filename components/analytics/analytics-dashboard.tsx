@@ -159,39 +159,27 @@ export default function AnalyticsDashboard({
       const { user } = await getServerSessionClient();
       if (!user) throw new Error('Authentication required');
 
-      const isSingleBusiness = selectedBusinessId !== 'all';
-      const requests: Promise<Response>[] = [
-        fetch(
-          `/api/owner/analytics?business_id=${selectedBusinessId}&type=overview&start_date=${startDate}&end_date=${endDate}`,
-          { credentials: 'include' }
-        ),
-        fetch(
-          `/api/owner/analytics?business_id=${selectedBusinessId}&type=daily&start_date=${startDate}&end_date=${endDate}`,
-          { credentials: 'include' }
-        ),
-        fetch(
-          `/api/owner/analytics?business_id=${selectedBusinessId}&type=peak-hours&start_date=${startDate}&end_date=${endDate}`,
-          { credentials: 'include' }
-        ),
-        fetch(`/api/owner/analytics?business_id=${selectedBusinessId}&type=retention`, {
-          credentials: 'include',
-        }),
-      ];
-      if (isSingleBusiness) {
-        requests.push(
-          fetch(
-            `/api/owner/analytics?business_id=${selectedBusinessId}&type=advanced&start_date=${startDate}&end_date=${endDate}`,
-            { credentials: 'include' }
-          )
-        );
+      const response = await fetch(
+        `/api/owner/analytics?business_id=${selectedBusinessId}&aggregated=true&start_date=${startDate}&end_date=${endDate}`,
+        { credentials: 'include' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
       }
-      const settled = await Promise.allSettled(requests);
-      const overviewRes = settled[0].status === 'fulfilled' ? settled[0].value : null;
-      const dailyRes = settled[1].status === 'fulfilled' ? settled[1].value : null;
-      const peakRes = settled[2].status === 'fulfilled' ? settled[2].value : null;
-      const retentionRes = settled[3].status === 'fulfilled' ? settled[3].value : null;
-      const advancedRes =
-        isSingleBusiness && settled[4].status === 'fulfilled' ? settled[4].value : null;
+
+      const json = await response.json();
+      if (!json?.success || !json?.data) {
+        throw new Error('Invalid analytics response');
+      }
+
+      const data = json.data as {
+        overview?: AnalyticsOverview | null;
+        daily?: DailyPoint[];
+        peakHours?: PeakHourPoint[];
+        retention?: RetentionPoint[];
+        advanced?: AdvancedAnalytics | null;
+      };
 
       const next: {
         analytics: AnalyticsOverview | null;
@@ -200,42 +188,23 @@ export default function AnalyticsDashboard({
         retention: RetentionPoint[];
         advancedAnalytics: AdvancedAnalytics | null;
       } = {
-        analytics: null,
-        dailyData: [],
-        peakHours: [],
-        retention: [],
+        analytics: data.overview ?? null,
+        dailyData: data.daily ?? [],
+        peakHours: data.peakHours ?? [],
+        retention: data.retention ?? [],
         advancedAnalytics: null,
       };
 
-      if (overviewRes?.ok) {
-        const json = await overviewRes.json();
-        if (json?.success) next.analytics = json.data;
-      }
-      if (dailyRes?.ok) {
-        const json = await dailyRes.json();
-        if (json?.success) next.dailyData = json.data;
-      }
-      if (peakRes?.ok) {
-        const json = await peakRes.json();
-        if (json?.success) next.peakHours = json.data;
-      }
-      if (retentionRes?.ok) {
-        const json = await retentionRes.json();
-        if (json?.success) next.retention = json.data;
-      }
-      if (advancedRes?.ok) {
-        const json = await advancedRes.json();
-        if (json?.success && json.data) {
-          next.advancedAnalytics = {
-            peakHoursHeatmap: json.data.peakHoursHeatmap ?? [],
-            repeatCustomerPercentage: json.data.repeatCustomerPercentage ?? 0,
-            cancellationRate: json.data.cancellationRate ?? 0,
-            revenueTrend: json.data.revenueTrend ?? [],
-            servicePopularityRanking: json.data.servicePopularityRanking ?? [],
-          };
-          if (next.advancedAnalytics.peakHoursHeatmap.length > 0) {
-            next.peakHours = next.advancedAnalytics.peakHoursHeatmap;
-          }
+      if (data.advanced) {
+        next.advancedAnalytics = {
+          peakHoursHeatmap: data.advanced.peakHoursHeatmap ?? [],
+          repeatCustomerPercentage: data.advanced.repeatCustomerPercentage ?? 0,
+          cancellationRate: data.advanced.cancellationRate ?? 0,
+          revenueTrend: data.advanced.revenueTrend ?? [],
+          servicePopularityRanking: data.advanced.servicePopularityRanking ?? [],
+        };
+        if (next.advancedAnalytics.peakHoursHeatmap.length > 0) {
+          next.peakHours = next.advancedAnalytics.peakHoursHeatmap;
         }
       }
 

@@ -693,6 +693,41 @@ export const CACHE_TTL_BOOKING_MS = 30 * 1000;
 export const CACHE_TTL_SEARCH_MS = 60 * 1000;
 export const CACHE_STALE_GRACE_MS = 30 * 1000; // Serve stale up to 30s while revalidating (API)
 export const API_CACHE_MAX_KEYS = 500;
+
+/** Redis cache TTL in seconds (for use with ioredis SETEX). */
+export const REDIS_CACHE_TTL = {
+  /** Public data (categories, public business lists): 5 min */
+  PUBLIC: 300,
+  /** Dashboard stats (owner/admin metrics): 30s for freshness */
+  DASHBOARD: 30,
+  /** Slots availability: 10s (real-time sensitive) */
+  SLOTS: 10,
+  /** Business profiles: 10 min */
+  BUSINESS_PROFILE: 600,
+  /** User profiles/auth data: 5 min */
+  USER_PROFILE: 300,
+  /** Search results: 60s */
+  SEARCH: 60,
+  /** Static metadata (categories, config): 10 min */
+  STATIC: 600,
+  /** Session/auth cache: 5 min */
+  SESSION: 300,
+  /** Booking details: 30s (status changes frequently) */
+  BOOKING: 30,
+} as const;
+
+/** Redis cache key prefixes for namespacing. */
+export const REDIS_CACHE_PREFIX = {
+  BUSINESS: 'business:',
+  SLOTS: 'slots:',
+  BOOKING: 'booking:',
+  USER: 'user:',
+  DASHBOARD: 'dashboard:',
+  SEARCH: 'search:',
+  STATIC: 'static:',
+  SESSION: 'session:',
+  CATEGORIES: 'categories:',
+} as const;
 export const SLOW_REQUEST_MS = 200; // Log and flag requests above this
 export const API_PAGINATION_DEFAULT_LIMIT = 25;
 export const API_PAGINATION_MAX_LIMIT = 100;
@@ -855,3 +890,31 @@ export const STRESS_EVENT_LOOP_LAG_THRESHOLD_MS = 500;
 export const STRESS_CPU_LIMIT_PCT = 95;
 export const STRESS_CPU_SUSTAINED_SAMPLES = 3;
 export const STRESS_POOL_EXHAUSTION_PCT = 95;
+
+/** Performance monitoring: Web Vitals thresholds (ms, except CLS which is a score). */
+export const PERF_THRESHOLD_LCP_GOOD_MS = 2500;
+export const PERF_THRESHOLD_LCP_POOR_MS = 4000;
+export const PERF_THRESHOLD_FID_GOOD_MS = 100;
+export const PERF_THRESHOLD_FID_POOR_MS = 300;
+export const PERF_THRESHOLD_CLS_GOOD = 0.1;
+export const PERF_THRESHOLD_CLS_POOR = 0.25;
+export const PERF_THRESHOLD_FCP_GOOD_MS = 1800;
+export const PERF_THRESHOLD_FCP_POOR_MS = 3000;
+export const PERF_THRESHOLD_TTFB_GOOD_MS = 800;
+export const PERF_THRESHOLD_TTFB_POOR_MS = 1800;
+
+/** Performance monitoring: API latency thresholds (ms). */
+export const PERF_THRESHOLD_API_GOOD_MS = 200;
+export const PERF_THRESHOLD_API_POOR_MS = 500;
+export const PERF_THRESHOLD_API_CRITICAL_MS = 2000;
+
+/** Performance monitoring: Hydration thresholds (ms). */
+export const PERF_THRESHOLD_HYDRATION_GOOD_MS = 500;
+export const PERF_THRESHOLD_HYDRATION_POOR_MS = 1500;
+
+/** Performance monitoring: Sample rate in production (0.0-1.0). */
+export const PERF_SAMPLE_RATE_PRODUCTION = 0.1;
+/** Performance monitoring: Batch size before sending metrics. */
+export const PERF_METRICS_BATCH_SIZE = 10;
+/** Performance monitoring: Flush interval (ms). */
+export const PERF_METRICS_FLUSH_INTERVAL_MS = 5000;

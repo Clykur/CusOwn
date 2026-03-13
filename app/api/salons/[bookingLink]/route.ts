@@ -14,6 +14,12 @@ import { dedupe } from '@/lib/cache/request-dedup';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { env } from '@/config/env';
+import {
+  buildApiRedisKeyFromPath,
+  getApiRedisCache,
+  setApiRedisCache,
+  API_REDIS_TTL,
+} from '@/lib/cache/api-redis-cache';
 
 // Strict rate limiting for salon access: 30 requests per minute per IP
 const salonAccessRateLimit = enhancedRateLimit({
@@ -65,21 +71,41 @@ export async function GET(
       }
     }
 
-    const cacheKey = buildApiCacheKey('GET', `/api/salons/${bookingLink}`);
-    let cachedSalon = getCachedApiResponse<{ data: unknown }>(cacheKey)?.data;
-    let salon = cachedSalon as Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
-    if (!salon) {
-      if (isUUID) {
-        salon = await dedupe(`salon:id:${bookingLink}`, () =>
-          salonService.getSalonById(bookingLink)
-        );
-      } else {
-        salon = await dedupe(`salon:slug:${bookingLink}`, () =>
-          salonService.getSalonByBookingLink(bookingLink)
-        );
+    // Check Redis cache first (for public booking link access)
+    const redisKey = buildApiRedisKeyFromPath(`/api/salons/${bookingLink}`);
+    let salon: Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
+
+    // Only use Redis cache for non-UUID (public slug) access without auth context
+    if (!isUUID) {
+      const redisCached =
+        await getApiRedisCache<Awaited<ReturnType<typeof salonService.getSalonById>>>(redisKey);
+      if (redisCached) {
+        salon = redisCached;
       }
-      if (salon) {
-        setCachedApiResponse(cacheKey, { data: salon }, CACHE_TTL_API_LONG_MS);
+    }
+
+    // Check in-memory cache if not found in Redis
+    if (!salon) {
+      const cacheKey = buildApiCacheKey('GET', `/api/salons/${bookingLink}`);
+      const cachedSalon = getCachedApiResponse<{ data: unknown }>(cacheKey)?.data;
+      salon = cachedSalon as Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
+      if (!salon) {
+        if (isUUID) {
+          salon = await dedupe(`salon:id:${bookingLink}`, () =>
+            salonService.getSalonById(bookingLink)
+          );
+        } else {
+          salon = await dedupe(`salon:slug:${bookingLink}`, () =>
+            salonService.getSalonByBookingLink(bookingLink)
+          );
+        }
+        if (salon) {
+          // Cache in both Redis (for public slug access) and in-memory
+          if (!isUUID) {
+            await setApiRedisCache(redisKey, salon, API_REDIS_TTL.BUSINESS_PROFILE);
+          }
+          setCachedApiResponse(cacheKey, { data: salon }, CACHE_TTL_API_LONG_MS);
+        }
       }
     }
 

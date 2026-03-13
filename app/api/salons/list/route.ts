@@ -5,6 +5,12 @@ import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
+import {
+  buildApiRedisKeyFromPath,
+  getApiRedisCache,
+  setApiRedisCache,
+  API_REDIS_TTL,
+} from '@/lib/cache/api-redis-cache';
 
 export async function GET(request: NextRequest) {
   const clientIP = getClientIp(request);
@@ -24,6 +30,17 @@ export async function GET(request: NextRequest) {
         console.warn(`[SECURITY] Location parameter too long from IP: ${clientIP}`);
         return errorResponse('Invalid location parameter', 400);
       }
+    }
+
+    // Check Redis cache first
+    const redisKey = buildApiRedisKeyFromPath('/api/salons/list', {
+      location: sanitizedLocation || undefined,
+    });
+    const redisCached = await getApiRedisCache<unknown[]>(redisKey);
+    if (redisCached) {
+      const response = successResponse(redisCached);
+      setCacheHeaders(response, 300, 600);
+      return response;
     }
 
     if (!supabaseAdmin) {
@@ -52,6 +69,9 @@ export async function GET(request: NextRequest) {
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
+
+    // Cache in Redis
+    await setApiRedisCache(redisKey, data || [], API_REDIS_TTL.SALONS_LIST);
 
     const response = successResponse(data || []);
     setCacheHeaders(response, 300, 600);

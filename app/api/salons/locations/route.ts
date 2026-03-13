@@ -4,9 +4,24 @@ import { successResponse } from '@/lib/utils/response';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { applyActiveBusinessFilters } from '@/lib/db/business-query-filters';
+import {
+  buildApiRedisKeyFromPath,
+  getApiRedisCache,
+  setApiRedisCache,
+  API_REDIS_TTL,
+} from '@/lib/cache/api-redis-cache';
 
 export async function GET() {
   try {
+    // Check Redis cache first
+    const redisKey = buildApiRedisKeyFromPath('/api/salons/locations');
+    const redisCached = await getApiRedisCache<string[]>(redisKey);
+    if (redisCached) {
+      const response = successResponse(redisCached);
+      setCacheHeaders(response, API_REDIS_TTL.LOCATIONS, API_REDIS_TTL.LOCATIONS * 2);
+      return response;
+    }
+
     if (!supabaseAdmin) {
       console.error('[Locations API] Supabase admin client not available');
       return NextResponse.json(
@@ -45,8 +60,11 @@ export async function GET() {
       )
     ).sort();
 
+    // Cache in Redis
+    await setApiRedisCache(redisKey, locations, API_REDIS_TTL.LOCATIONS);
+
     const response = successResponse(locations);
-    setCacheHeaders(response, 1800, 3600);
+    setCacheHeaders(response, API_REDIS_TTL.LOCATIONS, API_REDIS_TTL.LOCATIONS * 2);
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

@@ -16,6 +16,12 @@ import {
   GEO_RATE_LIMIT_MAX_PER_WINDOW,
   GEO_CACHE_MAX_AGE_SECONDS,
 } from '@/config/constants';
+import {
+  buildApiRedisKeyFromPath,
+  getApiRedisCache,
+  setApiRedisCache,
+  API_REDIS_TTL,
+} from '@/lib/cache/api-redis-cache';
 
 const geoRateLimit = enhancedRateLimit({
   maxRequests: GEO_RATE_LIMIT_MAX_PER_WINDOW,
@@ -50,6 +56,23 @@ export async function GET(request: NextRequest) {
 
   const ipToLookup = ip && ip !== '' ? ip : clientIp;
 
+  // Check Redis cache first (geo data is highly cacheable)
+  const redisKey = buildApiRedisKeyFromPath('/api/geo/ip', { ip: ipToLookup });
+  const redisCached = await getApiRedisCache<{
+    ip: string;
+    city: string;
+    region: string;
+    countryCode: string;
+    countryName: string;
+    latitude: number;
+    longitude: number;
+  }>(redisKey);
+  if (redisCached) {
+    const response = successResponse(redisCached);
+    setCacheHeaders(response, Math.min(GEO_CACHE_MAX_AGE_SECONDS, API_REDIS_TTL.GEO), 7200);
+    return response;
+  }
+
   // Handle local development / private IPs
   const isLocal =
     ipToLookup === '::1' ||
@@ -76,7 +99,7 @@ export async function GET(request: NextRequest) {
     return errorResponse(ERROR_MESSAGES.GEO_SERVICE_UNAVAILABLE, 503);
   }
 
-  const response = successResponse({
+  const responseData = {
     ip: data.ip || clientIp,
     city: data.city,
     region: data.state,
@@ -84,7 +107,12 @@ export async function GET(request: NextRequest) {
     countryName: data.country,
     latitude: data.latitude,
     longitude: data.longitude,
-  });
-  setCacheHeaders(response, Math.min(GEO_CACHE_MAX_AGE_SECONDS, 3600), 7200);
+  };
+
+  // Cache in Redis (geo data changes rarely)
+  await setApiRedisCache(redisKey, responseData, API_REDIS_TTL.GEO);
+
+  const response = successResponse(responseData);
+  setCacheHeaders(response, Math.min(GEO_CACHE_MAX_AGE_SECONDS, API_REDIS_TTL.GEO), 7200);
   return response;
 }

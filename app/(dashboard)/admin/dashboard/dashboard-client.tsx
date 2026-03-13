@@ -1,12 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import SuccessMetricsDashboard from '@/components/admin/success-metrics-dashboard';
-import AdminAnalyticsTab from '@/components/admin/admin-analytics-tab';
-import { AdminCronMonitorTab } from '@/components/admin/admin-cron-monitor-tab';
-import { AdminAuthManagementTab } from '@/components/admin/admin-auth-management-tab';
-import { AdminStorageOverviewTab } from '@/components/admin/admin-storage-overview-tab';
 import { DashboardErrorBoundary } from '@/components/admin/dashboard-error-boundary';
 import CloseIcon from '@/src/icons/close.svg';
 import { AdminMetricCard } from '@/components/admin/admin-metric-card';
@@ -25,34 +21,47 @@ import {
   AdminDashboardSkeleton,
   AdminAnalyticsSkeleton,
   OverviewSkeleton,
-  UsersTableBodySkeleton,
 } from '@/components/ui/skeleton';
 import FilterDropdown from '@/components/analytics/FilterDropdown';
 import { ROUTES, getAdminDashboardUrl } from '@/lib/utils/navigation';
 import { SUCCESS_MESSAGES } from '@/config/constants';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
-import { Line, Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { useAdminDashboardStore } from '@/lib/store/admin-dashboard-store';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
+const AdminBusinessesTab = lazy(() => import('@/components/admin/admin-businesses-tab'));
+const AdminUsersTab = lazy(() => import('@/components/admin/admin-users-tab'));
+const AdminBookingsTab = lazy(() => import('@/components/admin/admin-bookings-tab'));
+
+const SuccessMetricsDashboard = dynamic(
+  () => import('@/components/admin/success-metrics-dashboard'),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+);
+const AdminAnalyticsTab = dynamic(() => import('@/components/admin/admin-analytics-tab'), {
+  ssr: false,
+  loading: () => <AdminAnalyticsSkeleton />,
+});
+const AdminCronMonitorTab = dynamic(
+  () => import('@/components/admin/admin-cron-monitor-tab').then((m) => m.AdminCronMonitorTab),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+);
+const AdminAuthManagementTab = dynamic(
+  () =>
+    import('@/components/admin/admin-auth-management-tab').then((m) => m.AdminAuthManagementTab),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+);
+const AdminStorageOverviewTab = dynamic(
+  () =>
+    import('@/components/admin/admin-storage-overview-tab').then((m) => m.AdminStorageOverviewTab),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+);
+
+const LazyLine = dynamic(
+  () => import('@/components/admin/lazy-charts').then((m) => ({ default: m.Line })),
+  { ssr: false }
+);
+const LazyBar = dynamic(
+  () => import('@/components/admin/lazy-charts').then((m) => ({ default: m.Bar })),
+  { ssr: false }
 );
 
 function PrefetchAnalyticsWhenReady({ adminConfirmed }: { adminConfirmed: boolean }) {
@@ -136,10 +145,14 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [adminConfirmed, setAdminConfirmed] = useState(!!initialAdminConfirmed);
   const [usersToastMessage, setUsersToastMessage] = useState<string | null>(null);
-  const [overviewLoadSettled, setOverviewLoadSettled] = useState(false);
+  const dashboardStore = useAdminDashboardStore();
+  const hasStoreData = dashboardStore.metrics !== null;
+
+  const [overviewLoadSettled, setOverviewLoadSettled] = useState(hasStoreData);
   const [overviewRetryKey, setOverviewRetryKey] = useState(0);
-  const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
-  const [trends, setTrends] = useState<BookingTrend[]>([]);
+
+  const [metrics, setMetrics] = useState<PlatformMetrics | null>(() => dashboardStore.metrics);
+  const [trends, setTrends] = useState<BookingTrend[]>(() => dashboardStore.trends);
   const [revenueSnapshot, setRevenueSnapshot] = useState<{
     totalRevenue: number;
     revenueToday: number;
@@ -147,7 +160,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
     revenueMonth: number;
     paymentSuccessRate: number;
     failedPayments: number;
-  } | null>(null);
+  } | null>(() => dashboardStore.revenueSnapshot as any);
   const [overviewExtras, setOverviewExtras] = useState<{
     failedBookingsLast24h: number;
     cronRunsLast24h: number;
@@ -156,7 +169,23 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
       cronExpireBookingsOk: boolean;
       cronExpireBookingsLastRun: string | null;
     };
-  } | null>(null);
+  } | null>(() => dashboardStore.overviewExtras as any);
+
+  useEffect(() => {
+    if (metrics) dashboardStore.setMetrics(metrics);
+  }, [metrics]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (trends.length > 0) dashboardStore.setTrends(trends);
+  }, [trends]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (revenueSnapshot) dashboardStore.setRevenueSnapshot(revenueSnapshot as any);
+  }, [revenueSnapshot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (overviewExtras) dashboardStore.setOverviewExtras(overviewExtras as any);
+  }, [overviewExtras]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toastParam = searchParams?.get('toast');
   useEffect(() => {
@@ -305,82 +334,157 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
       if (staleEntry.data.revenueSnapshot) setRevenueSnapshot(staleEntry.data.revenueSnapshot);
     }
 
-    Promise.allSettled([
-      adminFetch('/api/admin/metrics', opts).then((r) => r.json()),
-      adminFetch(`/api/admin/trends?days=${OVERVIEW_DAYS}`, opts).then((r) => r.json()),
-      adminFetch(`/api/admin/revenue-metrics?days=${OVERVIEW_DAYS}`, opts).then((r) =>
-        r.ok ? r.json() : null
-      ),
-      adminFetch('/api/admin/overview', opts).then((r) => (r.ok ? r.json() : null)),
-    ]).then(([metricsResult, trendsResult, revenueResult, overviewResult]) => {
-      setOverviewLoadSettled(true);
-      if (metricsResult.status === 'fulfilled' && metricsResult.value?.success) {
-        setMetrics(metricsResult.value.data);
-      }
-      if (trendsResult.status === 'fulfilled' && trendsResult.value?.success) {
-        setTrends(trendsResult.value.data ?? []);
-      }
-      if (revenueResult.status === 'fulfilled' && revenueResult.value?.data) {
-        const r = revenueResult.value.data;
-        setRevenueSnapshot({
-          totalRevenue: r.totalRevenue ?? 0,
-          revenueToday: r.revenueToday ?? 0,
-          revenueWeek: r.revenueWeek ?? 0,
-          revenueMonth: r.revenueMonth ?? 0,
-          paymentSuccessRate: r.paymentSuccessRate ?? 0,
-          failedPayments: r.failedPayments ?? 0,
-        });
-      }
-      if (overviewResult.status === 'fulfilled' && overviewResult.value?.data) {
-        const o = overviewResult.value.data as {
-          failedBookingsLast24h?: number;
-          cronRunsLast24h?: number;
-          systemHealth?: {
-            status?: string;
-            cronExpireBookingsOk?: boolean;
-            cronExpireBookingsLastRun?: string | null;
+    adminFetch(`/api/admin/overview?aggregated=true&days=${OVERVIEW_DAYS}`, opts)
+      .then((r) => r.json())
+      .then((result) => {
+        setOverviewLoadSettled(true);
+        if (!result?.success || !result?.data) return;
+
+        const data = result.data as {
+          metrics?: PlatformMetrics;
+          trends?: BookingTrend[];
+          revenueSnapshot?: {
+            totalRevenue: number;
+            revenueToday: number;
+            revenueWeek: number;
+            revenueMonth: number;
+            paymentSuccessRate: number;
+            failedPayments: number;
+          };
+          overviewExtras?: {
+            failedBookingsLast24h: number;
+            cronRunsLast24h: number;
+            systemHealth: {
+              status: string;
+              cronExpireBookingsOk: boolean;
+              cronExpireBookingsLastRun: string | null;
+            };
           };
         };
-        if (o.systemHealth) {
+
+        if (data.metrics) {
+          setMetrics(data.metrics);
+        }
+        if (data.trends?.length) {
+          setTrends(data.trends);
+        }
+        if (data.revenueSnapshot) {
+          setRevenueSnapshot(data.revenueSnapshot);
+        }
+        if (data.overviewExtras?.systemHealth) {
           setOverviewExtras({
-            failedBookingsLast24h: o.failedBookingsLast24h ?? 0,
-            cronRunsLast24h: o.cronRunsLast24h ?? 0,
+            failedBookingsLast24h: data.overviewExtras.failedBookingsLast24h ?? 0,
+            cronRunsLast24h: data.overviewExtras.cronRunsLast24h ?? 0,
             systemHealth: {
-              status: o.systemHealth.status ?? 'unknown',
-              cronExpireBookingsOk: o.systemHealth.cronExpireBookingsOk ?? false,
-              cronExpireBookingsLastRun: o.systemHealth.cronExpireBookingsLastRun ?? null,
+              status: data.overviewExtras.systemHealth.status ?? 'unknown',
+              cronExpireBookingsOk: data.overviewExtras.systemHealth.cronExpireBookingsOk ?? false,
+              cronExpireBookingsLastRun:
+                data.overviewExtras.systemHealth.cronExpireBookingsLastRun ?? null,
             },
           });
         }
-      }
-      const storedMetrics =
-        metricsResult.status === 'fulfilled' && metricsResult.value?.success
-          ? metricsResult.value.data
-          : null;
-      const storedTrends =
-        trendsResult.status === 'fulfilled' && trendsResult.value?.success
-          ? (trendsResult.value.data ?? [])
-          : [];
-      const revData =
-        revenueResult.status === 'fulfilled' && revenueResult.value?.data
-          ? revenueResult.value.data
-          : null;
-      setAdminCache(ADMIN_CACHE_KEYS.OVERVIEW, {
-        metrics: storedMetrics,
-        trends: storedTrends,
-        revenueSnapshot: revData
-          ? {
-              totalRevenue: revData.totalRevenue ?? 0,
-              revenueToday: revData.revenueToday ?? 0,
-              revenueWeek: revData.revenueWeek ?? 0,
-              revenueMonth: revData.revenueMonth ?? 0,
-              paymentSuccessRate: revData.paymentSuccessRate ?? 0,
-              failedPayments: revData.failedPayments ?? 0,
-            }
-          : null,
+
+        setAdminCache(ADMIN_CACHE_KEYS.OVERVIEW, {
+          metrics: data.metrics ?? null,
+          trends: data.trends ?? [],
+          revenueSnapshot: data.revenueSnapshot ?? null,
+        });
+      })
+      .catch(() => {
+        setOverviewLoadSettled(true);
       });
-    });
   }, [ready, adminConfirmed, prefetchListData, overviewRetryKey]);
+
+  const bookingTrendsChart = useMemo(
+    () => ({
+      labels: trends.map((t) => {
+        const date = new Date(t.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      }),
+      datasets: [
+        {
+          label: 'Total Bookings',
+          data: trends.map((t) => t.total),
+          backgroundColor: 'rgb(0, 0, 0)',
+          borderColor: 'rgb(0, 0, 0)',
+          borderWidth: 2,
+        },
+        {
+          label: 'Confirmed',
+          data: trends.map((t) => t.confirmed),
+          backgroundColor: 'rgb(64, 64, 64)',
+          borderColor: 'rgb(64, 64, 64)',
+          borderWidth: 2,
+        },
+        {
+          label: 'Rejected',
+          data: trends.map((t) => t.rejected),
+          backgroundColor: 'rgb(128, 128, 128)',
+          borderColor: 'rgb(128, 128, 128)',
+          borderWidth: 2,
+        },
+      ],
+    }),
+    [trends]
+  );
+
+  const bookingStatusChart = useMemo(
+    () =>
+      metrics
+        ? {
+            labels: ['Confirmed', 'Pending', 'Rejected', 'Cancelled'],
+            datasets: [
+              {
+                label: 'Number of Bookings',
+                data: [
+                  metrics.confirmedBookings,
+                  metrics.pendingBookings,
+                  metrics.rejectedBookings,
+                  metrics.cancelledBookings,
+                ],
+                backgroundColor: [
+                  'rgb(0, 0, 0)',
+                  'rgb(64, 64, 64)',
+                  'rgb(128, 128, 128)',
+                  'rgb(192, 192, 192)',
+                ],
+                borderColor: 'rgb(0, 0, 0)',
+                borderWidth: 2,
+              },
+            ],
+          }
+        : null,
+    [metrics]
+  );
+
+  const growthChart = useMemo(
+    () =>
+      metrics
+        ? {
+            labels: ['Businesses', 'Bookings', 'Owners'],
+            datasets: [
+              {
+                label: 'Growth Rate (%)',
+                data: [
+                  metrics.growthRate.businesses,
+                  metrics.growthRate.bookings,
+                  metrics.growthRate.owners,
+                ],
+                borderColor: 'rgb(0, 0, 0)',
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 8,
+                pointBackgroundColor: ['rgb(0, 0, 0)', 'rgb(64, 64, 64)', 'rgb(128, 128, 128)'],
+                pointBorderColor: 'rgb(0, 0, 0)',
+                pointBorderWidth: 2,
+              },
+            ],
+          }
+        : null,
+    [metrics]
+  );
 
   if (!ready) {
     const isAnalyticsTab = activeTab === 'analytics';
@@ -492,93 +596,6 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
       </div>
     );
   }
-
-  // Bar chart for Booking Trends (30 Days) - using different shades of black/gray
-  const bookingTrendsChart = {
-    labels: trends.map((t) => {
-      const date = new Date(t.date);
-      return `${date.getMonth() + 1}/${date.getDate()}`;
-    }),
-    datasets: [
-      {
-        label: 'Total Bookings',
-        data: trends.map((t) => t.total),
-        backgroundColor: 'rgb(0, 0, 0)', // Pure black
-        borderColor: 'rgb(0, 0, 0)',
-        borderWidth: 2,
-      },
-      {
-        label: 'Confirmed',
-        data: trends.map((t) => t.confirmed),
-        backgroundColor: 'rgb(64, 64, 64)', // Dark gray
-        borderColor: 'rgb(64, 64, 64)',
-        borderWidth: 2,
-      },
-      {
-        label: 'Rejected',
-        data: trends.map((t) => t.rejected),
-        backgroundColor: 'rgb(128, 128, 128)', // Medium gray
-        borderColor: 'rgb(128, 128, 128)',
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  // Bar chart for Booking Status Distribution - using different shades
-  const bookingStatusChart = metrics
-    ? {
-        labels: ['Confirmed', 'Pending', 'Rejected', 'Cancelled'],
-        datasets: [
-          {
-            label: 'Number of Bookings',
-            data: [
-              metrics.confirmedBookings,
-              metrics.pendingBookings,
-              metrics.rejectedBookings,
-              metrics.cancelledBookings,
-            ],
-            backgroundColor: [
-              'rgb(0, 0, 0)', // Pure black - Confirmed
-              'rgb(64, 64, 64)', // Dark gray - Pending
-              'rgb(128, 128, 128)', // Medium gray - Rejected
-              'rgb(192, 192, 192)', // Light gray - Cancelled
-            ],
-            borderColor: 'rgb(0, 0, 0)',
-            borderWidth: 2,
-          },
-        ],
-      }
-    : null;
-
-  // Line chart for Growth Trends - single line with different point colors
-  const growthChart = metrics
-    ? {
-        labels: ['Businesses', 'Bookings', 'Owners'],
-        datasets: [
-          {
-            label: 'Growth Rate (%)',
-            data: [
-              metrics.growthRate.businesses,
-              metrics.growthRate.bookings,
-              metrics.growthRate.owners,
-            ],
-            borderColor: 'rgb(0, 0, 0)', // Pure black line
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointRadius: 8,
-            pointBackgroundColor: [
-              'rgb(0, 0, 0)', // Pure black for Businesses
-              'rgb(64, 64, 64)', // Dark gray for Bookings
-              'rgb(128, 128, 128)', // Medium gray for Owners
-            ],
-            pointBorderColor: 'rgb(0, 0, 0)',
-            pointBorderWidth: 2,
-          },
-        ],
-      }
-    : null;
 
   return (
     <AdminPrefetchProvider sessionReady={!!(ready && session)}>
@@ -758,7 +775,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                       subtitle="Daily totals and status breakdown"
                     >
                       {trends.length > 0 ? (
-                        <Bar
+                        <LazyBar
                           data={bookingTrendsChart}
                           options={{
                             responsive: true,
@@ -781,7 +798,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                       subtitle="Confirmed, pending, rejected, cancelled"
                     >
                       {bookingStatusChart ? (
-                        <Bar
+                        <LazyBar
                           data={bookingStatusChart}
                           options={{
                             responsive: true,
@@ -799,7 +816,7 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
 
                   <AdminSectionWrapper title="Growth trends" subtitle="Growth rate by category">
                     {growthChart ? (
-                      <Line
+                      <LazyLine
                         data={growthChart}
                         options={{
                           responsive: true,
@@ -820,10 +837,12 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
               )}
 
               {activeTab === 'businesses' && (
-                <BusinessesTab
-                  page={currentPage}
-                  onPageChange={(p) => router.replace(getAdminDashboardUrl('businesses', p))}
-                />
+                <Suspense fallback={<OverviewSkeleton />}>
+                  <AdminBusinessesTab
+                    page={currentPage}
+                    onPageChange={(p) => router.replace(getAdminDashboardUrl('businesses', p))}
+                  />
+                </Suspense>
               )}
 
               {activeTab === 'users' && (
@@ -845,18 +864,22 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
                       </button>
                     </div>
                   )}
-                  <UsersTab
-                    page={currentPage}
-                    onPageChange={(p) => router.replace(getAdminDashboardUrl('users', p))}
-                  />
+                  <Suspense fallback={<OverviewSkeleton />}>
+                    <AdminUsersTab
+                      page={currentPage}
+                      onPageChange={(p) => router.replace(getAdminDashboardUrl('users', p))}
+                    />
+                  </Suspense>
                 </div>
               )}
 
               {activeTab === 'bookings' && (
-                <BookingsTab
-                  page={currentPage}
-                  onPageChange={(p) => router.replace(getAdminDashboardUrl('bookings', p))}
-                />
+                <Suspense fallback={<OverviewSkeleton />}>
+                  <AdminBookingsTab
+                    page={currentPage}
+                    onPageChange={(p) => router.replace(getAdminDashboardUrl('bookings', p))}
+                  />
+                </Suspense>
               )}
 
               {activeTab === 'audit' && (
@@ -893,849 +916,6 @@ export default function AdminDashboardClient({ initialTab }: { initialTab: strin
 interface ListTabPageProps {
   page?: number;
   onPageChange?: (p: number) => void;
-}
-
-function BusinessesTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
-  const router = useRouter();
-  const { session, ready } = useAdminSession();
-  const [businesses, setBusinesses] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [internalPage, setInternalPage] = useState(1);
-  const page = controlledPage ?? internalPage;
-  const setPage = onPageChange
-    ? (p: number | ((prev: number) => number)) =>
-        onPageChange(typeof p === 'function' ? p(page) : p)
-    : setInternalPage;
-
-  const prevSearchRef = useRef(searchQuery);
-  useEffect(() => {
-    if (prevSearchRef.current !== searchQuery) {
-      prevSearchRef.current = searchQuery;
-      if (onPageChange) onPageChange(1);
-      else setInternalPage(1);
-    }
-  }, [searchQuery, onPageChange]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setError(null);
-    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.BUSINESSES);
-    if (cached && Array.isArray(cached)) {
-      setBusinesses(cached);
-      setLoading(false);
-      return;
-    }
-    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.BUSINESSES);
-    if (stale?.data && Array.isArray(stale.data)) {
-      setBusinesses(stale.data);
-      setLoading(false);
-      if (!ready || !session) return;
-      adminFetch('/api/admin/businesses', { credentials: 'include' })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            const list = Array.isArray(data.data) ? data.data : [];
-            setBusinesses(list);
-            setAdminCache(ADMIN_CACHE_KEYS.BUSINESSES, list);
-          }
-        })
-        .catch(() => {});
-      return;
-    }
-    if (!ready || !session) {
-      setError('Session expired. Please log in again.');
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const ac = new AbortController();
-    adminFetch('/api/admin/businesses', {
-      credentials: 'include',
-      signal: ac.signal,
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (ac.signal.aborted) return;
-        if (data.success) {
-          const list = Array.isArray(data.data) ? data.data : [];
-          setBusinesses(list);
-          setAdminCache(ADMIN_CACHE_KEYS.BUSINESSES, list);
-        } else {
-          setError(data.error || 'Failed to load businesses');
-        }
-      })
-      .catch((err) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to load businesses');
-      })
-      .finally(() => {
-        if (!ac.signal.aborted) setLoading(false);
-      });
-    return () => ac.abort();
-  }, [ready, session]);
-
-  if (error) {
-    return (
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Businesses</h2>
-          <p className="text-sm text-slate-500 mt-0.5">All platform businesses — view and manage</p>
-        </div>
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-red-800">{error}</p>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Businesses</h2>
-        <p className="text-sm text-slate-500 mt-0.5">All platform businesses — view and manage</p>
-      </div>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Business list</h3>
-          </div>
-          {businesses.length > 0 && (
-            <input
-              type="search"
-              placeholder="Search businesses..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Search businesses"
-            />
-          )}
-        </div>
-        {businesses.length > 0 || loading ? (
-          <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50/80">
-                  <tr>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 min-w-[180px]">
-                      Business name
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 min-w-[160px]">
-                      Owner
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 min-w-[140px]">
-                      Location
-                    </th>
-                    <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 w-24">
-                      Bookings
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 w-28">
-                      Status
-                    </th>
-                    <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 w-24">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loading && businesses.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
-                        Loading businesses...
-                      </td>
-                    </tr>
-                  ) : (
-                    (() => {
-                      const q = searchQuery.trim().toLowerCase();
-                      const filtered = q
-                        ? businesses.filter(
-                            (b) =>
-                              (b.salon_name || b.name || '').toLowerCase().includes(q) ||
-                              (b.booking_link || '').toLowerCase().includes(q) ||
-                              (b.owner?.full_name || b.owner_name || '')
-                                .toLowerCase()
-                                .includes(q) ||
-                              (b.owner?.email || '').toLowerCase().includes(q) ||
-                              (b.location || '').toLowerCase().includes(q)
-                          )
-                        : businesses;
-                      const start = (page - 1) * TABLE_PAGE_SIZE;
-                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
-                      return paginated.map((business) => (
-                        <tr key={business.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="px-5 py-4 align-top">
-                            <div className="text-sm font-semibold text-slate-900">
-                              {business.salon_name || business.name || 'N/A'}
-                            </div>
-                            <div
-                              className="mt-0.5 text-xs text-slate-500 font-mono truncate max-w-[200px]"
-                              title={business.booking_link}
-                            >
-                              {business.booking_link || '—'}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4 align-top min-w-0">
-                            <div className="text-sm font-medium text-slate-900">
-                              {business.owner?.full_name || business.owner_name || '—'}
-                            </div>
-                            <div
-                              className="mt-0.5 text-xs text-slate-500 truncate max-w-[180px]"
-                              title={business.owner?.email}
-                            >
-                              {business.owner?.email || '—'}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600 align-top max-w-[200px]">
-                            <span
-                              className="block break-words line-clamp-2"
-                              title={business.location || undefined}
-                            >
-                              {business.location || '—'}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-right align-top">
-                            <span className="text-sm font-medium tabular-nums text-slate-900">
-                              {business.bookingCount ?? 0}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 align-top">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                business.suspended
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-emerald-100 text-emerald-800'
-                              }`}
-                            >
-                              {business.suspended ? 'Suspended' : 'Active'}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-right align-top">
-                            <button
-                              onClick={() => router.push(ROUTES.ADMIN_BUSINESS(business.id))}
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                            >
-                              Edit
-                            </button>
-                          </td>
-                        </tr>
-                      ));
-                    })()
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {!loading &&
-              (() => {
-                const q = searchQuery.trim().toLowerCase();
-                const filtered = q
-                  ? businesses.filter(
-                      (b) =>
-                        (b.salon_name || b.name || '').toLowerCase().includes(q) ||
-                        (b.booking_link || '').toLowerCase().includes(q) ||
-                        (b.owner?.full_name || b.owner_name || '').toLowerCase().includes(q) ||
-                        (b.owner?.email || '').toLowerCase().includes(q) ||
-                        (b.location || '').toLowerCase().includes(q)
-                    )
-                  : businesses;
-                const totalItems = filtered.length;
-                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
-                const start = (page - 1) * TABLE_PAGE_SIZE;
-                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
-                if (totalItems === 0) return null;
-                return (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
-                    <p className="text-sm text-slate-600">
-                      Showing {start + 1}–{end} of {totalItems}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-slate-600">
-                        Page {page} of {totalPages}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-slate-500">No businesses found</p>
-            <p className="mt-1 text-xs text-slate-400">
-              Businesses will appear here when they exist
-            </p>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function UsersTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
-  const router = useRouter();
-  const { session, ready } = useAdminSession();
-  const [users, setUsers] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [internalPage, setInternalPage] = useState(1);
-  const page = controlledPage ?? internalPage;
-  const setPage = onPageChange
-    ? (p: number | ((prev: number) => number)) =>
-        onPageChange(typeof p === 'function' ? p(page) : p)
-    : setInternalPage;
-
-  const prevSearchRef = useRef(searchQuery);
-  useEffect(() => {
-    if (prevSearchRef.current !== searchQuery) {
-      prevSearchRef.current = searchQuery;
-      if (onPageChange) onPageChange(1);
-      else setInternalPage(1);
-    }
-  }, [searchQuery, onPageChange]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setError(null);
-    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.USERS);
-    if (cached && Array.isArray(cached)) {
-      setUsers(cached);
-      setLoading(false);
-      return;
-    }
-    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.USERS);
-    if (stale?.data && Array.isArray(stale.data)) {
-      setUsers(stale.data);
-      setLoading(false);
-      if (!ready || !session) return;
-      adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
-        credentials: 'include',
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            const list = Array.isArray(data.data) ? data.data : [];
-            setUsers(list);
-            setAdminCache(ADMIN_CACHE_KEYS.USERS, list);
-          }
-        })
-        .catch(() => {});
-      return;
-    }
-    if (!ready || !session) {
-      setError('Session expired. Please log in again.');
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const ac = new AbortController();
-    adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
-      credentials: 'include',
-      signal: ac.signal,
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (ac.signal.aborted) return;
-        if (data.success) {
-          const list = Array.isArray(data.data) ? data.data : [];
-          setUsers(list);
-          setAdminCache(ADMIN_CACHE_KEYS.USERS, list);
-        } else {
-          setError(data.error || 'Failed to load users');
-        }
-      })
-      .catch((err) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to load users');
-      })
-      .finally(() => {
-        if (!ac.signal.aborted) setLoading(false);
-      });
-    return () => ac.abort();
-  }, [ready, session]);
-
-  if (error) {
-    return (
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Users</h2>
-          <p className="text-sm text-slate-500 mt-0.5">All platform users — roles and activity</p>
-        </div>
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-red-800">{error}</p>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Users</h2>
-        <p className="text-sm text-slate-500 mt-0.5">All platform users — roles and activity</p>
-      </div>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">User list</h3>
-          </div>
-          {users.length > 0 && (
-            <input
-              type="search"
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-56 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
-              aria-label="Search users"
-            />
-          )}
-        </div>
-        {users.length > 0 || loading ? (
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Name
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Email
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Type
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Businesses
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Bookings
-                    </th>
-                    <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loading && users.length === 0 ? (
-                    <UsersTableBodySkeleton />
-                  ) : (
-                    (() => {
-                      const q = searchQuery.trim().toLowerCase();
-                      const filtered = q
-                        ? users.filter(
-                            (u) =>
-                              (u.full_name || '').toLowerCase().includes(q) ||
-                              (u.email || '').toLowerCase().includes(q) ||
-                              (u.user_type || '').toLowerCase().includes(q)
-                          )
-                        : users;
-                      const start = (page - 1) * TABLE_PAGE_SIZE;
-                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
-                      return paginated.map((user) => (
-                        <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-4 text-sm font-medium text-slate-900">
-                            {' '}
-                            {user.full_name || 'N/A'}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600 break-all max-w-[280px]">
-                            {' '}
-                            {user.email}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap">
-                            <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
-                              {user.user_type}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-                            {user.businesses?.length || 0}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-                            {user.bookingCount || 0}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => router.push(ROUTES.ADMIN_USER(user.id))}
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
-                            >
-                              Manage
-                            </button>
-                          </td>
-                        </tr>
-                      ));
-                    })()
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {!loading &&
-              (() => {
-                const q = searchQuery.trim().toLowerCase();
-                const filtered = q
-                  ? users.filter(
-                      (u) =>
-                        (u.full_name || '').toLowerCase().includes(q) ||
-                        (u.email || '').toLowerCase().includes(q) ||
-                        (u.user_type || '').toLowerCase().includes(q)
-                    )
-                  : users;
-                const totalItems = filtered.length;
-                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
-                const start = (page - 1) * TABLE_PAGE_SIZE;
-                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
-                if (totalItems === 0) return null;
-                return (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
-                    <p className="text-sm text-slate-600">
-                      Showing {start + 1}–{end} of {totalItems}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-slate-600">
-                        Page {page} of {totalPages}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-slate-500">No users found</p>
-            <p className="mt-1 text-xs text-slate-400">Users will appear here when they exist</p>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function BookingsTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
-  const router = useRouter();
-  const { session, ready } = useAdminSession();
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [internalPage, setInternalPage] = useState(1);
-  const page = controlledPage ?? internalPage;
-  const setPage = onPageChange
-    ? (p: number | ((prev: number) => number)) =>
-        onPageChange(typeof p === 'function' ? p(page) : p)
-    : setInternalPage;
-
-  const prevSearchRef = useRef(searchQuery);
-  useEffect(() => {
-    if (prevSearchRef.current !== searchQuery) {
-      prevSearchRef.current = searchQuery;
-      if (onPageChange) onPageChange(1);
-      else setInternalPage(1);
-    }
-  }, [searchQuery, onPageChange]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setError(null);
-    const cached = getAdminCached<any[]>(ADMIN_CACHE_KEYS.BOOKINGS);
-    if (cached && Array.isArray(cached)) {
-      setBookings(cached);
-      setLoading(false);
-      return;
-    }
-    const stale = getAdminCachedStale<any[]>(ADMIN_CACHE_KEYS.BOOKINGS);
-    if (stale?.data && Array.isArray(stale.data)) {
-      setBookings(stale.data);
-      setLoading(false);
-      if (!ready || !session) return;
-      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
-        credentials: 'include',
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            const list = Array.isArray(data.data) ? data.data : [];
-            setBookings(list);
-            setAdminCache(ADMIN_CACHE_KEYS.BOOKINGS, list);
-          }
-        })
-        .catch(() => {});
-      return;
-    }
-    if (!ready || !session) {
-      setError('Session expired. Please log in again.');
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const ac = new AbortController();
-    adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
-      credentials: 'include',
-      signal: ac.signal,
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (ac.signal.aborted) return;
-        if (data.success) {
-          const list = Array.isArray(data.data) ? data.data : [];
-          setBookings(list);
-          setAdminCache(ADMIN_CACHE_KEYS.BOOKINGS, list);
-        } else {
-          setError(data.error || 'Failed to load bookings');
-        }
-      })
-      .catch((err) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to load bookings');
-      })
-      .finally(() => {
-        if (!ac.signal.aborted) setLoading(false);
-      });
-    return () => ac.abort();
-  }, [ready, session]);
-
-  if (error) {
-    return (
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Bookings</h2>
-          <p className="mt-0.5 text-sm text-slate-500">All platform bookings — view and manage</p>
-        </div>
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-red-800">{error}</p>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Bookings</h2>
-        <p className="mt-0.5 text-sm text-slate-500">All platform bookings — view and manage</p>
-      </div>
-
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-slate-50/60">
-          <h3 className="text-base font-semibold text-slate-800">Booking list</h3>
-          <div className="relative">
-            <input
-              type="search"
-              placeholder="Search bookings..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 rounded-lg border border-slate-200 bg-white py-2.5 pl-3 pr-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
-              aria-label="Search bookings"
-            />
-          </div>
-        </div>
-        {bookings.length > 0 || loading ? (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto divide-y divide-slate-200">
-                <thead className="bg-slate-100 border-b-2 border-slate-200">
-                  <tr>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Customer name
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Business
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Phone
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Date & time
-                    </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Status
-                    </th>
-                    <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loading && bookings.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
-                        Loading bookings...
-                      </td>
-                    </tr>
-                  ) : (
-                    (() => {
-                      const q = searchQuery.trim().toLowerCase();
-                      const filtered = q
-                        ? bookings.filter(
-                            (b) =>
-                              (b.customer_name || '').toLowerCase().includes(q) ||
-                              (b.business?.salon_name || b.business?.name || '')
-                                .toLowerCase()
-                                .includes(q) ||
-                              (b.customer_phone || '').toLowerCase().includes(q) ||
-                              (b.status || '').toLowerCase().includes(q) ||
-                              (b.slot?.date
-                                ? new Date(b.slot.date)
-                                    .toLocaleDateString()
-                                    .toLowerCase()
-                                    .includes(q)
-                                : false)
-                          )
-                        : bookings;
-                      const start = (page - 1) * TABLE_PAGE_SIZE;
-                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
-                      return paginated.map((booking) => (
-                        <tr key={booking.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                            {booking.customer_name || '—'}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-                            {booking.business?.salon_name || booking.business?.name || 'N/A'}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
-                            {booking.customer_phone || '—'}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
-                            {booking.slot ? (
-                              <>
-                                {new Date(booking.slot.date).toLocaleDateString()}
-                                <br />
-                                <span className="text-slate-500">
-                                  {booking.slot.start_time} – {booking.slot.end_time}
-                                </span>
-                              </>
-                            ) : (
-                              'N/A'
-                            )}
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                booking.status === 'confirmed'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : booking.status === 'rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : booking.status === 'pending'
-                                      ? 'bg-amber-100 text-amber-800'
-                                      : 'bg-slate-100 text-slate-800'
-                              }`}
-                            >
-                              {booking.status}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => router.push(ROUTES.ADMIN_BOOKING(booking.id))}
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
-                            >
-                              Manage
-                            </button>
-                          </td>
-                        </tr>
-                      ));
-                    })()
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {!loading &&
-              (() => {
-                const q = searchQuery.trim().toLowerCase();
-                const filtered = q
-                  ? bookings.filter(
-                      (b) =>
-                        (b.customer_name || '').toLowerCase().includes(q) ||
-                        (b.business?.salon_name || b.business?.name || '')
-                          .toLowerCase()
-                          .includes(q) ||
-                        (b.customer_phone || '').toLowerCase().includes(q) ||
-                        (b.status || '').toLowerCase().includes(q) ||
-                        (b.slot?.date
-                          ? new Date(b.slot.date).toLocaleDateString().toLowerCase().includes(q)
-                          : false)
-                    )
-                  : bookings;
-                const totalItems = filtered.length;
-                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
-                const start = (page - 1) * TABLE_PAGE_SIZE;
-                const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
-                if (totalItems === 0) return null;
-                return (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
-                    <p className="text-sm text-slate-600">
-                      Showing {start + 1}–{end} of {totalItems}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page <= 1}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-slate-600">
-                        Page {page} of {totalPages}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page >= totalPages}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-          </>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center mx-6 mb-6">
-            <p className="text-sm font-medium text-slate-500">No bookings found</p>
-            <p className="mt-1 text-xs text-slate-400">Bookings will appear here when they exist</p>
-          </div>
-        )}
-      </section>
-    </div>
-  );
 }
 
 const AUDIT_SEVERITY_OPTIONS = [

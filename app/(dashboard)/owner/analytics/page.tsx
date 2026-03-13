@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import OwnerHeader from '@/components/owner/owner-header';
 import AnalyticsDashboard from '@/components/analytics/analytics-dashboard';
+import { useAnalyticsStore } from '@/lib/store';
 
 export default function OwnerAnalyticsPage() {
   const [businesses, setBusinesses] = useState<any[]>([]);
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const selectedBusinessId = useAnalyticsStore((state) => state.selectedBusinessId);
+  const setSelectedBusinessId = useAnalyticsStore((state) => state.setSelectedBusinessId);
 
   useEffect(() => {
     let cancelled = false;
@@ -21,10 +24,12 @@ export default function OwnerAnalyticsPage() {
         if (cancelled) return;
         if (Array.isArray(json.data)) {
           setBusinesses(json.data);
-          if (json.data.length === 1) {
-            setSelectedBusinessId(json.data[0].id);
-          } else if (json.data.length > 0) {
-            setSelectedBusinessId('all');
+          if (!selectedBusinessId) {
+            if (json.data.length === 1) {
+              setSelectedBusinessId(json.data[0].id);
+            } else if (json.data.length > 0) {
+              setSelectedBusinessId('all');
+            }
           }
         }
       } catch (err) {
@@ -37,7 +42,7 @@ export default function OwnerAnalyticsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [selectedBusinessId, setSelectedBusinessId]);
 
   return (
     <div className="w-full pb-24">

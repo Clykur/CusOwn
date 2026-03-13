@@ -11,7 +11,8 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const DANGEROUS_PATTERNS = [
   { pattern: /eval\s*\(/i, name: 'eval(' },
-  { pattern: /Function\s*\(/i, name: 'Function(' },
+  { pattern: /\bnew\s+Function\s*\(/, name: 'new Function(' },
+  { pattern: /[^a-zA-Z]Function\s*\(/, name: 'Function(' },
   { pattern: /innerHTML\s*=/i, name: 'innerHTML =' },
   { pattern: /dangerouslySetInnerHTML/i, name: 'dangerouslySetInnerHTML' },
   { pattern: /document\.write/i, name: 'document.write' },

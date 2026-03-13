@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useLayoutEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import CalendarIcon from '@/src/icons/calendar.svg';
 
-type Props = {
+interface DateFilterProps {
   value: string;
   onChange: (date: string) => void;
-};
+}
 
 function formatToYYYYMMDD(date: Date) {
   const y = date.getFullYear();
@@ -42,7 +42,7 @@ function updatePosition(
   return { top, left };
 }
 
-export default function DateFilter({ value, onChange }: Props) {
+function DateFilterComponent({ value, onChange }: DateFilterProps) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -51,14 +51,16 @@ export default function DateFilter({ value, onChange }: Props) {
   const today = new Date();
   const selected = value ? new Date(value + 'T00:00:00') : today;
 
+  const handleClose = useCallback(() => setOpen(false), []);
+
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
 
     const rect = buttonRef.current.getBoundingClientRect();
-    setPosition((prev) => ({
+    setPosition({
       top: rect.bottom + 8,
       left: Math.max(8, Math.min(rect.left, window.innerWidth - 300)),
-    }));
+    });
 
     const close = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -68,8 +70,8 @@ export default function DateFilter({ value, onChange }: Props) {
     };
 
     document.addEventListener('mousedown', close);
-    window.addEventListener('resize', () => setOpen(false));
-    window.addEventListener('scroll', () => setOpen(false), true);
+    window.addEventListener('resize', handleClose);
+    window.addEventListener('scroll', handleClose, true);
 
     const rafId = requestAnimationFrame(() => {
       if (!buttonRef.current || !dropdownRef.current) return;
@@ -79,17 +81,31 @@ export default function DateFilter({ value, onChange }: Props) {
     return () => {
       cancelAnimationFrame(rafId);
       document.removeEventListener('mousedown', close);
-      window.removeEventListener('resize', () => setOpen(false));
-      window.removeEventListener('scroll', () => setOpen(false), true);
+      window.removeEventListener('resize', handleClose);
+      window.removeEventListener('scroll', handleClose, true);
     };
-  }, [open]);
+  }, [open, handleClose]);
+
+  const toggleOpen = useCallback(() => {
+    setOpen((prev) => !prev);
+  }, []);
+
+  const handleSelect = useCallback(
+    (date: Date | undefined) => {
+      if (date) {
+        onChange(formatToYYYYMMDD(date));
+        setOpen(false);
+      }
+    },
+    [onChange]
+  );
 
   return (
     <>
       <div ref={buttonRef} className="w-full">
         <button
           type="button"
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={toggleOpen}
           className={`h-10 w-full flex items-center justify-between pl-4 pr-5 text-sm border rounded-lg transition
           ${value ? 'border-black bg-gray-50' : 'border-gray-300 bg-white hover:bg-gray-50'}`}
         >
@@ -114,12 +130,7 @@ export default function DateFilter({ value, onChange }: Props) {
               mode="single"
               selected={selected}
               defaultMonth={selected}
-              onSelect={(date) => {
-                if (date) {
-                  onChange(formatToYYYYMMDD(date));
-                  setOpen(false);
-                }
-              }}
+              onSelect={handleSelect}
               showOutsideDays
               captionLayout="dropdown"
               fromYear={1950}
@@ -150,3 +161,6 @@ export default function DateFilter({ value, onChange }: Props) {
     </>
   );
 }
+
+const DateFilter = memo(DateFilterComponent);
+export default DateFilter;

@@ -35,6 +35,19 @@ import {
 } from '@/config/constants';
 import { cache } from 'react';
 import { bookingEventsAnalyticsService } from '@/services/booking-events-analytics.service';
+import {
+  buildQueryCacheKey,
+  withQueryCache,
+  invalidateAfterBookingMutation,
+  QUERY_CACHE_TTL,
+  QUERY_CACHE_PREFIX,
+} from '@/lib/cache/query-cache';
+import {
+  enqueueAnalyticsEvent,
+  enqueueScheduleReminders,
+  enqueueNotification,
+  isQueueAvailable,
+} from '@/lib/queue';
 
 export type CreateBookingRpcParams = {
   p_business_id: string;
@@ -173,13 +186,34 @@ export class BookingService {
         actor: customerUserId || 'anonymous',
         source: 'api',
       });
-      void bookingEventsAnalyticsService.recordEvent({
-        bookingId: booking.id,
-        eventType: 'created',
-        actorType: customerUserId ? 'customer' : 'system',
-        actorId: customerUserId ?? null,
-        source: 'api',
-      });
+      // Enqueue analytics event (background processing)
+      if (isQueueAvailable()) {
+        void enqueueAnalyticsEvent({
+          bookingId: booking.id,
+          eventType: 'created',
+          actorType: customerUserId ? 'customer' : 'system',
+          actorId: customerUserId ?? null,
+          source: 'api',
+        });
+      } else {
+        // Fallback to direct call if queue unavailable
+        void bookingEventsAnalyticsService.recordEvent({
+          bookingId: booking.id,
+          eventType: 'created',
+          actorType: customerUserId ? 'customer' : 'system',
+          actorId: customerUserId ?? null,
+          source: 'api',
+        });
+      }
+
+      // Invalidate caches after booking created (including owner dashboard)
+      const ownerUserId = bookingWithDetails.salon?.owner_user_id;
+      void invalidateAfterBookingMutation(
+        booking.business_id,
+        customerUserId,
+        bookingWithDetails.slot?.date,
+        ownerUserId
+      );
     }
 
     return booking;
@@ -325,6 +359,15 @@ export class BookingService {
         actor: actorId || 'system',
         source: 'api',
       });
+
+      // Invalidate caches after booking confirmed (including owner dashboard)
+      const ownerUserId = bookingWithDetails.salon?.owner_user_id;
+      void invalidateAfterBookingMutation(
+        confirmedBooking.business_id,
+        confirmedBooking.customer_user_id,
+        bookingWithDetails.slot?.date,
+        ownerUserId
+      );
     }
 
     return confirmedBooking;
@@ -383,6 +426,15 @@ export class BookingService {
         actor: actorId ?? 'owner',
         source: 'api',
       });
+
+      // Invalidate caches after booking rejected (including owner dashboard)
+      const ownerUserId = bookingWithDetails.salon?.owner_user_id;
+      void invalidateAfterBookingMutation(
+        updated.business_id,
+        updated.customer_user_id,
+        bookingWithDetails.slot?.date,
+        ownerUserId
+      );
     }
 
     return updated;
@@ -566,6 +618,22 @@ export class BookingService {
   }
 
   async getSalonBookings(
+    salonId: string,
+    fromDate?: string,
+    toDate?: string
+  ): Promise<BookingWithDetails[]> {
+    // Build cache key with business ID and date range
+    const cacheKey = buildQueryCacheKey(QUERY_CACHE_PREFIX.BOOKINGS, salonId, {
+      fromDate,
+      toDate,
+    });
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.BOOKINGS_LIST, async () => {
+      return this._getSalonBookingsUncached(salonId, fromDate, toDate);
+    });
+  }
+
+  private async _getSalonBookingsUncached(
     salonId: string,
     fromDate?: string,
     toDate?: string
@@ -827,13 +895,33 @@ export class BookingService {
         source: 'api',
         reason: reason || undefined,
       });
-      void bookingEventsAnalyticsService.recordEvent({
-        bookingId,
-        eventType: 'cancelled',
-        actorType: 'customer',
-        actorId: booking.customer_user_id ?? null,
-        source: 'api',
-      });
+      // Enqueue analytics event (background processing)
+      if (isQueueAvailable()) {
+        void enqueueAnalyticsEvent({
+          bookingId,
+          eventType: 'cancelled',
+          actorType: 'customer',
+          actorId: booking.customer_user_id ?? null,
+          source: 'api',
+        });
+      } else {
+        void bookingEventsAnalyticsService.recordEvent({
+          bookingId,
+          eventType: 'cancelled',
+          actorType: 'customer',
+          actorId: booking.customer_user_id ?? null,
+          source: 'api',
+        });
+      }
+
+      // Invalidate caches after booking cancelled (including owner dashboard)
+      const ownerUserId = updatedWithDetails.salon?.owner_user_id;
+      void invalidateAfterBookingMutation(
+        data.business_id,
+        data.customer_user_id,
+        updatedWithDetails.slot?.date,
+        ownerUserId
+      );
     }
 
     return data;
@@ -893,19 +981,54 @@ export class BookingService {
         source: 'api',
         reason: reason || undefined,
       });
-      void bookingEventsAnalyticsService.recordEvent({
-        bookingId,
-        eventType: 'cancelled',
-        actorType: 'owner',
-        actorId: null,
-        source: 'api',
-      });
+      // Enqueue analytics event (background processing)
+      if (isQueueAvailable()) {
+        void enqueueAnalyticsEvent({
+          bookingId,
+          eventType: 'cancelled',
+          actorType: 'owner',
+          actorId: null,
+          source: 'api',
+        });
+      } else {
+        void bookingEventsAnalyticsService.recordEvent({
+          bookingId,
+          eventType: 'cancelled',
+          actorType: 'owner',
+          actorId: null,
+          source: 'api',
+        });
+      }
+
+      // Invalidate caches after booking cancelled (including owner dashboard)
+      const ownerUserId = bookingWithDetails.salon?.owner_user_id;
+      void invalidateAfterBookingMutation(
+        data.business_id,
+        data.customer_user_id,
+        bookingWithDetails.slot?.date,
+        ownerUserId
+      );
     }
 
     return data;
   }
 
   async getCustomerBookings(customerUserId: string): Promise<BookingWithDetails[]> {
+    // Build cache key for customer bookings
+    const cacheKey = buildQueryCacheKey(
+      `${QUERY_CACHE_PREFIX.BOOKINGS}customer:`,
+      customerUserId,
+      {}
+    );
+
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.BOOKINGS_LIST, async () => {
+      return this._getCustomerBookingsUncached(customerUserId);
+    });
+  }
+
+  private async _getCustomerBookingsUncached(
+    customerUserId: string
+  ): Promise<BookingWithDetails[]> {
     if (!supabaseAdmin) {
       throw new Error('Database not configured');
     }

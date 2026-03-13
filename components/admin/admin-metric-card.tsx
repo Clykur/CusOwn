@@ -1,18 +1,15 @@
 'use client';
 
-/**
- * Reusable metric card for admin dashboard. Equal height, consistent padding, soft shadow.
- */
+import { memo } from 'react';
+
 export type AdminMetricCardProps = {
   label: string;
   value: React.ReactNode;
-  /** Optional secondary line (e.g. growth %, or "2 suspended") */
   secondary?: React.ReactNode;
-  /** Optional: green/red for growth indicators */
   secondaryVariant?: 'positive' | 'negative' | 'neutral';
 };
 
-export function AdminMetricCard({
+function AdminMetricCardComponent({
   label,
   value,
   secondary,
@@ -33,3 +30,5 @@ export function AdminMetricCard({
     </div>
   );
 }
+
+export const AdminMetricCard = memo(AdminMetricCardComponent);

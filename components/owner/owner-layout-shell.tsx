@@ -1,15 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
-import OwnerSidebar from '@/components/owner/owner-sidebar';
-import MobileBottomNav from '@/components/owner/mobile-bottom-nav';
 import OwnerHeader from '@/components/owner/owner-header';
 import {
   OwnerSessionProvider,
   type OwnerInitialUser,
 } from '@/components/owner/owner-session-context';
 import { ROUTES } from '@/lib/utils/navigation';
+
+const OwnerSidebar = dynamic(() => import('@/components/owner/owner-sidebar'), {
+  ssr: false,
+});
+
+const MobileBottomNav = dynamic(() => import('@/components/owner/mobile-bottom-nav'), {
+  ssr: false,
+});
 
 type OwnerLayoutShellProps = {
   children: React.ReactNode;

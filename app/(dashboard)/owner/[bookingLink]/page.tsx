@@ -1,118 +1,93 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { API_ROUTES, ERROR_MESSAGES, SLOT_DURATIONS, VALIDATION } from '@/config/constants';
-import { MediaListItem, Salon, Slot } from '@/types';
+import { API_ROUTES, ERROR_MESSAGES, VALIDATION } from '@/config/constants';
+import { MediaListItem, Slot } from '@/types';
 import { useSlotUpdates } from '@/lib/realtime/use-slot-updates';
-import { formatDate, formatTime } from '@/lib/utils/string';
-import { handleApiError, logError } from '@/lib/utils/error-handler';
-import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { useVisibilityRefresh } from '@/lib/hooks/use-visibility-refresh';
+import { logError } from '@/lib/utils/error-handler';
+import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { supabaseAuth } from '@/lib/supabase/auth';
+import { batchFetchSignedUrls } from '@/lib/utils/batch-requests';
+import { getCachedReviews } from '@/lib/cache/reviews-cache';
 import { Toast } from '@/components/ui/toast';
-import DownloadIcon from '@/src/icons/download.svg';
-import CreateBusinessIcon from '@/src/icons/create-business.svg';
 import DateFilter from '@/components/owner/date-filter';
-import StarRating from '@/components/booking/star-rating';
+import { type EditBusinessFormData } from '@/components/owner/edit-business-modal';
+import { useOwnerBusinessStore, useUIStore, MODAL_IDS } from '@/lib/store';
 
-interface ReviewData {
-  rating_avg: number;
-  review_count: number;
-  rating_counts: Record<number, number>;
+const ReviewSummary = dynamic(() => import('@/components/owner/review-summary'), { ssr: false });
+const QRCodeSection = dynamic(() => import('@/components/owner/qr-code-section'));
+const BusinessDetailsCard = dynamic(() => import('@/components/owner/business-details-card'));
+const EditBusinessModal = dynamic(() => import('@/components/owner/edit-business-modal'), {
+  ssr: false,
+});
+const ShopPhotosSection = dynamic(() => import('@/components/owner/shop-photos-section'), {
+  ssr: false,
+});
+const SlotsKanbanBoard = dynamic(() => import('@/components/owner/slots-kanban-board'));
+const DowntimeManagement = dynamic(() => import('@/components/owner/downtime-management'));
+
+type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
+interface UploadQueueItem {
+  file: File;
+  status: UploadStatus;
 }
-function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
-  // Show "No reviews yet." when there's no review data
-  if (!reviewData || (reviewData.rating_avg === 0 && reviewData.review_count === 0)) {
-    return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
 
-        <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
-          <div className="flex items-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <svg
-                key={i}
-                className="w-5 h-5 text-slate-300"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.963a1 1 0 00.95.69h4.167c.969 0 1.371 1.24.588 1.81l-3.373 2.451a1 1 0 00-.364 1.118l1.287 3.963c.3.921-.755 1.688-1.54 1.118l-3.373-2.452a1 1 0 00-1.175 0l-3.373 2.452c-.784.57-1.838-.197-1.539-1.118l1.286-3.963a1 1 0 00-.364-1.118L2.09 9.39c-.783-.57-.38-1.81.588-1.81h4.167a1 1 0 00.95-.69l1.254-3.963z" />
-              </svg>
-            ))}
-          </div>
-
-          <p className="text-sm text-slate-500">No reviews yet.</p>
-        </div>
-      </div>
-    );
-  }
-  const { rating_avg, review_count, rating_counts } = reviewData;
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
-
-      <div className="flex flex-col sm:flex-row gap-6">
-        {/* Average Rating */}
-        <div className="flex flex-col items-center sm:items-start">
-          <div className="text-4xl font-bold text-slate-900">{rating_avg?.toFixed(1) ?? '—'}</div>
-
-          <StarRating value={Math.round(rating_avg ?? 0)} readonly size="md" />
-
-          <p className="text-sm text-slate-500 mt-1">{review_count ?? 0} reviews</p>
-        </div>
-
-        {/* Distribution */}
-        <div className="flex-1 space-y-2">
-          {[5, 4, 3, 2, 1].map((star) => {
-            const count = rating_counts?.[star] ?? 0;
-
-            const percent =
-              review_count && review_count > 0 ? Math.round((count / review_count) * 100) : 0;
-
-            return (
-              <div key={star} className="flex items-center gap-3">
-                <span className="flex items-center gap-1 w-8 text-sm text-slate-600">
-                  {star}
-                  <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.963a1 1 0 00.95.69h4.167c.969 0 1.371 1.24.588 1.81l-3.373 2.451a1 1 0 00-.364 1.118l1.287 3.963c.3.921-.755 1.688-1.54 1.118l-3.373-2.452a1 1 0 00-1.175 0l-3.373 2.452c-.784.57-1.838-.197-1.539-1.118l1.286-3.963a1 1 0 00-.364-1.118L2.09 9.39c-.783-.57-.38-1.81.588-1.81h4.167a1 1 0 00.95-.69l1.254-3.963z" />
-                  </svg>
-                </span>
-
-                <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-400" style={{ width: `${percent}%` }} />
-                </div>
-
-                <span className="text-xs text-slate-500 w-8">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-export default function OwnerDashboardPage() {
+export default function OwnerBusinessPage() {
   const params = useParams();
   const router = useRouter();
   const bookingLink = typeof params?.bookingLink === 'string' ? params.bookingLink : '';
-  const [salon, setSalon] = useState<Salon | null>(null);
-  const [slots, setSlots] = useState<Slot[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'slots' | 'downtime'>('slots');
-  const [holidays, setHolidays] = useState<any[]>([]);
-  const [closures, setClosures] = useState<any[]>([]);
+
+  const salon = useOwnerBusinessStore((state) => state.salon);
+  const setSalon = useOwnerBusinessStore((state) => state.setSalon);
+  const updateSalon = useOwnerBusinessStore((state) => state.updateSalon);
+  const slots = useOwnerBusinessStore((state) => state.slots);
+  const setSlots = useOwnerBusinessStore((state) => state.setSlots);
+  const selectedDate = useOwnerBusinessStore((state) => state.selectedDate);
+  const setSelectedDate = useOwnerBusinessStore((state) => state.setSelectedDate);
+  const activeTab = useOwnerBusinessStore((state) => state.activeTab);
+  const setActiveTab = useOwnerBusinessStore((state) => state.setActiveTab);
+  const isLoading = useOwnerBusinessStore((state) => state.isLoading);
+  const setIsLoading = useOwnerBusinessStore((state) => state.setIsLoading);
+  const error = useOwnerBusinessStore((state) => state.error);
+  const setError = useOwnerBusinessStore((state) => state.setError);
+  const holidays = useOwnerBusinessStore((state) => state.holidays);
+  const setHolidays = useOwnerBusinessStore((state) => state.setHolidays);
+  const addHoliday = useOwnerBusinessStore((state) => state.addHoliday);
+  const closures = useOwnerBusinessStore((state) => state.closures);
+  const setClosures = useOwnerBusinessStore((state) => state.setClosures);
+  const addClosure = useOwnerBusinessStore((state) => state.addClosure);
+  const shopPhotos = useOwnerBusinessStore((state) => state.shopPhotos);
+  const setShopPhotos = useOwnerBusinessStore((state) => state.setShopPhotos);
+  const removeShopPhoto = useOwnerBusinessStore((state) => state.removeShopPhoto);
+  const photosLoading = useOwnerBusinessStore((state) => state.photosLoading);
+  const setPhotosLoading = useOwnerBusinessStore((state) => state.setPhotosLoading);
+  const uploadingPhotos = useOwnerBusinessStore((state) => state.uploadingPhotos);
+  const setUploadingPhotos = useOwnerBusinessStore((state) => state.setUploadingPhotos);
+  const deletingPhotoIds = useOwnerBusinessStore((state) => state.deletingPhotoIds);
+  const addDeletingPhotoId = useOwnerBusinessStore((state) => state.addDeletingPhotoId);
+  const removeDeletingPhotoId = useOwnerBusinessStore((state) => state.removeDeletingPhotoId);
+  const reviewData = useOwnerBusinessStore((state) => state.reviewData);
+  const setReviewData = useOwnerBusinessStore((state) => state.setReviewData);
+  const reset = useOwnerBusinessStore((state) => state.reset);
+
+  const showToast = useUIStore((state) => state.showToast);
+  const toasts = useUIStore((state) => state.toasts);
+  const dismissToast = useUIStore((state) => state.dismissToast);
+  const openModal = useUIStore((state) => state.openModal);
+  const closeModal = useUIStore((state) => state.closeModal);
+  const isModalOpen = useUIStore((state) => state.isModalOpen);
+
   const [newHolidayDate, setNewHolidayDate] = useState('');
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newClosureStart, setNewClosureStart] = useState('');
   const [newClosureEnd, setNewClosureEnd] = useState('');
   const [newClosureReason, setNewClosureReason] = useState('');
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
+
+  const [editForm, setEditForm] = useState<EditBusinessFormData>({
     salon_name: '',
     owner_name: '',
     whatsapp_number: '',
@@ -125,136 +100,63 @@ export default function OwnerDashboardPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // --- Shop Photos state ---
-  const [shopPhotos, setShopPhotos] = useState<{ id: string; url: string }[]>([]);
-  const [photosLoading, setPhotosLoading] = useState(false);
-
-  // Remove selected file from queue
-  const handleRemoveSelectedFile = (idx: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
-  };
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  // Upload queue: track file, status, abort controller
-  type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
-  interface UploadQueueItem {
-    file: File;
-    status: UploadStatus;
-    abortController?: AbortController;
-    error?: string;
-  }
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
-
-  // Sync selectedFiles for compatibility (legacy code)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [deletingPhotoIds, setDeletingPhotoIds] = useState<Set<string>>(new Set());
-
-  const [reviewData, setReviewData] = useState<ReviewData | null>(null);
 
   useEffect(() => {
-    // Pre-fetch CSRF token
     getCSRFToken().catch(console.error);
-  }, []);
-
-  // Handle tab visibility changes - refresh data when tab becomes visible
-  useEffect(() => {
-    let refreshTimeout: NodeJS.Timeout | null = null;
-    let isRefreshing = false;
-    let lastRefreshTime = 0;
-    const MIN_REFRESH_INTERVAL = 2000; // Don't refresh more than once per 2 seconds
-
-    const refreshData = () => {
-      const now = Date.now();
-      if (isRefreshing || now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
-        return;
-      }
-
-      if (refreshTimeout) clearTimeout(refreshTimeout);
-      refreshTimeout = setTimeout(() => {
-        isRefreshing = true;
-        lastRefreshTime = Date.now();
-
-        // Only refresh if tab is visible and salon is loaded
-        if (typeof document !== 'undefined' && !document.hidden && salon) {
-          const date = selectedDate || new Date().toISOString().split('T')[0];
-
-          // Trigger re-fetch by updating a dependency or calling fetch functions
-          // The useEffect for bookings/slots will handle the actual fetch
-          setSelectedDate(date); // This will trigger the useEffect
-        }
-
-        isRefreshing = false;
-      }, 500); // Debounce delay
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshData();
-      }
-    };
-
-    const handleFocus = () => {
-      refreshData();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
     return () => {
-      if (refreshTimeout) clearTimeout(refreshTimeout);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      reset();
     };
-  }, [salon, selectedDate]);
+  }, [reset]);
+
+  const handleVisibilityRefresh = useCallback(async () => {
+    if (!salon) return;
+    const date = selectedDate || new Date().toISOString().split('T')[0];
+    setSelectedDate(date);
+  }, [salon, selectedDate, setSelectedDate]);
+
+  useVisibilityRefresh({
+    onRefresh: handleVisibilityRefresh,
+    enabled: !!salon,
+    throttleMs: 5000,
+    staleThresholdMs: 30000,
+    refreshOnFocus: true,
+  });
 
   useEffect(() => {
     if (!bookingLink) return;
+    let cancelled = false;
 
-    const fetchSalon = async () => {
+    const fetchAllData = async () => {
       try {
-        // Extract token from URL if present (for secure access)
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-
-        // Build URL with token if available
         let url = `${API_ROUTES.SALONS}/${bookingLink}`;
-        if (token) {
-          url += `?token=${encodeURIComponent(token)}`;
-        }
+        if (token) url += `?token=${encodeURIComponent(token)}`;
 
-        // Auth: credentials: 'include' sends cookies; server getServerUser() validates. Optionally add Bearer if Supabase session exists.
         const headers: HeadersInit = {};
         if (supabaseAuth) {
           const {
             data: { session },
           } = await supabaseAuth.auth.getSession();
-          if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`;
-          }
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
         }
 
-        const response = await fetch(url, {
-          headers,
-          credentials: 'include',
-        });
+        const response = await fetch(url, { headers, credentials: 'include' });
         const result = await response.json();
 
         if (!response.ok) {
-          // Handle authentication/authorization errors
           if (response.status === 401) {
-            // Not authenticated - redirect to landing (middleware will handle)
             window.location.href = '/auth/login';
             return;
           }
           if (response.status === 403) {
-            // Access denied - redirect to owner dashboard
             window.location.href = '/owner/dashboard';
             return;
           }
-
-          // If token is missing and it's a UUID, try to generate secure URL
           if (
             response.status === 403 &&
             !token &&
@@ -263,7 +165,6 @@ export default function OwnerDashboardPage() {
             try {
               const { getSecureOwnerDashboardUrlClient } = await import('@/lib/utils/navigation');
               const secureUrl = await getSecureOwnerDashboardUrlClient(bookingLink);
-              // Redirect to secure URL
               window.location.href = secureUrl;
               return;
             } catch (urlError) {
@@ -273,80 +174,150 @@ export default function OwnerDashboardPage() {
           throw new Error(result.error || 'Salon not found');
         }
 
-        if (result.success && result.data) {
-          setSalon(result.data);
+        if (!result.success || !result.data || cancelled) return;
 
-          // If QR code doesn't exist, fetch it
-          if (!result.data.qr_code) {
-            try {
-              const qrResponse = await fetch(`${API_ROUTES.SALONS}/${bookingLink}/qr`);
-              if (!qrResponse.ok) {
-                throw new Error(await handleApiError(qrResponse));
-              }
-              const qrResult = await qrResponse.json();
-              if (qrResult.success && qrResult.data?.qr_code) {
-                setSalon((prev) => (prev ? { ...prev, qr_code: qrResult.data.qr_code } : null));
-              }
-            } catch (qrError) {
-              logError(qrError, 'QR Code Fetch');
-              // Don't show error to user - QR code is optional
-            }
-          }
+        const salonData = result.data;
+        setSalon(salonData);
+
+        const parallelFetches: Promise<void>[] = [];
+
+        if (!salonData.qr_code) {
+          parallelFetches.push(
+            fetch(`${API_ROUTES.SALONS}/${bookingLink}/qr`)
+              .then((res) => res.json())
+              .then((qrResult) => {
+                if (!cancelled && qrResult.success && qrResult.data?.qr_code) {
+                  updateSalon({ qr_code: qrResult.data.qr_code });
+                }
+              })
+              .catch((err) => logError(err, 'QR Code Fetch'))
+          );
         }
+
+        parallelFetches.push(
+          getCachedReviews(salonData.id).then((reviewResult) => {
+            if (cancelled || !reviewResult) return;
+            const reviews = reviewResult.reviews || [];
+            const rating_counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            reviews.forEach((review) => {
+              const rating = Number(review.rating);
+              if (rating_counts[rating] !== undefined) rating_counts[rating]++;
+            });
+            setReviewData({
+              rating_avg: reviewResult.rating_avg || 0,
+              review_count: reviewResult.review_count || 0,
+              rating_counts,
+            });
+          })
+        );
+
+        const date = selectedDate || new Date().toISOString().split('T')[0];
+        parallelFetches.push(
+          fetch(`${API_ROUTES.SLOTS}?salon_id=${salonData.id}&date=${date}`, {
+            headers,
+            credentials: 'include',
+          })
+            .then((res) => res.json())
+            .then((slotsResult) => {
+              if (cancelled) return;
+              if (slotsResult.success) {
+                const normalizedSlots = Array.isArray(slotsResult.data)
+                  ? slotsResult.data
+                  : Array.isArray(slotsResult.data?.slots)
+                    ? slotsResult.data.slots
+                    : [];
+                setSlots(normalizedSlots);
+              }
+            })
+            .catch((err) => logError(err, 'Slots Fetch'))
+        );
+
+        parallelFetches.push(
+          Promise.all([
+            fetch(`/api/businesses/${salonData.id}/downtime/holidays`, { credentials: 'include' }),
+            fetch(`/api/businesses/${salonData.id}/downtime/closures`, { credentials: 'include' }),
+          ])
+            .then(async ([holidaysRes, closuresRes]) => {
+              if (cancelled) return;
+              const [holidaysData, closuresData] = await Promise.all([
+                holidaysRes.json(),
+                closuresRes.json(),
+              ]);
+              if (holidaysData.success) setHolidays(holidaysData.data || []);
+              if (closuresData.success) setClosures(closuresData.data || []);
+            })
+            .catch((err) => console.error('Failed to fetch downtime:', err))
+        );
+
+        parallelFetches.push(
+          fetch(API_ROUTES.MEDIA_BUSINESS(salonData.id), { credentials: 'include' })
+            .then((res) => res.json())
+            .then(async (mediaResult) => {
+              if (cancelled) return;
+              if (!mediaResult?.success) {
+                setShopPhotos([]);
+                return;
+              }
+              const items: MediaListItem[] = Array.isArray(mediaResult?.data?.items)
+                ? mediaResult.data.items
+                : [];
+              if (items.length === 0) {
+                setShopPhotos([]);
+                return;
+              }
+              const mediaIds = items.map((item) => item.id);
+              const urlMap = await batchFetchSignedUrls(mediaIds);
+              if (cancelled) return;
+              const withUrls = items
+                .map((item) => {
+                  const url = urlMap.get(item.id);
+                  return url ? { id: item.id, url } : null;
+                })
+                .filter((p): p is { id: string; url: string } => Boolean(p));
+              setShopPhotos(withUrls);
+            })
+            .catch((err) => {
+              logError(err, 'Photos Fetch');
+              setShopPhotos([]);
+            })
+            .finally(() => {
+              if (!cancelled) setPhotosLoading(false);
+            })
+        );
+
+        await Promise.allSettled(parallelFetches);
       } catch (err) {
-        logError(err, 'Salon Fetch');
-        setError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
+        if (!cancelled) {
+          logError(err, 'Salon Fetch');
+          setError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    fetchSalon();
-  }, [bookingLink]);
-
-  useEffect(() => {
-    if (!salon?.id) return;
-
-    let cancelled = false;
-
-    fetch(`/api/reviews?business_id=${salon.id}`)
-      .then((res) => res.json())
-      .then((result) => {
-        if (cancelled) return;
-
-        if (result.success && result.data) {
-          const reviews = result.data.reviews || [];
-
-          const rating_counts: Record<number, number> = {
-            1: 0,
-            2: 0,
-            3: 0,
-            4: 0,
-            5: 0,
-          };
-
-          reviews.forEach((review: any) => {
-            const rating = Number(review.rating);
-            if (rating_counts[rating] !== undefined) {
-              rating_counts[rating]++;
-            }
-          });
-
-          setReviewData({
-            rating_avg: result.data.rating_avg || 0,
-            review_count: result.data.review_count || 0,
-            rating_counts,
-          });
-        }
-      })
-      .catch(() => {});
+    fetchAllData();
 
     return () => {
       cancelled = true;
     };
-  }, [salon?.id]);
+  }, [
+    bookingLink,
+    selectedDate,
+    setSalon,
+    updateSalon,
+    setError,
+    setIsLoading,
+    setSlots,
+    setHolidays,
+    setClosures,
+    setShopPhotos,
+    setPhotosLoading,
+    setReviewData,
+  ]);
 
-  // Fetch slots for this salon when salon/date changes. Auth via cookies (credentials: 'include') or optional Bearer.
+  const initialDateRef = useRef<string | null>(null);
+
   const fetchSlots = useCallback(async () => {
     if (!salon) return;
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -357,9 +328,7 @@ export default function OwnerDashboardPage() {
         const {
           data: { session },
         } = await supabaseAuth.auth.getSession();
-        if (session?.access_token) {
-          headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       }
       const response = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${date}`, {
         headers,
@@ -372,124 +341,129 @@ export default function OwnerDashboardPage() {
           : Array.isArray(result.data?.slots)
             ? result.data.slots
             : [];
-
-        if (!Array.isArray(result.data) && !Array.isArray(result.data?.slots) && result.data) {
-          console.error('[OWNER_DASHBOARD] Unexpected slots payload shape:', result.data);
-        }
-
         setSlots(normalizedSlots);
       }
     } catch (err) {
       logError(err, 'Slots Fetch');
     }
-  }, [salon, selectedDate]);
+  }, [salon, selectedDate, setSlots]);
 
   useEffect(() => {
     if (!salon) return;
-    fetchSlots();
+    const currentDate = selectedDate || new Date().toISOString().split('T')[0];
+    if (initialDateRef.current === null) {
+      initialDateRef.current = currentDate;
+      return;
+    }
+    if (initialDateRef.current !== currentDate) {
+      initialDateRef.current = currentDate;
+      fetchSlots();
+    }
   }, [salon, selectedDate, fetchSlots]);
 
   const slotsDate = selectedDate || new Date().toISOString().split('T')[0];
-  const handleRealtimeSlotsUpdate = useCallback((nextSlots: Slot[]) => {
-    setSlots(nextSlots);
-  }, []);
+  const slotsRef = useRef<Slot[]>(slots);
+  slotsRef.current = slots;
+
+  const handleRealtimeSlotsUpdate = useCallback(
+    (nextSlots: Slot[]) => {
+      const currentSlots = slotsRef.current;
+      const currentById = new Map(currentSlots.map((s) => [s.id, s]));
+      let hasChanges = false;
+
+      for (const slot of nextSlots) {
+        const existing = currentById.get(slot.id);
+        if (
+          !existing ||
+          existing.status !== slot.status ||
+          existing.updated_at !== slot.updated_at
+        ) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      if (!hasChanges && nextSlots.length === currentSlots.length) return;
+
+      setSlots(nextSlots);
+    },
+    [setSlots]
+  );
+
   useSlotUpdates({
     businessId: salon?.id ?? null,
     date: salon ? slotsDate : null,
     slots,
     onSlotsUpdate: handleRealtimeSlotsUpdate,
     enabled: !!salon && activeTab === 'slots',
+    skipInitialRefetch: slots.length > 0,
   });
 
-  // Fetch downtime function - can be called from multiple places
+  const memoizedSlots = useMemo(() => slots, [slots]);
+
   const fetchDowntime = useCallback(async () => {
     if (!salon) return;
-
-    // Don't fetch if tab is hidden
-    if (typeof document !== 'undefined' && document.hidden) {
-      return;
-    }
+    if (typeof document !== 'undefined' && document.hidden) return;
 
     try {
       const [holidaysRes, closuresRes] = await Promise.all([
-        fetch(`/api/businesses/${salon.id}/downtime/holidays`, {
-          credentials: 'include',
-        }),
-        fetch(`/api/businesses/${salon.id}/downtime/closures`, {
-          credentials: 'include',
-        }),
+        fetch(`/api/businesses/${salon.id}/downtime/holidays`, { credentials: 'include' }),
+        fetch(`/api/businesses/${salon.id}/downtime/closures`, { credentials: 'include' }),
       ]);
-
-      // Check if tab is still visible before processing
-      if (typeof document !== 'undefined' && document.hidden) {
-        return;
-      }
+      if (typeof document !== 'undefined' && document.hidden) return;
 
       const holidaysData = await holidaysRes.json();
       const closuresData = await closuresRes.json();
       if (holidaysData.success) setHolidays(holidaysData.data || []);
       if (closuresData.success) setClosures(closuresData.data || []);
-    } catch (err: any) {
-      // Only log errors if tab is visible
+    } catch (err) {
       if (typeof document !== 'undefined' && !document.hidden) {
         console.error('Failed to fetch downtime:', err);
       }
     }
-  }, [salon]);
+  }, [salon, setHolidays, setClosures]);
 
-  // Fetch downtime when salon changes or tab becomes visible
-  useEffect(() => {
-    if (!salon) return;
-
-    // Don't fetch if tab is hidden
-    if (typeof document !== 'undefined' && document.hidden) {
-      return;
-    }
-
-    fetchDowntime();
-  }, [salon, fetchDowntime]);
-
-  // --- Shop Photos: load, upload, delete ---
-  const loadBusinessPhotos = useCallback(async (businessId: string) => {
-    setPhotosLoading(true);
-    setPhotoError(null);
-    try {
-      const res = await fetch(API_ROUTES.MEDIA_BUSINESS(businessId), {
-        credentials: 'include',
-      });
-      const result = await res.json();
-      if (!res.ok || !result?.success) {
-        throw new Error(result?.error || ERROR_MESSAGES.LOADING_ERROR);
+  const loadBusinessPhotos = useCallback(
+    async (businessId: string) => {
+      setPhotosLoading(true);
+      setPhotoError(null);
+      try {
+        const res = await fetch(API_ROUTES.MEDIA_BUSINESS(businessId), { credentials: 'include' });
+        const result = await res.json();
+        if (!res.ok || !result?.success)
+          throw new Error(result?.error || ERROR_MESSAGES.LOADING_ERROR);
+        const items: MediaListItem[] = Array.isArray(result?.data?.items) ? result.data.items : [];
+        if (items.length === 0) {
+          setShopPhotos([]);
+          return;
+        }
+        const mediaIds = items.map((item) => item.id);
+        const urlMap = await batchFetchSignedUrls(mediaIds);
+        const withUrls = items
+          .map((item) => {
+            const url = urlMap.get(item.id);
+            return url ? { id: item.id, url } : null;
+          })
+          .filter((p): p is { id: string; url: string } => Boolean(p));
+        setShopPhotos(withUrls);
+      } catch (err) {
+        setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
+        setShopPhotos([]);
+      } finally {
+        setPhotosLoading(false);
       }
-      const items: MediaListItem[] = Array.isArray(result?.data?.items) ? result.data.items : [];
-      const withUrls = await Promise.all(
-        items.map(async (item) => {
-          try {
-            const signedRes = await fetch(
-              `${API_ROUTES.MEDIA_SIGNED_URL}?mediaId=${encodeURIComponent(item.id)}`,
-              { credentials: 'include' }
-            );
-            const signedResult = await signedRes.json();
-            if (!signedRes.ok || !signedResult?.success || !signedResult?.data?.url) return null;
-            return { id: item.id, url: signedResult.data.url as string };
-          } catch {
-            return null;
-          }
-        })
-      );
-      setShopPhotos(withUrls.filter((p): p is { id: string; url: string } => Boolean(p)));
-    } catch (err) {
-      setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
-      setShopPhotos([]);
-    } finally {
-      setPhotosLoading(false);
-    }
-  }, []);
+    },
+    [setPhotosLoading, setShopPhotos]
+  );
 
-  useEffect(() => {
-    if (!salon?.id) return;
-    void loadBusinessPhotos(salon.id);
-  }, [salon?.id, loadBusinessPhotos]);
+  const handleFileSelect = (files: File[]) => {
+    setSelectedFiles(files);
+    setUploadQueue(files.map((file) => ({ file, status: 'pending' })));
+  };
+
+  const handleRemoveSelectedFile = (idx: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const handleUploadPhotos = async () => {
     if (!salon?.id || uploadingPhotos || selectedFiles.length === 0) return;
@@ -509,16 +483,13 @@ export default function OwnerDashboardPage() {
     setPhotoError(null);
     try {
       const csrfToken = await getCSRFToken();
-      // Build auth headers matching the rest of this page's fetch pattern
       const authHeaders: Record<string, string> = {};
       if (csrfToken) authHeaders['x-csrf-token'] = csrfToken;
       if (supabaseAuth) {
         const {
           data: { session },
         } = await supabaseAuth.auth.getSession();
-        if (session?.access_token) {
-          authHeaders['Authorization'] = `Bearer ${session.access_token}`;
-        }
+        if (session?.access_token) authHeaders['Authorization'] = `Bearer ${session.access_token}`;
       }
       for (const file of selectedFiles) {
         const formData = new FormData();
@@ -540,7 +511,7 @@ export default function OwnerDashboardPage() {
       const fileInput = document.getElementById('shop-photo-input') as HTMLInputElement | null;
       if (fileInput) fileInput.value = '';
       await loadBusinessPhotos(salon.id);
-      setToastMessage('Photos uploaded successfully');
+      showToast('Photos uploaded successfully', 'success');
     } catch (err) {
       setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.MEDIA_UPLOAD_FAILED);
     } finally {
@@ -552,9 +523,9 @@ export default function OwnerDashboardPage() {
     if (!salon?.id) return;
     if (!window.confirm('Delete this photo?')) return;
     const previousPhotos = shopPhotos;
-    setDeletingPhotoIds((prev) => new Set(prev).add(photoId));
+    addDeletingPhotoId(photoId);
     setPhotoError(null);
-    setShopPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    removeShopPhoto(photoId);
     try {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {};
@@ -563,9 +534,7 @@ export default function OwnerDashboardPage() {
         const {
           data: { session },
         } = await supabaseAuth.auth.getSession();
-        if (session?.access_token) {
-          headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       }
       const deleteRes = await fetch(`/api/media/${encodeURIComponent(photoId)}`, {
         method: 'DELETE',
@@ -582,49 +551,35 @@ export default function OwnerDashboardPage() {
       setShopPhotos(previousPhotos);
       setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
     } finally {
-      setDeletingPhotoIds((prev) => {
-        const next = new Set(prev);
-        next.delete(photoId);
-        return next;
-      });
+      removeDeletingPhotoId(photoId);
     }
   };
-
-  // Bookings actions removed: bookings have been migrated to owner dashboard
 
   const handleAddHoliday = async () => {
     if (!newHolidayDate || !salon) return;
     try {
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const response = await fetch(`/api/businesses/${salon.id}/downtime/holidays`, {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({
-          holiday_date: newHolidayDate,
-          holiday_name: newHolidayName,
-        }),
+        body: JSON.stringify({ holiday_date: newHolidayDate, holiday_name: newHolidayName }),
       });
       if (response.ok) {
         const result = await response.json();
         setNewHolidayDate('');
         setNewHolidayName('');
-        // Optimistic append using response data or fallback
         const newItem = result.data || {
           id: crypto.randomUUID(),
           holiday_date: newHolidayDate,
           holiday_name: newHolidayName,
           created_at: new Date().toISOString(),
         };
-        setHolidays((prev) => [...prev, newItem]);
+        addHoliday(newItem);
       }
-    } catch (err) {
+    } catch {
       alert('Failed to add holiday');
     }
   };
@@ -633,12 +588,8 @@ export default function OwnerDashboardPage() {
     if (!newClosureStart || !newClosureEnd || !salon) return;
     try {
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const response = await fetch(`/api/businesses/${salon.id}/downtime/closures`, {
         method: 'POST',
         headers,
@@ -657,7 +608,6 @@ export default function OwnerDashboardPage() {
         setNewClosureStart('');
         setNewClosureEnd('');
         setNewClosureReason('');
-        // Optimistic append using response data or fallback
         const newItem = result.data || {
           id: crypto.randomUUID(),
           start_date: savedStart,
@@ -665,9 +615,9 @@ export default function OwnerDashboardPage() {
           reason: savedReason,
           created_at: new Date().toISOString(),
         };
-        setClosures((prev) => [...prev, newItem]);
+        addClosure(newItem);
       }
-    } catch (err) {
+    } catch {
       alert('Failed to add closure');
     }
   };
@@ -687,7 +637,7 @@ export default function OwnerDashboardPage() {
       location: salon.location ?? '',
     });
     setEditError(null);
-    setEditModalOpen(true);
+    openModal(MODAL_IDS.EDIT_BUSINESS);
   };
 
   const handleEditSave = async () => {
@@ -696,9 +646,7 @@ export default function OwnerDashboardPage() {
     setEditError(null);
     try {
       const csrfToken = await getCSRFToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const res = await fetch(`/api/owner/businesses/${encodeURIComponent(bookingLink)}`, {
         method: 'PATCH',
@@ -728,8 +676,8 @@ export default function OwnerDashboardPage() {
       }
       if (json.success && json.data) {
         setSalon(json.data);
-        setEditModalOpen(false);
-        setToastMessage('Business updated successfully');
+        closeModal(MODAL_IDS.EDIT_BUSINESS);
+        showToast('Business updated successfully', 'success');
       }
     } catch (err) {
       setEditError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
@@ -740,9 +688,8 @@ export default function OwnerDashboardPage() {
 
   const handleDelete = async () => {
     if (!salon || !bookingLink) return;
-    if (!window.confirm('Are you sure you want to delete this business? This cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this business? This cannot be undone.'))
       return;
-    }
     setDeleteSaving(true);
     try {
       const csrfToken = await getCSRFToken();
@@ -766,22 +713,7 @@ export default function OwnerDashboardPage() {
     }
   };
 
-  useEffect(() => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
-  }, []);
-
-  const downloadQRCode = () => {
-    if (!salon?.qr_code) return;
-
-    const link = document.createElement('a');
-    link.href = salon.qr_code;
-    link.download = `${salon.booking_link}-qr-code.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="w-full pb-24 flex flex-col gap-6">
         <div className="h-8 bg-slate-200 rounded w-64 mb-2 animate-pulse" />
@@ -806,10 +738,18 @@ export default function OwnerDashboardPage() {
     );
   }
 
-  const slotList = Array.isArray(slots) ? slots : [];
-
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => dismissToast(toast.id)}
+          duration={toast.duration}
+        />
+      ))}
+
       <div className="space-y-2">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-500">
           <button
@@ -834,457 +774,46 @@ export default function OwnerDashboardPage() {
             {salon.salon_name}
           </span>
         </nav>
-
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate leading-tight">
           {salon.salon_name}
         </h1>
       </div>
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
-        <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-          <div className="flex-shrink-0">
-            {salon.qr_code ? (
-              <div className="flex justify-center bg-white p-3 lg:p-4 rounded-lg border-2 border-gray-200 relative w-40 h-40 lg:w-48 lg:h-48">
-                <Image
-                  src={salon.qr_code}
-                  alt="QR Code"
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <div className="w-40 h-40 lg:w-48 lg:h-48 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-gray-200">
-                <p className="text-gray-500 text-sm">Generating...</p>
-              </div>
-            )}
-          </div>
-          <div className="flex-1 text-center md:text-left w-full md:w-auto">
-            <h2 className="text-lg lg:text-xl font-bold text-gray-900 mb-2">QR Code</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Download and keep it safe. Stick it in your shop for customers to scan and book.
-            </p>
-            {salon.qr_code && (
-              <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-                <button
-                  onClick={downloadQRCode}
-                  className="h-11 px-6 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
-                >
-                  <DownloadIcon className="w-5 h-5" aria-hidden="true" />
-                  Download QR Code
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Business details – owner CRUD */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Business details</h2>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={openEditModal}
-              className="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleteSaving}
-              className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
-              {deleteSaving ? 'Deleting...' : 'Delete'}
-            </button>
-          </div>
-        </div>
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <dt className="text-slate-500">Business name</dt>
-            <dd className="font-medium text-slate-900">{salon.salon_name}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Owner name</dt>
-            <dd className="font-medium text-slate-900">{salon.owner_name}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">WhatsApp</dt>
-            <dd className="font-medium text-slate-900">{salon.whatsapp_number}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Hours</dt>
-            <dd className="font-medium text-slate-900">
-              {salon.opening_time?.substring(0, 5)} – {salon.closing_time?.substring(0, 5)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Slot duration</dt>
-            <dd className="font-medium text-slate-900">{salon.slot_duration} min</dd>
-          </div>
-          {salon.location && (
-            <div>
-              <dt className="text-slate-500">Location</dt>
-              <dd className="font-medium text-slate-900">{salon.location}</dd>
-            </div>
-          )}
-          {salon.address && (
-            <div className="sm:col-span-2">
-              <dt className="text-slate-500">Address</dt>
-              <dd className="font-medium text-slate-900">{salon.address}</dd>
-            </div>
-          )}
-        </dl>
-      </div>
+      <QRCodeSection qrCode={salon.qr_code} bookingLink={salon.booking_link} />
 
-      {/* Edit business modal – blurred backdrop */}
-      {editModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Edit business</h3>
-            {editError && (
-              <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-800 text-sm">{editError}</div>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Business name *
-                </label>
-                <input
-                  type="text"
-                  value={editForm.salon_name}
-                  onChange={(e) => setEditForm((f) => ({ ...f, salon_name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  maxLength={VALIDATION.SALON_NAME_MAX_LENGTH}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Owner name *
-                </label>
-                <input
-                  type="text"
-                  value={editForm.owner_name}
-                  onChange={(e) => setEditForm((f) => ({ ...f, owner_name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  maxLength={VALIDATION.OWNER_NAME_MAX_LENGTH}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  WhatsApp number * (10 digits)
-                </label>
-                <input
-                  type="tel"
-                  value={editForm.whatsapp_number}
-                  onChange={(e) => {
-                    const digits = e.target.value
-                      .replace(/\D/g, '')
-                      .slice(0, VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH);
-                    setEditForm((f) => ({ ...f, whatsapp_number: digits }));
-                  }}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  placeholder="10 digits"
-                  inputMode="numeric"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Opening time
-                  </label>
-                  <input
-                    type="time"
-                    value={editForm.opening_time}
-                    onChange={(e) =>
-                      setEditForm((f) => ({
-                        ...f,
-                        opening_time: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Closing time
-                  </label>
-                  <input
-                    type="time"
-                    value={editForm.closing_time}
-                    onChange={(e) =>
-                      setEditForm((f) => ({
-                        ...f,
-                        closing_time: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Slot duration (min)
-                </label>
-                <select
-                  value={editForm.slot_duration}
-                  onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      slot_duration: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                >
-                  {SLOT_DURATIONS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Location / City
-                </label>
-                <input
-                  type="text"
-                  value={editForm.location}
-                  onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  maxLength={200}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                <textarea
-                  value={editForm.address}
-                  onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none"
-                  maxLength={VALIDATION.ADDRESS_MAX_LENGTH}
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setEditModalOpen(false)}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleEditSave}
-                disabled={
-                  editSaving ||
-                  !editForm.salon_name.trim() ||
-                  !editForm.owner_name.trim() ||
-                  editForm.whatsapp_number.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH
-                }
-                className="flex-1 px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {editSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BusinessDetailsCard
+        salon={salon}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+        deleteSaving={deleteSaving}
+      />
 
-      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
+      <EditBusinessModal
+        isOpen={isModalOpen(MODAL_IDS.EDIT_BUSINESS)}
+        editForm={editForm}
+        editError={editError}
+        editSaving={editSaving}
+        onFormChange={setEditForm}
+        onSave={handleEditSave}
+        onClose={() => closeModal(MODAL_IDS.EDIT_BUSINESS)}
+      />
 
-      {/* Shop Photos – Upload & Gallery */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Shop Photos</h2>
+      <ShopPhotosSection
+        photos={shopPhotos}
+        selectedFiles={selectedFiles}
+        photosLoading={photosLoading}
+        uploadingPhotos={uploadingPhotos}
+        photoError={photoError}
+        deletingPhotoIds={deletingPhotoIds}
+        uploadQueue={uploadQueue}
+        onFileSelect={handleFileSelect}
+        onRemoveSelectedFile={handleRemoveSelectedFile}
+        onUpload={handleUploadPhotos}
+        onDeletePhoto={handleDeletePhoto}
+      />
 
-        {/* Upload section */}
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-medium text-slate-800 mb-2">Upload Shop Photos</h3>
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-            <input
-              id="shop-photo-input"
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/webp"
-              disabled={uploadingPhotos}
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                setSelectedFiles(files);
-                setUploadQueue(files.map((file) => ({ file, status: 'pending' })));
-              }}
-              className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-black file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-900"
-            />
-            <button
-              type="button"
-              onClick={() => void handleUploadPhotos()}
-              disabled={uploadingPhotos || selectedFiles.length === 0}
-              className="inline-flex items-center justify-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              {uploadingPhotos ? (
-                <>
-                  <span className="animate-spin mr-2 inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Uploading…
-                </>
-              ) : (
-                'Upload'
-              )}
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-slate-500">JPG, PNG, or WEBP · Max 5 MB each</p>
-          {/* Preview thumbnails for selected files */}
-          {selectedFiles.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {selectedFiles.map((file, idx) => {
-                const url = URL.createObjectURL(file);
-                return (
-                  <div
-                    key={file.name + file.size + idx}
-                    className="relative group overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-                  >
-                    <div className="relative h-40 w-full">
-                      <Image
-                        src={url}
-                        alt={file.name}
-                        className="object-cover w-full h-full rounded-lg"
-                        width={320}
-                        height={160}
-                      />
-                      {/* X button for removing image */}
-                      <button
-                        type="button"
-                        className="absolute top-2 right-2 rounded-lg bg-white/90 border border-slate-200 p-1.5 text-slate-600 opacity-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
-                        title="Remove image"
-                        onClick={() => handleRemoveSelectedFile(idx)}
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    {/* Status badge: Pending/Uploading/Success */}
-                    <div className="absolute bottom-2 left-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-slate-700 border border-slate-200">
-                      {uploadQueue[idx]?.status === 'uploading'
-                        ? 'Uploading…'
-                        : uploadQueue[idx]?.status === 'success'
-                          ? 'Uploaded'
-                          : uploadQueue[idx]?.status === 'error'
-                            ? 'Error'
-                            : 'Pending'}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {photoError && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">
-            {photoError}
-          </div>
-        )}
-
-        {photosLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {(() => {
-              // Dynamically determine number of skeletons to show
-              // Use selectedFiles.length if files are being uploaded, else fallback to previous photo count or default 4
-              let skeletonCount = 4;
-              if (selectedFiles.length > 0) {
-                skeletonCount = selectedFiles.length;
-              } else if (shopPhotos.length > 0) {
-                skeletonCount = shopPhotos.length;
-              }
-              return Array.from({ length: skeletonCount }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg border border-gray-200 bg-white p-3 flex flex-col items-center justify-center h-40 skeleton-shimmer"
-                >
-                  <div className="h-28 w-full bg-gray-200 rounded mb-3" />
-                </div>
-              ));
-            })()}
-          </div>
-        ) : shopPhotos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
-              <svg
-                className="w-8 h-8 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm text-slate-500">
-              No shop photos yet. Upload your first photo above.
-            </p>
-          </div>
-        ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-            {shopPhotos.map((photo) => (
-              <div
-                key={photo.id}
-                className="relative group break-inside-avoid rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
-              >
-                <Image
-                  src={photo.url}
-                  alt="Shop photo"
-                  width={1200}
-                  height={800}
-                  className="w-full h-auto"
-                  unoptimized
-                />
-
-                {/* Delete Button */}
-                <button
-                  type="button"
-                  onClick={() => void handleDeletePhoto(photo.id)}
-                  disabled={deletingPhotoIds.has(photo.id)}
-                  className="absolute top-2 right-2 z-10 rounded-lg bg-white/90 border border-slate-200 p-1.5 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Delete photo"
-                >
-                  {deletingPhotoIds.has(photo.id) ? (
-                    <span className="block h-4 w-4 animate-spin border-2 border-red-400 border-t-transparent rounded-full" />
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Tabs Section - Mobile Scrollable */}
       <div className="bg-white border border-slate-200 rounded-lg">
         <div className="flex gap-1 bg-slate-100 p-1 border-b border-slate-200 overflow-x-auto">
-          {/* Bookings tab removed from per-salon page; moved to owner dashboard */}
           <button
             onClick={() => setActiveTab('slots')}
             className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
@@ -1310,234 +839,30 @@ export default function OwnerDashboardPage() {
         <div className="p-4 lg:p-6">
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
-
             <div className="w-full sm:w-64 lg:w-72">
               <DateFilter value={selectedDate} onChange={setSelectedDate} />
             </div>
           </div>
 
-          {/* Bookings removed from per-salon page. */}
           {activeTab === 'slots' ? (
-            /* Slots Tab - Mobile Vertical / Desktop Kanban Board */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Available Column */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Available
-                  </h3>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slotList.filter((s) => s.status === 'available').length}
-                  </span>
-                </div>
-                <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slotList.filter((s) => s.status === 'available').length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-gray-500">No available slots</p>
-                    </div>
-                  ) : (
-                    slotList
-                      .filter((s) => s.status === 'available')
-                      .map((slot) => (
-                        <div
-                          key={slot.id}
-                          className="bg-white border-2 border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors"
-                        >
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </div>
-              </div>
-
-              {/* Reserved Column */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Reserved
-                  </h3>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slotList.filter((s) => s.status === 'reserved').length}
-                  </span>
-                </div>
-                <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slotList.filter((s) => s.status === 'reserved').length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-gray-500">No reserved slots</p>
-                    </div>
-                  ) : (
-                    slotList
-                      .filter((s) => s.status === 'reserved')
-                      .map((slot) => (
-                        <div
-                          key={slot.id}
-                          className="bg-white border-2 border-gray-400 rounded-lg p-3 hover:border-gray-500 transition-colors"
-                        >
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </div>
-              </div>
-
-              {/* Booked Column */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Booked
-                  </h3>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    {slotList.filter((s) => s.status === 'booked').length}
-                  </span>
-                </div>
-                <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
-                  {slotList.filter((s) => s.status === 'booked').length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-gray-500">No booked slots</p>
-                    </div>
-                  ) : (
-                    slotList
-                      .filter((s) => s.status === 'booked')
-                      .map((slot) => (
-                        <div
-                          key={slot.id}
-                          className="bg-gray-50 border-2 border-black rounded-lg p-3"
-                        >
-                          <div className="text-sm font-medium text-gray-900">
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </div>
-              </div>
-            </div>
+            <SlotsKanbanBoard slots={memoizedSlots} />
           ) : activeTab === 'downtime' ? (
-            <div className="space-y-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-4 lg:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Holidays</h3>
-                <div className="space-y-3 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Holiday Date
-                    </label>
-                    <input
-                      type="date"
-                      value={newHolidayDate}
-                      onChange={(e) => setNewHolidayDate(e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Holiday Name (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newHolidayName}
-                      onChange={(e) => setNewHolidayName(e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-                      placeholder="e.g., New Year"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAddHoliday}
-                    disabled={!newHolidayDate}
-                    className="w-full h-11 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    <CreateBusinessIcon className="w-5 h-5" aria-hidden="true" />
-                    Add Holiday
-                  </button>
-                </div>
-                {holidays.length > 0 && (
-                  <div className="space-y-2">
-                    {holidays.map((holiday) => (
-                      <div
-                        key={holiday.id}
-                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {formatDate(holiday.holiday_date)}
-                          </p>
-                          {holiday.holiday_name && (
-                            <p className="text-sm text-gray-600">{holiday.holiday_name}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-4 lg:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Closures</h3>
-                <div className="space-y-3 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      value={newClosureStart}
-                      onChange={(e) => setNewClosureStart(e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                    <input
-                      type="date"
-                      value={newClosureEnd}
-                      onChange={(e) => setNewClosureEnd(e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newClosureReason}
-                      onChange={(e) => setNewClosureReason(e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-                      placeholder="e.g., Maintenance"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAddClosure}
-                    disabled={!newClosureStart || !newClosureEnd}
-                    className="w-full h-11 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    <CreateBusinessIcon className="w-5 h-5" aria-hidden="true" />
-                    Add Closure
-                  </button>
-                </div>
-                {closures.length > 0 && (
-                  <div className="space-y-2">
-                    {closures.map((closure) => (
-                      <div
-                        key={closure.id}
-                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {formatDate(closure.start_date)} - {formatDate(closure.end_date)}
-                          </p>
-                          {closure.reason && (
-                            <p className="text-sm text-gray-600">{closure.reason}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <DowntimeManagement
+              holidays={holidays}
+              closures={closures}
+              newHolidayDate={newHolidayDate}
+              newHolidayName={newHolidayName}
+              newClosureStart={newClosureStart}
+              newClosureEnd={newClosureEnd}
+              newClosureReason={newClosureReason}
+              onHolidayDateChange={setNewHolidayDate}
+              onHolidayNameChange={setNewHolidayName}
+              onClosureStartChange={setNewClosureStart}
+              onClosureEndChange={setNewClosureEnd}
+              onClosureReasonChange={setNewClosureReason}
+              onAddHoliday={handleAddHoliday}
+              onAddClosure={handleAddClosure}
+            />
           ) : (
             <div className="w-full">
               <p className="text-sm text-gray-600">
@@ -1547,7 +872,7 @@ export default function OwnerDashboardPage() {
           )}
         </div>
       </div>
-      {/* Customer Reviews */}
+
       <ReviewSummary reviewData={reviewData} />
     </div>
   );

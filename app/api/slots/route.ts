@@ -2,15 +2,19 @@ import { NextRequest } from 'next/server';
 import { slotService } from '@/services/slot.service';
 import { salonService } from '@/services/salon.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { setNoCacheHeaders } from '@/lib/cache/next-cache';
+import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
 import { businessHoursService } from '@/services/business-hours.service';
 import { getISTDateString, getISTDate, toMinutes } from '@/lib/time/ist';
+import {
+  buildApiRedisKeyFromPath,
+  getApiRedisCache,
+  setApiRedisCache,
+  API_REDIS_TTL,
+} from '@/lib/cache/api-redis-cache';
 
 export async function GET(request: NextRequest) {
-  const clientIP = getClientIp(request);
-
   try {
     const { searchParams } = new URL(request.url);
     const salonId = searchParams.get('salon_id');
@@ -28,6 +32,22 @@ export async function GET(request: NextRequest) {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
       return errorResponse('Invalid date format', 400);
+    }
+
+    // Check Redis cache first (short TTL for slots due to real-time nature)
+    const redisKey = buildApiRedisKeyFromPath('/api/slots', { salon_id: salonId, date });
+    const redisCached = await getApiRedisCache<{
+      closed: boolean;
+      slots: unknown[];
+      isHoliday?: boolean;
+      message?: string;
+      opening_time?: string;
+      closing_time?: string;
+    }>(redisKey);
+    if (redisCached) {
+      const response = successResponse(redisCached);
+      setCacheHeaders(response, API_REDIS_TTL.SLOTS, API_REDIS_TTL.SLOTS * 2);
+      return response;
     }
 
     const salon = await salonService.getSalonById(salonId);
@@ -49,12 +69,15 @@ export async function GET(request: NextRequest) {
       } else {
         message = date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day';
       }
-      return successResponse({
+      const closedData = {
         closed: true,
         isHoliday: !!isHoliday,
         message,
         slots: [],
-      });
+      };
+      // Cache closed status in Redis (longer TTL since it's static for the day)
+      await setApiRedisCache(redisKey, closedData, 60);
+      return successResponse(closedData);
     }
 
     // Generate slots if not exist
@@ -106,14 +129,18 @@ export async function GET(request: NextRequest) {
       return true;
     });
 
-    const response = successResponse({
+    const slotsData = {
       closed: false,
       slots: validSlots,
       opening_time: hours.opening_time,
       closing_time: hours.closing_time,
-    });
+    };
 
-    setNoCacheHeaders(response);
+    // Cache in Redis with short TTL (slots change frequently)
+    await setApiRedisCache(redisKey, slotsData, API_REDIS_TTL.SLOTS);
+
+    const response = successResponse(slotsData);
+    setCacheHeaders(response, API_REDIS_TTL.SLOTS, API_REDIS_TTL.SLOTS * 2);
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;

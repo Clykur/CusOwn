@@ -26,13 +26,37 @@ vi.mock('@/lib/cache/api-response-cache', () => ({
   setCachedApiResponse: () => {},
 }));
 
+const mockGetApiRedisCache = vi.fn();
+const mockSetApiRedisCache = vi.fn();
+vi.mock('@/lib/cache/api-redis-cache', () => ({
+  buildApiRedisKeyFromPath: (path: string) => `redis:${path}`,
+  getApiRedisCache: (...args: unknown[]) => mockGetApiRedisCache(...args),
+  setApiRedisCache: (...args: unknown[]) => mockSetApiRedisCache(...args),
+  API_REDIS_TTL: { CATEGORIES: 600 },
+}));
+
 describe('GET /api/business-categories', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetCachedApiResponse.mockReturnValue(null);
+    mockGetApiRedisCache.mockResolvedValue(null);
   });
 
-  it('returns 200 from cache when getCachedApiResponse returns data', async () => {
+  it('returns 200 from Redis cache when getApiRedisCache returns data', async () => {
+    const redisCached = [{ value: 'salon', label: 'Salon' }];
+    mockGetApiRedisCache.mockResolvedValue(redisCached);
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { success?: boolean; data?: unknown };
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual(redisCached);
+    expect(mockGetBusinessCategories).not.toHaveBeenCalled();
+    expect(mockGetCachedApiResponse).not.toHaveBeenCalled();
+  });
+
+  it('returns 200 from in-memory cache when getCachedApiResponse returns data', async () => {
     const cached = [{ value: 'salon', label: 'Salon' }];
     mockGetCachedApiResponse.mockReturnValue({ data: cached });
     const { GET } = await import('@/app/api/business-categories/route');
