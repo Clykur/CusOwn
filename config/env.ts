@@ -175,6 +175,15 @@ export const env = {
   nextPublicVercelGitCommitSha: rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
 } as const;
 
+/** Check if Supabase is properly configured (not using placeholder values). */
+export function isSupabaseConfigured(): boolean {
+  const url = env.supabase.url;
+  const anonKey = env.supabase.anonKey;
+  if (!url || !anonKey) return false;
+  if (url.includes('placeholder') || anonKey.includes('placeholder')) return false;
+  return true;
+}
+
 export const validateEnv = (): void => {
   const required = [
     { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },

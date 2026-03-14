@@ -300,7 +300,7 @@ export async function getOrCreateTestUser(
   // Create new user using admin API (always create with unique email)
   const { data: newUser, error } = await supabase.auth.admin.createUser({
     email,
-    password: 'TestPassword123!',
+    password: 'TestPassword123!', // pragma: allowlist secret
     email_confirm: true,
   });
 

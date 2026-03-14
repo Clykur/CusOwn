@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { UI_CUSTOMER } from '@/config/constants';
@@ -11,6 +11,7 @@ import {
 import StarRating from '../booking/star-rating';
 import SalonDetailsHeader from '@/components/customer/SalonDetailsHeader';
 import SalonShopPhotos from '@/components/customer/SalonShopPhotos';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 const IMAGE_QUALITY_PREMIUM = 95;
 const GALLERY_IMAGE_WIDTH = 1200;
@@ -271,6 +272,15 @@ export const BusinessProfile = () => {
     };
   }, [salon]);
 
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'Explore', href: '/customer/categories' },
+      { label: 'Salons', href: '/customer/categories/salon' },
+      { label: salon?.salon_name || 'Salon', href: `/customer/${slug}` },
+    ],
+    [salon?.salon_name, slug]
+  );
+
   if (loading) {
     return (
       <div
@@ -278,6 +288,13 @@ export const BusinessProfile = () => {
         aria-busy="true"
         aria-label="Loading business profile"
       >
+        <Breadcrumb
+          items={[
+            { label: 'Explore', href: '/customer/categories' },
+            { label: 'Salons', href: '/customer/categories/salon' },
+            { label: 'Loading...', href: `/customer/${slug}` },
+          ]}
+        />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="flex flex-col gap-2">
             <div className="h-8 w-64 rounded-lg image-skeleton-shine" />
@@ -315,11 +332,24 @@ export const BusinessProfile = () => {
     );
   }
   if (!salon) {
-    return <div className="w-full py-24 text-center text-red-600 text-lg">Business not found.</div>;
+    return (
+      <div className="w-full pb-24">
+        <Breadcrumb
+          items={[
+            { label: 'Explore', href: '/customer/categories' },
+            { label: 'Salons', href: '/customer/categories/salon' },
+            { label: 'Salon', href: `/customer/${slug}` },
+          ]}
+        />
+        <div className="py-16 text-center text-red-600 text-lg">Business not found.</div>
+      </div>
+    );
   }
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
+      <Breadcrumb items={breadcrumbItems} />
+
       {/* Header */}
       <SalonDetailsHeader
         salonName={salon.salon_name}
@@ -417,7 +447,7 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Average Rating */}
         <div className="flex flex-col items-center sm:items-start">
-          <div className="text-4xl font-bold text-slate-900">{rating_avg?.toFixed(1) ?? '—'}</div>
+          <div className="text-4xl font-bold text-slate-900">{rating_avg?.toFixed(1) ?? ' '}</div>
 
           <StarRating value={Math.round(rating_avg ?? 0)} readonly size="md" />
 

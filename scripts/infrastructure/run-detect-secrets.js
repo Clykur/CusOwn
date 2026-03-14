@@ -1,10 +1,61 @@
 #!/usr/bin/env node
 const { execSync, spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
 const MODE = process.argv.includes('--staged') ? 'staged' : 'repo';
 const BASELINE = path.resolve(ROOT, '.secrets.baseline');
+
+/**
+ * Ensure baseline is UTF-8 and paths use forward slashes so the hook works on all platforms.
+ * Stages the file if it was modified.
+ */
+function ensureBaselineEncodingAndPaths() {
+  if (!fs.existsSync(BASELINE)) return;
+  let raw = fs.readFileSync(BASELINE);
+  let encoding = 'utf8';
+  if (raw[0] === 0xff && raw[1] === 0xfe) {
+    raw = raw.slice(2);
+    encoding = 'utf16le';
+  } else if (raw[0] === 0xfe && raw[1] === 0xff) {
+    raw = raw.slice(2);
+    encoding = 'utf16be';
+  }
+  const content = raw.toString(encoding || 'utf8');
+  let baseline;
+  try {
+    baseline = JSON.parse(content);
+  } catch {
+    return;
+  }
+  const results = baseline.results;
+  if (!results || typeof results !== 'object') return;
+  let changed = false;
+  const newResults = {};
+  for (const [pathKey, findings] of Object.entries(results)) {
+    const normalizedKey = pathKey.replace(/\\/g, '/');
+    if (normalizedKey !== pathKey) changed = true;
+    newResults[normalizedKey] = Array.isArray(findings)
+      ? findings.map((f) => {
+          if (f.filename && f.filename.includes('\\')) {
+            changed = true;
+            return { ...f, filename: f.filename.replace(/\\/g, '/') };
+          }
+          return f;
+        })
+      : findings;
+  }
+  if (encoding !== 'utf8' || changed) {
+    baseline.results = newResults;
+    fs.writeFileSync(BASELINE, JSON.stringify(baseline, null, 2), 'utf8');
+    try {
+      execSync('git add .secrets.baseline', { cwd: ROOT, stdio: 'pipe' });
+    } catch {
+      // Ignore if not a repo or add fails
+    }
+  }
+}
 
 function resolvePythonCommand() {
   const windowsCandidates = [
@@ -42,10 +93,11 @@ function getFileList() {
     MODE === 'staged' ? 'git diff --cached --name-only --diff-filter=ACMR' : 'git ls-files';
   const output = execSync(command, { cwd: ROOT, encoding: 'utf8' }).trim();
   if (!output) return [];
-  /** Test files with known false positives (template/URL literals flagged as high-entropy). */
+  /** Known false positives: test fixtures, docs that reference env var names. */
   const SECRET_SCAN_SKIP_FILES = new Set([
     'scripts/unit-utils/unit-config-constants.test.ts',
     'scripts/unit-utils/unit-utils-url.test.ts',
+    'docs/SECURITY_HARDENING_IMPLEMENTATION.md',
   ]);
 
   return output
@@ -64,11 +116,13 @@ function getFileList() {
 }
 
 function main() {
+  ensureBaselineEncodingAndPaths();
+
   const python = resolvePythonCommand();
   if (!python) {
     // eslint-disable-next-line no-console
     console.error(
-      'Python 3 is required for detect-secrets. Install Python and detect-secrets first.'
+      'Python 3 is required for detect-secrets. Install Python and run: pip install detect-secrets'
     );
     process.exit(1);
   }

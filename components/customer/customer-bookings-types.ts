@@ -9,5 +9,6 @@ export interface BookingForSalonRow {
     whatsapp_number?: string;
     location?: string;
     address?: string;
+    deleted_at?: string | null;
   } | null;
 }

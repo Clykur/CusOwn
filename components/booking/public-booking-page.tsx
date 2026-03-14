@@ -26,7 +26,7 @@ import {
   clearPendingBooking,
   getInitialRebookData,
 } from './booking-utils';
-import { dedupFetch, cancelRequests } from '@/lib/utils/fetch-dedup';
+import { dedupFetch, cancelRequests, cancelDebounce } from '@/lib/utils/fetch-dedup';
 import { useBookingFlowStore, selectAvailableSlots } from '@/lib/store';
 
 import type { BookingSuccessData } from './booking-success-view';
@@ -71,13 +71,42 @@ const BookingSuccessView = dynamic(() => import('./booking-success-view'), {
 });
 
 import { useSlotUpdates } from '@/lib/realtime/use-slot-updates';
+import type { Salon, PublicBusiness } from '@/types';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
-type PublicBookingPageProps = { businessSlug: string };
+type PublicBookingPageProps = {
+  businessSlug: string;
+  initialBusiness?: Salon | null;
+  initialSlots?: Slot[];
+  initialClosedDates?: string[];
+  initialClosedMessage?: string | null;
+  initialDate?: string;
+};
 
-export default function PublicBookingPage({ businessSlug }: PublicBookingPageProps) {
+function toPublicBusiness(salon: Salon): PublicBusiness {
+  return {
+    id: salon.id,
+    salon_name: salon.salon_name,
+    opening_time: salon.opening_time,
+    closing_time: salon.closing_time,
+    slot_duration: salon.slot_duration,
+    booking_link: salon.booking_link,
+    address: salon.address ?? null,
+    location: salon.location ?? null,
+  };
+}
+
+export default function PublicBookingPage({
+  businessSlug,
+  initialBusiness,
+  initialSlots,
+  initialClosedDates,
+  initialClosedMessage,
+  initialDate,
+}: PublicBookingPageProps) {
   const router = useRouter();
   const rebookAppliedRef = useRef(false);
-  const businessFetchedRef = useRef(false);
+  const businessFetchedRef = useRef(!!initialBusiness);
 
   const business = useBookingFlowStore((state) => state.business);
   const setBusiness = useBookingFlowStore((state) => state.setBusiness);
@@ -121,6 +150,56 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const [, setTimeTick] = useState(0);
   const restoredFromPendingRef = useRef(false);
 
+  // Initialize from server-side data for instant display
+  const initialDataAppliedRef = useRef(false);
+  useEffect(() => {
+    if (initialDataAppliedRef.current) return;
+    initialDataAppliedRef.current = true;
+
+    // Apply server-fetched business data immediately
+    if (initialBusiness) {
+      setBusiness(toPublicBusiness(initialBusiness));
+      setIsLoading(false);
+    }
+
+    // Apply server-fetched slots for today
+    if (initialSlots && initialSlots.length > 0 && initialDate) {
+      setSlots(initialSlots);
+      cacheSlots(initialDate, initialSlots);
+      setDateLoading(false);
+    }
+
+    // Apply server-fetched closed dates
+    if (initialClosedDates && initialClosedDates.length > 0) {
+      addClosedDates(initialClosedDates);
+    }
+
+    // Apply server-fetched closed message
+    if (initialClosedMessage) {
+      setClosedMessage(initialClosedMessage);
+      setDateLoading(false);
+    }
+
+    // Set initial date from server
+    if (initialDate) {
+      setSelectedDate(initialDate);
+    }
+  }, [
+    initialBusiness,
+    initialSlots,
+    initialClosedDates,
+    initialClosedMessage,
+    initialDate,
+    setBusiness,
+    setIsLoading,
+    setSlots,
+    cacheSlots,
+    addClosedDates,
+    setClosedMessage,
+    setDateLoading,
+    setSelectedDate,
+  ]);
+
   useEffect(() => {
     getCSRFToken().catch(console.error);
     setBusinessSlug(businessSlug);
@@ -140,9 +219,13 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const selectedSlotRef = useRef<Slot | null>(selectedSlot);
   selectedSlotRef.current = selectedSlot;
 
+  // Use ref to avoid recreating callback on every slots change (prevents infinite loop)
+  const slotsRef = useRef<Slot[]>(slots);
+  slotsRef.current = slots;
+
   const handleRealtimeSlotsUpdate = useCallback(
     (nextSlots: Slot[]) => {
-      const currentSlots = slots;
+      const currentSlots = slotsRef.current;
       const currentById = new Map(currentSlots.map((s) => [s.id, s]));
       let hasChanges = false;
 
@@ -163,7 +246,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
       setSlots(nextSlots);
       cacheSlots(selectedDate, nextSlots);
     },
-    [selectedDate, slots, setSlots, cacheSlots]
+    [selectedDate, setSlots, cacheSlots]
   );
 
   const handleSlotStatusChange = useCallback(
@@ -272,6 +355,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
 
   useEffect(() => {
     if (!businessSlug) return;
+    // Skip client fetch if server already provided business data
     if (businessFetchedRef.current) return;
     businessFetchedRef.current = true;
 
@@ -297,8 +381,14 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     };
   }, [businessSlug, setBusiness, setError, setIsLoading]);
 
+  // Track if downtime was already fetched from server
+  const downtimeFetchedRef = useRef(!!(initialClosedDates && initialClosedDates.length > 0));
   useEffect(() => {
     if (!business?.id) return;
+    // Skip client fetch if server already provided downtime data
+    if (downtimeFetchedRef.current) return;
+    downtimeFetchedRef.current = true;
+
     let cancelled = false;
     const today = new Date();
     const year = today.getFullYear();
@@ -361,23 +451,45 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
 
   useEffect(() => {
     if (rebookAppliedRef.current) return;
+    // Skip if initialDate was already set from server
+    if (initialDate && selectedDate === initialDate) return;
     const pending = loadPendingBooking();
     if (pending?.businessSlug === businessSlug && pending.selectedDate) {
       setSelectedDate(pending.selectedDate);
-    } else {
+    } else if (!initialDate) {
       setSelectedDate(getLocalTodayStr());
     }
-  }, [businessSlug, setSelectedDate]);
+  }, [businessSlug, setSelectedDate, initialDate, selectedDate]);
 
+  // Track if initial slots have been applied to skip redundant fetch
+  const initialSlotsFetchedRef = useRef(false);
   useEffect(() => {
     if (!business || !selectedDate) return;
     let cancelled = false;
-    setClosedMessage(null);
+    let loadingTimerId: ReturnType<typeof setTimeout> | null = null;
 
-    if (!slotCache.has(selectedDate)) {
-      setDateLoading(true);
+    // Use cached data immediately if available (instant UI response)
+    const cached = slotCache.get(selectedDate);
+    if (cached) {
+      setSlots(cached);
+      setDateLoading(false);
+      // Skip fetch if this is the initial date with server-provided data
+      if (
+        selectedDate === initialDate &&
+        !initialSlotsFetchedRef.current &&
+        (initialSlots?.length || initialClosedMessage)
+      ) {
+        initialSlotsFetchedRef.current = true;
+        return;
+      }
+    } else {
+      // Only show loading after a short delay to avoid flicker on rapid clicks
+      loadingTimerId = setTimeout(() => {
+        if (!cancelled) setDateLoading(true);
+      }, 100);
     }
 
+    setClosedMessage(null);
     cancelRequests(`slots:${business.id}`);
 
     const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`;
@@ -385,6 +497,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
       credentials: 'include',
       dedupKey: `slots:${business.id}:${selectedDate}`,
       cancelPrevious: true,
+      debounceMs: 150,
     })
       .then((res) => res.json())
       .then((result) => {
@@ -442,13 +555,22 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
         setDateLoading(false);
       })
       .catch((err) => {
-        if ((err as Error)?.name !== 'AbortError') {
+        // Silently ignore aborted/debounced requests - this is expected during rapid interactions
+        if ((err as Error)?.name === 'AbortError') return;
+        // Only log unexpected errors
+        if (!cancelled) {
           console.error('[PublicBookingPage] Failed to fetch slots:', err);
+          setDateLoading(false);
         }
-        setDateLoading(false);
       });
     return () => {
       cancelled = true;
+      // Clear loading timer
+      if (loadingTimerId) clearTimeout(loadingTimerId);
+      // Cancel any pending debounced request for this date
+      if (business?.id) {
+        cancelDebounce(`slots:${business.id}:${selectedDate}`);
+      }
     };
   }, [
     business,
@@ -466,6 +588,9 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     setSelectedSlot,
     setSlotValidationError,
     selectedSlot,
+    initialDate,
+    initialSlots,
+    initialClosedMessage,
   ]);
 
   const refetchSlots = useCallback(async () => {
@@ -644,11 +769,37 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     [selectedDate, businessCloseHour]
   );
 
-  if (isLoading) return <BookingPageSkeleton />;
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'My Activity', href: '/customer/dashboard' },
+      { label: business?.salon_name || 'Book Appointment', href: `/customer/book/${businessSlug}` },
+    ],
+    [business?.salon_name, businessSlug]
+  );
+
+  if (isLoading) {
+    return (
+      <div className="w-full">
+        <Breadcrumb
+          items={[
+            { label: 'My Activity', href: '/customer/dashboard' },
+            { label: 'Loading...', href: `/customer/book/${businessSlug}` },
+          ]}
+        />
+        <BookingPageSkeleton />
+      </div>
+    );
+  }
 
   if (error && !business) {
     return (
       <div className="w-full">
+        <Breadcrumb
+          items={[
+            { label: 'My Activity', href: '/customer/dashboard' },
+            { label: 'Book Appointment', href: `/customer/book/${businessSlug}` },
+          ]}
+        />
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
           <h2 className="text-xl font-semibold text-slate-900 mb-4">
             {ERROR_MESSAGES.SALON_NOT_FOUND}
@@ -664,7 +815,9 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   }
 
   return (
-    <div className="w-full pb-24 flex flex-col gap-8">
+    <div className="w-full pb-24 flex flex-col gap-6">
+      <Breadcrumb items={breadcrumbItems} />
+
       <div className="w-full">
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
           <h1 className="text-xl font-semibold text-slate-900 mb-2">{business?.salon_name}</h1>

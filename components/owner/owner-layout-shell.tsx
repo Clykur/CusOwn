@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import OwnerHeader from '@/components/owner/owner-header';
 import {
   OwnerSessionProvider,
   type OwnerInitialUser,
 } from '@/components/owner/owner-session-context';
 import { ROUTES } from '@/lib/utils/navigation';
+import { useMounted } from '@/lib/hooks/use-mounted';
 
 const OwnerSidebar = dynamic(() => import('@/components/owner/owner-sidebar'), {
   ssr: false,
@@ -17,6 +18,15 @@ const OwnerSidebar = dynamic(() => import('@/components/owner/owner-sidebar'), {
 const MobileBottomNav = dynamic(() => import('@/components/owner/mobile-bottom-nav'), {
   ssr: false,
 });
+
+const AuthLoadingSkeleton = () => (
+  <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+      <p className="text-gray-500 text-sm">Loading...</p>
+    </div>
+  </div>
+);
 
 type OwnerLayoutShellProps = {
   children: React.ReactNode;
@@ -34,17 +44,16 @@ export default function OwnerLayoutShell({
   initialUser = null,
   requireClientAuthCheck = false,
 }: OwnerLayoutShellProps) {
+  const mounted = useMounted();
   const pathname = usePathname();
   const safePathname = pathname ?? '';
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientUser, setClientUser] = useState<OwnerInitialUser | null>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
-  /** When true, session was missing after client check; user stays in flow until they click Sign in or Logout. */
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
-    if (!requireClientAuthCheck) return;
+    if (!mounted || !requireClientAuthCheck) return;
     let cancelled = false;
     (async () => {
       try {
@@ -84,18 +93,14 @@ export default function OwnerLayoutShell({
     return () => {
       cancelled = true;
     };
-  }, [requireClientAuthCheck, router]);
+  }, [mounted, requireClientAuthCheck]);
 
   const user = initialUser ?? clientUser;
   const loginUrl =
     typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN('/owner/dashboard') : '/auth/login';
 
-  if (requireClientAuthCheck && !clientCheckDone) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500">Checking authentication…</p>
-      </div>
-    );
+  if (requireClientAuthCheck && (!mounted || !clientCheckDone)) {
+    return <AuthLoadingSkeleton />;
   }
 
   if (requireClientAuthCheck && sessionMissing) {

@@ -6,6 +6,7 @@ import { setRebookData } from '@/components/booking/booking-utils';
 import { UI_CUSTOMER } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails } from '@/types';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 type Params = { salonSlug?: string };
 
@@ -180,7 +181,7 @@ function BookingDetailModal({
               </p>
               <p className="text-slate-700">
                 <span className="font-medium text-slate-500">Time:</span>{' '}
-                {slotDate && slotTime ? `${slotDate} · ${slotTime}` : '—'}
+                {slotDate && slotTime ? `${slotDate} · ${slotTime}` : ' '}
               </p>
             </div>
           </div>
@@ -280,8 +281,20 @@ export default function CustomerSalonBookingsPage() {
     [hasHistory]
   );
 
+  const salonName = history?.[0]?.salon?.salon_name || 'Salon';
+
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'My Activity', href: '/customer/dashboard' },
+      { label: salonName, href: `/customer/bookings/${salonSlug}` },
+    ],
+    [salonName, salonSlug]
+  );
+
   return (
-    <div className="w-full pb-24 flex flex-col gap-8">
+    <div className="w-full pb-24 flex flex-col gap-6">
+      <Breadcrumb items={breadcrumbItems} />
+
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -354,7 +367,7 @@ export default function CustomerSalonBookingsPage() {
                     <td className="px-4 py-2.5 text-slate-700">
                       {booking.slot
                         ? `${formatTime(booking.slot.start_time)} – ${formatTime(booking.slot.end_time)}`
-                        : '—'}
+                        : ' '}
                     </td>
                     <td className="px-4 py-2.5">
                       <span

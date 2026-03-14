@@ -29,7 +29,7 @@ export async function hasSlotsForDate(businessId: string, date: string): Promise
 
 /**
  * Fetch only booked and active reserved slots for business+date (for DSA availability).
- * Expired reserved (reserved_until < nowIso) are excluded — lazy expiry.
+ * Expired reserved (reserved_until < nowIso) are excluded   lazy expiry.
  */
 export async function getOccupiedIntervalsForDate(
   businessId: string,

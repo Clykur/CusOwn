@@ -11,13 +11,10 @@
 
 name: CodeQL
 
+# CodeQL is now part of the main CI pipeline (ci.yml). This workflow runs only on schedule or manual trigger.
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
   schedule:
-    # Run weekly security scan
+    # Run weekly deep security scan
     - cron: '0 3 * * 0'
   workflow_dispatch:
 

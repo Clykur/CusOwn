@@ -124,7 +124,14 @@ export default function CustomerDashboardPage() {
     }
 
     const hasFreshCache = lastFetchedAt && Date.now() - lastFetchedAt < CACHE_TTL;
-    refetchBookings(!hasFreshCache);
+
+    // Skip fetch entirely if cache is fresh (prefetched or recent)
+    if (hasFreshCache) {
+      setIsInitialLoad(false);
+      return;
+    }
+
+    refetchBookings(true);
   }, [initialUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleVisibilityRefresh = useCallback(() => {

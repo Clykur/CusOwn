@@ -50,13 +50,15 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    const salon = await salonService.getSalonById(salonId);
+    // Parallel: fetch salon and business hours simultaneously
+    const [salon, hours] = await Promise.all([
+      salonService.getSalonById(salonId),
+      businessHoursService.getEffectiveHours(salonId, date),
+    ]);
+
     if (!salon) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
-
-    // Check business hours (holiday + weekly)
-    const hours = await businessHoursService.getEffectiveHours(salonId, date);
 
     if (!hours || hours.isClosed) {
       const isHoliday = hours && 'isHoliday' in hours && hours.isHoliday;
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
       let message: string;
       if (isHoliday) {
         message = holidayName
-          ? `Holiday today — ${holidayName}. Shop is closed.`
+          ? `Holiday today   ${holidayName}. Shop is closed.`
           : 'Holiday today. Shop is closed.';
       } else {
         message = date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day';
@@ -190,18 +192,20 @@ export async function POST(request: NextRequest) {
     const user = await getServerUser(request);
 
     if (user) {
-      const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some((b) => b.id === salon_id);
+      // Parallel: fetch user businesses and profile simultaneously for auth check
+      const [userBusinesses, profile] = await Promise.all([
+        userService.getUserBusinesses(user.id),
+        userService.getUserProfile(user.id),
+      ]);
 
-      if (!hasAccess) {
-        const profile = await userService.getUserProfile(user.id);
-        const isAdmin = profile?.user_type === 'admin';
-        if (!isAdmin) {
-          console.warn(
-            `[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salon_id.substring(0, 8)}...`
-          );
-          return errorResponse('Access denied', 403);
-        }
+      const hasAccess = userBusinesses.some((b) => b.id === salon_id);
+      const isAdmin = profile?.user_type === 'admin';
+
+      if (!hasAccess && !isAdmin) {
+        console.warn(
+          `[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salon_id.substring(0, 8)}...`
+        );
+        return errorResponse('Access denied', 403);
       }
     } else {
       console.warn(
