@@ -128,19 +128,7 @@ export default function Home() {
                 </span>
               </button>
               <button
-                onClick={() => {
-                  const role = getUserRoleCookie();
-
-                  if (!role) {
-                    document.cookie =
-                      'post_login_redirect=/customer/categories; path=/; max-age=600; SameSite=Lax';
-
-                    router.push('/auth/login');
-                    return;
-                  }
-
-                  router.push('/customer/categories');
-                }}
+                onClick={() => router.push(ROUTES.SELECT_ROLE('customer'))}
                 className="group border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 px-10 py-5 text-base font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 bg-white w-full sm:w-auto min-w-[200px]"
               >
                 <span className="flex items-center justify-center gap-2">
@@ -299,7 +287,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-4xl mx-auto">
             {/* Active: Salons */}
-            <div className="bg-black text-white rounded-xl p-6 text-center hover:bg-gray-900 transition-colors cursor-pointer">
+            <div className="bg-black text-white rounded-xl p-6 text-center transition-colors">
               <div className="flex justify-center mb-3">
                 <Image
                   src="/icons/categories/salon.png"

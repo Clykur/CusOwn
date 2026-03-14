@@ -2,13 +2,10 @@
 
 import { memo, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { UI_CUSTOMER, ERROR_MESSAGES } from '@/config/constants';
-import { ROUTES } from '@/lib/utils/navigation';
+import { ERROR_MESSAGES } from '@/config/constants';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { useOptimisticMutation } from '@/lib/hooks/use-optimistic-action';
 import { Slot } from '@/types';
-import BookingsIcon from '@/src/icons/bookings.svg';
 
 const RescheduleButton = dynamic(() => import('@/components/booking/reschedule-button'), {
   ssr: false,
@@ -41,6 +38,7 @@ interface BookingActionsProps {
     salon?: { id: string };
     business_id: string;
   };
+  salon_id?: string;
   availableSlots: Slot[];
   cancellationMinHoursMs: number;
   onCancelled: () => void;
@@ -153,13 +151,13 @@ function BookingActionsComponent({
             {isCancellationTooLate && (
               <p className="text-sm text-slate-500">{ERROR_MESSAGES.CANCELLATION_TOO_LATE}</p>
             )}
-            {booking.slot && booking.salon && availableSlots.length > 0 && !booking.no_show && (
+            {booking.slot && !booking.no_show && booking.status !== 'cancelled' && (
               <div className="flex justify-center">
                 <RescheduleButton
                   bookingId={booking.id}
                   currentSlot={booking.slot as Slot}
                   businessId={booking.business_id}
-                  availableSlots={availableSlots}
+                  availableSlots={availableSlots ?? []}
                   onRescheduled={onRescheduled}
                   rescheduledBy="customer"
                 />
@@ -168,16 +166,6 @@ function BookingActionsComponent({
           </div>
         )
       )}
-
-      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-200">
-        <Link
-          href={ROUTES.CUSTOMER_DASHBOARD}
-          className="flex-1 inline-flex items-center justify-center gap-2 text-center bg-slate-100 text-slate-800 font-semibold py-3 px-6 rounded-xl hover:bg-slate-200 transition-all"
-        >
-          <BookingsIcon className="w-5 h-5" aria-hidden="true" />
-          {UI_CUSTOMER.NAV_MY_ACTIVITY}
-        </Link>
-      </div>
     </>
   );
 }

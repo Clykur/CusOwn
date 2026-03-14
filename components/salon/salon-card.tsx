@@ -195,7 +195,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
         </Link>
 
         <Link
-          href={secureUrl}
+          href={`/customer/book/${bookingLink}`}
           className="flex-1 text-center text-sm font-medium bg-black text-white rounded-lg py-2 hover:bg-gray-800 transition"
         >
           View Slots

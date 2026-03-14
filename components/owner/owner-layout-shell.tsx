@@ -135,9 +135,9 @@ export default function OwnerLayoutShell({
     <OwnerSessionProvider initialUser={user ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <OwnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className={`flex-1 lg:ml-64 w-full ${mainSpacing}`}>
+        <main className={`flex-1 lg:ml-60 w-full ${mainSpacing}`}>
           {isOwnerMainArea ? (
-            <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
+            <div className="mx-auto w-full max-w-[1200px] py-8 px-4 sm:px-6 lg:px-6">
               <div className="flex flex-col gap-6">
                 {isDashboard && (
                   <OwnerHeader

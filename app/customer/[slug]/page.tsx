@@ -1,11 +1,5 @@
 'use client';
-
-import dynamic from 'next/dynamic';
-import { BusinessProfileSkeleton } from '@/components/ui/skeleton';
-
-const BusinessProfile = dynamic(() => import('@/components/salon/BusinessProfile'), {
-  loading: () => <BusinessProfileSkeleton />,
-});
+import BusinessProfile from '@/components/salon/BusinessProfile';
 
 export default function BusinessViewPage() {
   return <BusinessProfile />;

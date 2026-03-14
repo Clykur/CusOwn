@@ -59,7 +59,10 @@ function SlotSelectionGridComponent({
     );
   }
 
-  if (dateLoading && slots.length === 0) {
+  // Always show slots (optimistic UI)
+  const showLoadingOverlay = dateLoading && slots.length === 0;
+
+  if (showLoadingOverlay) {
     return (
       <div className="col-span-full flex items-center justify-center py-6">
         <div className="flex items-center gap-2 text-slate-500">

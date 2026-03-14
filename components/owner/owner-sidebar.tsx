@@ -187,7 +187,9 @@ export default function OwnerSidebar({
           {/* Logo/Header */}
           <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">CusOwn</h2>
+              <h2 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+                CusOwn
+              </h2>
               <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
             </div>
           </div>
