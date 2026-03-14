@@ -8,6 +8,7 @@ import { createHash } from 'crypto';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { ROUTES } from '@/lib/utils/navigation';
 import { PENDING_BOOKING_COOKIE } from '@/config/constants';
+import { env } from '@/config/env';
 import { verifyPendingBookingCookie } from '@/lib/auth/pending-booking-cookie';
 import { bookingService } from '@/services/booking.service';
 import { salonService } from '@/services/salon.service';
@@ -29,7 +30,7 @@ function clearPendingCookie(res: NextResponse): void {
     path: '/',
     maxAge: 0,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.nodeEnv === 'production',
     sameSite: 'lax',
   });
 }
