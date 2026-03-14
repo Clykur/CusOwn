@@ -1,24 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import CustomerHeader from '@/components/customer/customer-header';
+import CustomerSidebar from '@/components/customer/customer-sidebar';
+import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
 import {
   CustomerSessionProvider,
   type CustomerInitialUser,
 } from '@/components/customer/customer-session-context';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CUSTOMER } from '@/config/constants';
-import { env } from '@/config/env';
-
-const CustomerSidebar = dynamic(() => import('@/components/customer/customer-sidebar'), {
-  ssr: false,
-});
-
-const CustomerMobileBottomNav = dynamic(() => import('@/components/customer/mobile-bottom-nav'), {
-  ssr: false,
-});
+import { useMounted } from '@/lib/hooks/use-mounted';
+import { prefetchCustomerDashboard } from '@/lib/prefetch/customer-dashboard';
 
 function getCustomerHeader(pathname: string): {
   title: string;
@@ -55,7 +49,14 @@ function getCustomerHeader(pathname: string): {
   };
 }
 
-env.nodeEnv;
+const AuthLoadingContent = () => (
+  <div className="flex-1 flex items-center justify-center py-24">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+      <p className="text-gray-500 text-sm">Loading...</p>
+    </div>
+  </div>
+);
 
 type CustomerLayoutShellProps = {
   children: React.ReactNode;
@@ -73,24 +74,18 @@ export default function CustomerLayoutShell({
   initialUser = null,
   requireClientAuthCheck = false,
 }: CustomerLayoutShellProps) {
-  const router = useRouter();
+  const mounted = useMounted();
   const pathname = usePathname();
+  const router = useRouter();
   const safePathname = pathname ?? '';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const header = getCustomerHeader(safePathname);
   const [clientUser, setClientUser] = useState<CustomerInitialUser | null>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
-  /** When true, session was missing after client check; user stays in flow until they click Sign in or Logout. */
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
-    if (env && typeof window !== 'undefined') {
-      return;
-    }
-  }, [initialUser?.id, requireClientAuthCheck]);
-
-  useEffect(() => {
-    if (!requireClientAuthCheck) return;
+    if (!mounted || !requireClientAuthCheck) return;
     let cancelled = false;
     (async () => {
       try {
@@ -130,7 +125,19 @@ export default function CustomerLayoutShell({
     return () => {
       cancelled = true;
     };
-  }, [requireClientAuthCheck, router]);
+  }, [mounted, requireClientAuthCheck]);
+
+  // Prefetch dashboard data after successful auth
+  useEffect(() => {
+    const hasUser = !!(initialUser?.id || clientUser?.id);
+    if (!mounted || !hasUser) return;
+
+    // Prefetch route for instant navigation
+    router.prefetch(ROUTES.CUSTOMER_DASHBOARD);
+
+    // Prefetch bookings data and store in Zustand
+    prefetchCustomerDashboard();
+  }, [mounted, initialUser?.id, clientUser?.id, router]);
 
   const user = initialUser?.id ? initialUser : clientUser;
   const loginUrl =
@@ -142,22 +149,19 @@ export default function CustomerLayoutShell({
   const isCategories = safePathname === ROUTES.CUSTOMER_CATEGORIES;
   const isSalonList = safePathname === ROUTES.CUSTOMER_SALON_LIST;
   const isProfile = safePathname === ROUTES.CUSTOMER_PROFILE;
-  const isBookingDetails = safePathname.startsWith('/booking/');
-  const isCustomerMainArea =
-    isDashboard || isCategories || isSalonList || isProfile || isBookingDetails;
   const mainSpacing = '';
 
-  if (requireClientAuthCheck && !clientCheckDone) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500">Checking authentication…</p>
-      </div>
-    );
-  }
+  // Only show CustomerHeader for main dashboard pages, not for detail/booking pages
+  const showHeader = isDashboard || isCategories || isSalonList || isProfile;
 
-  if (requireClientAuthCheck && sessionMissing) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+  // Determine content to render
+  let content: React.ReactNode;
+
+  if (requireClientAuthCheck && (!mounted || !clientCheckDone)) {
+    content = <AuthLoadingContent />;
+  } else if (requireClientAuthCheck && sessionMissing) {
+    content = (
+      <div className="flex-1 flex items-center justify-center py-24">
         <div className="text-center max-w-sm px-4">
           <p className="text-gray-600 mb-4">
             Your session may have expired. Sign in again to continue.
@@ -171,6 +175,13 @@ export default function CustomerLayoutShell({
         </div>
       </div>
     );
+  } else {
+    content = (
+      <>
+        {showHeader && <CustomerHeader title={header.title} subtitle={header.subtitle} />}
+        {children}
+      </>
+    );
   }
 
   return (
@@ -178,16 +189,9 @@ export default function CustomerLayoutShell({
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className={`flex-1 lg:ml-60 w-full ${mainSpacing}`}>
-          {isCustomerMainArea ? (
-            <div className="mx-auto w-full max-w-[1200px] py-8 px-4 sm:px-6 lg:px-6">
-              <div className="flex flex-col gap-6">
-                <CustomerHeader title={header.title} subtitle={header.subtitle} />
-                {children}
-              </div>
-            </div>
-          ) : (
-            <div className="px-4 sm:px-6 lg:px-12 xl:px-16 py-6 lg:py-8">{children}</div>
-          )}
+          <div className="mx-auto w-full max-w-[1200px] py-8 px-4 sm:px-6 lg:px-6">
+            <div className="flex flex-col gap-6">{content}</div>
+          </div>
         </main>
         <CustomerMobileBottomNav sidebarOpen={sidebarOpen} />
       </div>

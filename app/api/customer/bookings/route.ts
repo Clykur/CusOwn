@@ -14,9 +14,12 @@ const ROUTE = 'GET /api/customer/bookings';
  */
 export async function GET(request: NextRequest) {
   try {
-    await bookingService.runLazyExpireIfNeeded();
+    // Parallel: run lazy expire and auth check simultaneously
+    const [, auth] = await Promise.all([
+      bookingService.runLazyExpireIfNeeded(),
+      requireCustomer(request, ROUTE),
+    ]);
 
-    const auth = await requireCustomer(request, ROUTE);
     if (auth instanceof Response) return auth;
 
     const bookings = await bookingService.getCustomerBookings(auth.user.id);

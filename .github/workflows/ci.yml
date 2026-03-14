@@ -84,6 +84,30 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
 
+  env-validation:
+    name: Env & Config Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+      - run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Ensure .env.test
+        run: node scripts/infrastructure/ensure-env-test.js
+      - name: Validate env structure (verify-env)
+        run: npx dotenv-cli -e .env.test -- npx ts-node --project scripts/tsconfig.json scripts/verify-env.ts
+      - name: Node version check
+        run: node scripts/infrastructure/check-node-version.js
+
   # ═══════════════════════════════════════════════════════════════════════════════
   # LAYER 2: STATIC ANALYSIS (parallel)
   # ═══════════════════════════════════════════════════════════════════════════════
@@ -125,6 +149,25 @@ jobs:
       - run: npm ci
         if: hashFiles('node_modules/.package-lock.json') == ''
       - run: npm run typecheck
+
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+      - run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
+      - run: npm run format:check
 
   # ═══════════════════════════════════════════════════════════════════════════════
   # LAYER 3: SECURITY SCANS (parallel)
@@ -206,6 +249,89 @@ jobs:
       - run: node scripts/infrastructure/validate-security-and-quality.js
       - run: npm run security-check
 
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [setup]
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          config: |
+            query-filters:
+              - exclude:
+                  problem.severity:
+                    - recommendation
+            paths-ignore:
+              - node_modules
+              - .next
+              - .next-build
+              - coverage
+              - '**/*.test.ts'
+              - '**/*.spec.ts'
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        id: codeql
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
+          upload: true
+          output: sarif-results
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-sarif
+          path: sarif-results
+          retention-days: 30
+
+      - name: Fail on HIGH/CRITICAL findings
+        run: |
+          SARIF_DIR="sarif-results"
+          FAILED=false
+          if [ -d "$SARIF_DIR" ]; then
+            for f in "$SARIF_DIR"/*.sarif; do
+              [ -f "$f" ] || continue
+              ERROR_COUNT=$(jq -r '[.runs[].results[]? | select(.level == "error")] | length' "$f" 2>/dev/null || echo 0)
+              WARNING_COUNT=$(jq -r '[.runs[].results[]? | select(.level == "warning")] | length' "$f" 2>/dev/null || echo 0)
+              if [ "${ERROR_COUNT:-0}" -gt 0 ]; then
+                echo "::error::CodeQL found ${ERROR_COUNT} critical security issues"
+                FAILED=true
+              fi
+              if [ "${WARNING_COUNT:-0}" -gt 0 ]; then
+                echo "::warning::CodeQL found ${WARNING_COUNT} high-severity issues"
+                FAILED=true
+              fi
+              echo "## CodeQL Security" >> $GITHUB_STEP_SUMMARY
+              echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Critical | ${ERROR_COUNT:-0} |" >> $GITHUB_STEP_SUMMARY
+              echo "| High | ${WARNING_COUNT:-0} |" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+          if [ "$FAILED" = true ]; then
+            echo "::error::CodeQL found security issues. Fix before merging."
+            exit 1
+          fi
+          echo "CodeQL analysis passed" >> $GITHUB_STEP_SUMMARY
+
   # ═══════════════════════════════════════════════════════════════════════════════
   # LAYER 4: TESTS (parallel)
   # ═══════════════════════════════════════════════════════════════════════════════
@@ -214,7 +340,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [setup, lint, typecheck]
+    needs: [setup, lint, typecheck, format-check]
     env:
       SALON_TOKEN_SECRET: test-secret # pragma: allowlist secret
     steps:
@@ -240,10 +366,17 @@ jobs:
         run: npm run test:unit
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
-      - name: Vitest unit tests
+      - name: Vitest unit tests (coverage enforced by thresholds)
         run: npx dotenv-cli -e .env.test -- npx vitest run --config vitest.unit.config.mts --coverage
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
+      - name: Coverage summary
+        run: |
+          echo "## Unit test coverage" >> $GITHUB_STEP_SUMMARY
+          echo "Enforced by Vitest thresholds in \`vitest.unit.config.mts\` (statements/branches/functions/lines)." >> $GITHUB_STEP_SUMMARY
+          if [ -d coverage ]; then
+            echo "Coverage artifact uploaded below." >> $GITHUB_STEP_SUMMARY
+          fi
       - uses: actions/upload-artifact@v4
         if: success()
         with:
@@ -255,7 +388,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [setup, lint, typecheck]
+    needs: [setup, lint, typecheck, format-check]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -282,7 +415,7 @@ jobs:
     name: Security Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [setup, lint, typecheck]
+    needs: [setup, lint, typecheck, format-check]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -305,6 +438,35 @@ jobs:
       - run: npm run test:phase4 || true
       - run: npm run test:phase5 || true
       - run: npm run test:phase6 || true
+        env:
+          NODE_OPTIONS: '--max-old-space-size=2048'
+
+  crud-checks:
+    name: CRUD & Data Layer
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    needs: [setup, lint, typecheck, format-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+      - run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Create .env.test
+        run: |
+          cat > .env.test << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          EOF
+      - name: CRUD (repositories + migrations)
+        run: npm run test:crud
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
 
@@ -342,6 +504,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://example.com' }}
+      - name: Bundle size check
+        run: npm run quality:bundle-size
       - uses: actions/upload-artifact@v4
         with:
           name: build-${{ github.sha }}
@@ -458,13 +622,17 @@ jobs:
     needs:
       - lint
       - typecheck
+      - format-check
+      - env-validation
       - dependency-audit
       - license-check
       - secret-scan
       - security-custom
+      - codeql
       - unit-tests
       - integration-tests
       - security-tests
+      - crud-checks
       - build
       - quality-gates
       - lockfile-check
@@ -475,9 +643,11 @@ jobs:
           echo "## ✅ Pre-deploy Gate Passed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All required checks passed:" >> $GITHUB_STEP_SUMMARY
-          echo "- Lint, Typecheck" >> $GITHUB_STEP_SUMMARY
-          echo "- Security (audit, license, secrets, custom)" >> $GITHUB_STEP_SUMMARY
-          echo "- Tests (unit, integration, security)" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint, Typecheck, Format" >> $GITHUB_STEP_SUMMARY
+          echo "- Env & config validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Security (audit, license, secrets, custom, CodeQL)" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests (unit, integration, security, CRUD)" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage (Vitest thresholds)" >> $GITHUB_STEP_SUMMARY
           echo "- Build, Quality gates" >> $GITHUB_STEP_SUMMARY
 
   # ═══════════════════════════════════════════════════════════════════════════════

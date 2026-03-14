@@ -259,7 +259,7 @@ export const UI_BOOKING_STATE = {
   /** When status is cancelled and cancelled_by === 'system' (expired). */
   EXPIRED: 'This request has expired',
   /** When owner marked as no-show (status remains confirmed). */
-  NO_SHOW: 'Marked as no-show — you did not attend this appointment',
+  NO_SHOW: 'Marked as no-show   you did not attend this appointment',
 } as const;
 
 /** Phase 6: Idempotent success copy (e.g. user clicked Accept again on already-confirmed booking). */
@@ -459,7 +459,7 @@ export const RATE_LIMIT_REVIEW_MAX_PER_WINDOW = 10;
 export const REVIEW_PROFANITY_WORDS: readonly string[] = [
   'blockedword', // test fixture; add production terms as needed
 ] as const;
-/** Phase 5: Admin endpoints — per user + per IP. */
+/** Phase 5: Admin endpoints   per user + per IP. */
 export const RATE_LIMIT_ADMIN_WINDOW_MS = 60_000;
 export const RATE_LIMIT_ADMIN_MAX_PER_WINDOW = 100;
 /** Media upload: per user + per IP to prevent abuse. */
@@ -483,6 +483,14 @@ export const GEO_PROVIDER_MAX_RETRIES = 1;
 /** In-memory IP lookup cache: TTL (ms), max entries. */
 export const GEO_IP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 export const GEO_IP_CACHE_MAX_ENTRIES = 5000;
+/** Redis IP geo cache: TTL 24 hours (seconds). */
+export const GEO_IP_REDIS_TTL_SECONDS = 86400;
+/** Redis cache key prefix for IP geolocation. */
+export const GEO_IP_REDIS_PREFIX = 'geo:ip:';
+/** Redis cache for business search: TTL 5 minutes (seconds). */
+export const BUSINESS_SEARCH_REDIS_TTL_SECONDS = 300;
+/** Redis cache key prefix for business search. */
+export const BUSINESS_SEARCH_REDIS_PREFIX = 'search:biz:';
 export const GEO_SERVICE_NAME = 'geo_service';
 export const METRICS_GEO_DEGRADATION = 'geo.service.degradation';
 export const GEO_DEGRADATION_COOLDOWN_MS = 60_000;
@@ -689,6 +697,8 @@ export const CACHE_TTL_API_LONG_MS = 300 * 1000; // 5 min for stable GETs
 export const CACHE_TTL_STATIC_MS = 10 * 60 * 1000;
 /** Booking lookup: short TTL so status updates are visible. */
 export const CACHE_TTL_BOOKING_MS = 30 * 1000;
+/** Prefetch debounce: prevent rapid repeated prefetches. */
+export const PREFETCH_DEBOUNCE_MS = 5000;
 /** Search results: 60 s. */
 export const CACHE_TTL_SEARCH_MS = 60 * 1000;
 export const CACHE_STALE_GRACE_MS = 30 * 1000; // Serve stale up to 30s while revalidating (API)
@@ -834,7 +844,7 @@ export const METRICS_MEDIA_STORAGE_LATENCY_MS = 'media.storage.latency_ms';
 export const METRICS_MEDIA_PURGE_COUNT = 'media.purge.count';
 export const METRICS_MEDIA_ORPHAN_CLEANUP_COUNT = 'media.orphan_cleanup.count';
 
-/** Media: circuit breaker — failures in window before opening. */
+/** Media: circuit breaker   failures in window before opening. */
 export const MEDIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 10;
 export const MEDIA_CIRCUIT_BREAKER_WINDOW_MS = 60_000;
 export const MEDIA_CIRCUIT_BREAKER_COOLDOWN_MS = 120_000;

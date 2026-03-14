@@ -90,6 +90,9 @@ export function subscribeSlotUpdates(options: SubscribeSlotUpdatesOptions): () =
     onPayload({ eventType, slot, eventId });
   };
 
+  let lastRefetchTime = 0;
+  const RECONNECT_REFETCH_DEBOUNCE_MS = 10000;
+
   channel
     .on(
       'postgres_changes',
@@ -103,6 +106,11 @@ export function subscribeSlotUpdates(options: SubscribeSlotUpdatesOptions): () =
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED' || status === 'CHANNEL_RECONNECTED') {
+        const now = Date.now();
+        if (now - lastRefetchTime < RECONNECT_REFETCH_DEBOUNCE_MS) {
+          return;
+        }
+        lastRefetchTime = now;
         onRefetch();
       }
     });

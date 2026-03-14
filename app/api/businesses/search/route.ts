@@ -14,6 +14,7 @@ import { ipLookupWithFallback } from '@/lib/geo/geo-service-wrapper';
 import { queryDiscoveryFallback } from '@/lib/db/discovery-fallback';
 import { logStructured } from '@/lib/observability/structured-log';
 import { safeMetrics } from '@/lib/monitoring/safe-metrics';
+import { getCache, setCache } from '@/lib/cache/cache';
 import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@/config/constants';
 import {
   DISCOVERY_WEIGHT_DISTANCE,
@@ -33,6 +34,8 @@ import {
   MAX_SEARCH_RADIUS_KM,
   METRICS_DISCOVERY_FALLBACK_GEO,
   METRICS_DISCOVERY_FALLBACK_RPC,
+  BUSINESS_SEARCH_REDIS_TTL_SECONDS,
+  BUSINESS_SEARCH_REDIS_PREFIX,
 } from '@/config/constants';
 
 const DISCOVERY_ENDPOINT = 'POST /api/businesses/search';
@@ -52,6 +55,38 @@ const searchRateLimit = enhancedRateLimit({
   keyPrefix: 'geo_search',
 });
 
+interface SearchCacheParams {
+  lat: number | null;
+  lng: number | null;
+  city: string | null;
+  area: string | null;
+  pincode: string | null;
+  category: string | null;
+  radiusKm: number;
+  availableToday: boolean;
+  minRating: number | null;
+  page: number;
+  limit: number;
+}
+
+function buildSearchCacheKey(params: SearchCacheParams): string {
+  const parts = [
+    BUSINESS_SEARCH_REDIS_PREFIX,
+    params.lat?.toFixed(4) ?? 'n',
+    params.lng?.toFixed(4) ?? 'n',
+    params.city ?? 'n',
+    params.area ?? 'n',
+    params.pincode ?? 'n',
+    params.category ?? 'all',
+    params.radiusKm.toString(),
+    params.availableToday ? '1' : '0',
+    params.minRating?.toString() ?? 'n',
+    params.page.toString(),
+    params.limit.toString(),
+  ];
+  return parts.join(':');
+}
+
 export async function POST(request: NextRequest) {
   const clientIP = getClientIp(request);
 
@@ -67,8 +102,12 @@ export async function POST(request: NextRequest) {
         return errorResponse('Invalid request ID', 400);
       }
 
-      const user = await getServerUser(request);
-      const nonceExists = await checkNonce(requestId);
+      // Parallel: check user and nonce simultaneously
+      const [user, nonceExists] = await Promise.all([
+        getServerUser(request),
+        checkNonce(requestId),
+      ]);
+
       if (nonceExists) {
         return errorResponse('Duplicate request', 409);
       }
@@ -193,25 +232,23 @@ export async function POST(request: NextRequest) {
     );
     const offset = (page - 1) * limit;
 
-    if (!supabaseAdmin) {
-      return errorResponse('Service unavailable', 503);
-    }
+    // Skip cache for explain mode (debug only)
+    const skipCache = filteredBody.explain === true;
 
-    const fallbackContext: DiscoveryFallbackContext = { usedFallback: false };
-
+    // Parse coordinates from body if provided
     const hasGeoFromBody =
       filteredBody.latitude !== undefined &&
       filteredBody.longitude !== undefined &&
       Number.isFinite(Number(filteredBody.latitude)) &&
       Number.isFinite(Number(filteredBody.longitude));
 
-    let lat: number | null = null;
-    let lng: number | null = null;
+    let bodyLat: number | null = null;
+    let bodyLng: number | null = null;
     if (hasGeoFromBody) {
       try {
         const coords = parseAndValidateCoordinates(filteredBody.latitude, filteredBody.longitude);
-        lat = coords.lat;
-        lng = coords.lng;
+        bodyLat = coords.lat;
+        bodyLng = coords.lng;
       } catch {
         return errorResponse(
           ERROR_MESSAGES.GEO_INVALID_COORDINATES,
@@ -219,7 +256,49 @@ export async function POST(request: NextRequest) {
           ERROR_MESSAGES.VALIDATION_ERROR_CODE
         );
       }
-    } else {
+    }
+
+    // Build cache key from search parameters
+    const cacheParams: SearchCacheParams = {
+      lat: bodyLat,
+      lng: bodyLng,
+      city: filteredBody.city ?? null,
+      area: filteredBody.area ?? null,
+      pincode: filteredBody.pincode ?? null,
+      category: filteredBody.category ?? null,
+      radiusKm,
+      availableToday: !!filteredBody.available_today,
+      minRating: filteredBody.min_rating ?? null,
+      page,
+      limit,
+    };
+    const cacheKey = buildSearchCacheKey(cacheParams);
+
+    // Check Redis cache first (skip for explain mode)
+    if (!skipCache) {
+      try {
+        const { hit, data: cachedResponse } = await getCache<{
+          businesses: unknown[];
+          pagination: { page: number; limit: number; total: number; has_more: boolean };
+        }>(cacheKey);
+        if (hit && cachedResponse) {
+          return successResponse(cachedResponse);
+        }
+      } catch {
+        // Cache unavailable, continue with normal flow
+      }
+    }
+
+    if (!supabaseAdmin) {
+      return errorResponse('Service unavailable', 503);
+    }
+
+    const fallbackContext: DiscoveryFallbackContext = { usedFallback: false };
+
+    // Use body coordinates or fallback to IP lookup
+    let lat: number | null = bodyLat;
+    let lng: number | null = bodyLng;
+    if (!hasGeoFromBody) {
       const geoOutcome = await ipLookupWithFallback(clientIP, {
         requestId: requestId ?? undefined,
         endpoint: DISCOVERY_ENDPOINT,
@@ -426,6 +505,15 @@ export async function POST(request: NextRequest) {
       response.explain_plan = Array.isArray(explainRows)
         ? (explainRows as Record<string, string>[]).map((r) => r.plan_line ?? r['Query Plan'] ?? '')
         : [];
+    }
+
+    // Cache successful results (skip for explain mode and fallback results)
+    if (!skipCache && !fallbackContext.usedFallback) {
+      const cacheData = {
+        businesses: response.businesses,
+        pagination: response.pagination,
+      };
+      setCache(cacheKey, cacheData, BUSINESS_SEARCH_REDIS_TTL_SECONDS).catch(() => {});
     }
 
     return successResponse(response);

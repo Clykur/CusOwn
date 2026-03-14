@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UI_CUSTOMER } from '@/config/constants';
@@ -9,6 +9,7 @@ import { setRebookData } from '@/components/booking/booking-utils';
 import SalonDetailsHeader from '@/components/customer/SalonDetailsHeader';
 import SalonShopPhotos from '@/components/customer/SalonShopPhotos';
 import SalonBookingHistoryTable from '@/components/customer/SalonBookingHistoryTable';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 interface SalonPayload {
   id: string;
@@ -131,9 +132,23 @@ export default function CustomerSalonDetailsPage() {
     router.prefetch(`/customer/book/${encodeURIComponent(salonId)}`);
   }, [router, salonId]);
 
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'My Activity', href: '/customer/dashboard' },
+      { label: salon?.salon_name || 'Salon Details', href: `/customer/salon/${salonId}` },
+    ],
+    [salon?.salon_name, salonId]
+  );
+
   if (loading) {
     return (
       <div className="w-full pb-24 flex flex-col gap-6" aria-busy="true" aria-label="Loading salon">
+        <Breadcrumb
+          items={[
+            { label: 'My Activity', href: '/customer/dashboard' },
+            { label: 'Loading...', href: `/customer/salon/${salonId}` },
+          ]}
+        />
         <div className="h-10 w-64 rounded-lg image-skeleton-shine" />
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           <div className="h-6 w-28 mb-4 rounded image-skeleton-shine" />
@@ -154,20 +169,49 @@ export default function CustomerSalonDetailsPage() {
 
   if (error || !salon) {
     return (
-      <div className="w-full py-24 text-center">
-        <p className="text-red-600 text-lg">{error ?? 'Salon not found'}</p>
-        <Link
-          href="/customer/dashboard"
-          className="mt-4 inline-block text-slate-600 hover:text-slate-900 underline"
-        >
-          {UI_CUSTOMER.NAV_MY_ACTIVITY}
-        </Link>
+      <div className="w-full pb-24">
+        <Breadcrumb
+          items={[
+            { label: 'My Activity', href: '/customer/dashboard' },
+            { label: 'Salon Details', href: `/customer/salon/${salonId}` },
+          ]}
+        />
+        <div className="py-16 flex flex-col items-center justify-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-800">Salon No Longer Available</h2>
+          <p className="text-slate-500 text-center max-w-sm">
+            This salon has been removed from our platform. Your booking history with this salon is
+            still saved in your activity.
+          </p>
+          <Link
+            href="/customer/dashboard"
+            className="mt-2 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
+          >
+            Back to My Activity
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
+      <Breadcrumb items={breadcrumbItems} />
+
       <SalonDetailsHeader
         salonName={salon.salon_name}
         ownerName={salon.owner_name ?? null}

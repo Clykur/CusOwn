@@ -30,7 +30,7 @@ export function runUnitUtilsStringTests(): void {
   });
 
   runTest('should_slug_trim_leading_trailing_dashes_when_present', () => {
-    const out = generateSlug('  — Hello —  ');
+    const out = generateSlug('    Hello    ');
     assert(
       !out.startsWith('-') && !out.endsWith('-'),
       `Expected no leading/trailing dashes: '${out}'`

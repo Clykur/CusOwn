@@ -14,6 +14,7 @@ import { UI_CUSTOMER } from '@/config/constants';
 import ExploreIcon from '@/src/icons/explore.svg';
 import MapPinIcon from '@/src/icons/map-pin.svg';
 import ChevronDownIcon from '@/src/icons/chevron-down.svg';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -278,7 +279,15 @@ export default function CustomerSalonListPage() {
   }, [userLocation]);
 
   return (
-    <div className="space-y-8 pb-20 md:pb-12">
+    <div className="space-y-6 pb-20 md:pb-12">
+      <Breadcrumb
+        items={[
+          { label: 'My Activity', href: '/customer/dashboard' },
+          { label: 'Explore', href: '/customer/categories' },
+          { label: 'Salons', href: '/customer/categories/salon' },
+        ]}
+      />
+
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1 relative">

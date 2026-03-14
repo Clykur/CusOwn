@@ -2,13 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { usePathname, useRouter } from 'next/navigation';
 import { AdminSessionProvider, type SessionLike } from '@/components/admin/admin-session-context';
 import { ROUTES } from '@/lib/utils/navigation';
+import { useMounted } from '@/lib/hooks/use-mounted';
 
 const AdminSidebar = dynamic(() => import('@/components/admin/admin-sidebar'), {
   ssr: false,
 });
+
+const AuthLoadingSkeleton = () => (
+  <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+      <p className="text-gray-500 text-sm">Loading...</p>
+    </div>
+  </div>
+);
 
 type AdminLayoutShellProps = {
   children: React.ReactNode;
@@ -30,15 +39,13 @@ export function AdminLayoutShell({
   initialAdminConfirmed = true,
   requireClientAuthCheck = false,
 }: AdminLayoutShellProps) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const mounted = useMounted();
   const [clientSession, setClientSession] = useState<SessionLike>(null);
   const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
-  /** When true, session was missing or not admin after client check; user stays in flow until they click Sign in or Logout. */
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
-    if (!requireClientAuthCheck) return;
+    if (!mounted || !requireClientAuthCheck) return;
     let cancelled = false;
     (async () => {
       try {
@@ -73,18 +80,14 @@ export function AdminLayoutShell({
     return () => {
       cancelled = true;
     };
-  }, [requireClientAuthCheck, router]);
+  }, [mounted, requireClientAuthCheck]);
 
   const session = initialSession ?? clientSession;
   const loginUrl =
     typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN('/admin/dashboard') : '/auth/login';
 
-  if (requireClientAuthCheck && !clientCheckDone) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500">Checking authentication…</p>
-      </div>
-    );
+  if (requireClientAuthCheck && (!mounted || !clientCheckDone)) {
+    return <AuthLoadingSkeleton />;
   }
 
   if (requireClientAuthCheck && sessionMissing) {

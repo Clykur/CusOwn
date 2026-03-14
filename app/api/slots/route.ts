@@ -14,6 +14,12 @@ import {
   API_REDIS_TTL,
 } from '@/lib/cache/api-redis-cache';
 
+/** Sanitize user-controlled values for logging to prevent log injection (newlines, etc.). */
+function sanitizeForLog(value: unknown): string {
+  const str = String(value ?? '');
+  return str.replace(/[\r\n]/g, '');
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -50,13 +56,15 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    const salon = await salonService.getSalonById(salonId);
+    // Parallel: fetch salon and business hours simultaneously
+    const [salon, hours] = await Promise.all([
+      salonService.getSalonById(salonId),
+      businessHoursService.getEffectiveHours(salonId, date),
+    ]);
+
     if (!salon) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
-
-    // Check business hours (holiday + weekly)
-    const hours = await businessHoursService.getEffectiveHours(salonId, date);
 
     if (!hours || hours.isClosed) {
       const isHoliday = hours && 'isHoliday' in hours && hours.isHoliday;
@@ -64,7 +72,7 @@ export async function GET(request: NextRequest) {
       let message: string;
       if (isHoliday) {
         message = holidayName
-          ? `Holiday today — ${holidayName}. Shop is closed.`
+          ? `Holiday today   ${holidayName}. Shop is closed.`
           : 'Holiday today. Shop is closed.';
       } else {
         message = date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day';
@@ -157,21 +165,23 @@ export async function POST(request: NextRequest) {
     const { salon_id, date } = body;
 
     if (!salon_id || !date) {
-      console.warn(`[SECURITY] Invalid slot generation request from IP: ${clientIP}`);
+      console.warn(
+        `[SECURITY] Invalid slot generation request from IP: ${sanitizeForLog(clientIP)}`
+      );
       return errorResponse('Salon ID and date are required', 400);
     }
 
     // Validate UUID format
     const { isValidUUID } = await import('@/lib/utils/security');
     if (!isValidUUID(salon_id)) {
-      console.warn(`[SECURITY] Invalid salon ID format from IP: ${clientIP}`);
+      console.warn(`[SECURITY] Invalid salon ID format from IP: ${sanitizeForLog(clientIP)}`);
       return errorResponse('Invalid salon ID', 400);
     }
 
     // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
-      console.warn(`[SECURITY] Invalid date format from IP: ${clientIP}`);
+      console.warn(`[SECURITY] Invalid date format from IP: ${sanitizeForLog(clientIP)}`);
       return errorResponse('Invalid date format', 400);
     }
 
@@ -179,7 +189,7 @@ export async function POST(request: NextRequest) {
 
     if (!salon) {
       console.warn(
-        `[SECURITY] Salon not found for slot generation from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`
+        `[SECURITY] Salon not found for slot generation from IP: ${sanitizeForLog(clientIP)}, Salon: ${sanitizeForLog(salon_id.substring(0, 8))}...`
       );
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
@@ -190,22 +200,24 @@ export async function POST(request: NextRequest) {
     const user = await getServerUser(request);
 
     if (user) {
-      const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some((b) => b.id === salon_id);
+      // Parallel: fetch user businesses and profile simultaneously for auth check
+      const [userBusinesses, profile] = await Promise.all([
+        userService.getUserBusinesses(user.id),
+        userService.getUserProfile(user.id),
+      ]);
 
-      if (!hasAccess) {
-        const profile = await userService.getUserProfile(user.id);
-        const isAdmin = profile?.user_type === 'admin';
-        if (!isAdmin) {
-          console.warn(
-            `[SECURITY] Unauthorized slot generation attempt from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Salon: ${salon_id.substring(0, 8)}...`
-          );
-          return errorResponse('Access denied', 403);
-        }
+      const hasAccess = userBusinesses.some((b) => b.id === salon_id);
+      const isAdmin = profile?.user_type === 'admin';
+
+      if (!hasAccess && !isAdmin) {
+        console.warn(
+          `[SECURITY] Unauthorized slot generation attempt from IP: ${sanitizeForLog(clientIP)}, User: ${sanitizeForLog(user.id.substring(0, 8))}..., Salon: ${sanitizeForLog(salon_id.substring(0, 8))}...`
+        );
+        return errorResponse('Access denied', 403);
       }
     } else {
       console.warn(
-        `[SECURITY] Unauthenticated slot generation attempt from IP: ${clientIP}, Salon: ${salon_id.substring(0, 8)}...`
+        `[SECURITY] Unauthenticated slot generation attempt from IP: ${sanitizeForLog(clientIP)}, Salon: ${sanitizeForLog(salon_id.substring(0, 8))}...`
       );
       return errorResponse('Authentication required', 401);
     }
@@ -218,7 +230,9 @@ export async function POST(request: NextRequest) {
     return successResponse(null, SUCCESS_MESSAGES.SLOTS_GENERATED);
   } catch (error) {
     const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
-    console.error(`[SECURITY] Slot generation error: IP: ${clientIP}, Error: ${message}`);
+    console.error(
+      `[SECURITY] Slot generation error: IP: ${sanitizeForLog(clientIP)}, Error: ${sanitizeForLog(message)}`
+    );
     return errorResponse(message, 500);
   }
 }

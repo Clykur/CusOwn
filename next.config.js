@@ -48,6 +48,9 @@ const nextConfig = {
         ...config.resolve.alias,
         '@/lib/supabase/server-auth': false,
         '@/lib/supabase/server': false,
+        '@/lib/queue': false,
+        bullmq: false,
+        ioredis: false,
       };
     }
 
@@ -70,8 +73,8 @@ const nextConfig = {
     fileLoaderRule.exclude = /\.svg$/i;
     return config;
   },
-  // Resolve @supabase on server via Node (avoids broken vendor chunk path in server bundle).
-  serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
+  // Resolve server-only packages via Node (avoids broken vendor chunk path in server bundle).
+  serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr', 'bullmq', 'ioredis'],
   async headers() {
     const csp = [
       "default-src 'self'",

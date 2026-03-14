@@ -1,17 +1,19 @@
 /**
- * BigDataCloud provider: fallback only. 3s timeout, 1 retry, in-memory cache for IP.
+ * BigDataCloud provider: fallback only. 3s timeout, 1 retry, Redis + in-memory cache for IP.
  * API key from env only; never logged or exposed. Never call in loops.
  */
 
-import { createHmac } from 'crypto';
 import { GEO_BIGDATACLOUD_BASE } from '@/config/constants';
 import { validateCoordinates } from '@/lib/utils/geo';
 import { env } from '@/config/env';
 import { getIpCached, setIpCached, type CachedLocation } from './cache';
+import { getCache, setCache } from '@/lib/cache/cache';
 import {
   GEO_PROVIDER_TIMEOUT_MS,
   GEO_PROVIDER_MAX_RETRIES,
   GEO_CACHE_MAX_AGE_SECONDS,
+  GEO_IP_REDIS_TTL_SECONDS,
+  GEO_IP_REDIS_PREFIX,
 } from '@/config/constants';
 
 const REVERSE_GEOCODE_PATH = '/reverse-geocode-client';
@@ -114,23 +116,41 @@ export async function reverseGeocode(
 }
 
 /**
- * IP geolocation. Checks in-memory LRU cache first; then BigDataCloud with 3s timeout, 1 retry. Caches result 1h.
+ * IP geolocation. Checks Redis (24h TTL) → in-memory LRU (1h) → BigDataCloud (3s timeout, 1 retry).
+ * Stores results in both Redis and in-memory cache for optimal performance.
  */
 export async function ipGeocode(ip: string): Promise<IpGeocodeResult | null> {
-  const cached = getIpCached(ip);
-  if (cached) {
-    return {
-      city: cached.city,
-      region: cached.region,
-      countryCode: cached.countryCode,
-      countryName: cached.countryName,
-      latitude: cached.latitude,
-      longitude: cached.longitude,
-    };
+  const redisCacheKey = `${GEO_IP_REDIS_PREFIX}${ip}`;
+
+  // 1. Check Redis cache first (shared across instances, 24h TTL)
+  try {
+    const { hit, data: redisData } = await getCache<IpGeocodeResult>(redisCacheKey);
+    if (hit && redisData) {
+      setIpCached(ip, redisData);
+      return redisData;
+    }
+  } catch {
+    // Redis unavailable, continue to in-memory/external
   }
 
+  // 2. Check in-memory LRU cache (per-instance, 1h TTL)
+  const memCached = getIpCached(ip);
+  if (memCached) {
+    const result: IpGeocodeResult = {
+      city: memCached.city,
+      region: memCached.region,
+      countryCode: memCached.countryCode,
+      countryName: memCached.countryName,
+      latitude: memCached.latitude,
+      longitude: memCached.longitude,
+    };
+    // Backfill Redis if available
+    setCache(redisCacheKey, result, GEO_IP_REDIS_TTL_SECONDS).catch(() => {});
+    return result;
+  }
+
+  // 3. Call external BigDataCloud API
   const url = buildUrl(IP_GEOLOCATION_PATH, { ip });
-  let lastError: Error | null = null;
   for (let attempt = 0; attempt <= GEO_PROVIDER_MAX_RETRIES; attempt++) {
     try {
       const res = await fetchWithTimeout(url, GEO_PROVIDER_TIMEOUT_MS);
@@ -153,10 +173,14 @@ export async function ipGeocode(ip: string): Promise<IpGeocodeResult | null> {
         latitude: data.location?.latitude,
         longitude: data.location?.longitude,
       };
+
+      // Store in both caches
       setIpCached(ip, result);
+      setCache(redisCacheKey, result, GEO_IP_REDIS_TTL_SECONDS).catch(() => {});
+
       return result;
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error('Unknown');
+    } catch {
+      // Retry on next iteration
     }
   }
   return null;

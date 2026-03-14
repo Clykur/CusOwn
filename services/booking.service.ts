@@ -84,8 +84,15 @@ export class BookingService {
         throw new Error('Too many services');
       }
       const services = await serviceService.validateServices(serviceIds, data.salon_id);
-      totalDurationMinutes = await serviceService.calculateTotalDuration(services);
-      totalPriceCents = await serviceService.calculateTotalPrice(services);
+
+      // Parallel: calculate duration and price simultaneously
+      const [duration, price] = await Promise.all([
+        serviceService.calculateTotalDuration(services),
+        serviceService.calculateTotalPrice(services),
+      ]);
+
+      totalDurationMinutes = duration;
+      totalPriceCents = price;
       servicesCount = services.length;
       serviceData = services.map((s) => ({
         service_id: s.id,
@@ -716,7 +723,9 @@ export class BookingService {
     }
 
     const slotIds = [...new Set(rows.map((b) => b.slot_id))];
-    const [salon, slotsData] = await Promise.all([
+
+    // Parallel: fetch salon, slots, and reviews simultaneously
+    const [salon, slotsData, reviewMap] = await Promise.all([
       salonService.getSalonById(salonId),
       slotIds.length
         ? supabaseAdmin
@@ -724,12 +733,12 @@ export class BookingService {
             .select('id, business_id, date, start_time, end_time, status, reserved_until')
             .in('id', slotIds)
         : Promise.resolve({ data: [] }),
+      getReviewsByBookingIds(rows.map((b) => b.id)),
     ]);
+
     const slotList = (slotsData.data ?? []) as Slot[];
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
-
-    const reviewMap = await getReviewsByBookingIds(rows.map((b) => b.id));
 
     const bookingsWithDetails: BookingWithDetails[] = rows.map((booking) => ({
       ...booking,
@@ -813,7 +822,7 @@ export class BookingService {
 
   /**
    * Phase 3: Run lazy expiration (same RPC as cron). Safe to call on every booking read/mutation.
-   * Does not throw — failures are logged so user request is not broken.
+   * Does not throw   failures are logged so user request is not broken.
    */
   async runLazyExpireIfNeeded(): Promise<void> {
     try {
@@ -1052,12 +1061,14 @@ export class BookingService {
     const businessIds = [...new Set(list.map((b: { business_id: string }) => b.business_id))];
     const slotIds = [...new Set(list.map((b: { slot_id: string }) => b.slot_id))];
 
-    const [businesses, slots] = await Promise.all([
+    // Parallel: fetch businesses, slots, and reviews simultaneously
+    // Include deleted_at to detect soft-deleted businesses for UI handling
+    const [businesses, slots, reviewMap] = await Promise.all([
       businessIds.length
         ? supabaseAdmin
             .from('businesses')
             .select(
-              'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+              'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, deleted_at'
             )
             .in('id', businessIds)
         : Promise.resolve({ data: [] }),
@@ -1067,6 +1078,7 @@ export class BookingService {
             .select('id, business_id, date, start_time, end_time, status, reserved_until')
             .in('id', slotIds)
         : Promise.resolve({ data: [] }),
+      getReviewsByBookingIds(list.map((b: { id: string }) => b.id)),
     ]);
 
     const salonList = (businesses.data ?? []) as Salon[];
@@ -1075,8 +1087,6 @@ export class BookingService {
     salonList.forEach((s) => salonMap.set(s.id, s));
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
-
-    const reviewMap = await getReviewsByBookingIds(list.map((b: { id: string }) => b.id));
 
     const bookingsWithDetails: BookingWithDetails[] = list.map((booking: Booking) => ({
       ...booking,

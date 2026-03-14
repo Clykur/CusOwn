@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       return errorResponse('Authentication required', 401);
     }
 
+    // Note: profile fetch depends on user.id, so it cannot be parallelized with user fetch
     const profile = await getServerUserProfile(user.id);
     if (!profile || !isAdminProfile(profile)) {
       return errorResponse('Admin access required', 403);

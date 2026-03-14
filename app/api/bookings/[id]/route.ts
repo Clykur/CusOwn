@@ -56,8 +56,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       })();
       const statusValid = validateResourceToken('booking-status', id, decodedToken);
       if (!statusValid) {
-        const acceptValid = await validateOwnerActionLink('accept', id, decodedToken);
-        const rejectValid = await validateOwnerActionLink('reject', id, decodedToken);
+        // Parallel: validate both action link types simultaneously
+        const [acceptValid, rejectValid] = await Promise.all([
+          validateOwnerActionLink('accept', id, decodedToken),
+          validateOwnerActionLink('reject', id, decodedToken),
+        ]);
+
         if (!acceptValid.valid && !rejectValid.valid) {
           const reason = acceptValid.valid === false ? acceptValid.reason : 'invalid';
           logAuthDeny({
@@ -83,15 +87,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     type BookingWithDetails = Awaited<
       ReturnType<typeof bookingService.getBookingByUuidWithDetails>
     >;
-    const booking: BookingWithDetails = cached
-      ? (cached.data as BookingWithDetails)
-      : await dedupe(`booking:${id}`, () =>
+
+    // Parallel: fetch booking and auth context simultaneously
+    const bookingPromise = cached
+      ? Promise.resolve(cached.data as BookingWithDetails)
+      : dedupe(`booking:${id}`, () =>
           runWithTiming(
             `getBookingWithDetails:${id}`,
             () => bookingService.getBookingByUuidWithDetails(id),
             { route: ROUTE }
           )
         );
+
+    const [booking, ctx] = await Promise.all([bookingPromise, getAuthContext(request)]);
+
     if (!booking) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
@@ -99,11 +108,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       setCachedApiResponse(cacheKey, { data: booking }, CACHE_TTL_BOOKING_MS);
     }
 
-    const ctx = await getAuthContext(request);
     if (ctx) {
-      const isCustomer = (booking as any).customer_user_id === ctx.user.id;
+      const isCustomer =
+        (booking as { customer_user_id?: string }).customer_user_id === ctx.user.id;
       let isOwner = false;
-      const businessId = (booking as any).business_id;
+      const businessId = (booking as { business_id?: string }).business_id;
       if (businessId) {
         const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
         isOwner = userBusinesses.some((b) => b.id === businessId);
@@ -114,7 +123,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           user_id: ctx.user.id,
           route: ROUTE,
           reason: 'auth_denied',
-          role: (ctx.profile as any)?.user_type ?? 'unknown',
+          role: (ctx.profile as { user_type?: string } | null)?.user_type ?? 'unknown',
           resource: id,
         });
         return errorResponse('Access denied', 403);
