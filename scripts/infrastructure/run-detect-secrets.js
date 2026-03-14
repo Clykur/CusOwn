@@ -48,7 +48,10 @@ function ensureBaselineEncodingAndPaths() {
   }
   if (encoding !== 'utf8' || changed) {
     baseline.results = newResults;
-    fs.writeFileSync(BASELINE, JSON.stringify(baseline, null, 2), 'utf8');
+    const payload = JSON.stringify(baseline, null, 2);
+    const tmpFile = BASELINE + '.tmp';
+    fs.writeFileSync(tmpFile, payload, 'utf8');
+    fs.renameSync(tmpFile, BASELINE);
     try {
       execSync('git add .secrets.baseline', { cwd: ROOT, stdio: 'pipe' });
     } catch {
