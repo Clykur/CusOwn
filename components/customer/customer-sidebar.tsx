@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -48,6 +48,10 @@ export default function CustomerSidebar({
   const { initialUser } = useCustomerSession();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const canShowCustomerProfileImage = initialUser?.user_type === 'both';
+  const fetchRef = useRef<{ mediaId: string | null; loaded: boolean }>({
+    mediaId: null,
+    loaded: false,
+  });
 
   const userEmail = initialUser?.email ?? '';
   const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
@@ -55,10 +59,18 @@ export default function CustomerSidebar({
   useEffect(() => {
     if (!canShowCustomerProfileImage || !initialUser?.profile_media_id) {
       setProfileImageUrl(null);
+      fetchRef.current = { mediaId: null, loaded: false };
       return;
     }
 
     const mediaId = initialUser.profile_media_id;
+
+    if (fetchRef.current.mediaId === mediaId && fetchRef.current.loaded) {
+      return; // Already fetched for this mediaId
+    }
+
+    fetchRef.current.mediaId = mediaId;
+    fetchRef.current.loaded = false;
 
     let cancelled = false;
     (async () => {
@@ -71,14 +83,23 @@ export default function CustomerSidebar({
         );
 
         if (!response.ok) {
-          if (!cancelled) setProfileImageUrl(null);
+          if (!cancelled) {
+            setProfileImageUrl(null);
+            fetchRef.current.loaded = true;
+          }
           return;
         }
 
         const result = await response.json();
-        if (!cancelled) setProfileImageUrl(result?.data?.url ?? null);
+        if (!cancelled) {
+          setProfileImageUrl(result?.data?.url ?? null);
+          fetchRef.current.loaded = true;
+        }
       } catch {
-        if (!cancelled) setProfileImageUrl(null);
+        if (!cancelled) {
+          setProfileImageUrl(null);
+          fetchRef.current.loaded = true;
+        }
       }
     })();
 
@@ -89,9 +110,13 @@ export default function CustomerSidebar({
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
-    // My Activity: customer dashboard + booking status pages
+    // My Activity: customer dashboard + booking status pages + per-salon booking history
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
-      return pathname === ROUTES.CUSTOMER_DASHBOARD || pathname?.startsWith('/booking/');
+      return (
+        pathname === ROUTES.CUSTOMER_DASHBOARD ||
+        pathname?.startsWith('/booking/') ||
+        pathname?.startsWith('/customer/bookings/')
+      );
     }
     // Explore Services: categories, salon lists, salon detail, business pages, booking flow
     if (href === ROUTES.CUSTOMER_CATEGORIES)
@@ -124,7 +149,9 @@ export default function CustomerSidebar({
         <div className="flex h-full flex-col">
           <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">CusOwn</h2>
+              <h2 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+                CusOwn
+              </h2>
               <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_CUSTOMER}</p>
             </div>
             <div className="lg:hidden">

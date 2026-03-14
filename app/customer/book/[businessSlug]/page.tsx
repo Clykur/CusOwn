@@ -5,12 +5,11 @@ type Props = { params: Promise<{ businessSlug: string }> };
 
 export const dynamic = 'force-dynamic';
 
-/** Public booking by slug: fully public, no auth required. QR points here. */
-export default async function BookPage({ params }: Props) {
+/** Customer booking by slug: with sidebar */
+export default async function CustomerBookPage({ params }: Props) {
   const { businessSlug } = await params;
   if (!businessSlug || typeof businessSlug !== 'string') {
     redirect('/');
   }
-
   return <PublicBookingPage businessSlug={businessSlug} />;
 }

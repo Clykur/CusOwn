@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 interface CustomerBooking {
   id: string;
   booking_id: string;
+  business_id: string;
   status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'expired';
   customer_name: string;
   customer_phone: string;

@@ -39,6 +39,7 @@ interface BookingFlowState {
   cacheSlots: (date: string, slots: Slot[]) => void;
   getCachedSlots: (date: string) => Slot[] | undefined;
   addClosedDate: (date: string) => void;
+  addClosedDates: (dates: string[]) => void;
   removeClosedDate: (date: string) => void;
   setClosedMessage: (message: string | null) => void;
 
@@ -101,7 +102,7 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
       slotValidationError: null,
       error: null,
       slots: cached ?? [],
-      dateLoading: !cached,
+      dateLoading: cached === undefined, // Only true if uncached (undefined)
     });
   },
 
@@ -122,6 +123,13 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
     set((state) => ({
       closedDates: new Set(state.closedDates).add(date),
     })),
+
+  addClosedDates: (dates) =>
+    set((state) => {
+      const next = new Set(state.closedDates);
+      dates.forEach((d) => next.add(d));
+      return { closedDates: next };
+    }),
 
   removeClosedDate: (date) =>
     set((state) => {

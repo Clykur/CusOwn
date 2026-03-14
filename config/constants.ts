@@ -322,7 +322,7 @@ export const UI_CUSTOMER = {
   STAT_TOTAL_APPOINTMENTS: 'Total Appointments',
   STAT_UPCOMING: 'Upcoming',
   STAT_COMPLETED: 'Completed',
-  SECTION_APPOINTMENTS: 'Appointments',
+  SECTION_APPOINTMENTS: 'Your Favourite Salons',
   EMPTY_ACTIVITY: "You don't have any appointments yet.",
   CTA_EXPLORE_SERVICES: 'Explore Services',
   DISCOVER_HEADING: 'Discover Services Near You',

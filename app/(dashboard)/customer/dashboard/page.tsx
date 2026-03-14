@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CUSTOMER } from '@/config/constants';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
-import CustomerBookingCard from '@/components/customer/booking-card';
-import BookingCardSkeleton from '@/components/customer/booking-card.skeleton';
+import CustomerBookingsTable from '@/components/customer/CustomerBookingsTable';
 import BookingsIcon from '@/src/icons/bookings.svg';
 import SummaryCardSkeleton from '@/components/customer/summary-card.skeleton';
 import { dedupFetch, cancelRequests } from '@/lib/utils/fetch-dedup';
@@ -143,10 +142,6 @@ export default function CustomerDashboardPage() {
     refreshOnFocus: true,
   });
 
-  const handleRated = useCallback(() => {
-    refetchBookings(true);
-  }, [refetchBookings]);
-
   if (isInitialLoad && bookings.length === 0) {
     return (
       <div className="w-full pb-24 flex flex-col gap-8 animate-in fade-in duration-200">
@@ -157,10 +152,11 @@ export default function CustomerDashboardPage() {
         </div>
         <div>
           <div className="h-7 w-40 bg-slate-200 rounded mb-4 animate-pulse" aria-hidden />
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div className="space-y-4">
-              <BookingCardSkeleton />
-              <BookingCardSkeleton />
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="animate-pulse space-y-3">
+              <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />
+              <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />
+              <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />
             </div>
           </div>
         </div>
@@ -192,33 +188,7 @@ export default function CustomerDashboardPage() {
             </div>
           </div>
         ) : (
-          <>
-            <div className="hidden md:block bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <div className="space-y-4">
-                {bookings.map((booking, index) => (
-                  <div
-                    key={booking.id}
-                    className="animate-in fade-in slide-in-from-bottom-2"
-                    style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
-                  >
-                    <CustomerBookingCard booking={booking} onRated={handleRated} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="md:hidden space-y-4">
-              {bookings.map((booking, index) => (
-                <div
-                  key={booking.id}
-                  className="animate-in fade-in slide-in-from-bottom-2"
-                  style={{ animationDelay: `${Math.min(index * 30, 150)}ms` }}
-                >
-                  <CustomerBookingCard booking={booking} onRated={handleRated} />
-                </div>
-              ))}
-            </div>
-          </>
+          <CustomerBookingsTable bookings={bookings} />
         )}
       </div>
     </div>

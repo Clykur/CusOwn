@@ -89,9 +89,11 @@ export function clearPendingBooking(): void {
   }
 }
 
+const REBOOK_DATA_KEY = 'rebookData';
+
 export function getInitialRebookData(): { name: string; phone: string; applied: boolean } {
   if (typeof window === 'undefined') return { name: '', phone: '', applied: false };
-  const raw = sessionStorage.getItem('rebookData');
+  const raw = sessionStorage.getItem(REBOOK_DATA_KEY);
   if (!raw) return { name: '', phone: '', applied: false };
   try {
     const data = JSON.parse(raw);
@@ -99,7 +101,17 @@ export function getInitialRebookData(): { name: string; phone: string; applied: 
       return { name: data.name ?? '', phone: data.phone ?? '', applied: true };
     }
   } catch {
-    sessionStorage.removeItem('rebookData');
+    sessionStorage.removeItem(REBOOK_DATA_KEY);
   }
   return { name: '', phone: '', applied: false };
+}
+
+/** Set customer name/phone for Rebook so the booking page can prefill the form. */
+export function setRebookData(name: string, phone: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(REBOOK_DATA_KEY, JSON.stringify({ name, phone }));
+  } catch {
+    // sessionStorage may be unavailable
+  }
 }

@@ -9,6 +9,8 @@ import {
   setCachedBusinessProfile,
 } from '@/lib/cache/business-profile-cache';
 import StarRating from '../booking/star-rating';
+import SalonDetailsHeader from '@/components/customer/SalonDetailsHeader';
+import SalonShopPhotos from '@/components/customer/SalonShopPhotos';
 
 const IMAGE_QUALITY_PREMIUM = 95;
 const GALLERY_IMAGE_WIDTH = 1200;
@@ -318,106 +320,23 @@ export const BusinessProfile = () => {
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
-      {/* Header Section: Salon Name → Owner Profile Image (circular) → Owner Name → Phone Icon → Owner Phone Number */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex flex-col">
-          <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-tight break-words">
-            {salon.salon_name}
-          </h1>
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-            >
-              {statusText}
-            </span>
-            <span className="text-gray-500 text-xs">{subText}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {salon.owner_image && salon.owner_image !== '' ? (
-            <Image
-              src={salon.owner_image}
-              alt={salon.owner_name || 'Owner'}
-              className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 shadow-md ring-1 ring-slate-200/50"
-              width={48}
-              height={48}
-              sizes="48px"
-              quality={IMAGE_QUALITY_PREMIUM}
-              priority
-            />
-          ) : (
-            <Image
-              src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
-              alt={salon.owner_name || 'Owner'}
-              className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 shadow-md"
-              width={48}
-              height={48}
-              sizes="48px"
-              unoptimized
-            />
-          )}
-          <div className="flex flex-col">
-            {salon.owner_name && salon.owner_name.trim() !== '' && (
-              <span className="font-medium text-slate-900">{salon.owner_name}</span>
-            )}
-            {salon.whatsapp_number && (
-              <a
-                href={`https://wa.me/${salon.whatsapp_number}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-green-600 font-medium text-sm text-slate-600"
-                title="Chat on WhatsApp"
-              >
-                {salon.whatsapp_number}
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Header */}
+      <SalonDetailsHeader
+        salonName={salon.salon_name}
+        ownerName={salon.owner_name ?? null}
+        ownerPhone={salon.whatsapp_number ?? null}
+        ownerImage={salon.owner_image ?? null}
+        openingTime={salon.opening_time}
+        closingTime={salon.closing_time}
+      />
 
-      {/* Photo Gallery — premium 4K-style clarity and shine skeleton */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Shop Photos</h2>
-        {photos && photos.length > 0 ? (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-            {photos.map((url, idx) => (
-              <div
-                key={idx}
-                className="relative group break-inside-avoid rounded-xl overflow-hidden border border-slate-100 bg-slate-50/50 shadow-md ring-1 ring-slate-200/30"
-              >
-                <PremiumGalleryImage
-                  src={url}
-                  alt={`Salon photo ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
-              <svg
-                className="w-8 h-8 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
-                />
-              </svg>
-            </div>
-            <p className="text-sm text-slate-500">No shop photos yet.</p>
-          </div>
-        )}
-      </div>
+      {/* Shop Photos */}
+      <SalonShopPhotos photos={photos} />
 
       {/* Services Section */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Services</h2>
+
         {services && services.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {services.map((service) => (
@@ -426,8 +345,10 @@ export const BusinessProfile = () => {
                 className="border rounded-lg p-4 hover:shadow-lg transition-shadow bg-white"
               >
                 <div className="font-bold text-lg mb-1">{service.name}</div>
+
                 <div className="flex items-center justify-between text-gray-600 text-sm">
                   <span>Duration: {service.duration}</span>
+
                   <span className="font-semibold text-black">₹{service.price}</span>
                 </div>
               </div>
@@ -450,11 +371,13 @@ export const BusinessProfile = () => {
                 />
               </svg>
             </div>
+
             <p className="text-lg text-gray-500">No services available</p>
           </div>
         )}
       </div>
-      {/* Customer Reviews Section - fetched from API */}
+
+      {/* Reviews */}
       <ReviewSummary reviewData={reviewData} />
     </div>
   );

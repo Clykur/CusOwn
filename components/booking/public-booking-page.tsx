@@ -92,6 +92,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
   const cacheSlots = useBookingFlowStore((state) => state.cacheSlots);
   const closedDates = useBookingFlowStore((state) => state.closedDates);
   const addClosedDate = useBookingFlowStore((state) => state.addClosedDate);
+  const addClosedDates = useBookingFlowStore((state) => state.addClosedDates);
   const removeClosedDate = useBookingFlowStore((state) => state.removeClosedDate);
   const closedMessage = useBookingFlowStore((state) => state.closedMessage);
   const setClosedMessage = useBookingFlowStore((state) => state.setClosedMessage);
@@ -275,7 +276,7 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
     businessFetchedRef.current = true;
 
     let cancelled = false;
-    fetch(API_ROUTES.BOOK_BUSINESS(businessSlug), { credentials: 'include' })
+    fetch(`/api/salons/${businessSlug}`, { credentials: 'include' })
       .then((res) => res.json())
       .then((result) => {
         if (cancelled) return;
@@ -295,6 +296,68 @@ export default function PublicBookingPage({ businessSlug }: PublicBookingPagePro
       cancelled = true;
     };
   }, [businessSlug, setBusiness, setError, setIsLoading]);
+
+  useEffect(() => {
+    if (!business?.id) return;
+    let cancelled = false;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    const lastDayCur = new Date(year, month + 1, 0).getDate();
+    const lastDayNext = new Date(nextYear, nextMonth + 1, 0).getDate();
+    const rangeCur = Array.from(
+      { length: lastDayCur },
+      (_, i) => `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
+    );
+    const rangeNext = Array.from(
+      { length: lastDayNext },
+      (_, i) =>
+        `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
+    );
+    const visibleDates = new Set([...rangeCur, ...rangeNext]);
+
+    Promise.all([
+      fetch(`/api/businesses/${business.id}/downtime/closures`, { credentials: 'include' }).then(
+        (r) => r.json()
+      ),
+      fetch(`/api/businesses/${business.id}/downtime/holidays`, { credentials: 'include' }).then(
+        (r) => r.json()
+      ),
+    ])
+      .then(([closuresRes, holidaysRes]) => {
+        if (cancelled) return;
+        const closureList = closuresRes?.success ? (closuresRes.data ?? []) : [];
+        const holidayList = holidaysRes?.success ? (holidaysRes.data ?? []) : [];
+        const closedSet = new Set<string>();
+        holidayList.forEach((h: { holiday_date: string }) => {
+          if (visibleDates.has(h.holiday_date)) closedSet.add(h.holiday_date);
+        });
+        closureList.forEach((c: { start_date: string; end_date: string }) => {
+          const start = new Date(c.start_date);
+          const end = new Date(c.end_date);
+          const walk = new Date(start);
+          while (walk <= end) {
+            const y = walk.getFullYear();
+            const m = walk.getMonth();
+            const day = walk.getDate();
+            const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (visibleDates.has(dateStr)) closedSet.add(dateStr);
+            walk.setDate(walk.getDate() + 1);
+          }
+        });
+        addClosedDates(Array.from(closedSet));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          // Non-fatal: calendar still works, closed dates added on first click
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [business?.id, addClosedDates]);
 
   useEffect(() => {
     if (rebookAppliedRef.current) return;
