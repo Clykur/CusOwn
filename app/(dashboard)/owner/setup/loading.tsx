@@ -1,5 +1,5 @@
-import { OwnerSetupSkeleton } from '@/components/ui/skeleton';
+import OwnerPageLoader from '@/components/owner/owner-page-loader';
 
 export default function OwnerSetupLoading() {
-  return <OwnerSetupSkeleton />;
+  return <OwnerPageLoader title="Loading Setup" />;
 }

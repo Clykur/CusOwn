@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StarRating from '@/components/booking/star-rating';
 import { UI_CUSTOMER } from '@/config/constants';
+import { env } from '@/config/env';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails, Slot } from '@/types';
 import BookingDetailsModal from '@/components/customer/BookingDetailsModal';
@@ -16,6 +17,12 @@ function normalizeStatus(status: string): AllowedStatus {
 }
 
 function getStatusLabel(booking: BookingWithDetails): string {
+  /* Expired only if pending and time passed */
+  if (booking.status === 'pending' && booking.slot) {
+    const slotEnd = new Date(`${booking.slot.date}T${booking.slot.end_time}`);
+    if (slotEnd <= new Date()) return 'Expired';
+  }
+
   const status = normalizeStatus(booking.status);
 
   switch (status) {
@@ -33,6 +40,14 @@ function getStatusLabel(booking: BookingWithDetails): string {
 }
 
 function getStatusBadgeClass(booking: BookingWithDetails): string {
+  /* Expired only if pending and time passed */
+  if (booking.status === 'pending' && booking.slot) {
+    const slotEnd = new Date(`${booking.slot.date}T${booking.slot.end_time}`);
+    if (slotEnd <= new Date()) {
+      return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
   const status = normalizeStatus(booking.status);
 
   switch (status) {
@@ -56,26 +71,16 @@ export interface SalonBookingHistoryTableProps {
 export default function SalonBookingHistoryTable({ bookings }: SalonBookingHistoryTableProps) {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
 
-  /**
-   * Slots used for reschedule
-   * In most cases this will come from parent,
-   * but fallback empty list keeps modal safe.
-   */
   const availableSlots: Slot[] = [];
 
-  /**
-   * Cancellation window (example: 2 hours)
-   */
-  const cancellationMinHoursMs = 2 * 60 * 60 * 1000;
+  const cancellationMinHoursMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
 
   const handleCancelled = () => {
     setSelectedBooking(null);
-    // Optionally refetch bookings
   };
 
   const handleRescheduled = () => {
     setSelectedBooking(null);
-    // Optionally refetch bookings
   };
 
   if (bookings.length === 0) {
@@ -101,7 +106,9 @@ export default function SalonBookingHistoryTable({ bookings }: SalonBookingHisto
               <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[12rem]">
                 Slot Time
               </th>
+
               <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[12rem]">Rating</th>
+
               <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[8rem]">Status</th>
 
               <th className="px-4 py-2.5 text-right font-medium text-slate-700 w-[9rem]">

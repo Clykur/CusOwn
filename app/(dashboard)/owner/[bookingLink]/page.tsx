@@ -17,6 +17,7 @@ import { Toast } from '@/components/ui/toast';
 import DateFilter from '@/components/owner/date-filter';
 import { type EditBusinessFormData } from '@/components/owner/edit-business-modal';
 import { useOwnerBusinessStore, useUIStore, MODAL_IDS } from '@/lib/store';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 const ReviewSummary = dynamic(() => import('@/components/owner/review-summary'), { ssr: false });
 const QRCodeSection = dynamic(() => import('@/components/owner/qr-code-section'));
@@ -713,9 +714,23 @@ export default function OwnerBusinessPage() {
     }
   };
 
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'Businesses', href: '/owner/businesses' },
+      { label: salon?.salon_name || 'Business Details', href: `/owner/${bookingLink}` },
+    ],
+    [bookingLink, salon?.salon_name]
+  );
+
   if (isLoading) {
     return (
       <div className="w-full pb-24 flex flex-col gap-6">
+        <Breadcrumb
+          items={[
+            { label: 'Businesses', href: '/owner/businesses' },
+            { label: 'Loading...', href: `/owner/${bookingLink}` },
+          ]}
+        />
         <div className="h-8 bg-slate-200 rounded w-64 mb-2 animate-pulse" />
         <div className="h-4 bg-slate-200 rounded w-48 animate-pulse" />
         <div className="bg-white border border-slate-200 rounded-lg p-6 animate-pulse">
@@ -729,7 +744,13 @@ export default function OwnerBusinessPage() {
 
   if (error || !salon) {
     return (
-      <div className="w-full pb-24">
+      <div className="w-full pb-24 flex flex-col gap-6">
+        <Breadcrumb
+          items={[
+            { label: 'Businesses', href: '/owner/businesses' },
+            { label: 'Business Details', href: `/owner/${bookingLink}` },
+          ]}
+        />
         <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Access Denied</h2>
           <p className="text-slate-600 mb-8">Invalid booking link or salon not found.</p>
@@ -750,30 +771,9 @@ export default function OwnerBusinessPage() {
         />
       ))}
 
+      <Breadcrumb items={breadcrumbItems} />
+
       <div className="space-y-2">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-500">
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== 'undefined' && window.history.length > 1) {
-                router.back();
-                return;
-              }
-              router.push('/owner/businesses');
-            }}
-            className="inline-flex items-center rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          >
-            ← Back
-          </button>
-          <span>/</span>
-          <Link href="/owner/businesses" className="hover:text-slate-900 transition-colors">
-            Businesses
-          </Link>
-          <span>/</span>
-          <span className="max-w-[14rem] truncate font-medium text-slate-900 sm:max-w-[24rem]">
-            {salon.salon_name}
-          </span>
-        </nav>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate leading-tight">
           {salon.salon_name}
         </h1>

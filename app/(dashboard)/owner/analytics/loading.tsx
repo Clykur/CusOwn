@@ -1,5 +1,5 @@
-import { OwnerAnalyticsSkeleton } from '@/components/ui/skeleton';
+import OwnerPageLoader from '@/components/owner/owner-page-loader';
 
 export default function OwnerAnalyticsLoading() {
-  return <OwnerAnalyticsSkeleton />;
+  return <OwnerPageLoader title="Loading Analytics" />;
 }
