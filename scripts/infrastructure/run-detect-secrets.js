@@ -137,25 +137,38 @@ function main() {
     return;
   }
 
-  const args =
-    python === 'py'
-      ? ['-3', '-m', 'detect_secrets.pre_commit_hook', '--baseline', BASELINE, ...files]
-      : ['-m', 'detect_secrets.pre_commit_hook', '--baseline', BASELINE, ...files];
+  /**
+   * Windows has practical command-line length limits; passing the entire repo's
+   * `git ls-files` list as argv can fail silently. Scan in chunks to keep the
+   * hook reliable across platforms.
+   */
+  const CHUNK_SIZE = 200;
 
-  const run = spawnSync(python, args, { stdio: 'inherit', cwd: ROOT });
-  if (run.status === 0) return;
-  // Exit code 3: baseline was updated (line numbers refreshed). Stage it so the commit can include it.
-  if (run.status === 3) {
-    try {
-      execSync('git add .secrets.baseline', { cwd: ROOT, stdio: 'pipe' });
-      // eslint-disable-next-line no-console
-      console.log('.secrets.baseline was updated and staged. Include it in your commit.');
-    } catch {
-      // Ignore if git add fails (e.g. not a repo).
+  for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+    const chunk = files.slice(i, i + CHUNK_SIZE);
+    const args =
+      python === 'py'
+        ? ['-3', '-m', 'detect_secrets.pre_commit_hook', '--baseline', BASELINE, ...chunk]
+        : ['-m', 'detect_secrets.pre_commit_hook', '--baseline', BASELINE, ...chunk];
+
+    const run = spawnSync(python, args, { stdio: 'inherit', cwd: ROOT });
+
+    if (run.status === 0) continue;
+
+    // Exit code 3: baseline was updated (line numbers refreshed). Stage it so the commit can include it.
+    if (run.status === 3) {
+      try {
+        execSync('git add .secrets.baseline', { cwd: ROOT, stdio: 'pipe' });
+        // eslint-disable-next-line no-console
+        console.log('.secrets.baseline was updated and staged. Include it in your commit.');
+      } catch {
+        // Ignore if git add fails (e.g. not a repo).
+      }
+      continue;
     }
-    process.exit(0);
+
+    process.exit(run.status || 1);
   }
-  process.exit(run.status || 1);
 }
 
 main();
