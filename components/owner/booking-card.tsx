@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { memo } from 'react';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import NoShowButton from '@/components/booking/no-show-button';
 import { IconCheck, IconCross } from '@/components/ui/status-icons';
@@ -32,29 +32,6 @@ function BookingCardComponent({
   onUndoReject,
   undoWindowMinutes = 5,
 }: BookingCardProps) {
-  const [swipeOffset, setSwipeOffset] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [startX, setStartX] = useState(0);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setStartX(e.touches[0].clientX);
-    setIsSwiping(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isSwiping) return;
-    const currentX = e.touches[0].clientX;
-    const diff = startX - currentX;
-    if (diff > 0) {
-      setSwipeOffset(Math.min(diff, 120));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setIsSwiping(false);
-    setSwipeOffset(swipeOffset > 60 ? 120 : 0);
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -73,8 +50,13 @@ function BookingCardComponent({
 
   const isProcessing = processingId === booking.id;
 
-  // Phase 5: Hard guarantee canUndo logic
+  /* Expiry strictly based on slot time */
+  const isSlotExpired = booking.slot
+    ? new Date(`${booking.slot.date}T${booking.slot.end_time}`) <= new Date()
+    : false;
+
   const windowMs = undoWindowMinutes * 60 * 1000;
+
   const withinUndoWindow = booking.updated_at
     ? Date.now() - new Date(booking.updated_at).getTime() < windowMs
     : false;
@@ -83,55 +65,12 @@ function BookingCardComponent({
     undoWindowMinutes > 0 &&
     (booking.status === 'confirmed' || booking.status === 'rejected') &&
     !booking.undo_used_at &&
-    withinUndoWindow;
+    withinUndoWindow &&
+    !isSlotExpired;
 
   return (
-    <div className="relative w-full overflow-hidden">
-      {/* Swipe Actions */}
-      <div className="absolute inset-y-0 right-0 w-[120px] flex items-center justify-center bg-gray-100">
-        <div className="flex flex-col gap-2 px-4">
-          {booking.status === 'pending' && (
-            <>
-              {/* Accept */}
-              <button
-                onClick={() => {
-                  onAccept(booking.id);
-                  setSwipeOffset(0);
-                }}
-                disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
-                title="Accept"
-                aria-label="Accept booking"
-              >
-                <IconCheck className="h-6 w-6" />
-              </button>
-
-              {/* Reject */}
-              <button
-                onClick={() => {
-                  onReject(booking.id);
-                  setSwipeOffset(0);
-                }}
-                disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
-                title="Reject"
-                aria-label="Reject booking"
-              >
-                <IconCross className="h-6 w-6" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Card */}
-      <div
-        className="bg-white border border-gray-200 rounded-lg p-4 transition-transform"
-        style={{ transform: `translateX(-${swipeOffset}px)` }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+    <div className="w-full">
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
@@ -140,17 +79,16 @@ function BookingCardComponent({
             </h3>
             <p className="text-sm text-gray-500">{booking.customer_phone || 'No phone'}</p>
           </div>
+
           <span
             className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(
               booking.status
             )}`}
           >
-            {booking.status === 'confirmed' && (
-              <IconCheck className="h-4 w-4 text-green-600" aria-label="Accepted" />
-            )}
-            {booking.status === 'rejected' && (
-              <IconCross className="h-4 w-4 text-red-600" aria-label="Rejected" />
-            )}
+            {booking.status === 'confirmed' && <IconCheck className="h-4 w-4 text-green-600" />}
+
+            {booking.status === 'rejected' && <IconCross className="h-4 w-4 text-red-600" />}
+
             {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
           </span>
         </div>
@@ -165,6 +103,7 @@ function BookingCardComponent({
           </div>
         )}
 
+        {/* Review */}
         {booking.review && (
           <p className="mb-3 text-sm text-gray-600" aria-label={UI_CONTEXT.LABEL_CUSTOMER_RATING}>
             {UI_CONTEXT.LABEL_CUSTOMER_RATING}: {booking.review.rating} ★
@@ -174,35 +113,38 @@ function BookingCardComponent({
         {/* Booking ID */}
         <div className="mb-3 text-xs text-gray-600 font-mono">{booking.booking_id}</div>
 
-        {/* Bottom Actions (Icon Style Only) */}
+        {/* Bottom Actions */}
         <div className="flex gap-6 pt-3 border-t border-gray-100">
-          {booking.status === 'pending' && (
+          {/* Pending + future */}
+          {booking.status === 'pending' && !isSlotExpired && (
             <>
-              {/* Accept */}
               <button
                 onClick={() => onAccept(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
-                title="Accept"
-                aria-label="Accept booking"
+                className="h-9 w-9 flex items-center justify-center text-green-600 hover:text-green-700 disabled:opacity-50"
               >
                 <IconCheck className="h-6 w-6" />
               </button>
 
-              {/* Reject */}
               <button
                 onClick={() => onReject(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
-                title="Reject"
-                aria-label="Reject booking"
+                className="h-9 w-9 flex items-center justify-center text-red-600 hover:text-red-700 disabled:opacity-50"
               >
                 <IconCross className="h-6 w-6" />
               </button>
             </>
           )}
 
-          {booking.status === 'confirmed' && !booking.no_show && (
+          {/* Pending + expired */}
+          {booking.status === 'pending' && isSlotExpired && (
+            <span className="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-800 rounded-lg flex items-center justify-center h-9">
+              Expired
+            </span>
+          )}
+
+          {/* Accepted + future */}
+          {booking.status === 'confirmed' && !isSlotExpired && !booking.no_show && (
             <div className="w-full">
               <NoShowButton
                 bookingId={booking.id}
@@ -210,31 +152,29 @@ function BookingCardComponent({
               />
             </div>
           )}
-          {canUndo && booking.status === 'confirmed' && onUndoAccept && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onUndoAccept(booking.id)}
-                disabled={isProcessing}
-                title={UI_CONTEXT.UNDO_LABEL}
-                className="h-9 w-9 flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 disabled:opacity-50"
-              >
-                <UndoIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
+
+          {/* Undo accepted */}
+          {booking.status === 'confirmed' && canUndo && onUndoAccept && (
+            <button
+              onClick={() => onUndoAccept(booking.id)}
+              disabled={isProcessing}
+              title={UI_CONTEXT.UNDO_LABEL}
+              className="h-9 w-9 flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-lg hover:bg-emerald-200 disabled:opacity-50"
+            >
+              <UndoIcon className="h-5 w-5" />
+            </button>
           )}
-          {canUndo && booking.status === 'rejected' && onUndoReject && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onUndoReject(booking.id)}
-                disabled={isProcessing}
-                title={UI_CONTEXT.UNDO_LABEL}
-                className="h-9 w-9 flex items-center justify-center bg-rose-100 text-rose-900 rounded-lg hover:bg-rose-200 disabled:opacity-50"
-              >
-                <UndoIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
+
+          {/* Undo rejected */}
+          {booking.status === 'rejected' && canUndo && onUndoReject && (
+            <button
+              onClick={() => onUndoReject(booking.id)}
+              disabled={isProcessing}
+              title={UI_CONTEXT.UNDO_LABEL}
+              className="h-9 w-9 flex items-center justify-center bg-rose-100 text-rose-900 rounded-lg hover:bg-rose-200 disabled:opacity-50"
+            >
+              <UndoIcon className="h-5 w-5" />
+            </button>
           )}
         </div>
       </div>

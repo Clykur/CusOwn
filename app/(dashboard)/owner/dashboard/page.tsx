@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef, useMemo, useState, memo } from 'react';
 import dynamic from 'next/dynamic';
+import OwnerPageLoader from '@/components/owner/owner-page-loader';
 import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
 import BookingCard from '@/components/owner/booking-card';
 import PullToRefresh from '@/components/ui/pull-to-refresh';
@@ -453,7 +454,7 @@ export default function OwnerDashboardPage() {
     return Date.now() - new Date(b.updated_at).getTime() < windowMs;
   }, []);
 
-  if (isLoading) return <OwnerDashboardSkeleton />;
+  if (isLoading) return <OwnerPageLoader title="Loading Dashboard" />;
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
@@ -611,6 +612,9 @@ const BookingTableRow = memo(function BookingTableRow({
   onNoShowMarked,
   canUndo,
 }: BookingTableRowProps) {
+  const isSlotExpired = booking.slot
+    ? new Date(`${booking.slot.date}T${booking.slot.end_time}`) <= new Date()
+    : false;
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
@@ -642,31 +646,42 @@ const BookingTableRow = memo(function BookingTableRow({
       </td>
       <td className="px-6 py-4 text-sm font-medium">
         <div className="flex flex-wrap gap-2 items-center">
-          {booking.status === 'pending' && (
-            <>
-              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
-                Pending
-              </span>
-              <button
-                onClick={() => onAccept(booking.id)}
-                disabled={processingBookingId === booking.id}
-                className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
-                title="Accept"
-                aria-label="Accept booking"
-              >
-                <IconCheck className="h-6 w-6" />
-              </button>
-              <button
-                onClick={() => onReject(booking.id)}
-                disabled={processingBookingId === booking.id}
-                className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
-                title="Reject"
-                aria-label="Reject booking"
-              >
-                <IconCross className="h-6 w-6" />
-              </button>
-            </>
-          )}
+          {(() => {
+            if (booking.status === 'pending' && !isSlotExpired) {
+              return (
+                <>
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
+                    Pending
+                  </span>
+                  <button
+                    onClick={() => onAccept(booking.id)}
+                    disabled={processingBookingId === booking.id}
+                    className="h-9 w-9 flex items-center justify-center text-green-600 disabled:opacity-50 hover:text-green-700 transition"
+                    title="Accept"
+                    aria-label="Accept booking"
+                  >
+                    <IconCheck className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={() => onReject(booking.id)}
+                    disabled={processingBookingId === booking.id}
+                    className="h-9 w-9 flex items-center justify-center text-red-600 disabled:opacity-50 hover:text-red-700 transition"
+                    title="Reject"
+                    aria-label="Reject booking"
+                  >
+                    <IconCross className="h-6 w-6" />
+                  </button>
+                </>
+              );
+            } else if (booking.status === 'pending' && isSlotExpired) {
+              return (
+                <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
+                  Expired
+                </span>
+              );
+            }
+            return null;
+          })()}
           {booking.status === 'confirmed' && (
             <>
               <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
@@ -683,7 +698,7 @@ const BookingTableRow = memo(function BookingTableRow({
                   <UndoIcon className="h-5 w-5" aria-hidden="true" />
                 </button>
               )}
-              {!booking.no_show && (
+              {!booking.no_show && !isSlotExpired && (
                 <NoShowButton bookingId={booking.id} onMarked={() => onNoShowMarked(booking.id)} />
               )}
             </>

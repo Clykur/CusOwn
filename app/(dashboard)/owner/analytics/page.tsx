@@ -46,7 +46,10 @@ export default function OwnerAnalyticsPage() {
 
   return (
     <div className="w-full pb-24">
-      <OwnerHeader title="Analytics" subtitle="Business performance, growth and trends" />
+      <OwnerHeader
+        title="Analytics"
+        subtitle="Track business performance, growth, and key trends."
+      />
 
       <div>
         {loading && <p className="text-sm text-slate-500">Loading businesses…</p>}

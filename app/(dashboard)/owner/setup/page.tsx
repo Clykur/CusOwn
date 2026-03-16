@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import CreateBusinessForm from '@/components/setup/create-business-form';
 import { OwnerSetupSkeleton } from '@/components/ui/skeleton';
 import { ROUTES } from '@/lib/utils/navigation';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 const SKELETON_MIN_DISPLAY_MS = 400;
 
@@ -22,6 +23,12 @@ export default function OwnerSetupPage() {
 
   return (
     <div className="w-full pb-24">
+      <Breadcrumb
+        items={[
+          { label: 'Businesses', href: '/owner/businesses' },
+          { label: 'Create Business', href: '/owner/setup' },
+        ]}
+      />
       <CreateBusinessForm
         redirectAfterSuccess={ROUTES.OWNER_DASHBOARD_BASE}
         showOnboardingProgress={false}

@@ -1,5 +1,5 @@
-import AuthGateLoader from '@/components/auth/auth-gate-loader';
+import OwnerPageLoader from '@/components/owner/owner-page-loader';
 
 export default function OwnerLoading() {
-  return <AuthGateLoader />;
+  return <OwnerPageLoader title="Loading Owner Dashboard" />;
 }
