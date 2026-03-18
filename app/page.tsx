@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { ROUTES } from '@/lib/utils/navigation';
@@ -35,6 +35,28 @@ function getDashboardForRole(role: string): string {
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [shouldRenderSplash, setShouldRenderSplash] = useState(false);
+  useEffect(() => {
+    const role = getUserRoleCookie();
+
+    if (role) {
+      router.replace(getDashboardForRole(role));
+      return;
+    }
+
+    // ✅ Only allow splash if user is NOT redirected
+    setShouldRenderSplash(true);
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        const r = getUserRoleCookie();
+        if (r) window.location.replace(getDashboardForRole(r));
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [router]);
 
   useEffect(() => {
     const role = getUserRoleCookie();
@@ -66,7 +88,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white antialiased">
-      <SplashScreen />
+      {shouldRenderSplash && <SplashScreen />}
       <PublicHeader />
 
       {/* Hero Section */}

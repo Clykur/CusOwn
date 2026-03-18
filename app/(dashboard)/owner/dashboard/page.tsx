@@ -2,7 +2,6 @@
 
 import { useEffect, useCallback, useRef, useMemo, useState, memo } from 'react';
 import dynamic from 'next/dynamic';
-import OwnerPageLoader from '@/components/owner/owner-page-loader';
 import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
 import BookingCard from '@/components/owner/booking-card';
 import PullToRefresh from '@/components/ui/pull-to-refresh';
@@ -454,7 +453,7 @@ export default function OwnerDashboardPage() {
     return Date.now() - new Date(b.updated_at).getTime() < windowMs;
   }, []);
 
-  if (isLoading) return <OwnerPageLoader title="Loading Dashboard" />;
+  if (isLoading) return <OwnerDashboardSkeleton />;
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">

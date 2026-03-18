@@ -19,7 +19,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   const searchParams = useSearchParams();
   if (sidebarOpen) return null;
 
-  // Extract booking link from pathname if it's a specific business dashboard (exclude '/owner/dashboard')
   const tabParam = searchParams?.get('tab') ?? null;
 
   const isSetup = pathname === ROUTES.SETUP || pathname === ROUTES.OWNER_SETUP;
@@ -30,7 +29,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
 
   const isAnalytics = pathname === '/owner/analytics' || pathname?.startsWith('/owner/analytics/');
 
-  // Determine a single active tab value. Priority: explicit `tab` query -> businesses route -> analytics -> business instance -> dashboard -> others
   let activeTab: string | null = null;
   if (tabParam) {
     activeTab = tabParam;
@@ -45,7 +43,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   } else if (isProfile) {
     activeTab = 'profile';
   } else if (pathname?.startsWith('/owner/')) {
-    // Individual business pages (/owner/[bookingLink]) fall under Businesses
     activeTab = 'businesses';
   }
 
@@ -75,19 +72,12 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   const isActive = (href: string) => {
     if (href === ROUTES.OWNER_SETUP || href === ROUTES.SETUP) return activeTab === 'create';
     if (href === ROUTES.OWNER_PROFILE || href === '/owner/profile') return activeTab === 'profile';
-
-    // Analytics exact match
     if (href === '/owner/analytics') return activeTab === 'analytics';
-
-    // Businesses: exact match or individual business pages
     if (href === '/owner/businesses') return activeTab === 'businesses';
-
-    // Dashboard tabs use ?tab=...
     const tabMatch = href.match(/\?tab=(.+)$/);
     if (tabMatch) {
       return activeTab === tabMatch[1];
     }
-
     return pathname === href;
   };
 
@@ -101,18 +91,18 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
               key={item.name}
               href={item.href}
               className={`flex flex-1 min-w-0 flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${
-                active ? 'text-indigo-600' : 'text-gray-500'
+                active ? 'text-gray-900' : 'text-gray-500'
               }`}
             >
               <span className="flex items-center justify-center">
                 <item.icon
                   aria-hidden="true"
-                  className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
+                  className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
                 />
               </span>
               <span
                 className={`text-xs font-medium leading-none ${
-                  active ? 'text-indigo-600' : 'text-gray-500'
+                  active ? 'text-gray-900' : 'text-gray-500'
                 }`}
               >
                 {item.name}

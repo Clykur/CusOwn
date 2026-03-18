@@ -1,5 +1,5 @@
-import OwnerPageLoader from '@/components/owner/owner-page-loader';
+import { BusinessCreateSkeleton } from '@/components/ui/skeleton';
 
-export default function OwnerBusinessLoading() {
-  return <OwnerPageLoader title="Loading Booking" />;
+export default function Loading() {
+  return <BusinessCreateSkeleton />;
 }

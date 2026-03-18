@@ -1,5 +1,5 @@
-import OwnerPageLoader from '@/components/owner/owner-page-loader';
+import { OwnerProfileSkeleton } from '@/components/ui/skeleton';
 
-export default function OwnerProfileLoading() {
-  return <OwnerPageLoader title="Loading Profile" />;
+export default function Loading() {
+  return <OwnerProfileSkeleton />;
 }
