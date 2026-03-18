@@ -54,7 +54,7 @@ export default function OwnerAnalyticsPage() {
       <div>
         {loading && <p className="text-sm text-slate-500">Loading businesses…</p>}
         {!loading && !selectedBusinessId && (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+          <div className="rounded-xl border border-dashed border-gray-300 bg-slate-50 p-8 text-center">
             <p className="text-sm font-medium text-slate-700">No businesses found</p>
             <p className="mt-1 text-sm text-slate-500">
               Create a business to start seeing analytics.

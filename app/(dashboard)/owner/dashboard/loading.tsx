@@ -1,5 +1,5 @@
-import OwnerPageLoader from '@/components/owner/owner-page-loader';
+import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
 
 export default function OwnerDashboardLoading() {
-  return <OwnerPageLoader title="Loading Dashboard" />;
+  return <OwnerDashboardSkeleton />;
 }

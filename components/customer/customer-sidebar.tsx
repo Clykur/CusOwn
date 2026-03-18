@@ -66,7 +66,7 @@ export default function CustomerSidebar({
     const mediaId = initialUser.profile_media_id;
 
     if (fetchRef.current.mediaId === mediaId && fetchRef.current.loaded) {
-      return; // Already fetched for this mediaId
+      return;
     }
 
     fetchRef.current.mediaId = mediaId;
@@ -110,7 +110,6 @@ export default function CustomerSidebar({
 
   const isActive = (href: string) => {
     if (pathname === href) return true;
-    // My Activity: customer dashboard + booking status pages + per-salon booking history
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
       return (
         pathname === ROUTES.CUSTOMER_DASHBOARD ||
@@ -118,7 +117,6 @@ export default function CustomerSidebar({
         pathname?.startsWith('/customer/bookings/')
       );
     }
-    // Explore Services: categories, salon lists, salon detail, business pages, booking flow
     if (href === ROUTES.CUSTOMER_CATEGORIES)
       return (
         pathname === ROUTES.CUSTOMER_CATEGORIES ||
@@ -178,14 +176,14 @@ export default function CustomerSidebar({
                   }}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150 ${
                     active
-                      ? 'border-l-2 border-indigo-600 bg-indigo-50 font-medium text-indigo-600'
+                      ? 'border-l-2 border-gray-900 bg-gray-100 font-medium text-gray-900'
                       : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
                   }`}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                     <item.icon
                       aria-hidden="true"
-                      className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
+                      className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
                     />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>

@@ -34,11 +34,9 @@ export default function CustomerMobileBottomNav({ sidebarOpen }: { sidebarOpen?:
   ];
 
   const isActive = (href: string) => {
-    // My Activity: customer dashboard + booking status pages
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
       return pathname === ROUTES.CUSTOMER_DASHBOARD || pathname?.startsWith('/booking/');
     }
-    // Explore Services: categories, salon lists, salon detail, business pages, booking flow
     if (href === ROUTES.CUSTOMER_CATEGORIES) {
       return (
         pathname === ROUTES.CUSTOMER_CATEGORIES ||
@@ -49,13 +47,12 @@ export default function CustomerMobileBottomNav({ sidebarOpen }: { sidebarOpen?:
         pathname?.startsWith('/book/')
       );
     }
-    // Profile: exact match
     if (href === ROUTES.CUSTOMER_PROFILE) return pathname === ROUTES.CUSTOMER_PROFILE;
     return pathname === href;
   };
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
       <div className="grid grid-cols-3 h-16">
         {navItems.map((item) => {
           const active = isActive(item.href);
@@ -64,18 +61,18 @@ export default function CustomerMobileBottomNav({ sidebarOpen }: { sidebarOpen?:
               key={item.name}
               href={item.href}
               className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-                active ? 'text-indigo-600' : 'text-gray-500'
+                active ? 'text-gray-900' : 'text-gray-500'
               }`}
             >
               <span className="flex items-center justify-center">
                 <item.icon
                   aria-hidden="true"
-                  className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
+                  className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
                 />
               </span>
               <span
                 className={`text-xs font-medium leading-none ${
-                  active ? 'text-indigo-600' : 'text-gray-500'
+                  active ? 'text-gray-900' : 'text-gray-500'
                 }`}
               >
                 {item.name}
