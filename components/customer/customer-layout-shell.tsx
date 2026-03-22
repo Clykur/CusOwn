@@ -9,6 +9,7 @@ import {
   CustomerSessionProvider,
   type CustomerInitialUser,
 } from '@/components/customer/customer-session-context';
+import { RatingPromptProvider } from '@/components/rating/rating-prompt-provider';
 import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CUSTOMER } from '@/config/constants';
 import { useMounted } from '@/lib/hooks/use-mounted';
@@ -186,6 +187,7 @@ export default function CustomerLayoutShell({
 
   return (
     <CustomerSessionProvider initialUser={user ?? undefined}>
+      <RatingPromptProvider />
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className={`flex-1 lg:ml-60 w-full ${mainSpacing}`}>
