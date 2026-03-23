@@ -4,20 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Loader2, Star, X } from 'lucide-react';
 import { useUIStore } from '@/lib/store';
 import type { PendingRatingBooking } from '@/services/rating-prompt.service';
+import { RATING_MESSAGES } from '@/config/constants';
 
 interface RatingModalProps {
   booking: PendingRatingBooking;
   onClose: () => void;
   onSuccess: () => void;
 }
-
-const RATING_MESSAGES: Record<number, string> = {
-  1: 'We’re sorry to hear that',
-  2: 'Could have been better',
-  3: 'Thanks for your feedback',
-  4: 'Glad you liked it',
-  5: 'Awesome, thank you!',
-};
 
 export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
   const [rating, setRating] = useState<number | null>(null);
