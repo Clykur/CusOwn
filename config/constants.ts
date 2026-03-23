@@ -124,6 +124,13 @@ export const VALIDATION = {
   ADMIN_DELETION_REASON_MIN_LENGTH: 10,
 } as const;
 
+export const RATING_MESSAGES: Record<number, string> = {
+  1: 'We’re sorry to hear that',
+  2: 'Could have been better',
+  3: 'Thanks for your feedback',
+  4: 'Glad you liked it',
+  5: 'Awesome, thank you!',
+} as const;
 /** Simple email format for input validation (local + @ + domain). */
 export const EMAIL_REGEX =
   /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;

@@ -4,7 +4,7 @@
  * Caches aggregated results for fast subsequent loads.
  */
 
-import { supabaseAdmin, requireSupabaseAdmin } from '@/lib/supabase/server';
+import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { userService } from '@/services/user.service';
 import { getCache, setCache, deletePattern } from '@/lib/cache/cache';
 import { Salon, BookingWithDetails, Slot } from '@/types';
@@ -70,6 +70,13 @@ export interface AdminDashboardData {
   recentBookings: AdminBookingSummary[];
 }
 
+type ReviewSummary = {
+  id: string;
+  booking_id: string;
+  rating: number;
+  comment: string | null;
+};
+
 export class DashboardService {
   /**
    * Get owner dashboard with Redis caching.
@@ -81,16 +88,13 @@ export class DashboardService {
   ): Promise<OwnerDashboardData> {
     const cacheKey = this.buildOwnerCacheKey(ownerId, options);
 
-    // Check Redis cache first
     const { hit, data: cached } = await getCache<OwnerDashboardData>(cacheKey);
     if (hit && cached) {
       return cached;
     }
 
-    // Fetch all data in optimized queries
     const data = await this.fetchOwnerDashboardData(ownerId, options);
 
-    // Cache the result
     await setCache(cacheKey, data, DASHBOARD_CACHE_TTL);
 
     return data;
@@ -102,16 +106,13 @@ export class DashboardService {
   async getAdminDashboard(): Promise<AdminDashboardData> {
     const cacheKey = `${CACHE_PREFIX.ADMIN_DASHBOARD}all`;
 
-    // Check Redis cache first
     const { hit, data: cached } = await getCache<AdminDashboardData>(cacheKey);
     if (hit && cached) {
       return cached;
     }
 
-    // Fetch all data
     const data = await this.fetchAdminDashboardData();
 
-    // Cache the result
     await setCache(cacheKey, data, DASHBOARD_CACHE_TTL);
 
     return data;
@@ -157,7 +158,6 @@ export class DashboardService {
         await this.invalidateOwnerDashboard(business.owner_user_id);
       }
 
-      // Also invalidate admin dashboard
       await this.invalidateAdminDashboard();
     } catch {
       // Cache invalidation failure is non-critical
@@ -187,7 +187,6 @@ export class DashboardService {
   ): Promise<OwnerDashboardData> {
     const supabase = requireSupabaseAdmin();
 
-    // 1. Get all businesses for the owner
     const businesses = await userService.getUserBusinesses(ownerId);
 
     if (businesses.length === 0) {
@@ -197,7 +196,6 @@ export class DashboardService {
     const businessIds = businesses.map((b) => b.id);
     const todayStr = getISTDateString();
 
-    // 2. Build slot filter if date range provided
     let slotIds: string[] | null = null;
     if (options?.fromDate || options?.toDate) {
       let slotQuery = supabase.from('slots').select('id').in('business_id', businessIds);
@@ -209,7 +207,6 @@ export class DashboardService {
       if (slots && slots.length > 0) {
         slotIds = slots.map((s) => s.id);
       } else {
-        // No slots in range = no bookings
         return {
           businesses,
           stats: {
@@ -232,7 +229,6 @@ export class DashboardService {
       }
     }
 
-    // 3. Fetch ALL bookings for all businesses in ONE query
     let bookingsQuery = supabase
       .from('bookings')
       .select(
@@ -254,7 +250,6 @@ export class DashboardService {
 
     const allBookings = bookings || [];
 
-    // 4. Fetch ALL slots for the bookings in ONE query
     const bookingSlotIds = [...new Set(allBookings.map((b) => b.slot_id).filter(Boolean))];
     let slots: Slot[] = [];
     if (bookingSlotIds.length > 0) {
@@ -262,24 +257,50 @@ export class DashboardService {
         .from('slots')
         .select('id, business_id, date, start_time, end_time, status, reserved_until')
         .in('id', bookingSlotIds);
+
       slots = (slotsData || []) as Slot[];
     }
 
-    // 5. Build lookup maps
+    const bookingIds = allBookings.map((b) => b.id).filter(Boolean);
+
+    let reviews: ReviewSummary[] = [];
+    if (bookingIds.length > 0) {
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select('id, booking_id, rating, comment')
+        .in('booking_id', bookingIds);
+
+      if (reviewsError) {
+        console.error('[Dashboard] Error fetching reviews:', reviewsError);
+        throw new Error(reviewsError.message || ERROR_MESSAGES.DATABASE_ERROR);
+      }
+
+      reviews = (reviewsData || []).map((review) => ({
+        id: review.id,
+        booking_id: review.booking_id,
+        rating: Number(review.rating),
+        comment: review.comment ?? null,
+      }));
+    }
+
     const slotMap = new Map<string, Slot>();
-    slots.forEach((s) => slotMap.set(s.id, s));
+    slots.forEach((slot) => slotMap.set(slot.id, slot));
 
     const businessMap = new Map<string, Salon>();
-    businesses.forEach((b) => businessMap.set(b.id, b));
+    businesses.forEach((business) => businessMap.set(business.id, business));
 
-    // 6. Enrich bookings with slot and business data
+    const reviewMap = new Map<string, ReviewSummary>();
+    reviews.forEach((review) => {
+      reviewMap.set(review.booking_id, review);
+    });
+
     const enrichedBookings: BookingWithDetails[] = allBookings.map((booking) => ({
       ...booking,
       slot: slotMap.get(booking.slot_id) || undefined,
       salon: businessMap.get(booking.business_id) || undefined,
+      review: reviewMap.get(booking.id) || undefined,
     }));
 
-    // 7. Calculate stats
     const totalBookings = enrichedBookings.length;
     const confirmedBookings = enrichedBookings.filter((b) => b.status === 'confirmed').length;
     const pendingBookings = enrichedBookings.filter((b) => b.status === 'pending').length;
@@ -291,12 +312,10 @@ export class DashboardService {
     const cancellationRate = totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
     const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
-    // 8. Categorize bookings
     const todaysBookings = enrichedBookings.filter((b) => b.slot?.date === todayStr);
     const pendingBookingsList = enrichedBookings.filter((b) => b.status === 'pending');
     const recentBookings = enrichedBookings.slice(0, 50);
 
-    // 9. Group by business
     const bookingsByBusiness: Record<string, BookingWithDetails[]> = {};
     businessIds.forEach((id) => {
       bookingsByBusiness[id] = enrichedBookings.filter((b) => b.business_id === id);
@@ -330,9 +349,7 @@ export class DashboardService {
     const supabase = requireSupabaseAdmin();
     const todayStr = getISTDateString();
 
-    // Parallel queries for better performance
     const [businessesResult, ownersResult, bookingsResult, todaySlotsResult] = await Promise.all([
-      // Total businesses
       supabase
         .from('businesses')
         .select('id, salon_name, owner_name, booking_link, created_at, owner_user_id')
@@ -340,20 +357,17 @@ export class DashboardService {
         .order('created_at', { ascending: false })
         .limit(100),
 
-      // Unique owners
       supabase
         .from('user_profiles')
         .select('id')
         .or('user_type.eq.owner,user_type.eq.both,user_type.eq.admin'),
 
-      // Recent bookings with stats
       supabase
         .from('bookings')
         .select('id, business_id, status, customer_name, booking_id, created_at, slot_id, no_show')
         .order('created_at', { ascending: false })
         .limit(1000),
 
-      // Today's slots for filtering
       supabase.from('slots').select('id').eq('date', todayStr),
     ]);
 
@@ -362,7 +376,6 @@ export class DashboardService {
     const allBookings = bookingsResult.data || [];
     const todaySlotIds = new Set((todaySlotsResult.data || []).map((s) => s.id));
 
-    // Calculate stats
     const todayBookings = allBookings.filter((b) => todaySlotIds.has(b.slot_id));
     const confirmedBookings = allBookings.filter((b) => b.status === 'confirmed').length;
     const pendingBookings = allBookings.filter((b) => b.status === 'pending').length;
@@ -370,7 +383,6 @@ export class DashboardService {
     const conversionRate =
       allBookings.length > 0 ? (confirmedBookings / allBookings.length) * 100 : 0;
 
-    // Enrich recent bookings with business names
     const businessMap = new Map<string, Salon>();
     businesses.forEach((b) => businessMap.set(b.id, b));
 

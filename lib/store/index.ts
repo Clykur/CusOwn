@@ -1,6 +1,5 @@
 export {
   useOwnerDashboardStore,
-  selectFilteredBookings,
   selectHasValidCache as selectOwnerDashboardHasValidCache,
   selectBookingCounts,
   type DashboardStats,

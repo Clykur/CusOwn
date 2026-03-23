@@ -1,61 +1,132 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
 import { RatingModal } from './rating-modal';
 import type { PendingRatingBooking } from '@/services/rating-prompt.service';
 
-/**
- * Checks for pending ratings and displays modal if user has unrated bookings.
- * Automatically fetches the next pending booking after user submits or ignores.
- */
+type PendingRatingApiResponse = {
+  success?: boolean;
+  data?: {
+    booking?: PendingRatingBooking | null;
+    bookings?: PendingRatingBooking[] | null;
+  } | null;
+  booking?: PendingRatingBooking | null;
+  bookings?: PendingRatingBooking[] | null;
+};
+
+function normalizePendingBookingsResponse(
+  response: PendingRatingApiResponse | null | undefined
+): PendingRatingBooking[] {
+  if (!response) return [];
+
+  if (Array.isArray(response.data?.bookings)) {
+    return response.data.bookings.filter(Boolean);
+  }
+
+  if (Array.isArray(response.bookings)) {
+    return response.bookings.filter(Boolean);
+  }
+
+  const singleBooking = response.data?.booking ?? response.booking ?? null;
+  return singleBooking ? [singleBooking] : [];
+}
+
 export function RatingPromptProvider() {
   const { initialUser: user } = useCustomerSession();
-  const [pendingBooking, setPendingBooking] = useState<PendingRatingBooking | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [pendingBookings, setPendingBookings] = useState<PendingRatingBooking[]>([]);
+  const [dismissedBookingIds, setDismissedBookingIds] = useState<string[]>([]);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const pendingBooking = pendingBookings[0] ?? null;
 
   const fetchPendingRating = useCallback(async () => {
     if (!user?.id) {
-      setIsLoading(false);
+      setPendingBookings([]);
       return;
     }
 
-    setIsLoading(true);
     try {
-      const response = await fetch('/api/reviews/pending-rating');
-      if (response.ok) {
-        const data = await response.json();
-        setPendingBooking(data.booking);
-      }
-    } catch (error) {
-      console.error('[RATING PROMPT] Error fetching pending rating:', error);
-    } finally {
-      setIsLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+      const response = await fetch('/api/reviews/pending-rating', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
 
-  // Fetch pending rating on mount and when user changes
+      const data: PendingRatingApiResponse = await response.json();
+      const bookings = normalizePendingBookingsResponse(data);
+
+      const filtered = bookings.filter((booking) => !dismissedBookingIds.includes(booking.id));
+
+      setPendingBookings(filtered);
+    } catch (error) {
+      console.error('[RATING PROMPT CLIENT] Error fetching pending rating:', error);
+      setPendingBookings([]);
+    }
+  }, [user?.id, dismissedBookingIds]);
+
   useEffect(() => {
     fetchPendingRating();
   }, [fetchPendingRating]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+
+    pollIntervalRef.current = setInterval(fetchPendingRating, 30000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [fetchPendingRating, user?.id]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user?.id) {
+        fetchPendingRating();
+      }
+    };
+
+    const handleFocus = () => {
+      if (user?.id) {
+        fetchPendingRating();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchPendingRating, user?.id]);
+
   const handleModalClose = () => {
-    // Close the modal without submitting or ignoring
-    // User can trigger it again by refreshing
-    setPendingBooking(null);
+    if (!pendingBooking) return;
+
+    setDismissedBookingIds((prev) => [...prev, pendingBooking.id]);
+    setPendingBookings((prev) => prev.filter((b) => b.id !== pendingBooking.id));
   };
 
   const handleSuccess = () => {
-    // After user submits or ignores, fetch the next pending booking
-    fetchPendingRating();
+    if (!pendingBooking) return;
+
+    setPendingBookings((prev) => prev.filter((b) => b.id !== pendingBooking.id));
   };
 
-  if (!user || isLoading || !pendingBooking) {
+  if (!user?.id || !pendingBooking) {
     return null;
   }
 
   return (
-    <RatingModal booking={pendingBooking} onClose={handleModalClose} onSuccess={handleSuccess} />
+    <RatingModal
+      key={pendingBooking.id}
+      booking={pendingBooking}
+      onClose={handleModalClose}
+      onSuccess={handleSuccess}
+    />
   );
 }

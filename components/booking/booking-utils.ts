@@ -49,6 +49,28 @@ export function filterSlotsByBusinessHours(
   return filtered;
 }
 
+/**
+ * Returns true if shop is closed for the selected date.
+ * - Today + past closing time: true
+ * - Future dates: false
+ */
+export function isShopClosedForSelectedDate(
+  selectedDate: string,
+  closingTime: string | undefined
+): boolean {
+  if (!closingTime) return false;
+
+  // Parse closing hour (HH:MM → hour)
+  const closeHour = parseInt(closingTime.split(':')[0], 10);
+  if (isNaN(closeHour)) return false;
+
+  // Only check if selected date is today
+  if (!isToday(selectedDate)) return false;
+
+  // Check if past closing hour
+  return isAfterBusinessHours(closeHour);
+}
+
 export type PendingBookingData = {
   businessSlug: string;
   selectedSlotId: string;

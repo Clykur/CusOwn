@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_rating_prompt_ignores_customer_user_id
 COMMENT ON TABLE public.rating_prompt_ignores IS 'Tracks bookings where user ignored the rating prompt; one record per ignored booking.';
 
 -- =============================================================================
--- 2. RPC: Get booking pending rating (most recent completed booking without rating/ignore)
+-- 2. RPC: Get booking pending rating (most recent confirmed past booking without rating/ignore)
 -- =============================================================================
 CREATE OR REPLACE FUNCTION public.get_pending_rating_booking(
   p_customer_user_id UUID
@@ -38,21 +38,36 @@ DECLARE
   v_salon_id UUID;
   v_slot_date DATE;
   v_slot_start_time TIME;
+  v_candidate_count INTEGER;
 BEGIN
-  -- Find most recent completed booking (confirmed status, appointment time in past) 
-  -- that doesn't have a review or ignore record
+  -- Debug: count eligible candidates first
+  SELECT COUNT(*)
+  INTO v_candidate_count
+  FROM public.bookings b
+  JOIN public.slots s ON b.slot_id = s.id
+  WHERE b.customer_user_id = p_customer_user_id
+    AND b.status = 'confirmed'::text
+    AND (s.date + s.end_time) <= NOW()
+    AND NOT EXISTS (SELECT 1 FROM public.reviews r WHERE r.booking_id = b.id)
+    AND NOT EXISTS (SELECT 1 FROM public.rating_prompt_ignores rpi WHERE rpi.booking_id = b.id);
+
+  RAISE NOTICE '[RATING] Pending candidates for user %: %', p_customer_user_id, v_candidate_count;
+
+  -- Find most recent eligible booking
   SELECT b.id, b.booking_id, b.business_id, s.date, s.start_time, sal.salon_name
   INTO v_booking_id, v_booking_uuid, v_salon_id, v_slot_date, v_slot_start_time, v_salon_name
   FROM public.bookings b
   JOIN public.slots s ON b.slot_id = s.id
   JOIN public.businesses sal ON b.business_id = sal.id
   WHERE b.customer_user_id = p_customer_user_id
-    AND b.status = 'confirmed'
-    AND (s.date < CURRENT_DATE OR (s.date = CURRENT_DATE AND s.start_time < CURRENT_TIME))
-    AND NOT EXISTS (SELECT 1 FROM public.reviews WHERE booking_id = b.id)
-    AND NOT EXISTS (SELECT 1 FROM public.rating_prompt_ignores WHERE booking_id = b.id)
-  ORDER BY s.date DESC, s.start_time DESC
+    AND b.status = 'confirmed'::text
+    AND (s.date + s.end_time) <= NOW()
+    AND NOT EXISTS (SELECT 1 FROM public.reviews r WHERE r.booking_id = b.id)
+    AND NOT EXISTS (SELECT 1 FROM public.rating_prompt_ignores rpi WHERE rpi.booking_id = b.id)
+  ORDER BY (s.date + s.end_time) DESC NULLS LAST
   LIMIT 1;
+
+  RAISE NOTICE '[RATING] Selected booking for user %: % (found: %)', p_customer_user_id, COALESCE(v_booking_id::text, 'none'), (v_booking_id IS NOT NULL);
 
   IF v_booking_id IS NULL THEN
     RETURN jsonb_build_object('success', true, 'booking', NULL);
@@ -108,3 +123,4 @@ BEGIN
 
   RETURN jsonb_build_object('success', true);
 END $$;
+

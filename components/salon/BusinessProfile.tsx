@@ -54,6 +54,7 @@ const getTimeParts = (time: string) => {
   const [h, m] = time.split(':').map(Number);
   return { h, m };
 };
+
 const getTimeDiffString = (from: Date, to: Date) => {
   const diff = Math.max(0, to.getTime() - from.getTime());
   const mins = Math.floor(diff / 60000);
@@ -75,6 +76,7 @@ interface Salon {
   review_count?: number;
   rating_counts?: Record<number, number>;
 }
+
 interface Service {
   id: string;
   name: string;
@@ -111,6 +113,7 @@ export const BusinessProfile = () => {
       services: Service[];
       photos: string[];
     } | null;
+
     if (cached?.salon) {
       setSalon(cached.salon);
       setServices(cached.services ?? []);
@@ -131,6 +134,7 @@ export const BusinessProfile = () => {
           setLoading(false);
           return;
         }
+
         const salonData = result.data;
         setSalon(salonData);
 
@@ -164,6 +168,7 @@ export const BusinessProfile = () => {
                 price: (s.price_cents / 100).toFixed(0),
               }))
             : [];
+
         setServices(servicesList);
 
         let photoUrls: string[] = [];
@@ -180,9 +185,12 @@ export const BusinessProfile = () => {
           );
           photoUrls = urls.filter(Boolean);
         }
+
         if (cancelled) return;
+
         setPhotos(photoUrls);
         setLoading(false);
+
         setCachedBusinessProfile(slug, {
           salon: salonData,
           services: servicesList,
@@ -203,21 +211,27 @@ export const BusinessProfile = () => {
 
   useEffect(() => {
     if (!salon) return;
+
     const checkStatus = () => {
       const now = new Date();
       const { h: openH, m: openM } = getTimeParts(salon.opening_time);
       const { h: closeH, m: closeM } = getTimeParts(salon.closing_time);
+
       const open = new Date(now);
       open.setHours(openH, openM, 0, 0);
+
       const close = new Date(now);
       close.setHours(closeH, closeM, 0, 0);
+
       let openNow = false;
       if (close <= open) {
         openNow = now >= open || now < close;
       } else {
         openNow = now >= open && now < close;
       }
+
       setIsOpen(openNow);
+
       if (openNow) {
         setStatusText('Open Now');
         setSubText(`Closes in ${getTimeDiffString(now, close)}`);
@@ -226,12 +240,12 @@ export const BusinessProfile = () => {
         setSubText(`Opens at ${salon.opening_time}`);
       }
     };
+
     checkStatus();
     const interval = setInterval(checkStatus, 60000);
     return () => clearInterval(interval);
   }, [salon]);
 
-  // Fetch reviews from API
   useEffect(() => {
     if (!salon?.id) return;
 
@@ -245,16 +259,18 @@ export const BusinessProfile = () => {
           data?: { rating_avg: number; review_count: number; reviews: { rating: number }[] };
         }) => {
           if (cancelled) return;
+
           if (result.success && result.data) {
-            // Calculate rating counts from reviews
             const reviews = result.data.reviews || [];
             const rating_counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
             reviews.forEach((review) => {
               const rating = Number(review.rating);
               if (rating_counts[rating] !== undefined) {
                 rating_counts[rating]++;
               }
             });
+
             setReviewData({
               rating_avg: result.data.rating_avg || 0,
               review_count: result.data.review_count || 0,
@@ -264,7 +280,7 @@ export const BusinessProfile = () => {
         }
       )
       .catch(() => {
-        // Silently handle error - reviews are optional
+        // Silently handle error
       });
 
     return () => {
@@ -295,11 +311,13 @@ export const BusinessProfile = () => {
             { label: 'Loading...', href: `/customer/${slug}` },
           ]}
         />
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="flex flex-col gap-2">
             <div className="h-8 w-64 rounded-lg image-skeleton-shine" />
             <div className="h-5 w-32 rounded-full image-skeleton-shine" />
           </div>
+
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-full image-skeleton-shine" />
             <div className="flex flex-col gap-1">
@@ -308,6 +326,7 @@ export const BusinessProfile = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
           <div className="h-6 w-28 mb-4 rounded image-skeleton-shine" />
           <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
@@ -320,6 +339,7 @@ export const BusinessProfile = () => {
             ))}
           </div>
         </div>
+
         <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
           <div className="h-6 w-24 mb-4 rounded image-skeleton-shine" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -331,6 +351,7 @@ export const BusinessProfile = () => {
       </div>
     );
   }
+
   if (!salon) {
     return (
       <div className="w-full pb-24">
@@ -350,7 +371,6 @@ export const BusinessProfile = () => {
     <div className="w-full pb-24 flex flex-col gap-6">
       <Breadcrumb items={breadcrumbItems} />
 
-      {/* Header */}
       <SalonDetailsHeader
         salonName={salon.salon_name}
         ownerName={salon.owner_name ?? null}
@@ -360,10 +380,8 @@ export const BusinessProfile = () => {
         closingTime={salon.closing_time}
       />
 
-      {/* Shop Photos */}
       <SalonShopPhotos photos={photos} />
 
-      {/* Services Section */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Services</h2>
 
@@ -378,7 +396,6 @@ export const BusinessProfile = () => {
 
                 <div className="flex items-center justify-between text-gray-600 text-sm">
                   <span>Duration: {service.duration}</span>
-
                   <span className="font-semibold text-black">₹{service.price}</span>
                 </div>
               </div>
@@ -407,13 +424,12 @@ export const BusinessProfile = () => {
         )}
       </div>
 
-      {/* Reviews */}
       <ReviewSummary reviewData={reviewData} />
     </div>
   );
 };
+
 function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
-  // Show "No reviews yet." when there's no review data
   if (!reviewData || (reviewData.rating_avg === 0 && reviewData.review_count === 0)) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
@@ -438,6 +454,7 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
       </div>
     );
   }
+
   const { rating_avg, review_count, rating_counts } = reviewData;
 
   return (
@@ -445,20 +462,17 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
       <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
 
       <div className="flex flex-col sm:flex-row gap-6">
-        {/* Average Rating */}
         <div className="flex flex-col items-center sm:items-start">
           <div className="text-4xl font-bold text-slate-900">{rating_avg?.toFixed(1) ?? ' '}</div>
 
-          <StarRating value={Math.round(rating_avg ?? 0)} readonly size="md" />
+          <StarRating value={rating_avg ?? 0} readonly size="md" />
 
           <p className="text-sm text-slate-500 mt-1">{review_count ?? 0} reviews</p>
         </div>
 
-        {/* Distribution */}
         <div className="flex-1 space-y-2">
           {[5, 4, 3, 2, 1].map((star) => {
             const count = rating_counts?.[star] ?? 0;
-
             const percent =
               review_count && review_count > 0 ? Math.round((count / review_count) * 100) : 0;
 
@@ -484,4 +498,5 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
     </div>
   );
 }
+
 export default BusinessProfile;

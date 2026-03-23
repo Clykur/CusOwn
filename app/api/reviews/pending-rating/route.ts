@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getPendingRatingBooking } from '@/services/rating-prompt.service';
+import { getPendingRatingBookings } from '@/services/rating-prompt.service';
 import { createReview } from '@/services/review.service';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { getServerUser } from '@/lib/supabase/server-auth';
 
 /**
  * GET /api/reviews/pending-rating
- * Returns the most recent completed booking that needs a rating from current user.
+ * Returns all completed bookings that need a rating from current user.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
       return errorResponse('Unauthorized', 401);
     }
 
-    const pendingBooking = await getPendingRatingBooking(user.id);
+    const pendingBookings = await getPendingRatingBookings(user.id);
 
     return successResponse({
-      booking: pendingBooking,
+      bookings: pendingBookings,
     });
   } catch (error) {
     console.error('[API] GET /api/reviews/pending-rating:', error);
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const result = await createReview(user.id, {
       booking_id,
       rating,
-      comment: null, // No comments for this feature
+      comment: null,
     });
 
     if (!result.success) {

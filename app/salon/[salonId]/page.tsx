@@ -13,6 +13,8 @@ import { logError } from '@/lib/utils/error-handler';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { isValidUUID } from '@/lib/utils/security';
+import { isShopClosedForSelectedDate, getLocalTodayStr } from '@/components/booking/booking-utils';
+
 import { RedirectSkeleton } from '@/components/ui/skeleton';
 import CheckIcon from '@/src/icons/check.svg';
 import ChevronLeftIcon from '@/src/icons/chevron-left.svg';
@@ -45,6 +47,7 @@ export default function SalonDetailPage() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [touchedName, setTouchedName] = useState(false);
   const [touchedPhone, setTouchedPhone] = useState(false);
+  const [isShopClosedToday, setIsShopClosedToday] = useState(false);
 
   useEffect(() => {
     // Fetch CSRF token on page load
@@ -231,8 +234,20 @@ export default function SalonDetailPage() {
   }, [salon, selectedDate]);
 
   useEffect(() => {
-    setSelectedDate(getTodayDateString());
-  }, []);
+    const today = getLocalTodayStr();
+    setSelectedDate(today);
+
+    if (salon?.closing_time) {
+      setIsShopClosedToday(isShopClosedForSelectedDate(today, salon.closing_time));
+    }
+  }, [salon]);
+
+  useEffect(() => {
+    if (salon?.closing_time) {
+      const today = getLocalTodayStr();
+      setIsShopClosedToday(isShopClosedForSelectedDate(today, salon.closing_time));
+    }
+  }, [salon?.closing_time]);
 
   const handleSlotSelect = (slot: Slot) => {
     if (slot.status === 'booked') return;
@@ -601,8 +616,9 @@ export default function SalonDetailPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
                 {availableDates.map((date) => {
                   const dateObj = new Date(date + 'T00:00:00');
-                  const isToday = date === getTodayDateString();
+                  const isToday = date === getLocalTodayStr();
                   const isSelected = selectedDate === date;
+                  const isClosed = isToday && isShopClosedToday;
                   const dayName = dateObj.toLocaleDateString('en-US', {
                     weekday: 'short',
                   });
@@ -615,12 +631,15 @@ export default function SalonDetailPage() {
                     <button
                       key={date}
                       onClick={() => setSelectedDate(date)}
+                      disabled={isClosed}
                       className={`px-3 py-2.5 rounded-lg border-2 transition-all text-center ${
                         isSelected
                           ? 'border-black bg-black text-white shadow-md'
-                          : isToday
-                            ? 'border-gray-400 bg-white text-gray-900 hover:border-gray-500'
-                            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                          : isClosed
+                            ? 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed'
+                            : isToday
+                              ? 'border-gray-400 bg-white text-gray-900 hover:border-gray-500 ring-2 ring-slate-400 ring-offset-1'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
                       <div className="text-xs font-medium mb-1">{dayName}</div>
@@ -630,7 +649,10 @@ export default function SalonDetailPage() {
                         {dayNum}
                       </div>
                       <div className="text-xs">{month}</div>
-                      {isToday && !isSelected && (
+                      {isClosed && (
+                        <div className="text-xs mt-1 font-medium text-amber-600">Closed</div>
+                      )}
+                      {isToday && !isClosed && !isSelected && (
                         <div className="text-xs mt-1 font-medium text-gray-500">Today</div>
                       )}
                     </button>
