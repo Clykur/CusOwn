@@ -10,30 +10,104 @@ export type PendingRatingBooking = {
   service_time: string;
 };
 
+type PendingRatingRpcResponse = {
+  success?: boolean;
+  booking?: PendingRatingBooking | null;
+  bookings?: PendingRatingBooking[] | null;
+  data?: {
+    booking?: PendingRatingBooking | null;
+    bookings?: PendingRatingBooking[] | null;
+  } | null;
+};
+
+function isPendingRatingBooking(value: unknown): value is PendingRatingBooking {
+  if (!value || typeof value !== 'object') return false;
+
+  const booking = value as Record<string, unknown>;
+
+  return (
+    typeof booking.id === 'string' &&
+    typeof booking.booking_id === 'string' &&
+    typeof booking.salon_id === 'string' &&
+    typeof booking.salon_name === 'string' &&
+    typeof booking.service_date === 'string' &&
+    typeof booking.service_time === 'string'
+  );
+}
+
+function normalizePendingRatingResults(result: unknown): PendingRatingBooking[] {
+  if (!result) {
+    return [];
+  }
+
+  if (Array.isArray(result)) {
+    return result.filter(isPendingRatingBooking);
+  }
+
+  if (isPendingRatingBooking(result)) {
+    return [result];
+  }
+
+  if (typeof result !== 'object') {
+    return [];
+  }
+
+  const rpcResponse = result as PendingRatingRpcResponse;
+
+  if (rpcResponse.success === false) {
+    return [];
+  }
+
+  if (Array.isArray(rpcResponse.bookings)) {
+    return rpcResponse.bookings.filter(isPendingRatingBooking);
+  }
+
+  if (Array.isArray(rpcResponse.data?.bookings)) {
+    return rpcResponse.data.bookings.filter(isPendingRatingBooking);
+  }
+
+  if (rpcResponse.booking && isPendingRatingBooking(rpcResponse.booking)) {
+    return [rpcResponse.booking];
+  }
+
+  if (rpcResponse.data?.booking && isPendingRatingBooking(rpcResponse.data.booking)) {
+    return [rpcResponse.data.booking];
+  }
+
+  return [];
+}
+
 /**
- * Get the most recent completed booking for a customer that needs rating.
- * Returns null if no pending ratings exist.
+ * Get all completed bookings for a customer that need rating.
+ * Returns empty array if no pending ratings exist.
  */
-export async function getPendingRatingBooking(
+export async function getPendingRatingBookings(
   customerUserId: string
-): Promise<PendingRatingBooking | null> {
+): Promise<PendingRatingBooking[]> {
   const supabase = requireSupabaseAdmin();
 
-  const { data: result, error } = await supabase.rpc('get_pending_rating_booking', {
+  const { data: result, error } = await supabase.rpc('get_pending_rating_bookings', {
     p_customer_user_id: customerUserId,
   });
 
   if (error) {
-    console.error('[RATING PROMPT] Error fetching pending rating:', error);
-    return null;
+    console.error('[RATING PROMPT] Error fetching pending ratings:', error);
+    return [];
   }
 
-  const response = result as { success: boolean; booking: PendingRatingBooking | null };
-  if (!response?.success) {
-    return null;
-  }
+  const bookings = normalizePendingRatingResults(result);
+  return bookings;
+}
 
-  return response.booking;
+/**
+ * Backward-compatible single booking helper.
+ * Returns the first pending booking or null.
+ */
+export async function getPendingRatingBooking(
+  customerUserId: string
+): Promise<PendingRatingBooking | null> {
+  const bookings = await getPendingRatingBookings(customerUserId);
+  return bookings[0] ?? null;
 }
 
 /**

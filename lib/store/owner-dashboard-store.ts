@@ -12,11 +12,6 @@ interface DashboardStats {
   cancelledBookings: number;
 }
 
-type FilteredBookingsCache = {
-  key: string;
-  result: BookingWithDetails[];
-};
-
 interface OwnerDashboardState {
   stats: DashboardStats | null;
   bookings: BookingWithDetails[];
@@ -59,17 +54,35 @@ const initialState = {
 
 export const useOwnerDashboardStore = create<OwnerDashboardState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       setStats: (stats) => set({ stats }),
 
-      setBookings: (bookings) => set({ bookings }),
+      setBookings: (bookings) =>
+        set({
+          bookings: [...bookings],
+        }),
 
       updateBooking: (bookingId, updates) =>
-        set((state) => ({
-          bookings: state.bookings.map((b) => (b.id === bookingId ? { ...b, ...updates } : b)),
-        })),
+        set((state) => {
+          const updatedBookings = state.bookings.map((booking) =>
+            booking.id === bookingId ? { ...booking, ...updates } : booking
+          );
+
+          return {
+            bookings: updatedBookings,
+            stats: state.stats
+              ? {
+                  ...state.stats,
+                  totalBookings: updatedBookings.length,
+                  confirmedBookings: updatedBookings.filter((b) => b.status === 'confirmed').length,
+                  pendingBookings: updatedBookings.filter((b) => b.status === 'pending').length,
+                  cancelledBookings: updatedBookings.filter((b) => b.status === 'cancelled').length,
+                }
+              : state.stats,
+          };
+        }),
 
       setFromDate: (fromDate) => set({ fromDate }),
 
@@ -100,34 +113,6 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
     }
   )
 );
-
-let filteredBookingsCache: FilteredBookingsCache | null = null;
-
-export const selectFilteredBookings = (state: OwnerDashboardState) => {
-  const { bookings, searchTerm } = state;
-  const cacheKey = `${bookings.length}-${searchTerm}`;
-
-  if (filteredBookingsCache?.key === cacheKey) {
-    return filteredBookingsCache.result;
-  }
-
-  if (!searchTerm.trim()) {
-    filteredBookingsCache = { key: cacheKey, result: bookings };
-    return bookings;
-  }
-
-  const term = searchTerm.toLowerCase();
-  const result = bookings.filter(
-    (booking) =>
-      booking.customer_name?.toLowerCase().includes(term) ||
-      booking.customer_phone?.toLowerCase().includes(term) ||
-      booking.booking_id?.toLowerCase().includes(term) ||
-      booking.salon?.salon_name?.toLowerCase().includes(term)
-  );
-
-  filteredBookingsCache = { key: cacheKey, result };
-  return result;
-};
 
 export const selectHasValidCache = (state: OwnerDashboardState) => {
   if (!state.stats || !state.lastFetchedAt) return false;

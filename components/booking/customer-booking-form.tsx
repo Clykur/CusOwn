@@ -10,6 +10,8 @@ interface CustomerBookingFormProps {
   selectedSlot: Slot | null;
   submitting: boolean;
   validatingSlot: boolean;
+  shopClosed?: boolean;
+  shopClosedError?: string | null;
   error: string | null;
   slotValidationError: string | null;
   onNameChange: (value: string) => void;
@@ -23,12 +25,16 @@ function CustomerBookingFormComponent({
   selectedSlot,
   submitting,
   validatingSlot,
+  shopClosed = false,
+  shopClosedError,
   error,
   slotValidationError,
   onNameChange,
   onPhoneChange,
   onSubmit,
 }: CustomerBookingFormProps) {
+  const displayError = shopClosedError || error || slotValidationError;
+
   return (
     <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
       <div>
@@ -63,14 +69,14 @@ function CustomerBookingFormComponent({
           placeholder={UI_CUSTOMER.PLACEHOLDER_PHONE}
         />
       </div>
-      {(error || slotValidationError) && (
+      {displayError && (
         <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
-          {error || slotValidationError}
+          {displayError}
         </div>
       )}
       <button
         type="submit"
-        disabled={submitting || !selectedSlot || validatingSlot}
+        disabled={submitting || !selectedSlot || validatingSlot || shopClosed}
         className="w-full bg-slate-900 text-white font-semibold py-3 px-6 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {submitting ? (

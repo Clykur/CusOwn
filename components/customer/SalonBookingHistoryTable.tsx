@@ -8,6 +8,7 @@ import { env } from '@/config/env';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails, Slot } from '@/types';
 import BookingDetailsModal from '@/components/customer/BookingDetailsModal';
+import BookingRowRating from '@/components/customer/BookingRowRating';
 
 const ALLOWED_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled'] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -70,9 +71,6 @@ export interface SalonBookingHistoryTableProps {
 
 export default function SalonBookingHistoryTable({ bookings }: SalonBookingHistoryTableProps) {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
-
-  const availableSlots: Slot[] = [];
-
   const cancellationMinHoursMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
 
   const handleCancelled = () => {
@@ -139,11 +137,17 @@ export default function SalonBookingHistoryTable({ bookings }: SalonBookingHisto
                 </td>
 
                 <td className="px-4 py-2.5">
-                  {booking.review?.rating ? (
-                    <StarRating value={booking.review.rating} readonly size="sm" />
-                  ) : (
-                    <span className="text-slate-400 text-xs">Not rated</span>
-                  )}
+                  <BookingRowRating
+                    bookingId={booking.id}
+                    existingRating={booking.review?.rating}
+                    canRate={
+                      booking.status === 'confirmed' &&
+                      !!booking.slot?.date &&
+                      !!booking.slot?.end_time &&
+                      new Date(`${booking.slot.date}T${booking.slot.end_time}`).getTime() <=
+                        Date.now()
+                    }
+                  />
                 </td>
 
                 <td className="px-4 py-2.5">

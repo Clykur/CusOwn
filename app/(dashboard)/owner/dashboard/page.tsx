@@ -14,7 +14,8 @@ import UndoIcon from '@/src/icons/undo.svg';
 import ExploreIcon from '@/src/icons/explore.svg';
 import { useBookingSyncChannel } from '@/lib/hooks/use-booking-sync-channel';
 import { dedupFetch, cancelRequests } from '@/lib/utils/fetch-dedup';
-import { useOwnerDashboardStore, selectFilteredBookings, useUIStore } from '@/lib/store';
+import { useOwnerDashboardStore, useUIStore } from '@/lib/store';
+import StarRating from '@/components/booking/star-rating';
 
 const DateFilter = dynamic(() => import('@/components/owner/date-filter'), {
   ssr: false,
@@ -147,11 +148,12 @@ export default function OwnerDashboardPage() {
   const setStats = useOwnerDashboardStore((state) => state.setStats);
   const setBookings = useOwnerDashboardStore((state) => state.setBookings);
   const updateBooking = useOwnerDashboardStore((state) => state.updateBooking);
+  const bookings = useOwnerDashboardStore((state) => state.bookings);
   const fromDate = useOwnerDashboardStore((state) => state.fromDate);
   const toDate = useOwnerDashboardStore((state) => state.toDate);
+  const searchTerm = useOwnerDashboardStore((state) => state.searchTerm);
   const processingBookingId = useOwnerDashboardStore((state) => state.processingBookingId);
   const setProcessingBookingId = useOwnerDashboardStore((state) => state.setProcessingBookingId);
-  const filteredBookings = useOwnerDashboardStore(selectFilteredBookings);
 
   const showToast = useUIStore((state) => state.showToast);
   const toasts = useUIStore((state) => state.toasts);
@@ -161,16 +163,28 @@ export default function OwnerDashboardPage() {
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { publishBookingUpdated, publishRefreshAll } = useBookingSyncChannel({
-    onBookingUpdated: (event) => {
-      updateBooking(event.bookingId, {
-        status: event.status as BookingWithDetails['status'],
-      });
-    },
-    onRefreshAll: () => {
-      fetchBookings();
-    },
-  });
+  const filteredBookings = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return bookings.filter((booking) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        booking.customer_name?.toLowerCase().includes(normalizedSearch) ||
+        booking.customer_phone?.toLowerCase().includes(normalizedSearch) ||
+        booking.booking_id?.toLowerCase().includes(normalizedSearch) ||
+        booking.salon?.salon_name?.toLowerCase().includes(normalizedSearch);
+
+      const bookingDate = booking.slot?.date ?? '';
+      const matchesFromDate = !fromDate || bookingDate >= fromDate;
+      const matchesToDate = !toDate || bookingDate <= toDate;
+
+      return matchesSearch && matchesFromDate && matchesToDate;
+    });
+  }, [bookings, searchTerm, fromDate, toDate]);
+
+  const getBookingById = useCallback((bookingId: string) => {
+    return useOwnerDashboardStore.getState().bookings.find((b) => b.id === bookingId);
+  }, []);
 
   const fetchDashboard = useCallback(async () => {
     if (!initialUser?.id) {
@@ -236,6 +250,17 @@ export default function OwnerDashboardPage() {
     await fetchDashboard();
   }, [fetchDashboard]);
 
+  const { publishBookingUpdated } = useBookingSyncChannel({
+    onBookingUpdated: (event) => {
+      updateBooking(event.bookingId, {
+        status: event.status as BookingWithDetails['status'],
+      });
+    },
+    onRefreshAll: () => {
+      fetchBookings();
+    },
+  });
+
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
@@ -255,15 +280,21 @@ export default function OwnerDashboardPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSearch, setShowSearch]);
+  }, [showSearch]);
 
   const handleAccept = async (bookingId: string) => {
     if (processingBookingId) return;
     if (!confirm('Are you sure you want to accept this booking?')) return;
+
+    const prevBooking = getBookingById(bookingId);
+    if (!prevBooking) return;
+
     setProcessingBookingId(bookingId);
 
-    const prevStatus = filteredBookings.find((b) => b.id === bookingId)?.status;
-    updateBooking(bookingId, { status: 'confirmed', updated_at: new Date().toISOString() });
+    updateBooking(bookingId, {
+      status: 'confirmed',
+      updated_at: new Date().toISOString(),
+    });
 
     try {
       const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
@@ -280,12 +311,21 @@ export default function OwnerDashboardPage() {
         showToast('Booking accepted', 'success', 2000);
         publishBookingUpdated(bookingId, 'confirmed');
       } else {
-        updateBooking(bookingId, { status: prevStatus });
+        updateBooking(bookingId, {
+          status: prevBooking.status,
+          updated_at: prevBooking.updated_at,
+          undo_used_at: prevBooking.undo_used_at,
+        });
+
         const result = await response.json();
         showToast(result.error || 'Failed to accept booking', 'error', 2000);
       }
     } catch {
-      updateBooking(bookingId, { status: prevStatus });
+      updateBooking(bookingId, {
+        status: prevBooking.status,
+        updated_at: prevBooking.updated_at,
+        undo_used_at: prevBooking.undo_used_at,
+      });
       showToast('Failed to accept booking', 'error', 2000);
     } finally {
       setProcessingBookingId(null);
@@ -295,10 +335,16 @@ export default function OwnerDashboardPage() {
   const handleReject = async (bookingId: string) => {
     if (processingBookingId) return;
     if (!confirm('Are you sure you want to reject this booking?')) return;
+
+    const prevBooking = getBookingById(bookingId);
+    if (!prevBooking) return;
+
     setProcessingBookingId(bookingId);
 
-    const prevStatus = filteredBookings.find((b) => b.id === bookingId)?.status;
-    updateBooking(bookingId, { status: 'rejected', updated_at: new Date().toISOString() });
+    updateBooking(bookingId, {
+      status: 'rejected',
+      updated_at: new Date().toISOString(),
+    });
 
     try {
       const csrfToken = await (await import('@/lib/utils/csrf-client')).getCSRFToken();
@@ -315,12 +361,21 @@ export default function OwnerDashboardPage() {
         showToast('Booking rejected', 'success', 2000);
         publishBookingUpdated(bookingId, 'rejected');
       } else {
-        updateBooking(bookingId, { status: prevStatus });
+        updateBooking(bookingId, {
+          status: prevBooking.status,
+          updated_at: prevBooking.updated_at,
+          undo_used_at: prevBooking.undo_used_at,
+        });
+
         const result = await response.json();
         showToast(result.error || 'Failed to reject booking', 'error', 2000);
       }
     } catch {
-      updateBooking(bookingId, { status: prevStatus });
+      updateBooking(bookingId, {
+        status: prevBooking.status,
+        updated_at: prevBooking.updated_at,
+        undo_used_at: prevBooking.undo_used_at,
+      });
       showToast('Failed to reject booking', 'error', 2000);
     } finally {
       setProcessingBookingId(null);
@@ -330,6 +385,10 @@ export default function OwnerDashboardPage() {
   const handleUndoAccept = useCallback(
     async (bookingId: string) => {
       if (processingBookingId) return;
+
+      const prevBooking = getBookingById(bookingId);
+      if (!prevBooking) return;
+
       setProcessingBookingId(bookingId);
 
       if (undoTimeoutRef.current) {
@@ -337,10 +396,8 @@ export default function OwnerDashboardPage() {
         undoTimeoutRef.current = null;
       }
 
-      const prevBooking = filteredBookings.find((b) => b.id === bookingId);
       updateBooking(bookingId, {
         status: 'pending',
-        undo_used_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
@@ -357,19 +414,23 @@ export default function OwnerDashboardPage() {
         const json = await res.json();
 
         if (res.ok) {
+          updateBooking(bookingId, json); // Update with full server data
           showToast(UI_CONTEXT.REVERTED_TO_PENDING, 'success', 2000);
           publishBookingUpdated(bookingId, 'pending');
         } else {
-          if (prevBooking) {
-            updateBooking(bookingId, {
-              status: prevBooking.status,
-              undo_used_at: prevBooking.undo_used_at,
-              updated_at: prevBooking.updated_at,
-            });
-          }
+          updateBooking(bookingId, {
+            status: prevBooking.status,
+            undo_used_at: prevBooking.undo_used_at ?? null,
+            updated_at: prevBooking.updated_at,
+          });
           showToast(json.error || 'Failed to undo', 'error', 2000);
         }
       } catch {
+        updateBooking(bookingId, {
+          status: prevBooking.status,
+          undo_used_at: prevBooking.undo_used_at,
+          updated_at: prevBooking.updated_at,
+        });
         showToast('Failed to undo', 'error', 2000);
       } finally {
         setProcessingBookingId(null);
@@ -377,7 +438,7 @@ export default function OwnerDashboardPage() {
     },
     [
       processingBookingId,
-      filteredBookings,
+      getBookingById,
       updateBooking,
       setProcessingBookingId,
       showToast,
@@ -388,6 +449,10 @@ export default function OwnerDashboardPage() {
   const handleUndoReject = useCallback(
     async (bookingId: string) => {
       if (processingBookingId) return;
+
+      const prevBooking = getBookingById(bookingId);
+      if (!prevBooking) return;
+
       setProcessingBookingId(bookingId);
 
       if (undoTimeoutRef.current) {
@@ -395,10 +460,8 @@ export default function OwnerDashboardPage() {
         undoTimeoutRef.current = null;
       }
 
-      const prevBooking = filteredBookings.find((b) => b.id === bookingId);
       updateBooking(bookingId, {
         status: 'pending',
-        undo_used_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
@@ -416,23 +479,34 @@ export default function OwnerDashboardPage() {
 
         if (res.ok) {
           showToast(UI_CONTEXT.REVERTED_TO_PENDING, 'success', 2000);
+          publishBookingUpdated(bookingId, 'pending');
         } else {
-          if (prevBooking) {
-            updateBooking(bookingId, {
-              status: prevBooking.status,
-              undo_used_at: prevBooking.undo_used_at,
-              updated_at: prevBooking.updated_at,
-            });
-          }
+          updateBooking(bookingId, {
+            status: prevBooking.status,
+            undo_used_at: prevBooking.undo_used_at,
+            updated_at: prevBooking.updated_at,
+          });
           showToast(json.error || 'Failed to undo', 'error', 2000);
         }
       } catch {
+        updateBooking(bookingId, {
+          status: prevBooking.status,
+          undo_used_at: prevBooking.undo_used_at,
+          updated_at: prevBooking.updated_at,
+        });
         showToast('Failed to undo', 'error', 2000);
       } finally {
         setProcessingBookingId(null);
       }
     },
-    [processingBookingId, filteredBookings, updateBooking, setProcessingBookingId, showToast]
+    [
+      processingBookingId,
+      getBookingById,
+      updateBooking,
+      setProcessingBookingId,
+      showToast,
+      publishBookingUpdated,
+    ]
   );
 
   const handleBookingRescheduled = useCallback(() => {
@@ -614,6 +688,7 @@ const BookingTableRow = memo(function BookingTableRow({
   const isSlotExpired = booking.slot
     ? new Date(`${booking.slot.date}T${booking.slot.end_time}`) <= new Date()
     : false;
+
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
@@ -641,7 +716,11 @@ const BookingTableRow = memo(function BookingTableRow({
         <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        {booking.review ? `${booking.review.rating} ★` : '—'}
+        {booking.review?.rating ? (
+          <StarRating value={booking.review.rating} readonly size="sm" />
+        ) : (
+          '—'
+        )}
       </td>
       <td className="px-6 py-4 text-sm font-medium">
         <div className="flex flex-wrap gap-2 items-center">
@@ -681,6 +760,7 @@ const BookingTableRow = memo(function BookingTableRow({
             }
             return null;
           })()}
+
           {booking.status === 'confirmed' && (
             <>
               <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
@@ -702,6 +782,7 @@ const BookingTableRow = memo(function BookingTableRow({
               )}
             </>
           )}
+
           {booking.status === 'rejected' && canUndo(booking) && (
             <>
               <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-900">
@@ -718,6 +799,7 @@ const BookingTableRow = memo(function BookingTableRow({
               </button>
             </>
           )}
+
           {(booking.status === 'rejected' && !canUndo(booking)) ||
           booking.status === 'cancelled' ||
           String(booking.status) === 'expired' ? (

@@ -118,8 +118,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
 
             {ratingAvg != null && ratingAvg > 0 && (
               <div className="flex items-center gap-1 mt-1">
-                <StarRating value={Math.round(ratingAvg)} readonly size="sm" />
-
+                <StarRating value={ratingAvg} readonly size="sm" />
                 <span className="text-sm font-semibold text-gray-800">{ratingAvg.toFixed(1)}</span>
               </div>
             )}
