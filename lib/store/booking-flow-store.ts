@@ -1,7 +1,9 @@
 'use client';
 
 import { create } from 'zustand';
+import { PHONE_DIGITS } from '@/config/constants';
 import type { PublicBusiness, Slot } from '@/types';
+import type { BookingSuccessData } from '@/components/booking/booking-success-view';
 
 interface BookingFlowState {
   business: PublicBusiness | null;
@@ -24,11 +26,7 @@ interface BookingFlowState {
   error: string | null;
   slotValidationError: string | null;
 
-  success: {
-    bookingId: string;
-    whatsappUrl: string;
-    bookingStatusUrl?: string;
-  } | null;
+  success: BookingSuccessData | null;
 
   setBusiness: (business: PublicBusiness | null) => void;
   setBusinessSlug: (slug: string) => void;
@@ -36,6 +34,7 @@ interface BookingFlowState {
   setSelectedDate: (date: string) => void;
   setSelectedSlot: (slot: Slot | null) => void;
   setSlots: (slots: Slot[]) => void;
+  updateSlot: (slotId: string, updates: Partial<Slot>) => void;
   cacheSlots: (date: string, slots: Slot[]) => void;
   getCachedSlots: (date: string) => Slot[] | undefined;
   addClosedDate: (date: string) => void;
@@ -53,9 +52,7 @@ interface BookingFlowState {
   setError: (error: string | null) => void;
   setSlotValidationError: (error: string | null) => void;
 
-  setSuccess: (
-    data: { bookingId: string; whatsappUrl: string; bookingStatusUrl?: string } | null
-  ) => void;
+  setSuccess: (data: BookingSuccessData | null) => void;
 
   clearSelection: () => void;
   clearForm: () => void;
@@ -102,13 +99,34 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
       slotValidationError: null,
       error: null,
       slots: cached ?? [],
-      dateLoading: cached === undefined, // Only true if uncached (undefined)
+      dateLoading: cached === undefined,
     });
   },
 
   setSelectedSlot: (selectedSlot) => set({ selectedSlot, slotValidationError: null }),
 
   setSlots: (slots) => set({ slots }),
+
+  updateSlot: (slotId, updates) =>
+    set((state) => {
+      const nextSlots = state.slots.map((slot) =>
+        slot.id === slotId ? { ...slot, ...updates } : slot
+      );
+
+      const nextCache = new Map(state.slotCache);
+      nextCache.set(state.selectedDate, nextSlots);
+
+      const nextSelectedSlot =
+        state.selectedSlot?.id === slotId
+          ? { ...state.selectedSlot, ...updates }
+          : state.selectedSlot;
+
+      return {
+        slots: nextSlots,
+        slotCache: nextCache,
+        selectedSlot: nextSelectedSlot,
+      };
+    }),
 
   cacheSlots: (date, slots) =>
     set((state) => {
@@ -142,7 +160,10 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
 
   setCustomerName: (customerName) => set({ customerName }),
 
-  setCustomerPhone: (customerPhone) => set({ customerPhone }),
+  setCustomerPhone: (customerPhone) =>
+    set({
+      customerPhone: customerPhone.replace(/\D/g, '').slice(-PHONE_DIGITS),
+    }),
 
   setIsLoading: (isLoading) => set({ isLoading }),
 

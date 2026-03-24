@@ -1,20 +1,20 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { API_ROUTES } from '@/config/constants';
 import { Salon, Slot } from '@/types';
-import { formatDate, formatTime, formatPhoneNumber } from '@/lib/utils/string';
+import { formatDate, formatTime } from '@/lib/utils/string';
 import { isTimeInRange } from '@/lib/utils/time';
 import { logError } from '@/lib/utils/error-handler';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { isValidUUID } from '@/lib/utils/security';
 import { isShopClosedForSelectedDate, getLocalTodayStr } from '@/components/booking/booking-utils';
-
+import { useBookingFlowStore } from '@/lib/store/booking-flow-store';
 import { RedirectSkeleton } from '@/components/ui/skeleton';
 import CheckIcon from '@/src/icons/check.svg';
 import ChevronLeftIcon from '@/src/icons/chevron-left.svg';
@@ -28,29 +28,46 @@ import InfoIcon from '@/src/icons/info.svg';
 export default function SalonDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const salonId = typeof params?.salonId === 'string' ? params.salonId : '';
+
   const [salon, setSalon] = useState<Salon | null>(null);
-  const [slots, setSlots] = useState<Slot[]>([]);
-  const [closedMessage, setClosedMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ whatsappUrl?: string } | false>(false);
+
   const [nameError, setNameError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [touchedName, setTouchedName] = useState(false);
   const [touchedPhone, setTouchedPhone] = useState(false);
   const [isShopClosedToday, setIsShopClosedToday] = useState(false);
 
+  const slots = useBookingFlowStore((s) => s.slots);
+  const setSlots = useBookingFlowStore((s) => s.setSlots);
+  const updateSlot = useBookingFlowStore((s) => s.updateSlot);
+  const closedMessage = useBookingFlowStore((s) => s.closedMessage);
+  const setClosedMessage = useBookingFlowStore((s) => s.setClosedMessage);
+  const loadingSlots = useBookingFlowStore((s) => s.dateLoading);
+  const setLoadingSlots = useBookingFlowStore((s) => s.setDateLoading);
+  const submitting = useBookingFlowStore((s) => s.submitting);
+  const setSubmitting = useBookingFlowStore((s) => s.setSubmitting);
+  const selectedSlot = useBookingFlowStore((s) => s.selectedSlot);
+  const setSelectedSlot = useBookingFlowStore((s) => s.setSelectedSlot);
+  const selectedDate = useBookingFlowStore((s) => s.selectedDate);
+  const setSelectedDate = useBookingFlowStore((s) => s.setSelectedDate);
+  const customerName = useBookingFlowStore((s) => s.customerName);
+  const setCustomerName = useBookingFlowStore((s) => s.setCustomerName);
+  const customerPhone = useBookingFlowStore((s) => s.customerPhone);
+  const setCustomerPhone = useBookingFlowStore((s) => s.setCustomerPhone);
+  const error = useBookingFlowStore((s) => s.error);
+  const setError = useBookingFlowStore((s) => s.setError);
+  const success = useBookingFlowStore((s) => s.success);
+  const setSuccess = useBookingFlowStore((s) => s.setSuccess);
+  const resetBookingFlow = useBookingFlowStore((s) => s.reset);
+
   useEffect(() => {
-    // Fetch CSRF token on page load
+    resetBookingFlow();
+  }, [salonId, resetBookingFlow]);
+
+  useEffect(() => {
     getCSRFToken().catch(console.error);
   }, []);
 
@@ -63,26 +80,19 @@ export default function SalonDetailPage() {
 
     const fetchSalon = async () => {
       try {
-        // Check if salonId is a UUID or a booking_link
         const isUUID = isValidUUID(salonId);
-
-        // Get token from URL params with proper decoding
         const tokenParam = searchParams?.get('token');
         let token = tokenParam ? decodeURIComponent(tokenParam) : null;
 
-        // Only generate secure URLs for UUIDs (not booking links)
         if (isUUID && (!token || token === 'pending')) {
-          // Try to generate a new secure URL for UUID
           try {
             const { getSecureSalonUrlClient } = await import('@/lib/utils/navigation');
             const secureUrl = await getSecureSalonUrlClient(salonId);
             if (secureUrl && secureUrl !== `/salon/${salonId}?token=pending`) {
-              // Extract token from the secure URL before redirecting
               const urlMatch = secureUrl.match(/[?&]token=([^&]+)/);
               if (urlMatch) {
                 token = decodeURIComponent(urlMatch[1]);
               }
-              // Redirect to secure URL
               router.replace(secureUrl);
             }
           } catch (urlError) {
@@ -90,12 +100,10 @@ export default function SalonDetailPage() {
           }
         }
 
-        // For UUIDs, token is required. For booking links, token is optional
         if (isUUID && (!token || token === 'pending')) {
           throw new Error('Access token is required. Please use a valid booking link.');
         }
 
-        // Build API URL - include token only if it exists and is not 'pending'
         let apiUrl = `/api/salons/${salonId}`;
         if (token && token !== 'pending') {
           const encodedToken = encodeURIComponent(token);
@@ -109,7 +117,6 @@ export default function SalonDetailPage() {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 403) {
-            // If token is invalid and we haven't retried, try generating a new one (only for UUIDs)
             if (isUUID && retryCount < maxRetries) {
               retryCount++;
               try {
@@ -119,8 +126,8 @@ export default function SalonDetailPage() {
                   router.push(secureUrl);
                   return;
                 }
-              } catch (retryError) {
-                // Fall through to error
+              } catch {
+                // ignore
               }
             }
             throw new Error('Invalid access token. Please use a valid booking link.');
@@ -136,7 +143,7 @@ export default function SalonDetailPage() {
           const data = result.data as Salon & { booking_link?: string };
           setSalon(data);
           setError(null);
-          // Canonical booking entry: redirect to /b/[bookingLink] only (one mental model)
+
           if (data.booking_link) {
             const tokenParam = searchParams?.get('token');
             const q = tokenParam ? `?token=${encodeURIComponent(tokenParam)}` : '';
@@ -161,7 +168,7 @@ export default function SalonDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [salonId, searchParams, router]);
+  }, [salonId, searchParams, router, setError]);
 
   useEffect(() => {
     if (!salon || !selectedDate) return;
@@ -171,6 +178,7 @@ export default function SalonDetailPage() {
       setError(null);
       setSelectedSlot(null);
       setClosedMessage(null);
+
       try {
         const response = await fetch(
           `${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${selectedDate}`
@@ -195,7 +203,6 @@ export default function SalonDetailPage() {
         const result = await response.json();
 
         if (result.success && result.data) {
-          // Detect server-side closed / holiday state
           if (result.data.closed) {
             setClosedMessage(result.data.message || 'Shop is closed on this day.');
             setSlots([]);
@@ -231,7 +238,7 @@ export default function SalonDetailPage() {
     };
 
     fetchSlots();
-  }, [salon, selectedDate]);
+  }, [salon, selectedDate, setLoadingSlots, setError, setSelectedSlot, setClosedMessage, setSlots]);
 
   useEffect(() => {
     const today = getLocalTodayStr();
@@ -240,7 +247,7 @@ export default function SalonDetailPage() {
     if (salon?.closing_time) {
       setIsShopClosedToday(isShopClosedForSelectedDate(today, salon.closing_time));
     }
-  }, [salon]);
+  }, [salon, setSelectedDate]);
 
   useEffect(() => {
     if (salon?.closing_time) {
@@ -256,26 +263,16 @@ export default function SalonDetailPage() {
   };
 
   const validateName = (name: string): string | null => {
-    if (!name.trim()) {
-      return 'Name is required';
-    }
-    if (name.trim().length < 2) {
-      return 'Name must be at least 2 characters';
-    }
-    if (name.trim().length > 100) {
-      return 'Name must be less than 100 characters';
-    }
+    if (!name.trim()) return 'Name is required';
+    if (name.trim().length < 2) return 'Name must be at least 2 characters';
+    if (name.trim().length > 100) return 'Name must be less than 100 characters';
     return null;
   };
 
   const validatePhone = (phone: string): string | null => {
-    if (!phone.trim()) {
-      return 'Phone number is required';
-    }
-    const cleaned = phone.replace(/\s/g, '');
-    if (!/^\+?[1-9]\d{9,14}$/.test(cleaned)) {
-      return 'Please enter a valid phone number';
-    }
+    const cleaned = phone.replace(/\D/g, '');
+    if (!cleaned) return 'Phone number is required';
+    if (cleaned.length !== 10) return 'Phone number must be 10 digits';
     return null;
   };
 
@@ -288,23 +285,11 @@ export default function SalonDetailPage() {
   };
 
   const handlePhoneChange = (value: string) => {
-    const cleaned = value.replace(/\D/g, '');
-    let formatted = cleaned;
-
-    if (cleaned.length > 0 && !cleaned.startsWith('+')) {
-      if (cleaned.length <= 10) {
-        formatted = cleaned;
-      } else if (cleaned.startsWith('91') && cleaned.length === 12) {
-        formatted = `+${cleaned}`;
-      } else {
-        formatted = `+91${cleaned.slice(-10)}`;
-      }
-    }
-
-    setCustomerPhone(formatted);
+    const cleaned = value.replace(/\D/g, '').slice(-10);
+    setCustomerPhone(cleaned);
     setError(null);
     if (touchedPhone) {
-      setPhoneError(validatePhone(formatted));
+      setPhoneError(validatePhone(cleaned));
     }
   };
 
@@ -330,7 +315,7 @@ export default function SalonDetailPage() {
 
     setSubmitting(true);
     setError(null);
-    setSuccess(false);
+    setSuccess(null);
 
     try {
       const csrfToken = await getCSRFToken();
@@ -350,7 +335,7 @@ export default function SalonDetailPage() {
           salon_id: salon.id,
           slot_id: selectedSlot.id,
           customer_name: customerName.trim(),
-          customer_phone: formatPhoneNumber(customerPhone.trim()),
+          customer_phone: customerPhone.trim(),
         }),
       });
 
@@ -369,14 +354,16 @@ export default function SalonDetailPage() {
       const result = await response.json();
 
       if (result.success && result.data) {
-        setSuccess({ whatsappUrl: result.data.whatsapp_url });
-        // Optimistically mark the booked slot as unavailable
+        setSuccess({
+          bookingId: result.data.booking_id,
+          whatsappUrl: result.data.whatsapp_url,
+          bookingStatusUrl: result.data.booking_status_url,
+        });
         if (selectedSlot) {
-          setSlots((prev) =>
-            prev.map((s) => (s.id === selectedSlot.id ? { ...s, status: 'booked' as const } : s))
-          );
+          updateSlot(selectedSlot.id, { status: 'booked' });
           setSelectedSlot(null);
         }
+
         if (result.data.whatsapp_url) {
           setTimeout(() => {
             window.open(result.data.whatsapp_url, '_blank');
@@ -404,18 +391,10 @@ export default function SalonDetailPage() {
         stack: err instanceof Error ? err.stack : undefined,
       });
       setError(errorMessage);
-      clearCSRFToken(); // Clear token on error to force refresh
+      clearCSRFToken();
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const getTodayDateString = (): string => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   };
 
   const availableDates = useMemo(() => {
@@ -430,6 +409,7 @@ export default function SalonDetailPage() {
       const day = String(date.getDate()).padStart(2, '0');
       dates.push(`${year}-${month}-${day}`);
     }
+
     return dates;
   }, []);
 
@@ -461,7 +441,6 @@ export default function SalonDetailPage() {
 
   if (!salon) return null;
 
-  // Canonical booking: do not show form on /salon; redirect to /b/[bookingLink] only
   if ((salon as Salon & { booking_link?: string }).booking_link) {
     return (
       <>
@@ -793,6 +772,7 @@ export default function SalonDetailPage() {
               <div className="space-y-4 pt-6 border-t border-gray-200">
                 <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
                   <h3 className="text-base font-semibold text-gray-900 mb-4">Your Details</h3>
+
                   <div>
                     <label
                       htmlFor="customer_name"
@@ -851,7 +831,10 @@ export default function SalonDetailPage() {
                           setTouchedPhone(true);
                           setPhoneError(validatePhone(customerPhone));
                         }}
-                        placeholder="+91 9876543210"
+                        placeholder="9876543210"
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="[0-9]{10}"
                         className={`w-full ${phoneError && touchedPhone ? 'border-red-300 focus:ring-red-500' : ''}`}
                       />
                       {customerPhone && !phoneError && touchedPhone && (

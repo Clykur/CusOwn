@@ -2,37 +2,29 @@
 
 import { memo } from 'react';
 import { PHONE_DIGITS, UI_CUSTOMER } from '@/config/constants';
-import type { Slot } from '@/types';
+import { useBookingFlowStore } from '@/lib/store/booking-flow-store';
 
 interface CustomerBookingFormProps {
-  customerName: string;
-  customerPhone: string;
-  selectedSlot: Slot | null;
-  submitting: boolean;
-  validatingSlot: boolean;
   shopClosed?: boolean;
   shopClosedError?: string | null;
-  error: string | null;
-  slotValidationError: string | null;
-  onNameChange: (value: string) => void;
-  onPhoneChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
 function CustomerBookingFormComponent({
-  customerName,
-  customerPhone,
-  selectedSlot,
-  submitting,
-  validatingSlot,
   shopClosed = false,
   shopClosedError,
-  error,
-  slotValidationError,
-  onNameChange,
-  onPhoneChange,
   onSubmit,
 }: CustomerBookingFormProps) {
+  const customerName = useBookingFlowStore((state) => state.customerName);
+  const customerPhone = useBookingFlowStore((state) => state.customerPhone);
+  const selectedSlot = useBookingFlowStore((state) => state.selectedSlot);
+  const submitting = useBookingFlowStore((state) => state.submitting);
+  const validatingSlot = useBookingFlowStore((state) => state.validatingSlot);
+  const error = useBookingFlowStore((state) => state.error);
+  const slotValidationError = useBookingFlowStore((state) => state.slotValidationError);
+  const setCustomerName = useBookingFlowStore((state) => state.setCustomerName);
+  const setCustomerPhone = useBookingFlowStore((state) => state.setCustomerPhone);
+
   const displayError = shopClosedError || error || slotValidationError;
 
   return (
@@ -45,12 +37,13 @@ function CustomerBookingFormComponent({
           type="text"
           id="customer_name"
           value={customerName}
-          onChange={(e) => onNameChange(e.target.value)}
+          onChange={(e) => setCustomerName(e.target.value)}
           required
           className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
           placeholder={UI_CUSTOMER.PLACEHOLDER_NAME}
         />
       </div>
+
       <div>
         <label htmlFor="customer_phone" className="block text-sm font-medium text-slate-700 mb-2">
           {UI_CUSTOMER.LABEL_PHONE_NUMBER} <span className="text-slate-900">*</span>
@@ -59,7 +52,7 @@ function CustomerBookingFormComponent({
           type="tel"
           id="customer_phone"
           value={customerPhone}
-          onChange={(e) => onPhoneChange(e.target.value.replace(/\D/g, '').slice(0, PHONE_DIGITS))}
+          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(-PHONE_DIGITS))}
           required
           maxLength={PHONE_DIGITS}
           pattern="[0-9]{10}"
@@ -69,11 +62,13 @@ function CustomerBookingFormComponent({
           placeholder={UI_CUSTOMER.PLACEHOLDER_PHONE}
         />
       </div>
+
       {displayError && (
         <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
           {displayError}
         </div>
       )}
+
       <button
         type="submit"
         disabled={submitting || !selectedSlot || validatingSlot || shopClosed}
