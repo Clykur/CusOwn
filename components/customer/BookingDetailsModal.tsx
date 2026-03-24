@@ -192,22 +192,22 @@ export default function BookingDetailsModal({
 
   /* ---------------- SLOT TIME CHECK ---------------- */
 
-  const slotStart = useMemo(() => {
-    if (!booking.slot?.date || !booking.slot?.start_time) return null;
+  const slotEnd = useMemo(() => {
+    if (!booking.slot?.date || !booking.slot?.end_time) return null;
 
-    const startTimeRaw = String(booking.slot.start_time);
+    const endTimeRaw = String(booking.slot.end_time);
 
-    const d = startTimeRaw.includes('T')
-      ? new Date(startTimeRaw)
-      : new Date(`${booking.slot.date}T${startTimeRaw}`);
+    const d = endTimeRaw.includes('T')
+      ? new Date(endTimeRaw)
+      : new Date(`${booking.slot.date}T${endTimeRaw}`);
 
     return Number.isFinite(d.getTime()) ? d : null;
-  }, [booking.slot?.date, booking.slot?.start_time]);
+  }, [booking.slot?.date, booking.slot?.end_time]);
 
   const slotTimeExpired = useMemo(() => {
-    if (!slotStart) return false;
-    return slotStart.getTime() <= Date.now();
-  }, [slotStart]);
+    if (!slotEnd) return false;
+    return slotEnd.getTime() <= Date.now();
+  }, [slotEnd]);
 
   const cancelledByCustomer = booking.status === 'cancelled' && booking.cancelled_by === 'customer';
 
@@ -353,9 +353,13 @@ export default function BookingDetailsModal({
 
         <div className="mt-6">
           <button
-            onClick={() => whatsappUrl && window.open(whatsappUrl, '_blank')}
+            type="button"
+            onClick={() => {
+              if (!whatsappUrl || disableWhatsApp || whatsappLoading) return;
+              window.open(whatsappUrl, '_blank');
+            }}
             disabled={disableWhatsApp || whatsappLoading || !whatsappUrl}
-            className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-white"
+            className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {UI_CUSTOMER.CTA_OPEN_WHATSAPP}
           </button>

@@ -29,7 +29,9 @@ import {
 import { dedupFetch, cancelRequests, cancelDebounce } from '@/lib/utils/fetch-dedup';
 import { useBookingFlowStore, selectAvailableSlots } from '@/lib/store';
 
-import type { BookingSuccessData } from './booking-success-view';
+import SlotSelectionGrid from './slot-selection-grid';
+import CustomerBookingForm from './customer-booking-form';
+import BookingSuccessView from './booking-success-view';
 
 const CalendarGrid = dynamic(() => import('@/components/booking/calendar-grid'), {
   loading: () => (
@@ -37,35 +39,6 @@ const CalendarGrid = dynamic(() => import('@/components/booking/calendar-grid'),
       {Array.from({ length: 14 }).map((_, i) => (
         <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
       ))}
-    </div>
-  ),
-});
-
-const SlotSelectionGrid = dynamic(() => import('./slot-selection-grid'), {
-  loading: () => <SlotGridSkeleton />,
-});
-
-const CustomerBookingForm = dynamic(() => import('./customer-booking-form'), {
-  loading: () => (
-    <div className="space-y-4 animate-pulse" aria-busy="true">
-      <div className="h-4 bg-slate-200 rounded w-24" />
-      <div className="h-11 bg-slate-200 rounded-lg" />
-      <div className="h-4 bg-slate-200 rounded w-28" />
-      <div className="h-11 bg-slate-200 rounded-lg" />
-      <div className="h-12 bg-slate-200 rounded-lg" />
-    </div>
-  ),
-});
-
-const BookingSuccessView = dynamic(() => import('./booking-success-view'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full animate-pulse">
-      <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
-        <div className="w-16 h-16 bg-slate-200 rounded-full mx-auto mb-4" />
-        <div className="h-6 bg-slate-200 rounded w-48 mx-auto mb-2" />
-        <div className="h-4 bg-slate-200 rounded w-64 mx-auto" />
-      </div>
     </div>
   ),
 });
@@ -483,10 +456,7 @@ export default function PublicBookingPage({
         return;
       }
     } else {
-      // Only show loading after a short delay to avoid flicker on rapid clicks
-      loadingTimerId = setTimeout(() => {
-        if (!cancelled) setDateLoading(true);
-      }, 100);
+      setDateLoading(true);
     }
 
     setClosedMessage(null);
@@ -497,7 +467,6 @@ export default function PublicBookingPage({
       credentials: 'include',
       dedupKey: `slots:${business.id}:${selectedDate}`,
       cancelPrevious: true,
-      debounceMs: 150,
     })
       .then((res) => res.json())
       .then((result) => {
@@ -742,9 +711,31 @@ export default function PublicBookingPage({
   const handleDateChange = useCallback(
     (newDate: string) => {
       if (newDate === selectedDate) return;
+
       setSelectedDate(newDate);
+      setSelectedSlot(null);
+      setClosedMessage(null);
+      setError(null);
+
+      const cached = slotCache.get(newDate);
+      if (cached) {
+        setSlots(cached);
+        setDateLoading(false);
+        return;
+      }
+
+      setDateLoading(true);
     },
-    [selectedDate, setSelectedDate]
+    [
+      selectedDate,
+      slotCache,
+      setSelectedDate,
+      setSelectedSlot,
+      setClosedMessage,
+      setError,
+      setSlots,
+      setDateLoading,
+    ]
   );
 
   const { businessOpenHour, businessCloseHour } = useMemo(
@@ -842,32 +833,15 @@ export default function PublicBookingPage({
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                 <SlotSelectionGrid
-                  slots={filteredSlots}
-                  selectedSlot={selectedSlot}
-                  closedMessage={closedMessage}
                   isTodayClosed={isTodayClosed}
                   closingTime={business?.closing_time}
-                  validatingSlot={validatingSlot}
-                  submitting={submitting}
-                  dateLoading={dateLoading}
                   onSlotSelect={handleSlotSelect}
                 />
               </div>
             </div>
           )}
 
-          <CustomerBookingForm
-            customerName={customerName}
-            customerPhone={customerPhone}
-            selectedSlot={selectedSlot}
-            submitting={submitting}
-            validatingSlot={validatingSlot}
-            error={error}
-            slotValidationError={slotValidationError}
-            onNameChange={setCustomerName}
-            onPhoneChange={setCustomerPhone}
-            onSubmit={handleSubmit}
-          />
+          <CustomerBookingForm onSubmit={handleSubmit} />
         </div>
       </div>
     </div>

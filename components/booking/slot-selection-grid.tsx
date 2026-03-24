@@ -3,47 +3,35 @@
 import { memo } from 'react';
 import { UI_CUSTOMER } from '@/config/constants';
 import { formatTime } from '@/lib/utils/string';
+import { useBookingFlowStore } from '@/lib/store/booking-flow-store';
 import type { Slot } from '@/types';
 
 interface SlotSelectionGridProps {
-  slots: Slot[];
-  selectedSlot: Slot | null;
-  closedMessage: string | null;
   isTodayClosed: boolean;
   closingTime?: string;
-  validatingSlot: boolean;
-  submitting: boolean;
-  dateLoading?: boolean;
-  onSlotSelect: (slot: Slot) => void;
+  onSlotSelect?: (slot: Slot) => void;
 }
 
 function SlotSelectionGridComponent({
-  slots,
-  selectedSlot,
-  closedMessage,
   isTodayClosed,
   closingTime,
-  validatingSlot,
-  submitting,
-  dateLoading,
   onSlotSelect,
 }: SlotSelectionGridProps) {
+  const slots = useBookingFlowStore((state) => state.slots);
+  const selectedSlot = useBookingFlowStore((state) => state.selectedSlot);
+  const closedMessage = useBookingFlowStore((state) => state.closedMessage);
+  const validatingSlot = useBookingFlowStore((state) => state.validatingSlot);
+  const submitting = useBookingFlowStore((state) => state.submitting);
+  const dateLoading = useBookingFlowStore((state) => state.dateLoading);
+
+  const setSelectedSlot = useBookingFlowStore((state) => state.setSelectedSlot);
+  const setError = useBookingFlowStore((state) => state.setError);
+  const setSlotValidationError = useBookingFlowStore((state) => state.setSlotValidationError);
+
   if (closedMessage) {
     return (
       <div className="col-span-full text-center py-6">
         <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm font-medium">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 flex-shrink-0"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
           {closedMessage}
         </div>
       </div>
@@ -59,10 +47,7 @@ function SlotSelectionGridComponent({
     );
   }
 
-  // Always show slots (optimistic UI)
-  const showLoadingOverlay = dateLoading && slots.length === 0;
-
-  if (showLoadingOverlay) {
+  if (dateLoading && slots.length === 0) {
     return (
       <div className="col-span-full flex items-center justify-center py-6">
         <div className="flex items-center gap-2 text-slate-500">
@@ -84,11 +69,18 @@ function SlotSelectionGridComponent({
       {slots.map((slot) => {
         const isSelected = selectedSlot?.id === slot.id;
         const isBooked = slot.status === 'booked';
+
         return (
           <button
             key={slot.id}
             type="button"
-            onClick={() => onSlotSelect(slot)}
+            onClick={() => {
+              if (isBooked) return;
+              setSelectedSlot(slot);
+              setError(null);
+              setSlotValidationError(null);
+              onSlotSelect?.(slot);
+            }}
             disabled={isBooked || validatingSlot || submitting}
             className={`px-3 sm:px-4 py-2 text-sm sm:text-base rounded-xl border-2 transition-all duration-150 active:scale-[0.97] ${
               isBooked

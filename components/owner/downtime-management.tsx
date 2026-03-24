@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import { formatDate } from '@/lib/utils/string';
 import CreateBusinessIcon from '@/src/icons/create-business.svg';
+import DateFilter from '@/components/owner/date-filter';
 
 interface Holiday {
   id: string;
@@ -54,16 +55,13 @@ function DowntimeManagementComponent({
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-lg p-4 lg:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Holidays</h3>
+
         <div className="space-y-3 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Holiday Date</label>
-            <input
-              type="date"
-              value={newHolidayDate}
-              onChange={(e) => onHolidayDateChange(e.target.value)}
-              className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-            />
+            <DateFilter value={newHolidayDate} onChange={onHolidayDateChange} />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Holiday Name (Optional)
@@ -76,6 +74,7 @@ function DowntimeManagementComponent({
               placeholder="e.g., New Year"
             />
           </div>
+
           <button
             onClick={onAddHoliday}
             disabled={!newHolidayDate}
@@ -85,6 +84,7 @@ function DowntimeManagementComponent({
             Add Holiday
           </button>
         </div>
+
         {holidays.length > 0 && (
           <div className="space-y-2">
             {holidays.map((holiday) => (
@@ -106,25 +106,18 @@ function DowntimeManagementComponent({
 
       <div className="bg-white border border-gray-200 rounded-lg p-4 lg:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Closures</h3>
+
         <div className="space-y-3 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-            <input
-              type="date"
-              value={newClosureStart}
-              onChange={(e) => onClosureStartChange(e.target.value)}
-              className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-            />
+            <DateFilter value={newClosureStart} onChange={onClosureStartChange} />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-            <input
-              type="date"
-              value={newClosureEnd}
-              onChange={(e) => onClosureEndChange(e.target.value)}
-              className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-base"
-            />
+            <DateFilter value={newClosureEnd} onChange={onClosureEndChange} />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Reason (Optional)
@@ -137,6 +130,7 @@ function DowntimeManagementComponent({
               placeholder="e.g., Maintenance"
             />
           </div>
+
           <button
             onClick={onAddClosure}
             disabled={!newClosureStart || !newClosureEnd}
@@ -146,6 +140,7 @@ function DowntimeManagementComponent({
             Add Closure
           </button>
         </div>
+
         {closures.length > 0 && (
           <div className="space-y-2">
             {closures.map((closure) => (
