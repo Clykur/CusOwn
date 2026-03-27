@@ -7,6 +7,7 @@ import DashboardIcon from '@/src/icons/dashboard.svg';
 import BusinessesIcon from '@/src/icons/businesses.svg';
 import AnalyticsIcon from '@/src/icons/analytics.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
+import ServiceIcon from '@/src/icons/service.svg';
 
 interface NavItem {
   name: string;
@@ -30,20 +31,19 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   const isAnalytics = pathname === '/owner/analytics' || pathname?.startsWith('/owner/analytics/');
 
   let activeTab: string | null = null;
+
   if (tabParam) {
     activeTab = tabParam;
-  } else if (pathname === '/owner/businesses' || pathname?.startsWith('/owner/businesses')) {
+  } else if (pathname?.startsWith('/owner/services')) {
+    activeTab = 'services';
+  } else if (pathname?.startsWith('/owner/businesses')) {
     activeTab = 'businesses';
-  } else if (isAnalytics) {
+  } else if (pathname?.startsWith('/owner/analytics')) {
     activeTab = 'analytics';
-  } else if (pathname === ROUTES.OWNER_DASHBOARD_BASE || pathname?.startsWith('/owner/dashboard')) {
+  } else if (pathname?.startsWith('/owner/dashboard')) {
     activeTab = 'dashboard';
-  } else if (isSetup) {
-    activeTab = 'create';
-  } else if (isProfile) {
+  } else if (pathname?.startsWith('/owner/profile')) {
     activeTab = 'profile';
-  } else if (pathname?.startsWith('/owner/')) {
-    activeTab = 'businesses';
   }
 
   const navigation: NavItem[] = [
@@ -58,6 +58,11 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
       icon: BusinessesIcon,
     },
     {
+      name: 'Services',
+      href: '/owner/services',
+      icon: ServiceIcon,
+    },
+    {
       name: 'Analytics',
       href: '/owner/analytics',
       icon: AnalyticsIcon,
@@ -70,15 +75,13 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   ];
 
   const isActive = (href: string) => {
-    if (href === ROUTES.OWNER_SETUP || href === ROUTES.SETUP) return activeTab === 'create';
-    if (href === ROUTES.OWNER_PROFILE || href === '/owner/profile') return activeTab === 'profile';
-    if (href === '/owner/analytics') return activeTab === 'analytics';
-    if (href === '/owner/businesses') return activeTab === 'businesses';
-    const tabMatch = href.match(/\?tab=(.+)$/);
-    if (tabMatch) {
-      return activeTab === tabMatch[1];
-    }
-    return pathname === href;
+    const basePath = href.split('?')[0];
+
+    return (
+      pathname === basePath ||
+      pathname?.startsWith(basePath + '/') ||
+      (href.includes('?tab=') && activeTab === href.split('tab=')[1])
+    );
   };
 
   return (

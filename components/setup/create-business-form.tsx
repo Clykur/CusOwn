@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   SLOT_DURATIONS,
   API_ROUTES,
@@ -16,10 +15,7 @@ import { CreateSalonInput } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
-import OnboardingProgress from '@/components/onboarding/onboarding-progress';
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
-import CheckIcon from '@/src/icons/check.svg';
-import LinkIcon from '@/src/icons/link.svg';
 import { formatPhoneNumber } from '@/lib/utils/string';
 
 export type CreateBusinessFormProps = {
@@ -33,7 +29,6 @@ export type CreateBusinessFormProps = {
 
 export default function CreateBusinessForm({
   redirectAfterSuccess = ROUTES.OWNER_DASHBOARD_BASE,
-  showOnboardingProgress = false,
   embedded = false,
   onSuccess,
 }: CreateBusinessFormProps) {
@@ -56,11 +51,6 @@ export default function CreateBusinessForm({
     latitude: 0,
     longitude: 0,
   });
-  const [success, setSuccess] = useState<{
-    bookingLink: string;
-    bookingUrl: string;
-    qrCode?: string;
-  } | null>(null);
   const [ownerBusinesses, setOwnerBusinesses] = useState<
     { salon_name: string; whatsapp_number: string }[] | null
   >(null);
@@ -198,32 +188,17 @@ export default function CreateBusinessForm({
       }
       const result = await response.json();
       if (result.success && result.data) {
-        setSuccess({
-          bookingLink: result.data.booking_link,
-          bookingUrl: result.data.booking_url,
-          qrCode: result.data.qr_code || undefined,
-        });
-        try {
-          const { clearUserStateCache, getUserState } = await import('@/lib/utils/user-state');
-          clearUserStateCache();
-          const ts = Date.now().toString();
-          localStorage.setItem('business_created', ts);
-          localStorage.setItem('user_state_changed', ts);
-          window.dispatchEvent(new Event('businessCreated'));
-          window.dispatchEvent(new Event('userStateChanged'));
-          if (sessionUser) await getUserState(sessionUser.id, { skipCache: true });
-        } catch (e) {
-          console.warn('[SETUP] Could not notify other tabs:', e);
-        }
-        if (onSuccess) {
-          onSuccess({
-            bookingLink: result.data.booking_link,
-            bookingUrl: result.data.booking_url,
-            qrCode: result.data.qr_code || undefined,
-          });
-        } else {
-          router.push(ROUTES.OWNER_DASHBOARD(result.data.booking_link));
-        }
+        const bookingLink = result.data.booking_link;
+        const bookingUrl = result.data.booking_url;
+        const qrCode = result.data.qr_code;
+
+        // go to services instead of showing success
+        router.push(
+          `/onboarding/services?businessId=${result.data.id}&bookingLink=${bookingLink}&bookingUrl=${encodeURIComponent(
+            bookingUrl
+          )}&qrCode=${encodeURIComponent(qrCode || '')}`
+        );
+        return;
       } else {
         throw new Error(result.error || 'Failed to create business. Please try again.');
       }
@@ -234,10 +209,6 @@ export default function CreateBusinessForm({
     } finally {
       setLoading(false);
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
   };
 
   const handleUseLocation = async () => {
@@ -284,367 +255,12 @@ export default function CreateBusinessForm({
     );
   };
 
-  if (success) {
-    const successContent = (
-      <>
-        <div className="text-center mb-6 md:mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6 animate-pulse">
-            <CheckIcon className="w-10 h-10 md:w-12 md:h-12 text-green-600" aria-hidden="true" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            🎉 Business Created Successfully!
-          </h2>
-          <p className="text-sm md:text-base text-gray-600">
-            Your booking page is ready to share with customers
-          </p>
-        </div>
-        <div className="space-y-4 md:space-y-6">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 rounded-xl p-4 md:p-6">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-              <LinkIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
-              Your Booking Link
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={success.bookingUrl}
-                readOnly
-                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg bg-white text-sm font-mono focus:ring-2 focus:ring-black focus:border-black"
-              />
-              <button
-                onClick={() => {
-                  copyToClipboard(success.bookingUrl);
-                  alert('Booking link copied to clipboard!');
-                }}
-                className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-900 transition-all text-sm font-semibold whitespace-nowrap shadow-md hover:shadow-lg"
-              >
-                Copy Link
-              </button>
-            </div>
-          </div>
-          {success.qrCode && (
-            <div className="bg-white border-2 border-gray-300 rounded-xl p-4 md:p-6">
-              <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-3">
-                QR Code
-              </h3>
-              <div className="flex flex-col items-center space-y-5">
-                <div className="bg-white p-5 rounded-xl border-2 border-gray-200 shadow-md relative w-48 h-48">
-                  <Image
-                    src={success.qrCode}
-                    alt="QR Code"
-                    fill
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    if (!success.qrCode) return;
-                    const link = document.createElement('a');
-                    link.href = success.qrCode!;
-                    link.download = `${success.bookingLink}-qr-code.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                  className="w-full bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-900 transition-all"
-                >
-                  Download QR Code
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="flex gap-3 pt-3">
-            <Link href={getOwnerDashboardUrl(success.bookingLink)} className="flex-1">
-              <button className="w-full bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-900">
-                Go to Dashboard
-              </button>
-            </Link>
-            <Link href={redirectAfterSuccess} className="flex-1">
-              <button className="w-full bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-xl hover:bg-gray-300">
-                All Businesses
-              </button>
-            </Link>
-          </div>
-        </div>
-      </>
-    );
-    if (embedded) {
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 md:p-8">
-          {successContent}
-        </div>
-      );
-    }
-    return (
-      <div className="min-h-screen bg-white flex">
-        <div className="flex-1">
-          <div className="mx-auto max-w-4xl px-2 py-6 sm:px-6 lg:px-8">
-            {showOnboardingProgress && (
-              <OnboardingProgress
-                currentStep={3}
-                totalSteps={3}
-                steps={['Choose Role', 'Sign In', 'Create Business']}
-              />
-            )}
-            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-2 mt-4">{successContent}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const inputClass =
-    'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-slate-400 focus:border-slate-400';
-  const labelClass = 'block text-sm font-medium text-slate-700 mb-1';
-
-  const formContentSimple = (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-slate-500 mb-4">
-        You can add more businesses later; each gets its own booking link and QR code.
-      </p>
-      <div>
-        <label htmlFor="salon_name" className={labelClass}>
-          Business name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="salon_name"
-          name="salon_name"
-          value={formData.salon_name}
-          onChange={handleChange}
-          required
-          minLength={2}
-          maxLength={100}
-          className={inputClass}
-          placeholder="e.g. Elite Salon"
-        />
-      </div>
-      <div>
-        <label htmlFor="category" className={labelClass}>
-          Business type <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="category"
-          name="category"
-          value={
-            businessCategories.some((c) => c.value === (formData.category ?? 'salon'))
-              ? (formData.category ?? 'salon')
-              : (businessCategories[0]?.value ?? 'salon')
-          }
-          onChange={handleChange}
-          required
-          className={inputClass}
-        >
-          {businessCategories.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label htmlFor="owner_name" className={labelClass}>
-          Owner name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="owner_name"
-          name="owner_name"
-          value={formData.owner_name}
-          onChange={handleChange}
-          required
-          minLength={2}
-          maxLength={100}
-          className={inputClass}
-          placeholder="e.g. John Doe"
-        />
-      </div>
-      <div>
-        <label htmlFor="whatsapp_number" className={labelClass}>
-          WhatsApp number <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          id="whatsapp_number"
-          name="whatsapp_number"
-          value={formData.whatsapp_number}
-          onChange={handleChange}
-          required
-          pattern="[0-9]{10}"
-          maxLength={VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH}
-          className={inputClass}
-          placeholder="10 digits"
-          inputMode="numeric"
-          autoComplete="tel"
-        />
-        {whatsappReuseHint && (
-          <p className="mt-1.5 text-sm text-gray-600" role="status">
-            {UI_CONTEXT.WHATSAPP_ALREADY_USED_FOR(whatsappReuseHint)}
-          </p>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="opening_time" className={labelClass}>
-            Opening time <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="time"
-            id="opening_time"
-            name="opening_time"
-            value={formData.opening_time.substring(0, 5)}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="closing_time" className={labelClass}>
-            Closing time <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="time"
-            id="closing_time"
-            name="closing_time"
-            value={formData.closing_time.substring(0, 5)}
-            onChange={handleChange}
-            required
-            className={inputClass}
-          />
-        </div>
-      </div>
-      <div>
-        <label htmlFor="slot_duration" className={labelClass}>
-          Appointment duration <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="slot_duration"
-          name="slot_duration"
-          value={formData.slot_duration}
-          onChange={handleChange}
-          required
-          className={inputClass}
-        >
-          {SLOT_DURATIONS.map((d) => (
-            <option key={d} value={d}>
-              {d} min
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className={labelClass}>
-            Business location <span className="text-red-500">*</span>
-          </label>
-          <button
-            type="button"
-            onClick={handleUseLocation}
-            disabled={loading}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
-          >
-            Use my location
-          </button>
-        </div>
-        <div className="space-y-2">
-          <textarea
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-            minLength={5}
-            maxLength={500}
-            rows={2}
-            className={`${inputClass} resize-none`}
-            placeholder="Street address, building, floor"
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="text"
-              name="city"
-              value={formData.city || ''}
-              onChange={handleChange}
-              required
-              className={inputClass}
-              placeholder="City"
-            />
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-              minLength={2}
-              maxLength={100}
-              className={inputClass}
-              placeholder="Area/Locality"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="text"
-              name="area"
-              value={formData.area || ''}
-              onChange={handleChange}
-              maxLength={100}
-              className={inputClass}
-              placeholder="Sub-area (Optional)"
-            />
-            <input
-              type="text"
-              name="pincode"
-              value={formData.pincode || ''}
-              onChange={handleChange}
-              maxLength={10}
-              className={inputClass}
-              placeholder="Pincode (Optional)"
-            />
-          </div>
-          {formData.latitude !== 0 && formData.longitude !== 0 && (
-            <div className="text-[10px] text-slate-500 flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full" />
-              Location pinned: {formData.latitude?.toFixed(4)}, {formData.longitude?.toFixed(4)}
-            </div>
-          )}
-        </div>
-      </div>
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          {error}
-          {error.includes('/b/') && (
-            <Link
-              href={error.match(/\/b\/[^\s]+/)?.[0] || ROUTES.OWNER_DASHBOARD_BASE}
-              className="mt-2 block font-medium underline"
-            >
-              Go to existing business →
-            </Link>
-          )}
-        </div>
-      )}
-      <div className="flex flex-col gap-2 pt-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {loading ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Creating…
-            </>
-          ) : (
-            'Create business'
-          )}
-        </button>
-      </div>
-    </form>
-  );
-
   const formContent = (
     <>
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+        <div className="flex justify-center items-center py-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create Your Business</h1>
+        </div>
         <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
           <p className="text-xs md:text-sm text-blue-800">
             <strong className="font-semibold">Tip:</strong> You can create multiple businesses
@@ -877,7 +493,7 @@ export default function CreateBusinessForm({
               />
             </div>
 
-            {formData.latitude && formData.longitude && (
+            {formData.latitude !== 0 && formData.longitude !== 0 && (
               <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-500">
                 <p className="font-semibold text-gray-700 mb-1">Map Preview (Coordinates)</p>
                 <p>
@@ -927,7 +543,7 @@ export default function CreateBusinessForm({
             <button
               type="button"
               disabled={loading}
-              className="w-full text-gray-600 hover:text-gray-900 text-xs md:text-sm disabled:opacity-50 font-medium"
+              className="w-full text-gray-600 hover:text-gray-900 text-xs md:text-sm disabled:opacity-50 font-medium mt-2"
             >
               Already have a business? Go to Dashboard →
             </button>
@@ -937,25 +553,9 @@ export default function CreateBusinessForm({
     </>
   );
 
-  if (embedded) {
-    return (
-      <div className="bg-white border border-slate-200 rounded-lg p-6">{formContentSimple}</div>
-    );
-  }
   return (
-    <div className="min-h-screen bg-white flex">
-      <div className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-8">
-          {showOnboardingProgress && (
-            <OnboardingProgress
-              currentStep={3}
-              totalSteps={3}
-              steps={['Choose Role', 'Sign In', 'Create Business']}
-            />
-          )}
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">{formContent}</div>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-8">
+      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">{formContent}</div>
     </div>
   );
 }

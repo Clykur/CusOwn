@@ -12,6 +12,7 @@ import BusinessesIcon from '@/src/icons/businesses.svg';
 import AnalyticsIcon from '@/src/icons/analytics.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
 import LogoutIcon from '@/src/icons/logout.svg';
+import ServiceIcon from '@/src/icons/service.svg';
 
 interface NavItem {
   name: string;
@@ -113,6 +114,12 @@ export default function OwnerSidebar({
       icon: BusinessesIcon,
     },
     {
+      name: 'My Services',
+      href: '/owner/services',
+      requiresBusiness: true,
+      icon: ServiceIcon,
+    },
+    {
       name: 'Analytics',
       href: '/owner/analytics',
       requiresBusiness: true,
@@ -123,31 +130,8 @@ export default function OwnerSidebar({
   const navigation =
     hasBusinesses === false ? navItems.filter((i) => !i.requiresBusiness) : navItems;
 
-  const isActive = (name: string) => {
-    if (name === 'Dashboard') {
-      return cleanPath === '/owner/dashboard';
-    }
-
-    if (name === 'My Businesses') {
-      return (
-        cleanPath === '/owner/businesses' ||
-        (cleanPath.startsWith('/owner/') &&
-          cleanPath !== '/owner/dashboard' &&
-          cleanPath !== '/owner/setup' &&
-          cleanPath !== '/owner/profile' &&
-          !cleanPath.startsWith('/owner/analytics'))
-      );
-    }
-
-    if (name === 'Analytics') {
-      return cleanPath === '/owner/analytics';
-    }
-
-    if (name === 'Profile') {
-      return cleanPath === '/owner/profile';
-    }
-
-    return false;
+  const isActive = (href: string) => {
+    return cleanPath === href || cleanPath.startsWith(href + '/');
   };
 
   return (
@@ -176,7 +160,7 @@ export default function OwnerSidebar({
 
           <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
             {navigation.map((item) => {
-              const active = isActive(item.name);
+              const active = isActive(item.href);
               return (
                 <Link
                   key={item.name}

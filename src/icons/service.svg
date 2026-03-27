@@ -1,0 +1,5 @@
+<!-- scissors.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    d="M14.121 14.121L19 19M4 4l5.879 5.879M14.121 9.879L19 5M4 20l5.879-5.879M6.5 6.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5zm0 15a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+</svg>

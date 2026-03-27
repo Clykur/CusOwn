@@ -183,6 +183,10 @@ function BookingDetailModal({
                 <span className="font-medium text-slate-500">Time:</span>{' '}
                 {slotDate && slotTime ? `${slotDate} · ${slotTime}` : ' '}
               </p>
+              <p className="text-slate-700">
+                <span className="font-medium text-slate-500">Service:</span>{' '}
+                {booking.service_name || '—'}
+              </p>
             </div>
           </div>
         </div>

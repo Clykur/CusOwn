@@ -13,6 +13,7 @@ export type PendingBookingPayload = {
   customer_name: string;
   customer_phone: string;
   exp: number;
+  service_ids?: string[];
 };
 
 const ALG = 'sha256';

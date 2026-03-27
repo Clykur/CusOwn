@@ -136,6 +136,29 @@ export class BookingService {
     };
   }
 
+  private async getServicesForBookings(bookingIds: string[]) {
+    const supabaseAdmin = requireSupabaseAdmin();
+
+    const { data } = await supabaseAdmin
+      .from('booking_services')
+      .select('booking_id, service_id, services(name)')
+      .in('booking_id', bookingIds);
+
+    if (!data || data.length === 0) return new Map();
+
+    const serviceMap = new Map<string, { id: string; name: string }[]>();
+
+    data.forEach((item: any) => {
+      const name = item.services?.name;
+      if (!name) return;
+
+      const existing = serviceMap.get(item.booking_id) ?? [];
+      existing.push({ id: item.service_id, name });
+      serviceMap.set(item.booking_id, existing);
+    });
+
+    return serviceMap;
+  }
   async createBooking(
     data: CreateBookingInput,
     customerUserId?: string,
@@ -249,16 +272,19 @@ export class BookingService {
       return null;
     }
 
-    const [salon, slot, reviewMap] = await Promise.all([
+    const [salon, slot, reviewMap, serviceMap] = await Promise.all([
       salonService.getSalonById(data.business_id),
       slotService.getSlotById(data.slot_id),
       getReviewsByBookingIds([data.id]),
+      this.getServicesForBookings([data.id]),
     ]);
 
     return {
       ...data,
       salon: salon || undefined,
       slot: slot || undefined,
+      service_name: serviceMap.get(data.id)?.[0]?.name ?? undefined,
+      services: serviceMap.get(data.id) ?? [],
       review: reviewMap.get(data.id) ?? undefined,
     };
   });
@@ -292,10 +318,11 @@ export class BookingService {
       return null;
     }
 
-    const [salon, slot, reviewMap] = await Promise.all([
+    const [salon, slot, reviewMap, serviceMap] = await Promise.all([
       salonService.getSalonById(booking.business_id),
       slotService.getSlotById(booking.slot_id),
       getReviewsByBookingIds([booking.id]),
+      this.getServicesForBookings([booking.id]),
     ]);
 
     return {
@@ -303,6 +330,7 @@ export class BookingService {
       salon: salon || undefined,
       slot: slot || undefined,
       review: reviewMap.get(booking.id) ?? undefined,
+      service_name: serviceMap.get(booking.id) ?? undefined,
     };
   }
 
@@ -725,7 +753,7 @@ export class BookingService {
     const slotIds = [...new Set(rows.map((b) => b.slot_id))];
 
     // Parallel: fetch salon, slots, and reviews simultaneously
-    const [salon, slotsData, reviewMap] = await Promise.all([
+    const [salon, slotsData, reviewMap, serviceMap] = await Promise.all([
       salonService.getSalonById(salonId),
       slotIds.length
         ? supabaseAdmin
@@ -734,6 +762,7 @@ export class BookingService {
             .in('id', slotIds)
         : Promise.resolve({ data: [] }),
       getReviewsByBookingIds(rows.map((b) => b.id)),
+      this.getServicesForBookings(rows.map((b) => b.id)),
     ]);
 
     const slotList = (slotsData.data ?? []) as Slot[];
@@ -745,6 +774,7 @@ export class BookingService {
       salon: salon ?? undefined,
       slot: slotMap.get(booking.slot_id) ?? undefined,
       review: reviewMap.get(booking.id) ?? undefined,
+      service_name: serviceMap.get(booking.id) ?? undefined,
     }));
 
     return bookingsWithDetails;
@@ -1063,7 +1093,7 @@ export class BookingService {
 
     // Parallel: fetch businesses, slots, and reviews simultaneously
     // Include deleted_at to detect soft-deleted businesses for UI handling
-    const [businesses, slots, reviewMap] = await Promise.all([
+    const [businesses, slots, reviewMap, services] = await Promise.all([
       businessIds.length
         ? supabaseAdmin
             .from('businesses')
@@ -1072,13 +1102,23 @@ export class BookingService {
             )
             .in('id', businessIds)
         : Promise.resolve({ data: [] }),
+
       slotIds.length
         ? supabaseAdmin
             .from('slots')
             .select('id, business_id, date, start_time, end_time, status, reserved_until')
             .in('id', slotIds)
         : Promise.resolve({ data: [] }),
+
       getReviewsByBookingIds(list.map((b: { id: string }) => b.id)),
+
+      supabaseAdmin
+        .from('booking_services')
+        .select('booking_id, service_id, services(name)')
+        .in(
+          'booking_id',
+          list.map((b: { id: string }) => b.id)
+        ),
     ]);
 
     const salonList = (businesses.data ?? []) as Salon[];
@@ -1087,12 +1127,21 @@ export class BookingService {
     salonList.forEach((s) => salonMap.set(s.id, s));
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
-
+    const serviceMap = new Map<string, { id: string; name: string }[]>();
+    (services.data || []).forEach((item: any) => {
+      const name = item.services?.name;
+      if (!name) return;
+      const existing = serviceMap.get(item.booking_id) ?? [];
+      existing.push({ id: item.service_id, name });
+      serviceMap.set(item.booking_id, existing);
+    });
     const bookingsWithDetails: BookingWithDetails[] = list.map((booking: Booking) => ({
       ...booking,
       salon: salonMap.get(booking.business_id) ?? undefined,
       slot: slotMap.get(booking.slot_id) ?? undefined,
       review: reviewMap.get(booking.id) ?? undefined,
+      service_name: serviceMap.get(booking.id)?.[0]?.name ?? undefined,
+      services: serviceMap.get(booking.id) ?? [],
     }));
 
     return bookingsWithDetails;
