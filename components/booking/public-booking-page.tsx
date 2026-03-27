@@ -122,6 +122,41 @@ export default function PublicBookingPage({
   const slotRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, setTimeTick] = useState(0);
   const restoredFromPendingRef = useRef(false);
+  const [services, setServices] = useState<{ id: string; name: string }[]>([]);
+
+  // ── Multi-select: array instead of single string ──────────────────────────
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+  const toggleService = useCallback((id: string) => {
+    setSelectedServices((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  }, []);
+  // ─────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!business?.id) return;
+
+    const fetchServices = async () => {
+      try {
+        const res = await fetch(`/api/owner/services?businessId=${business.id}`, {
+          credentials: 'include',
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          setServices(data.data);
+        } else {
+          console.error('Services API error:', data);
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err);
+      }
+    };
+
+    fetchServices();
+  }, [business?.id]);
 
   // Initialize from server-side data for instant display
   const initialDataAppliedRef = useRef(false);
@@ -224,6 +259,8 @@ export default function PublicBookingPage({
 
   const handleSlotStatusChange = useCallback(
     (slotId: string, updatedSlot: Slot) => {
+      if (submitting) return; //ignore during booking
+
       const currentSelectedSlot = selectedSlotRef.current;
       if (currentSelectedSlot && currentSelectedSlot.id === slotId) {
         if (updatedSlot.status !== 'available') {
@@ -232,7 +269,7 @@ export default function PublicBookingPage({
         }
       }
     },
-    [setSelectedSlot, setSlotValidationError]
+    [submitting, setSelectedSlot, setSlotValidationError]
   );
 
   useSlotUpdates({
@@ -630,6 +667,12 @@ export default function PublicBookingPage({
       setError('Please enter your name');
       return;
     }
+    // ── Validate that at least one service is selected ────────────────────
+    if (selectedServices.length === 0) {
+      setError('Please select at least one service');
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
     const phoneDigits = customerPhone.replace(/\D/g, '');
     if (!phoneDigits || phoneDigits.length !== PHONE_DIGITS) {
       setError(ERROR_MESSAGES.CUSTOMER_PHONE_INVALID);
@@ -682,6 +725,9 @@ export default function PublicBookingPage({
           slot_id: selectedSlot.id,
           customer_name: customerName.trim(),
           customer_phone: phoneDigits,
+          // ── Send all selected service IDs ──────────────────────────────
+          service_ids: selectedServices,
+          // ──────────────────────────────────────────────────────────────
         }),
       });
       const result = await res.json();
@@ -693,6 +739,7 @@ export default function PublicBookingPage({
         throw new Error(result?.error || 'Failed to create booking');
       }
       if (result?.success && result?.data) {
+        setSuccess(result.data); // stops realtime listener
         clearPendingBooking();
         router.push(ROUTES.BOOKING_STATUS(result.data.booking.booking_id));
         return;
@@ -826,6 +873,45 @@ export default function PublicBookingPage({
             />
           </div>
 
+          {/* ── Multi-select Service Selection ─────────────────────────────── */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Select Services
+              {selectedServices.length > 0 && (
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  ({selectedServices.length} selected)
+                </span>
+              )}
+            </label>
+
+            {services.length === 0 ? (
+              <p className="text-sm text-slate-400">Loading services…</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {services.map((service) => {
+                  const checked = selectedServices.includes(service.id);
+                  return (
+                    <label
+                      key={service.id}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                        checked
+                          ? 'border-slate-900 bg-slate-50'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleService(service.id)}
+                        className="w-4 h-4 rounded accent-slate-900 cursor-pointer"
+                      />
+                      <span className="text-sm text-slate-800">{service.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           {selectedDate && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-2">

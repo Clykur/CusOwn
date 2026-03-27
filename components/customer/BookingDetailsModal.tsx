@@ -150,8 +150,6 @@ export default function BookingDetailsModal({
 
   /* ---------------- SLOT FETCHING ---------------- */
 
-  /* ---------------- SLOT FETCHING ---------------- */
-
   const [slots, setSlots] = useState<Slot[]>([]);
 
   useEffect(() => {
@@ -331,6 +329,13 @@ export default function BookingDetailsModal({
             <p className="text-sm">Date: {slotDate ?? '—'}</p>
 
             <p className="text-sm">Slot: {slotTime ?? '—'}</p>
+
+            <p className="text-sm">
+              Service:{' '}
+              {booking.services && booking.services.length > 0
+                ? booking.services.map((s) => s.name).join(', ')
+                : (booking.service_name ?? '—')}
+            </p>
           </div>
         </div>
 

@@ -12,6 +12,7 @@ interface AppointmentDetailsCardProps {
     start_time: string;
     end_time: string;
   };
+  serviceName?: string;
   review?: {
     rating: number;
     comment?: string;
@@ -23,6 +24,7 @@ interface AppointmentDetailsCardProps {
 
 function AppointmentDetailsCardComponent({
   slot,
+  serviceName,
   review,
   status,
   bookingId,
@@ -74,6 +76,10 @@ function AppointmentDetailsCardComponent({
         <div>
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Date</p>
           <p className="font-semibold text-slate-900">{formatDate(slot.date)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Service</p>
+          <p className="font-semibold text-slate-900">{serviceName || '—'}</p>
         </div>
         <div>
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Time</p>

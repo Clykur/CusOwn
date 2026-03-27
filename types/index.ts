@@ -146,6 +146,8 @@ export type BookingReview = {
 export type BookingWithDetails = Booking & {
   salon?: Salon;
   slot?: Slot;
+  service_name?: string;
+  services?: { id: string; name: string }[];
   review?: BookingReview;
 };
 

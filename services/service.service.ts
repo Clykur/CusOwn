@@ -80,6 +80,56 @@ export class ServiceService {
   async calculateTotalPrice(services: Service[]): Promise<number> {
     return services.reduce((total, service) => total + service.price_cents, 0);
   }
+
+  async createService(data: {
+    business_id: string;
+    name: string;
+    duration_minutes: number;
+    price_cents: number;
+    is_active?: boolean;
+  }): Promise<Service> {
+    const supabaseAdmin = requireSupabaseAdmin();
+
+    const { data: service, error } = await supabaseAdmin
+      .from('services')
+      .insert({
+        ...data,
+        is_active: data.is_active ?? true,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+
+    return service;
+  }
+
+  async updateService(
+    serviceId: string,
+    updates: Partial<{
+      name: string;
+      duration_minutes: number;
+      price_cents: number;
+      is_active: boolean;
+    }>
+  ): Promise<Service> {
+    const supabaseAdmin = requireSupabaseAdmin();
+
+    const { data, error } = await supabaseAdmin
+      .from('services')
+      .update(updates)
+      .eq('id', serviceId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+
+    return data;
+  }
 }
 
 export const serviceService = new ServiceService();
