@@ -58,11 +58,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
       icon: BusinessesIcon,
     },
     {
-      name: 'Services',
-      href: '/owner/services',
-      icon: ServiceIcon,
-    },
-    {
       name: 'Analytics',
       href: '/owner/analytics',
       icon: AnalyticsIcon,

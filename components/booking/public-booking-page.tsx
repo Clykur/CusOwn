@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   API_ROUTES,
   BOOKING_IDEMPOTENCY_HEADER,
@@ -124,6 +124,9 @@ export default function PublicBookingPage({
   const restoredFromPendingRef = useRef(false);
   const [services, setServices] = useState<{ id: string; name: string }[]>([]);
 
+  const searchParams = useSearchParams();
+  const serviceId = searchParams?.get('serviceId') ?? null;
+
   // ── Multi-select: array instead of single string ──────────────────────────
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
@@ -132,21 +135,21 @@ export default function PublicBookingPage({
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   }, []);
-  // ─────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!business?.id) return;
 
     const fetchServices = async () => {
       try {
-        const res = await fetch(`/api/owner/services?businessId=${business.id}`, {
-          credentials: 'include',
-        });
+        const res = await fetch(`/api/owner/services?bookingLink=${businessSlug}`);
 
         const data = await res.json();
 
         if (data.success) {
           setServices(data.data);
+          if (serviceId && data.data.some((s: any) => s.id === serviceId)) {
+            setSelectedServices([serviceId]);
+          }
         } else {
           console.error('Services API error:', data);
         }
@@ -156,7 +159,16 @@ export default function PublicBookingPage({
     };
 
     fetchServices();
-  }, [business?.id]);
+  }, [business?.id, businessSlug, serviceId]);
+
+  useEffect(() => {
+    if (serviceId && services.length > 0 && !selectedServices.includes(serviceId)) {
+      const serviceExists = services.some((s) => s.id === serviceId);
+      if (serviceExists) {
+        toggleService(serviceId);
+      }
+    }
+  }, [serviceId, services, selectedServices.length, toggleService, selectedServices]);
 
   // Initialize from server-side data for instant display
   const initialDataAppliedRef = useRef(false);
@@ -499,10 +511,13 @@ export default function PublicBookingPage({
     setClosedMessage(null);
     cancelRequests(`slots:${business.id}`);
 
+    // Service-aware: include selected services
+    const serviceIdsParam =
+      selectedServices.length > 0 ? `serviceIds=${selectedServices.join(',')}` : '';
     const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`;
     dedupFetch(fetchUrl, {
       credentials: 'include',
-      dedupKey: `slots:${business.id}:${selectedDate}`,
+      dedupKey: `slots:${business.id}:${selectedDate}:${serviceIdsParam || 'none'}`,
       cancelPrevious: true,
     })
       .then((res) => res.json())
@@ -597,6 +612,7 @@ export default function PublicBookingPage({
     initialDate,
     initialSlots,
     initialClosedMessage,
+    selectedServices,
   ]);
 
   const refetchSlots = useCallback(async () => {
@@ -635,11 +651,15 @@ export default function PublicBookingPage({
 
       try {
         cancelRequests('slot-validate');
-        const res = await dedupFetch(`/api/slots/${slot.id}`, {
-          credentials: 'include',
-          dedupKey: `slot-validate:${slot.id}`,
-          cancelPrevious: true,
-        });
+        const serviceIdsParam = JSON.stringify(selectedServices);
+        const res = await dedupFetch(
+          `/api/slots/${slot.id}?serviceIds=${encodeURIComponent(serviceIdsParam)}`,
+          {
+            credentials: 'include',
+            dedupKey: `slot-validate:${slot.id}:${selectedServices.join(',')}`,
+            cancelPrevious: true,
+          }
+        );
         const result = await res.json();
 
         clearTimeout(validationTimeoutId);
@@ -657,7 +677,14 @@ export default function PublicBookingPage({
         setValidatingSlot(false);
       }
     },
-    [refetchSlots, setSelectedSlot, setSlotValidationError, setError, setValidatingSlot]
+    [
+      refetchSlots,
+      setSelectedSlot,
+      setSlotValidationError,
+      setError,
+      setValidatingSlot,
+      selectedServices,
+    ]
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -722,12 +749,11 @@ export default function PublicBookingPage({
         credentials: 'include',
         body: JSON.stringify({
           salon_id: business.id,
-          slot_id: selectedSlot.id,
+          date: selectedDate,
+          slot_start: selectedSlot.start_time, // Service-aware start time
           customer_name: customerName.trim(),
           customer_phone: phoneDigits,
-          // ── Send all selected service IDs ──────────────────────────────
-          service_ids: selectedServices,
-          // ──────────────────────────────────────────────────────────────
+          service_ids: selectedServices, // Drives duration calculation
         }),
       });
       const result = await res.json();
@@ -875,13 +901,8 @@ export default function PublicBookingPage({
 
           {/* ── Multi-select Service Selection ─────────────────────────────── */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Select Services
-              {selectedServices.length > 0 && (
-                <span className="ml-2 text-xs font-normal text-slate-500">
-                  ({selectedServices.length} selected)
-                </span>
-              )}
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              {UI_CUSTOMER.LABEL_SELECT_SERVICE}
             </label>
 
             {services.length === 0 ? (

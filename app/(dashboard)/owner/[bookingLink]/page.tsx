@@ -25,6 +25,11 @@ const BusinessDetailsCard = dynamic(() => import('@/components/owner/business-de
 const EditBusinessModal = dynamic(() => import('@/components/owner/edit-business-modal'), {
   ssr: false,
 });
+
+const ServicesSection = dynamic(() => import('@/components/owner/services-management'), {
+  ssr: false,
+});
+
 const ShopPhotosSection = dynamic(() => import('@/components/owner/shop-photos-section'), {
   ssr: false,
 });
@@ -779,8 +784,6 @@ export default function OwnerBusinessPage() {
         </h1>
       </div>
 
-      <QRCodeSection qrCode={salon.qr_code} bookingLink={salon.booking_link} />
-
       <BusinessDetailsCard
         salon={salon}
         onEdit={openEditModal}
@@ -797,6 +800,9 @@ export default function OwnerBusinessPage() {
         onSave={handleEditSave}
         onClose={() => closeModal(MODAL_IDS.EDIT_BUSINESS)}
       />
+
+      {salon && <ServicesSection businessId={salon.id} />}
+      <QRCodeSection qrCode={salon.qr_code} bookingLink={salon.booking_link} />
 
       <ShopPhotosSection
         photos={shopPhotos}

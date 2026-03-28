@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { applySecurityHeaders } from '@/lib/security/security-headers';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response: NextResponse;
 
   // DO NOT call securityMiddleware here anymore
