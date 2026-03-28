@@ -86,12 +86,23 @@ export function startNotificationWorker(): Worker<NotificationJobData> | null {
     }
   );
 
+  notificationWorker.on('completed', (job) => {
+    const { bookingId, type, recipientType } = job.data;
+    console.warn(
+      `[Notification Worker] Job completed bullmq_job_id=${job.id} booking_id=${bookingId} type=${type} recipient=${recipientType}`
+    );
+  });
+
   notificationWorker.on('failed', (job, err) => {
-    console.error(`[Notification Worker] Job ${job?.id} failed:`, err.message);
+    const { bookingId, type } = job?.data ?? {};
+    console.error(
+      `[Notification Worker] Job failed bullmq_job_id=${job?.id ?? '?'} booking_id=${bookingId ?? '?'} type=${type ?? '?'}:`,
+      err?.message ?? err
+    );
   });
 
   notificationWorker.on('error', (err) => {
-    console.error('[Notification Worker] Error:', err);
+    console.error('[Notification Worker] Worker error:', err);
   });
 
   return notificationWorker;

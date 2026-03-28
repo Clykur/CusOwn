@@ -1,21 +1,12 @@
 import { NextRequest } from 'next/server';
 import { checkHealth } from '@/lib/monitoring/health';
+import { validateCronSecret } from '@/lib/security/cron-auth';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { env } from '@/config/env';
 import { withCronRunLog } from '@/services/cron-run.service';
-
-function checkCronAuth(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const expectedSecret = env.cron.secret;
-  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
-    return errorResponse('Unauthorized', 401);
-  }
-  return null;
-}
 
 export async function GET(request: NextRequest) {
   try {
-    const authErr = checkCronAuth(request);
+    const authErr = validateCronSecret(request);
     if (authErr) return authErr;
     return await withCronRunLog('health-check', async () => {
       const health = await checkHealth();
@@ -29,7 +20,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authErr = checkCronAuth(request);
+    const authErr = validateCronSecret(request);
     if (authErr) return authErr;
     return await withCronRunLog('health-check', async () => {
       const health = await checkHealth();

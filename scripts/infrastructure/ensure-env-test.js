@@ -14,6 +14,8 @@ const placeholder = `# Auto-generated for CI/guard. Replace with real values for
 NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+SALON_TOKEN_SECRET=test-secret-for-ci
+CRON_SECRET=test-cron-for-ci
 `;
 fs.writeFileSync(envTestPath, placeholder, 'utf8');
 console.log('Created .env.test with placeholders.');

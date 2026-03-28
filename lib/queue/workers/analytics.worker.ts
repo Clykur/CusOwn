@@ -59,8 +59,11 @@ export function startAnalyticsWorker(): Worker<AnalyticsJobData> | null {
   );
 
   analyticsWorker.on('failed', (job, err) => {
-    // Analytics failures are logged but not critical
-    console.warn(`[Analytics Worker] Job ${job?.id} failed:`, err.message);
+    const { bookingId, eventType } = job?.data ?? {};
+    console.error(
+      `[Analytics Worker] Job failed bullmq_job_id=${job?.id ?? '?'} booking_id=${bookingId ?? '?'} eventType=${eventType ?? '?'}:`,
+      err?.message ?? err
+    );
   });
 
   analyticsWorker.on('error', (err) => {

@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 /**
  * Unit tests: config/env
- * validateEnv success and throw paths (coverage).
+ * validateEnv and salon token shape (coverage).
  */
 
 import { validateEnv, env } from '../../config/env';
@@ -21,48 +21,14 @@ export function runUnitConfigEnvTests(): void {
   runTest('should_env_export_supabase_app_security', () => {
     assert(typeof env.supabase.url === 'string', 'supabase.url');
     assert(typeof env.app.baseUrl === 'string', 'app.baseUrl');
-    assert(typeof env.security.salonTokenSecret === 'string', 'security.salonTokenSecret'); // pragma: allowlist secret
+    assert(
+      typeof env.security.salonTokenSecret === 'string' && env.security.salonTokenSecret.length > 0, // pragma: allowlist secret
+      'security.salonTokenSecret (SALON_TOKEN_SECRET or non-prod fallback)'
+    );
   });
 
-  runTest('should_validateEnv_throw_or_pass_based_on_env', () => {
-    try {
-      validateEnv();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      assert(message.includes('Missing'), `Expected Missing env message, got ${message}`);
-    }
-  });
-
-  runTest('should_salonTokenSecret_use_CRON_SECRET_when_SALON_TOKEN_SECRET_unset', () => {
-    const prevSalon = process.env.SALON_TOKEN_SECRET;
-    const prevCron = process.env.CRON_SECRET;
-    try {
-      process.env.SALON_TOKEN_SECRET = '';
-      process.env.CRON_SECRET = 'cron-fallback-secret'; // pragma: allowlist secret
-      assert(
-        env.security.salonTokenSecret === 'cron-fallback-secret', // pragma: allowlist secret
-        `Expected CRON_SECRET fallback, got ${env.security.salonTokenSecret}`
-      );
-    } finally {
-      process.env.SALON_TOKEN_SECRET = prevSalon;
-      process.env.CRON_SECRET = prevCron;
-    }
-  });
-
-  runTest('should_salonTokenSecret_use_default_when_both_unset', () => {
-    const prevSalon = process.env.SALON_TOKEN_SECRET;
-    const prevCron = process.env.CRON_SECRET;
-    try {
-      process.env.SALON_TOKEN_SECRET = '';
-      process.env.CRON_SECRET = '';
-      assert(
-        env.security.salonTokenSecret === 'default-secret-change-in-production', // pragma: allowlist secret
-        `Expected default, got ${env.security.salonTokenSecret}`
-      );
-    } finally {
-      process.env.SALON_TOKEN_SECRET = prevSalon;
-      process.env.CRON_SECRET = prevCron;
-    }
+  runTest('should_validateEnv_complete_in_non_production', () => {
+    validateEnv();
   });
 }
 

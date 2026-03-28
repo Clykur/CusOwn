@@ -22,10 +22,34 @@ export type ResourceType =
   | 'admin-business'
   | 'admin-booking';
 
-// Get secret for resource type (all use same secret for now, but can be separated)
-const getResourceSecret = (resourceType: ResourceType): string | undefined => {
-  return env.security.salonTokenSecret;
-};
+/** Same source as validation: env.security.salonTokenSecret (SALON_TOKEN_SECRET). */
+function requireSalonTokenSecretForSigning(): string {
+  const secret = env.security.salonTokenSecret?.trim() ?? '';
+  if (!secret) {
+    console.error(
+      '[security] Cannot generate resource token: SALON_TOKEN_SECRET is not set. Use the same SALON_TOKEN_SECRET for signing and validating links.'
+    );
+    throw new Error('SALON_TOKEN_SECRET is required to generate resource tokens');
+  }
+  return secret;
+}
+
+let salonTokenSecretMissingLogged = false;
+
+/** Returns null if secret unavailable (e.g. misconfiguration); logs once. */
+function getSalonTokenSecretForValidation(): string | null {
+  const secret = env.security.salonTokenSecret?.trim() ?? '';
+  if (!secret) {
+    if (!salonTokenSecretMissingLogged) {
+      salonTokenSecretMissingLogged = true;
+      console.error(
+        '[security] SALON_TOKEN_SECRET is not set; resource token validation cannot succeed. Set SALON_TOKEN_SECRET to match the value used when generating tokens.'
+      );
+    }
+    return null;
+  }
+  return secret;
+}
 
 // Generate secure token for any resource using HMAC with timestamp
 // Token format: HMAC(resourceType + resourceId + timestamp + secret) -> 64 char hex
@@ -34,16 +58,7 @@ export const generateResourceToken = (
   resourceId: string,
   timestamp?: number
 ): string => {
-  const secret = getResourceSecret(resourceType);
-  if (!secret || secret === 'default-secret-change-in-production') {
-    const fallbackSecret = 'fallback-secret-not-for-production';
-    const time = timestamp || Math.floor(Date.now() / 1000);
-    const hmac = createHmac('sha256', fallbackSecret);
-    hmac.update(resourceType);
-    hmac.update(resourceId);
-    hmac.update(time.toString());
-    return hmac.digest('hex');
-  }
+  const secret = requireSalonTokenSecretForSigning();
   const time = timestamp || Math.floor(Date.now() / 1000);
   const hmac = createHmac('sha256', secret);
   hmac.update(resourceType); // Scoped: no privilege escalation (accept token cannot be used for admin)
@@ -90,8 +105,8 @@ export const validateResourceToken = (
   if (!isValidFormat) return false;
 
   try {
-    const secret = getResourceSecret(resourceType);
-    if (!secret || secret === 'default-secret-change-in-production') return false;
+    const secret = getSalonTokenSecretForValidation();
+    if (!secret) return false;
 
     const currentTime = requestTime || Math.floor(Date.now() / 1000);
     const TOKEN_VALIDITY_WINDOW = getTokenValidityWindow();

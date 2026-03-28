@@ -5,14 +5,25 @@
 
 import { env } from '@/config/env';
 
-const isDev = env.nodeEnv === 'development';
+let queueUnavailableLogged = false;
+let queueInvalidUrlLogged = false;
+
+function logQueueUnavailableOnce(): void {
+  if (queueUnavailableLogged) return;
+  queueUnavailableLogged = true;
+  const reason = !env.redis.enabled
+    ? 'REDIS_ENABLED=false'
+    : !env.redis.url?.trim()
+      ? 'REDIS_URL is not set'
+      : 'unknown';
+  console.warn(
+    `[Queue] BullMQ unavailable (${reason}). Reminder/analytics/notification jobs are not enqueued; workers do not start. Set REDIS_URL and REDIS_ENABLED=true, or rely on inline fallbacks where implemented (e.g. accept booking → sync reminder schedule).`
+  );
+}
 
 /** BullMQ connection options */
 export const getQueueConnection = () => {
-  if (!env.redis.enabled || !env.redis.url) {
-    if (isDev) {
-      console.warn('[Queue] Redis not configured, queues will be disabled');
-    }
+  if (!env.redis.enabled || !env.redis.url?.trim()) {
     return null;
   }
 
@@ -25,14 +36,22 @@ export const getQueueConnection = () => {
       maxRetriesPerRequest: null, // Required for BullMQ
     };
   } catch (err) {
-    if (isDev) {
-      console.error('[Queue] Invalid Redis URL:', err);
+    if (!queueInvalidUrlLogged) {
+      queueInvalidUrlLogged = true;
+      console.error('[Queue] Invalid REDIS_URL for BullMQ (cannot parse as URL):', err);
     }
     return null;
   }
 };
 
-/** Check if queues are available */
+/**
+ * True when Redis URL is set and caching/queues are enabled (BullMQ can be used).
+ * Logs once per process when false (including production).
+ */
 export const isQueueAvailable = (): boolean => {
-  return env.redis.enabled && !!env.redis.url;
+  const ok = env.redis.enabled && !!env.redis.url?.trim();
+  if (!ok) {
+    logQueueUnavailableOnce();
+  }
+  return ok;
 };

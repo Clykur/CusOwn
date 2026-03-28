@@ -65,12 +65,23 @@ export function startReminderWorker(): Worker<ReminderJobData> | null {
     },
   });
 
+  reminderWorker.on('completed', (job) => {
+    const { bookingId, type, reminderId } = job.data;
+    console.warn(
+      `[Reminder Worker] Job completed bullmq_job_id=${job.id} type=${type} booking_id=${bookingId}${reminderId ? ` reminder_id=${reminderId}` : ''}`
+    );
+  });
+
   reminderWorker.on('failed', (job, err) => {
-    console.error(`[Reminder Worker] Job ${job?.id} failed:`, err.message);
+    const { bookingId, type, reminderId } = job?.data ?? {};
+    console.error(
+      `[Reminder Worker] Job failed bullmq_job_id=${job?.id ?? '?'} type=${type ?? '?'} booking_id=${bookingId ?? '?'}${reminderId ? ` reminder_id=${reminderId}` : ''}:`,
+      err?.message ?? err
+    );
   });
 
   reminderWorker.on('error', (err) => {
-    console.error('[Reminder Worker] Error:', err);
+    console.error('[Reminder Worker] Worker error:', err);
   });
 
   return reminderWorker;

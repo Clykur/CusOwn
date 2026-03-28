@@ -17,6 +17,9 @@ export function startAllWorkers(): void {
     return;
   }
 
+  console.warn(
+    '[Queue] Starting in-process BullMQ workers (booking-reminders, analytics-events, notification-sending).'
+  );
   startReminderWorker();
   startAnalyticsWorker();
   startNotificationWorker();

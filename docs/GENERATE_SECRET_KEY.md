@@ -90,7 +90,7 @@ After adding the secret, restart your development server:
 npm run dev
 ```
 
-The application will automatically use the secret for token generation. If the secret is missing, it will fallback to `CRON_SECRET` or a default (which should be changed in production).
+The application uses **only** `SALON_TOKEN_SECRET` for signed resource links and related HMACs (no `CRON_SECRET` fallback). In production it must be set or the app will fail to start; in local development a warned dev-only fallback applies if unset.
 
 ## Quick Copy-Paste Commands
 

@@ -9,7 +9,13 @@ import { NextRequest } from 'next/server';
 const CRON_SECRET = 'test-cron-secret'; // pragma: allowlist secret
 
 vi.mock('@/config/env', () => ({
-  env: { cron: { secret: CRON_SECRET } },
+  env: {
+    cron: { secret: CRON_SECRET },
+    /** Satisfies config/constants.ts (cron-auth → constants → env). */
+    payment: { slotExpiryMinutes: 10 },
+    /** Satisfies lib/utils/url.ts via getClientIp → security. */
+    app: { baseUrl: 'http://localhost:3000' },
+  },
 }));
 
 const mockCheckHealth = vi.fn();
