@@ -298,7 +298,7 @@ Use these commands locally. CI runs the same checks via the workflow above.
 | `npm run dev:clean`    | Clean caches + `npm run dev`                              |
 | `npm run dev:fresh`    | `npm run clean` + `npm run dev`                           |
 | `npm run build`        | Production build                                          |
-| `npm run build:strict` | Strict build into `.next-build` (used in CI)              |
+| `npm run build:strict` | Strict production build into `.next` (used in CI)         |
 | `npm run build:fresh`  | Clean artifacts + strict build                            |
 | `npm run start`        | Run production server                                     |
 | `npm run clean`        | Remove `.next`, `.next-build`, coverage artifacts         |
@@ -406,7 +406,7 @@ Use these commands locally. CI runs the same checks via the workflow above.
 ## Notes & conventions
 
 - **Logging:** Dev `console.log`/debug/trace only where intended; production strips them (warn/error remain).
-- **Strict build:** Uses isolated output (e.g. `.next-build`) to avoid mixing with dev.
+- **Strict build:** Cleans `.next` then runs `next build` (fail on warnings). Output is `.next`.
 - **Security:** No unauthenticated state mutation; cron needs `CRON_SECRET`; admin needs `checkIsAdmin` and rate limit. See `.cursor/rules` and `config/*.policy.ts` for full rules.
 - **Pre-push:** Run `npm run guard:all` (or `npm run prepush:strict`) and fix any failures before pushing. CI runs the same validations.
 

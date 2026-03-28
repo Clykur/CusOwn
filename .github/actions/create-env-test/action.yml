@@ -15,4 +15,5 @@ runs:
         NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
         SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
         SALON_TOKEN_SECRET=test-secret-for-ci
+        CRON_SECRET=test-cron-for-ci
         EOF

@@ -20,7 +20,7 @@ export interface LocationPayload {
 }
 
 function getSecret(): string {
-  return env.security.salonTokenSecret || 'fallback-location-cookie-secret';
+  return env.security.salonTokenSecret;
 }
 
 function base64UrlEncode(buf: Buffer): string {

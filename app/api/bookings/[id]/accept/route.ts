@@ -154,6 +154,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (isQueueAvailable()) {
       void enqueueScheduleReminders(id);
     } else {
+      console.warn(
+        `[Queue] BullMQ unavailable; scheduling reminders inline booking_id=${id} (same outcome, synchronous)`
+      );
       await reminderService.scheduleBookingReminders(id);
     }
 

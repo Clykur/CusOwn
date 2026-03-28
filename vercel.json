@@ -3,5 +3,5 @@
     "enabled": false
   },
   "buildCommand": "npm run build:strict",
-  "outputDirectory": ".next-build"
+  "outputDirectory": ".next"
 }

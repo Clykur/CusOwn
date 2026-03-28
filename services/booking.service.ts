@@ -226,7 +226,9 @@ export class BookingService {
           source: 'api',
         });
       } else {
-        // Fallback to direct call if queue unavailable
+        console.warn(
+          `[Queue] Analytics BullMQ unavailable; recording inline booking_id=${booking.id} eventType=created`
+        );
         void bookingEventsAnalyticsService.recordEvent({
           bookingId: booking.id,
           eventType: 'created',
@@ -944,6 +946,9 @@ export class BookingService {
           source: 'api',
         });
       } else {
+        console.warn(
+          `[Queue] Analytics BullMQ unavailable; recording inline booking_id=${bookingId} eventType=cancelled actor=customer`
+        );
         void bookingEventsAnalyticsService.recordEvent({
           bookingId,
           eventType: 'cancelled',
@@ -1030,6 +1035,9 @@ export class BookingService {
           source: 'api',
         });
       } else {
+        console.warn(
+          `[Queue] Analytics BullMQ unavailable; recording inline booking_id=${bookingId} eventType=cancelled actor=owner`
+        );
         void bookingEventsAnalyticsService.recordEvent({
           bookingId,
           eventType: 'cancelled',

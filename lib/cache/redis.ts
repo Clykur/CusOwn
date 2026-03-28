@@ -7,18 +7,22 @@
 import Redis from 'ioredis';
 import { env } from '@/config/env';
 
-const isDev = env.nodeEnv === 'development';
-
 let redisInstance: Redis | null = null;
 let connectionAttempted = false;
+let redisDisabledLogged = false;
+let redisUnavailableLogged = false;
 
 function createRedisClient(): Redis | null {
   const redisUrl = env.redis.url;
   const redisEnabled = env.redis.enabled;
 
   if (!redisUrl || !redisEnabled) {
-    if (isDev) {
-      console.warn('[Redis] Caching disabled (REDIS_URL not set or REDIS_ENABLED=false).');
+    if (!redisDisabledLogged) {
+      redisDisabledLogged = true;
+      const reason = !redisEnabled ? 'REDIS_ENABLED=false' : 'REDIS_URL is not set';
+      console.warn(
+        `[Redis] Caching unavailable (${reason}). API rate-limit/cache layers degrade without Redis; set REDIS_URL and REDIS_ENABLED=true for production caching.`
+      );
     }
     return null;
   }
@@ -30,7 +34,9 @@ function createRedisClient(): Redis | null {
       lazyConnect: true,
       retryStrategy: (times: number) => {
         if (times > 3) {
-          console.error('[Redis] Max retries exceeded. Giving up.');
+          console.error(
+            '[Redis] Max retries exceeded; connection will stay down until reconnect. Check REDIS_URL and network.'
+          );
           return null;
         }
         const delay = Math.min(times * 200, 2000);
@@ -97,11 +103,21 @@ export async function isRedisAvailable(): Promise<boolean> {
 
     if (status === 'wait' || status === 'connecting') {
       await client.connect();
-      return client.status === 'ready';
+      if (client.status === 'ready') return true;
     }
 
+    if (!redisUnavailableLogged) {
+      redisUnavailableLogged = true;
+      console.error(
+        `[Redis] Not ready for PING (status=${client.status}). Caching and health check will report redis=down until connection succeeds.`
+      );
+    }
     return false;
-  } catch {
+  } catch (err) {
+    if (!redisUnavailableLogged) {
+      redisUnavailableLogged = true;
+      console.error('[Redis] Availability check failed (connect/PING):', err);
+    }
     return false;
   }
 }

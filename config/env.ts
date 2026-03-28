@@ -6,6 +6,56 @@ const optionalUrl = z
   .transform((val) => (val === '' || val === undefined ? undefined : val))
   .pipe(z.string().url().optional());
 
+/** Dev fallbacks when Supabase vars are unset (non-production only). */
+const DEV_SUPABASE_URL = 'https://placeholder.supabase.co';
+const DEV_SUPABASE_ANON_KEY = 'placeholder-anon-key';
+const DEV_SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
+/** Dev-only fallback for SALON_TOKEN_SECRET; never used when NODE_ENV is production. */
+const DEV_SALON_TOKEN_FALLBACK = 'dev-salon-token-secret-not-for-production';
+
+/** Warn if production secret is shorter than this (aligns with scripts/infrastructure/validate-env.sh). */
+const SALON_TOKEN_SECRET_WARN_MIN_LEN = 32;
+const CRON_SECRET_WARN_MIN_LEN = 16;
+
+/**
+ * Substrings that indicate template / example env values (case-insensitive).
+ * Production must not use these.
+ */
+const PLACEHOLDER_MARKERS = [
+  'placeholder',
+  'your-project-id',
+  'your-anon-key',
+  'your-service-role',
+  'your-cron-secret',
+  'your-random-secret',
+  'changeme',
+] as const;
+
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_PRODUCTION = NODE_ENV === 'production';
+/** True in Node/Edge server; false in browser bundles (evaluated at runtime per chunk). */
+const IS_SERVER_BUNDLE = typeof window === 'undefined';
+/** Next sets `NEXT_PHASE` during `next build` only; runtime server processes omit it. */
+const IS_NEXT_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+/**
+ * Require production server secrets at Zod parse time. Relaxed during Next production build
+ * so route modules can load without deploy secrets; `validateEnv()` enforces at server start.
+ */
+const IS_PRODUCTION_SERVER_STRICT_SECRETS =
+  IS_PRODUCTION && IS_SERVER_BUNDLE && !IS_NEXT_PRODUCTION_BUILD;
+
+function trimmedOrUndefined(raw: unknown): string | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  const s = String(raw).trim();
+  return s === '' ? undefined : s;
+}
+
+/** True if value looks like a template or fake secret (case-insensitive). */
+export function looksLikePlaceholderEnvValue(value: string): boolean {
+  const v = value.toLowerCase();
+  return PLACEHOLDER_MARKERS.some((marker) => v.includes(marker));
+}
+
 /** In dev, ensure localhost has port 3000 so redirects (e.g. sign-out) work. */
 function normalizeAppBaseUrl(url: string): string {
   if (process.env.NODE_ENV !== 'development') return url;
@@ -21,14 +71,110 @@ function normalizeAppBaseUrl(url: string): string {
   return url;
 }
 
+/** Public URL: required in production; dev/test may omit and get a warned fallback. */
+const nextPublicSupabaseUrlSchema = IS_PRODUCTION
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'NEXT_PUBLIC_SUPABASE_URL is required in production' }).url()
+    )
+  : z
+      .preprocess(trimmedOrUndefined, z.union([z.string().url(), z.undefined()]))
+      .transform((val) => {
+        if (val) return val;
+        console.warn(
+          '[env] NEXT_PUBLIC_SUPABASE_URL is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
+        );
+        return DEV_SUPABASE_URL;
+      });
+
+/** Anon key: required in production; dev/test may omit with warned fallback. */
+const nextPublicSupabaseAnonKeySchema = IS_PRODUCTION
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required in production' }).min(1)
+    )
+  : z
+      .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+      .transform((val) => {
+        if (val) return val;
+        console.warn(
+          '[env] NEXT_PUBLIC_SUPABASE_ANON_KEY is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
+        );
+        return DEV_SUPABASE_ANON_KEY;
+      });
+
+/**
+ * Service role is server-only. Client bundles never receive this key; use empty string there.
+ * Production server requires a real key. Non-production may use a warned dev fallback.
+ */
+const supabaseServiceRoleKeySchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'SUPABASE_SERVICE_ROLE_KEY is required in production' }).min(1)
+    )
+  : IS_PRODUCTION && !IS_SERVER_BUNDLE
+    ? z.unknown().transform(() => '')
+    : z
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+        .transform((val) => {
+          if (val) return val;
+          console.warn(
+            '[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.'
+          );
+          return DEV_SUPABASE_SERVICE_ROLE_KEY;
+        });
+
+/**
+ * HMAC secret for signed resource URLs, pending-booking cookie, location cookie.
+ * Production server: required from env (no CRON_SECRET or hardcoded default).
+ * Production client: empty (secret not bundled). Non-production: optional with warned dev fallback.
+ */
+const salonTokenSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'SALON_TOKEN_SECRET is required in production' }).min(1)
+    )
+  : IS_PRODUCTION && !IS_SERVER_BUNDLE
+    ? z.unknown().transform(() => '')
+    : z
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+        .transform((val) => {
+          if (val) return val;
+          console.warn(
+            '[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.'
+          );
+          return DEV_SALON_TOKEN_FALLBACK;
+        });
+
+/**
+ * Cron HTTP auth (Bearer CRON_SECRET). Production server: required. Client bundle: not exposed.
+ * Non-production: optional; empty allows local dev without cron secret (validateCronSecret skips auth).
+ */
+const cronSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'CRON_SECRET is required in production' }).min(1)
+    )
+  : IS_PRODUCTION && !IS_SERVER_BUNDLE
+    ? z.unknown().transform(() => '')
+    : z
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+        .transform((val) => {
+          if (val) return val;
+          console.warn(
+            '[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.'
+          );
+          return '';
+        });
+
 const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().min(1).default('https://placeholder.supabase.co'),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).default('placeholder-anon-key'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).default('placeholder-service-role-key'),
+  NEXT_PUBLIC_SUPABASE_URL: nextPublicSupabaseUrlSchema,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: nextPublicSupabaseAnonKeySchema,
+  SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKeySchema,
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-  CRON_SECRET: z.string().optional(),
-  SALON_TOKEN_SECRET: z.string().optional(),
+  CRON_SECRET: cronSecretSchema,
+  SALON_TOKEN_SECRET: salonTokenSecretSchema,
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   SIGNED_URL_TTL_SECONDS: z.string().default('86400'),
@@ -101,16 +247,11 @@ export const env = {
     baseUrl: normalizeAppBaseUrl(rawEnv.NEXT_PUBLIC_APP_URL),
   },
   cron: {
-    secret: rawEnv.CRON_SECRET || '',
+    secret: rawEnv.CRON_SECRET,
   },
   security: {
-    get salonTokenSecret(): string {
-      return (
-        process.env.SALON_TOKEN_SECRET ||
-        process.env.CRON_SECRET ||
-        'default-secret-change-in-production'
-      );
-    },
+    /** Single source: SALON_TOKEN_SECRET only (see salonTokenSecretSchema). */
+    salonTokenSecret: rawEnv.SALON_TOKEN_SECRET,
     razorpayWebhookSecret: rawEnv.RAZORPAY_WEBHOOK_SECRET || '',
     stripeWebhookSecret: rawEnv.STRIPE_WEBHOOK_SECRET || '',
     /** Phase 5: Signed URL TTL (seconds). Tokens cannot escalate privilege (resourceType in HMAC). */
@@ -175,27 +316,121 @@ export const env = {
   nextPublicVercelGitCommitSha: rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
 } as const;
 
+function assertValidProductionSupabaseEnv(): void {
+  const pairs: { key: string; value: string }[] = [
+    { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
+    { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },
+  ];
+
+  if (IS_SERVER_BUNDLE) {
+    pairs.push({ key: 'SUPABASE_SERVICE_ROLE_KEY', value: env.supabase.serviceRoleKey });
+  }
+
+  for (const { key, value } of pairs) {
+    if (!value?.trim()) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+    if (looksLikePlaceholderEnvValue(value)) {
+      throw new Error(
+        `Invalid environment variable ${key}: value must not contain placeholder or template patterns (e.g. placeholder, your-project-id, your-anon-key).`
+      );
+    }
+  }
+}
+
+function warnDevIfSupabaseLooksLikePlaceholders(): void {
+  if (IS_PRODUCTION) return;
+  const checks: { key: string; value: string }[] = [
+    { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
+    { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },
+  ];
+  if (IS_SERVER_BUNDLE) {
+    checks.push({ key: 'SUPABASE_SERVICE_ROLE_KEY', value: env.supabase.serviceRoleKey });
+  }
+  for (const { key, value } of checks) {
+    if (value && looksLikePlaceholderEnvValue(value)) {
+      console.warn(
+        `[env] ${key} appears to use a template or placeholder; set real values in .env.local for integration against Supabase.`
+      );
+    }
+  }
+}
+
+function assertValidProductionSalonTokenSecret(): void {
+  const st = env.security.salonTokenSecret?.trim() ?? '';
+  if (!st) {
+    console.error(
+      '[env] SALON_TOKEN_SECRET is required in production for signed booking/owner links and signed cookies. Generate a value with: openssl rand -hex 32'
+    );
+    throw new Error('Missing SALON_TOKEN_SECRET');
+  }
+  if (looksLikePlaceholderEnvValue(st)) {
+    console.error(
+      '[env] SALON_TOKEN_SECRET must not use placeholder or template values; use a long random secret.'
+    );
+    throw new Error('Invalid SALON_TOKEN_SECRET');
+  }
+  if (st.length < SALON_TOKEN_SECRET_WARN_MIN_LEN) {
+    console.warn(
+      `[env] SALON_TOKEN_SECRET is shorter than ${SALON_TOKEN_SECRET_WARN_MIN_LEN} characters; prefer a longer random secret in production.`
+    );
+  }
+}
+
+function assertValidProductionCronSecret(): void {
+  const s = env.cron.secret?.trim() ?? '';
+  if (!s) {
+    console.error(
+      '[env] CRON_SECRET is required in production. Cron and booking-expiry endpoints require Authorization: Bearer <CRON_SECRET>. Set CRON_SECRET in your host environment (e.g. Vercel project settings).'
+    );
+    throw new Error('Missing CRON_SECRET');
+  }
+  if (looksLikePlaceholderEnvValue(s)) {
+    console.error(
+      '[env] CRON_SECRET must not use placeholder or template values; use a long random secret.'
+    );
+    throw new Error('Invalid CRON_SECRET');
+  }
+  if (s.length < CRON_SECRET_WARN_MIN_LEN) {
+    console.warn(
+      `[env] CRON_SECRET is shorter than ${CRON_SECRET_WARN_MIN_LEN} characters; prefer a longer random secret in production.`
+    );
+  }
+}
+
+function assertValidProductionServerEnv(): void {
+  assertValidProductionSupabaseEnv();
+  assertValidProductionSalonTokenSecret();
+  assertValidProductionCronSecret();
+}
+
+if (IS_PRODUCTION_SERVER_STRICT_SECRETS) {
+  assertValidProductionServerEnv();
+}
+
 /** Check if Supabase is properly configured (not using placeholder values). */
 export function isSupabaseConfigured(): boolean {
   const url = env.supabase.url;
   const anonKey = env.supabase.anonKey;
   if (!url || !anonKey) return false;
-  if (url.includes('placeholder') || anonKey.includes('placeholder')) return false;
+  if (looksLikePlaceholderEnvValue(url) || looksLikePlaceholderEnvValue(anonKey)) return false;
   return true;
 }
 
-export const validateEnv = (): void => {
-  const required = [
-    { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
-    { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },
-    { key: 'SUPABASE_SERVICE_ROLE_KEY', value: env.supabase.serviceRoleKey },
-  ];
-
-  const missing = required.filter(({ value }) => !value);
-
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.map(({ key }) => key).join(', ')}`
-    );
+/**
+ * Validates environment. Production server: throws on missing or placeholder Supabase, SALON_TOKEN_SECRET, CRON_SECRET.
+ * Non-production: logs warnings only. Browser: no-op (service role is not available client-side).
+ */
+export function validateEnv(): void {
+  if (!IS_SERVER_BUNDLE) {
+    return;
   }
-};
+  if (!IS_PRODUCTION) {
+    warnDevIfSupabaseLooksLikePlaceholders();
+    return;
+  }
+  if (IS_NEXT_PRODUCTION_BUILD) {
+    return;
+  }
+  assertValidProductionServerEnv();
+}

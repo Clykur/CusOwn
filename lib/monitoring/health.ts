@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { getRedisHealthStatus } from './redis-health';
 import { performanceMonitor } from './performance';
 import { safeMetrics } from './safe-metrics';
 
@@ -7,6 +8,8 @@ export interface HealthStatus {
   checks: {
     database: 'up' | 'down';
     timestamp: string;
+    /** Cache/BullMQ Redis: disabled when not configured; down when unreachable. */
+    redis?: 'up' | 'down' | 'disabled';
     /** Phase 3: Unix seconds when cron.expire_bookings last ran. Alert if (now_ts - this) > X minutes. */
     cron_expire_bookings_last_run_ts?: number;
     /** Media subsystem: storage and media table (when requested). */
@@ -35,6 +38,12 @@ export const checkHealth = async (): Promise<HealthStatus> => {
   const lastRunTs = typeof lastRunTsRaw === 'number' ? lastRunTsRaw : Number(lastRunTsRaw);
   if (lastRunTs > 0 && !Number.isNaN(lastRunTs)) {
     checks.cron_expire_bookings_last_run_ts = lastRunTs;
+  }
+
+  try {
+    checks.redis = await getRedisHealthStatus();
+  } catch {
+    checks.redis = 'down';
   }
 
   const duration = Date.now() - startTime;

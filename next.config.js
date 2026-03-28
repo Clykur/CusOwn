@@ -2,9 +2,9 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow strict/CI builds to use an isolated dist directory
-  // so dev `.next` artifacts cannot interfere with production builds.
-  distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Default `.next`. Avoid NEXT_DIST_DIR / alternate distDir: Next 15 can ENOENT on
+  // server manifests during "Collecting page data". Strict build cleans `.next` first.
+  distDir: '.next',
   outputFileTracingRoot: path.join(__dirname),
   images: {
     remotePatterns: [

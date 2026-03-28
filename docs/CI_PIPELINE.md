@@ -50,7 +50,7 @@ Lint, typecheck, and dependency-audit run in parallel and are required by unit-t
 ## Artifacts
 
 - **coverage-unit**: Coverage report (unit-tests job), 7 days.
-- **build-output**: `.next-build` from build job, 1 day.
+- **build-output**: `.next` from build job, 1 day.
 
 ## Local pre-push: `npm run guard:all`
 

@@ -8,6 +8,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 const envKeys = [
   'NODE_ENV',
+  'NEXT_PHASE',
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
@@ -47,6 +48,8 @@ function setBaselineEnv(): void {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role';
+  process.env.SALON_TOKEN_SECRET = 'test-salon-token-secret-32chars-min!'; // pragma: allowlist secret
+  process.env.CRON_SECRET = 'test-cron-secret-for-env-tests-16+'; // pragma: allowlist secret
   process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 }
 
@@ -155,9 +158,40 @@ describe('config/env', () => {
       await expect(import('@/config/env')).rejects.toThrow();
     });
 
-    it('throws when required Supabase URL is empty', async () => {
+    it('applies dev fallback when Supabase URL is empty in non-production', async () => {
       setBaselineEnv();
       process.env.NEXT_PUBLIC_SUPABASE_URL = '';
+      const { env } = await import('@/config/env');
+      expect(env.supabase.url).toContain('placeholder');
+    });
+
+    it('throws when NEXT_PUBLIC_SUPABASE_URL is empty in production', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = '';
+      await expect(import('@/config/env')).rejects.toThrow();
+    });
+
+    it('throws when Supabase URL is a placeholder host in production', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://placeholder.supabase.co';
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'a'.repeat(120);
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'b'.repeat(120);
+      await expect(import('@/config/env')).rejects.toThrow();
+    });
+
+    it('throws when SALON_TOKEN_SECRET is missing in production', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      delete process.env.SALON_TOKEN_SECRET;
+      await expect(import('@/config/env')).rejects.toThrow();
+    });
+
+    it('throws when CRON_SECRET is missing in production', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      delete process.env.CRON_SECRET;
       await expect(import('@/config/env')).rejects.toThrow();
     });
   });
@@ -186,9 +220,43 @@ describe('config/env', () => {
   });
 
   describe('validateEnv', () => {
-    it('does not throw when required vars are set', async () => {
+    it('does not throw when required vars are set in test', async () => {
       setBaselineEnv();
       const { validateEnv } = await import('@/config/env');
+      expect(() => validateEnv()).not.toThrow();
+    });
+
+    it('rejects module load in production when anon key contains template marker', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abc.supabase.co';
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'your-anon-key-replace-me';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'c'.repeat(120);
+      await expect(import('@/config/env')).rejects.toThrow(/placeholder or template/i);
+    });
+
+    it('validateEnv passes in production when Supabase env is valid', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abc.supabase.co';
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'x'.repeat(180);
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'y'.repeat(180);
+      const { validateEnv } = await import('@/config/env');
+      expect(() => validateEnv()).not.toThrow();
+    });
+
+    it('parses without CRON_SECRET or SALON_TOKEN_SECRET during Next production build phase', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.NEXT_PHASE = 'phase-production-build';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abc.supabase.co';
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'x'.repeat(180);
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'y'.repeat(180);
+      delete process.env.CRON_SECRET;
+      delete process.env.SALON_TOKEN_SECRET;
+      const { env, validateEnv } = await import('@/config/env');
+      expect(env.cron.secret).toBe('');
+      expect(env.security.salonTokenSecret.length).toBeGreaterThan(0);
       expect(() => validateEnv()).not.toThrow();
     });
   });

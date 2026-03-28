@@ -184,6 +184,8 @@ export const ERROR_MESSAGES = {
   REMINDER_ALREADY_SENT: 'Reminder already sent',
   RATE_LIMIT_EXCEEDED: 'Too many requests. Please try again later.',
   UNAUTHORIZED: 'Unauthorized',
+  /** Cron routes when CRON_SECRET is unset in production (should fail at startup; fail-closed if reached). */
+  CRON_AUTH_NOT_CONFIGURED: 'Cron authentication is not configured',
   IDEMPOTENCY_KEY_REQUIRED: 'Idempotency key required: send x-idempotency-key header',
   USER_BLOCK_FAILED: 'Failed to block user',
   USER_UNBLOCK_FAILED: 'Failed to unblock user',
