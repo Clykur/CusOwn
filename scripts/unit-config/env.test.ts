@@ -8,6 +8,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 const envKeys = [
   'NODE_ENV',
+  'NEXT_PHASE',
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
@@ -241,6 +242,21 @@ describe('config/env', () => {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'x'.repeat(180);
       process.env.SUPABASE_SERVICE_ROLE_KEY = 'y'.repeat(180);
       const { validateEnv } = await import('@/config/env');
+      expect(() => validateEnv()).not.toThrow();
+    });
+
+    it('parses without CRON_SECRET or SALON_TOKEN_SECRET during Next production build phase', async () => {
+      setBaselineEnv();
+      process.env.NODE_ENV = 'production';
+      process.env.NEXT_PHASE = 'phase-production-build';
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abc.supabase.co';
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'x'.repeat(180);
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'y'.repeat(180);
+      delete process.env.CRON_SECRET;
+      delete process.env.SALON_TOKEN_SECRET;
+      const { env, validateEnv } = await import('@/config/env');
+      expect(env.cron.secret).toBe('');
+      expect(env.security.salonTokenSecret.length).toBeGreaterThan(0);
       expect(() => validateEnv()).not.toThrow();
     });
   });

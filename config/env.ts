@@ -35,6 +35,14 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const IS_PRODUCTION = NODE_ENV === 'production';
 /** True in Node/Edge server; false in browser bundles (evaluated at runtime per chunk). */
 const IS_SERVER_BUNDLE = typeof window === 'undefined';
+/** Next sets `NEXT_PHASE` during `next build` only; runtime server processes omit it. */
+const IS_NEXT_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+/**
+ * Require production server secrets at Zod parse time. Relaxed during Next production build
+ * so route modules can load without deploy secrets; `validateEnv()` enforces at server start.
+ */
+const IS_PRODUCTION_SERVER_STRICT_SECRETS =
+  IS_PRODUCTION && IS_SERVER_BUNDLE && !IS_NEXT_PRODUCTION_BUILD;
 
 function trimmedOrUndefined(raw: unknown): string | undefined {
   if (raw === undefined || raw === null) return undefined;
@@ -99,68 +107,65 @@ const nextPublicSupabaseAnonKeySchema = IS_PRODUCTION
  * Service role is server-only. Client bundles never receive this key; use empty string there.
  * Production server requires a real key. Non-production may use a warned dev fallback.
  */
-const supabaseServiceRoleKeySchema =
-  IS_PRODUCTION && IS_SERVER_BUNDLE
-    ? z.preprocess(
-        trimmedOrUndefined,
-        z.string({ required_error: 'SUPABASE_SERVICE_ROLE_KEY is required in production' }).min(1)
-      )
-    : IS_PRODUCTION && !IS_SERVER_BUNDLE
-      ? z.unknown().transform(() => '')
-      : z
-          .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
-          .transform((val) => {
-            if (val) return val;
-            console.warn(
-              '[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.'
-            );
-            return DEV_SUPABASE_SERVICE_ROLE_KEY;
-          });
+const supabaseServiceRoleKeySchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'SUPABASE_SERVICE_ROLE_KEY is required in production' }).min(1)
+    )
+  : IS_PRODUCTION && !IS_SERVER_BUNDLE
+    ? z.unknown().transform(() => '')
+    : z
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+        .transform((val) => {
+          if (val) return val;
+          console.warn(
+            '[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.'
+          );
+          return DEV_SUPABASE_SERVICE_ROLE_KEY;
+        });
 
 /**
  * HMAC secret for signed resource URLs, pending-booking cookie, location cookie.
  * Production server: required from env (no CRON_SECRET or hardcoded default).
  * Production client: empty (secret not bundled). Non-production: optional with warned dev fallback.
  */
-const salonTokenSecretSchema =
-  IS_PRODUCTION && IS_SERVER_BUNDLE
-    ? z.preprocess(
-        trimmedOrUndefined,
-        z.string({ required_error: 'SALON_TOKEN_SECRET is required in production' }).min(1)
-      )
-    : IS_PRODUCTION && !IS_SERVER_BUNDLE
-      ? z.unknown().transform(() => '')
-      : z
-          .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
-          .transform((val) => {
-            if (val) return val;
-            console.warn(
-              '[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.'
-            );
-            return DEV_SALON_TOKEN_FALLBACK;
-          });
+const salonTokenSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'SALON_TOKEN_SECRET is required in production' }).min(1)
+    )
+  : IS_PRODUCTION && !IS_SERVER_BUNDLE
+    ? z.unknown().transform(() => '')
+    : z
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+        .transform((val) => {
+          if (val) return val;
+          console.warn(
+            '[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.'
+          );
+          return DEV_SALON_TOKEN_FALLBACK;
+        });
 
 /**
  * Cron HTTP auth (Bearer CRON_SECRET). Production server: required. Client bundle: not exposed.
  * Non-production: optional; empty allows local dev without cron secret (validateCronSecret skips auth).
  */
-const cronSecretSchema =
-  IS_PRODUCTION && IS_SERVER_BUNDLE
-    ? z.preprocess(
-        trimmedOrUndefined,
-        z.string({ required_error: 'CRON_SECRET is required in production' }).min(1)
-      )
-    : IS_PRODUCTION && !IS_SERVER_BUNDLE
-      ? z.unknown().transform(() => '')
-      : z
-          .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
-          .transform((val) => {
-            if (val) return val;
-            console.warn(
-              '[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.'
-            );
-            return '';
-          });
+const cronSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
+  ? z.preprocess(
+      trimmedOrUndefined,
+      z.string({ required_error: 'CRON_SECRET is required in production' }).min(1)
+    )
+  : IS_PRODUCTION && !IS_SERVER_BUNDLE
+    ? z.unknown().transform(() => '')
+    : z
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
+        .transform((val) => {
+          if (val) return val;
+          console.warn(
+            '[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.'
+          );
+          return '';
+        });
 
 const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
@@ -399,7 +404,7 @@ function assertValidProductionServerEnv(): void {
   assertValidProductionCronSecret();
 }
 
-if (IS_PRODUCTION && IS_SERVER_BUNDLE) {
+if (IS_PRODUCTION_SERVER_STRICT_SECRETS) {
   assertValidProductionServerEnv();
 }
 
@@ -422,6 +427,9 @@ export function validateEnv(): void {
   }
   if (!IS_PRODUCTION) {
     warnDevIfSupabaseLooksLikePlaceholders();
+    return;
+  }
+  if (IS_NEXT_PRODUCTION_BUILD) {
     return;
   }
   assertValidProductionServerEnv();
