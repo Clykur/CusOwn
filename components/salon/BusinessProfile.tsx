@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { UI_CUSTOMER } from '@/config/constants';
@@ -105,6 +106,12 @@ export const BusinessProfile = () => {
   const [loading, setLoading] = useState(true);
   const [reviewData, setReviewData] = useState<ReviewData | null>(null);
 
+  const router = useRouter();
+
+  const handleBook = (serviceId: string) => {
+    router.push(`/customer/book/${encodeURIComponent(slug)}?serviceId=${serviceId}`);
+  };
+
   useEffect(() => {
     if (!slug) return;
 
@@ -139,10 +146,8 @@ export const BusinessProfile = () => {
         setSalon(salonData);
 
         const userId = (salonData as Salon & { owner_id?: string }).owner_id;
-        const queryParam = userId ? `userId=${userId}` : `businessId=${salonData.id}`;
-
         const [servicesRes, mediaRes] = await Promise.all([
-          fetch(`/api/owner/services?${queryParam}`, {
+          fetch(`/api/owner/services?bookingLink=${slug}`, {
             cache: FETCH_CACHE,
           }).then((r) => r.json()),
           fetch(`/api/media/business/${salonData.id}`, {
@@ -390,13 +395,22 @@ export const BusinessProfile = () => {
             {services.map((service) => (
               <div
                 key={service.id}
-                className="border rounded-lg p-4 hover:shadow-lg transition-shadow bg-white"
+                className="border rounded-lg p-4 bg-white hover:border-gray-400 transition-colors"
               >
                 <div className="font-bold text-lg mb-1">{service.name}</div>
 
                 <div className="flex items-center justify-between text-gray-600 text-sm">
                   <span>Duration: {service.duration}</span>
                   <span className="font-semibold text-black">₹{service.price}</span>
+                </div>
+
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => handleBook(service.id)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-800 hover:text-white transition-colors duration-200"
+                  >
+                    Book
+                  </button>
                 </div>
               </div>
             ))}

@@ -11,6 +11,7 @@ import { ERROR_MESSAGES } from '@/config/constants';
 const mockBookingRateLimitEnhanced = vi.fn().mockResolvedValue(null);
 const mockRunLazyExpireIfNeeded = vi.fn().mockResolvedValue(undefined);
 const mockGetSlotById = vi.fn();
+const mockGetSalonById = vi.fn();
 const mockValidateSlot = vi.fn().mockResolvedValue({ valid: true });
 const mockPrepareCreateBookingParams = vi.fn();
 const mockShouldBlockAction = vi.fn().mockResolvedValue({ blocked: false });
@@ -39,6 +40,12 @@ vi.mock('@/services/slot.service', () => ({
 vi.mock('@/services/business-hours.service', () => ({
   businessHoursService: {
     validateSlot: (...args: unknown[]) => mockValidateSlot(...args),
+  },
+}));
+
+vi.mock('@/services/salon.service', () => ({
+  salonService: {
+    getSalonById: (...args: unknown[]) => mockGetSalonById(...args),
   },
 }));
 
@@ -102,6 +109,13 @@ describe('POST /api/bookings', () => {
     mockRpc.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValueOnce({
       data: [{ status: 'created', booking_id: 'ABC1234' }],
       error: null,
+    });
+    mockGetSalonById.mockResolvedValue({
+      id: validBody.salon_id,
+      salon_name: 'Test Salon',
+      opening_time: '09:00',
+      closing_time: '18:00',
+      slot_duration: 30,
     });
     mockGetSlotById.mockResolvedValue({
       id: '00000000-0000-4000-8000-000000000002',

@@ -2,10 +2,13 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Default `.next`. Avoid NEXT_DIST_DIR / alternate distDir: Next 15 can ENOENT on
-  // server manifests during "Collecting page data". Strict build cleans `.next` first.
+  // ✅ Add this to silence Turbopack vs webpack conflict
+  turbopack: {},
+
   distDir: '.next',
+
   outputFileTracingRoot: path.join(__dirname),
+
   images: {
     remotePatterns: [
       {
@@ -19,24 +22,19 @@ const nextConfig = {
     ],
     qualities: [75, 85, 95],
   },
-  // Keep console logs in development, strip noisy logs in production bundles.
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-  // Disabled to avoid double-mount/render storms that trigger repeated GET /admin/dashboard.
+
   reactStrictMode: false,
-  // Disable static optimization for better dev experience
+
   experimental: {
-    // Ensure proper chunk loading
     optimizePackageImports: [],
-    // Cache dynamic RSC segments in client router to reduce repeated GET /admin|owner|customer/dashboard in dev.
     staleTimes: { dynamic: 30, static: 300 },
   },
-  // Keep Supabase server-only out of client bundles; avoid custom splitChunks
-  // so server and client chunk paths stay in sync (fixes vendor-chunks/@supabase.js ENOENT).
+
   webpack: (config, { isServer, dev }) => {
-    // Prevent intermittent ENOENT on .next/cache/*.pack.gz during dev
-    // by using in-memory cache instead of filesystem pack cache.
     if (dev) {
       config.cache = {
         type: 'memory',
@@ -65,16 +63,20 @@ const nextConfig = {
       {
         test: /\.svg$/i,
         issuer: fileLoaderRule.issuer,
-        resourceQuery: { not: [...fileLoaderRule.resourceQuery.not, /url/] },
+        resourceQuery: {
+          not: [...fileLoaderRule.resourceQuery.not, /url/],
+        },
         use: ['@svgr/webpack'],
       }
     );
 
     fileLoaderRule.exclude = /\.svg$/i;
+
     return config;
   },
-  // Resolve server-only packages via Node (avoids broken vendor chunk path in server bundle).
+
   serverExternalPackages: ['@supabase/supabase-js', '@supabase/ssr', 'bullmq', 'ioredis'],
+
   async headers() {
     const csp = [
       "default-src 'self'",
@@ -93,61 +95,32 @@ const nextConfig = {
 
     return [
       {
-        // Apply security headers to all routes except static assets
         source: '/:path*',
         headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: csp,
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
+          { key: 'Content-Security-Policy', value: csp },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload',
           },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
+          { key: 'X-Frame-Options', value: 'DENY' },
           {
             key: 'Permissions-Policy',
             value:
               'camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), accelerometer=(), gyroscope=()',
           },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
-          },
-          {
-            key: 'Cross-Origin-Resource-Policy',
-            value: 'same-site',
-          },
-        ],
-      },
-      {
-        // Ensure proper MIME types for static assets
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
         ],
       },
     ];
   },
-  // Ensure icon.svg is handled correctly
+
   async rewrites() {
     return [];
   },

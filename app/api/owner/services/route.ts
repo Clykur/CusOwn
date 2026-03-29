@@ -30,14 +30,6 @@ export async function GET(request: NextRequest) {
     const rateLimitResponse = await servicesListRateLimit(request);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const user = await getServerUser();
-
-    if (!user) {
-      return errorResponse('Unauthorized', 401);
-    }
-
-    const userId = user.id;
-
     const businessId = request.nextUrl.searchParams.get('businessId');
     const bookingLink = request.nextUrl.searchParams.get('bookingLink');
 
@@ -46,9 +38,17 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * OWNER FLOW
+     * =========================
+     * OWNER FLOW (AUTH REQUIRED)
+     * =========================
      */
     if (businessId) {
+      const user = await getServerUser();
+
+      if (!user) {
+        return errorResponse('Unauthorized', 401);
+      }
+
       if (!isValidUUID(businessId)) {
         return errorResponse('Invalid businessId', 400);
       }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
         return errorResponse('Business not found', 404);
       }
 
-      if (salon.owner_user_id !== userId) {
+      if (salon.owner_user_id !== user.id) {
         return errorResponse('Unauthorized', 403);
       }
 
@@ -80,7 +80,9 @@ export async function GET(request: NextRequest) {
     }
 
     /**
-     * CUSTOMER FLOW
+     * =========================
+     * CUSTOMER FLOW (NO AUTH)
+     * =========================
      */
     if (bookingLink) {
       const salon = await salonService.getSalonByBookingLink(bookingLink);
@@ -94,8 +96,9 @@ export async function GET(request: NextRequest) {
       const cached = await getApiRedisCache(cacheKey);
       if (cached) return successResponse(cached);
 
-      const services = await dedupe(cacheKey, () =>
-        serviceService.getServicesByBusiness(salon.id, true)
+      const services = await dedupe(
+        cacheKey,
+        () => serviceService.getServicesByBusiness(salon.id, true) // only active
       );
 
       await setApiRedisCache(cacheKey, services, API_REDIS_TTL.SERVICES);

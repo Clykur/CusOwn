@@ -369,6 +369,7 @@ export const UI_CUSTOMER = {
   LABEL_PHONE_NUMBER: 'Phone Number',
   LABEL_SELECT_DATE: 'Select Date',
   LABEL_SELECT_TIME: 'Select Time',
+  LABEL_SELECT_SERVICE: 'Select Service',
   PLACEHOLDER_NAME: 'John Doe',
   PLACEHOLDER_PHONE: '10 digits',
   /** Data URI for default avatar when no profile image (avoids 404 on missing /default-avatar.png). */

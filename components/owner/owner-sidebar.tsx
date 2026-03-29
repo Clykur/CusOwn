@@ -114,12 +114,6 @@ export default function OwnerSidebar({
       icon: BusinessesIcon,
     },
     {
-      name: 'My Services',
-      href: '/owner/services',
-      requiresBusiness: true,
-      icon: ServiceIcon,
-    },
-    {
       name: 'Analytics',
       href: '/owner/analytics',
       requiresBusiness: true,
