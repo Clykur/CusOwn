@@ -15,7 +15,7 @@ const MAX_ENOENT_RETRIES = 3;
 function runNextBuild() {
   return new Promise((resolve) => {
     const child = spawn(command, ['next', 'build'], {
-      env: { ...process.env },
+      env: { ...process.env, NEXT_DISABLE_TURBOPACK: '1' },
       stdio: ['inherit', 'pipe', 'pipe'],
       shell: isWindows,
     });

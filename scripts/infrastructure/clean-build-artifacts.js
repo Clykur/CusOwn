@@ -8,6 +8,8 @@ for (const target of targets) {
     fs.rmSync(path.resolve(process.cwd(), target), {
       recursive: true,
       force: true,
+      maxRetries: 5,
+      retryDelay: 100,
     });
     // eslint-disable-next-line no-console
     console.log(`Removed: ${target}`);
