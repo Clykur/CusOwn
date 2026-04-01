@@ -1,11 +1,11 @@
-import { env } from '@/config/env';
 import { createBrowserClient } from '@supabase/ssr';
+import { publicEnv } from '@/config/env.public';
 
 /**
  * Client-side Supabase client. Session is also available via /api/auth/session.
  * Refresh is throttled by global fetch patch (see layout.tsx script).
  */
-export const supabase = createBrowserClient(env.supabase.url, env.supabase.anonKey, {
+export const supabase = createBrowserClient(publicEnv.supabase.url, publicEnv.supabase.anonKey, {
   cookies: {
     get(name) {
       if (typeof document === 'undefined') return undefined;

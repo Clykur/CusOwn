@@ -15,6 +15,7 @@ import BusinessesIcon from '@/src/icons/businesses.svg';
 import InfoIcon from '@/src/icons/info.svg';
 import CreateBusinessForm from '@/components/setup/create-business-form';
 import { useSearchParams } from 'next/navigation';
+import { fetchUserState } from '@/lib/utils/user-state.client';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -56,8 +57,7 @@ export default function SetupPage() {
       return;
     }
 
-    const { getUserState } = await import('@/lib/utils/user-state');
-    const stateResult = await getUserState(sessionUser.id);
+    const stateResult = await fetchUserState();
 
     /**
      * RULES:

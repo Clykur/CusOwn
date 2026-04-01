@@ -39,6 +39,7 @@ const ENFORCED_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs
 
 const ALLOWED_PROCESS_ENV_FILES = new Set([
   'config/env.ts',
+  'config/env.public.ts',
   'next.config.js',
   'scripts/infrastructure/check-node-version.js',
   'lib/security/security-headers.ts',

@@ -9,7 +9,7 @@ import {
   performanceMonitor,
   type PerformanceMetric,
 } from '@/lib/monitoring';
-import { env } from '@/config/env';
+import { publicEnv } from '@/config/env.public';
 
 interface PerformanceMonitorProps {
   enableDevTools?: boolean;
@@ -18,7 +18,7 @@ interface PerformanceMonitorProps {
 }
 
 export function PerformanceMonitor({
-  enableDevTools = env.nodeEnv === 'development',
+  enableDevTools = publicEnv.nodeEnv === 'development',
   reportEndpoint,
   sampleRate = 1.0,
 }: PerformanceMonitorProps) {
@@ -146,7 +146,7 @@ export function useRenderTracking(componentName: string) {
     const timeSinceLastRender = lastRenderTime.current ? now - lastRenderTime.current : 0;
     lastRenderTime.current = now;
 
-    if (env.nodeEnv === 'development' && renderCount.current > 1) {
+    if (publicEnv.nodeEnv === 'development' && renderCount.current > 1) {
       if (timeSinceLastRender < 100 && renderCount.current > 3) {
         console.warn(
           `[PERF] Rapid re-renders detected in ${componentName}: ` +

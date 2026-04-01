@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import StarRating from '@/components/booking/star-rating';
 import { UI_CUSTOMER } from '@/config/constants';
-import { env } from '@/config/env';
+import { publicEnv } from '@/config/env.public';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails, Slot } from '@/types';
 import BookingDetailsModal from '@/components/customer/BookingDetailsModal';
@@ -71,7 +71,7 @@ export interface SalonBookingHistoryTableProps {
 
 export default function SalonBookingHistoryTable({ bookings }: SalonBookingHistoryTableProps) {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
-  const cancellationMinHoursMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
+  const cancellationMinHoursMs = publicEnv.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
 
   const handleCancelled = () => {
     setSelectedBooking(null);
