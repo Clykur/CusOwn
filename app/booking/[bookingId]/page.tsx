@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { UI_CUSTOMER, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
-import { env } from '@/config/env';
+import { publicEnv } from '@/config/env.public';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { BookingStatusSkeleton } from '@/components/ui/skeleton';
@@ -83,7 +83,7 @@ export default function BookingStatusPage() {
   }
 
   const isNoShow = booking.status === 'confirmed' && booking.no_show;
-  const cancellationMinHoursMs = env.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
+  const cancellationMinHoursMs = publicEnv.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
 
   const handleCancelled = () => {
     setBooking((prev: any) => ({

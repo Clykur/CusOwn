@@ -21,6 +21,7 @@ import CheckIcon from '@/src/icons/check.svg';
 import LinkIcon from '@/src/icons/link.svg';
 import BusinessesIcon from '@/src/icons/businesses.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
+import { fetchUserState } from '@/lib/utils/user-state.client';
 
 type SelectableUserType = 'owner' | 'customer' | 'both' | 'admin' | null;
 
@@ -75,8 +76,7 @@ function SelectRoleContent() {
       }
 
       try {
-        const { getUserState } = await import('@/lib/utils/user-state');
-        const state = await getUserState(sessionUser.id);
+        const state = await fetchUserState();
         setCurrentUserType((state.userType as SelectableUserType) ?? null);
 
         const isOwner = state.userType === 'owner' || state.userType === 'both';
@@ -160,12 +160,8 @@ function SelectRoleContent() {
         (currentUserType === 'customer' || currentUserType === 'both')) ||
       (selectedRole === 'owner' && (currentUserType === 'owner' || currentUserType === 'both'));
 
-    // Invalidate local state before upgrade to ensure fresh check
-    const { getUserState, clearUserStateCache } = await import('@/lib/utils/user-state');
-    clearUserStateCache();
-
     if (alreadyHasSelectedRole) {
-      const state = await getUserState(user.id, { skipCache: true });
+      const state = await fetchUserState();
       if (selectedRole === 'owner' && state.businessCount === 0) {
         setCurrentStep(2);
         setProcessing(false);
@@ -192,8 +188,7 @@ function SelectRoleContent() {
         body: JSON.stringify({ role: selectedRole }),
       });
 
-      const { getUserState } = await import('@/lib/utils/user-state');
-      const state = await getUserState(user.id, { skipCache: true });
+      const state = await fetchUserState();
       setCurrentUserType((state.userType as SelectableUserType) ?? null);
 
       const hasBusiness = state.businessCount >= 1;
@@ -221,8 +216,7 @@ function SelectRoleContent() {
 
       // Fallback
       try {
-        const { getUserState } = await import('@/lib/utils/user-state');
-        const state = await getUserState(user.id, { skipCache: true });
+        const state = await fetchUserState();
 
         if (selectedRole === 'customer') {
           router.replace(ROUTES.CUSTOMER_DASHBOARD);

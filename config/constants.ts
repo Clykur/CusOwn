@@ -18,10 +18,6 @@ export const DEFAULT_SLOT_DURATION = 30;
 // Generate slots for 7 days initially (matches lazy generation window)
 export const DAYS_TO_GENERATE_SLOTS = 7;
 
-import { env } from './env';
-
-export const SLOT_RESERVATION_TIMEOUT_MINUTES = env.payment.slotExpiryMinutes;
-
 /** Slot hold TTL bounds (minutes). Reservation expiry must be within this range for production. */
 export const SLOT_HOLD_TTL_MIN_MINUTES = 5;
 export const SLOT_HOLD_TTL_MAX_MINUTES = 15;

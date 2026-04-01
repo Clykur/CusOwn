@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabaseAuth } from '@/lib/supabase/auth';
-import { getUserState } from '@/lib/utils/user-state';
+import { fetchUserState } from '@/lib/utils/user-state.client';
 
 export default function NotFound() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function NotFound() {
         return;
       }
 
-      const state = await getUserState(userId);
+      const state = await fetchUserState();
 
       const onOwnerRoute = pathname?.startsWith('/owner');
       const onCustomerRoute = pathname?.startsWith('/customer');

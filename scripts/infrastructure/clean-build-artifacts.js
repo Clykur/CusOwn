@@ -1,13 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const targets = ['.next', '.next-build', path.join('node_modules', '.cache'), '.turbo'];
+const targets = ['.next', path.join('node_modules', '.cache'), '.turbo'];
 
 for (const target of targets) {
   try {
     fs.rmSync(path.resolve(process.cwd(), target), {
       recursive: true,
       force: true,
+      maxRetries: 5,
+      retryDelay: 100,
     });
     // eslint-disable-next-line no-console
     console.log(`Removed: ${target}`);

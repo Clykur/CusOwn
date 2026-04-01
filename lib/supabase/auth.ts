@@ -1,14 +1,14 @@
-import { env } from '@/config/env';
 import { createBrowserClient } from '@supabase/ssr';
 import { AUTH_COOKIE_MAX_AGE_SECONDS } from '@/config/constants';
+import { publicEnv } from '@/config/env.public';
 
 /**
  * Client-side Supabase client for authentication
  * Use this in client components for login/logout
  * Refresh is throttled by global fetch patch (see layout.tsx script).
  */
-const supabaseUrl = typeof window !== 'undefined' ? env.supabase.url || '' : '';
-const supabaseAnonKey = typeof window !== 'undefined' ? env.supabase.anonKey || '' : '';
+const supabaseUrl = typeof window !== 'undefined' ? publicEnv.supabase.url || '' : '';
+const supabaseAnonKey = typeof window !== 'undefined' ? publicEnv.supabase.anonKey || '' : '';
 
 // Only create client if we have valid credentials
 // Use a dummy client if credentials are missing to prevent crashes

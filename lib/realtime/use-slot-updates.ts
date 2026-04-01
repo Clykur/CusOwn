@@ -10,7 +10,7 @@ import {
 import { createRealtimeMetrics, type RealtimeMetrics } from '@/lib/realtime/realtime-utils';
 import type { Slot } from '@/types';
 import { API_ROUTES } from '@/config/constants';
-import { isSupabaseConfigured } from '@/config/env';
+import { isPublicSupabaseConfigured } from '@/config/env.public';
 
 const MAX_SEEN_EVENT_IDS = 500;
 const BATCH_DELAY_MS = 100;
@@ -114,7 +114,7 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
     if (!enabled || !businessId) return;
 
     // Skip realtime when Supabase is not configured (placeholder URL)
-    if (!isSupabaseConfigured()) {
+    if (!isPublicSupabaseConfigured()) {
       return;
     }
 
