@@ -179,20 +179,23 @@ export async function POST(request: NextRequest) {
     // ----------------------------
     // CREATE BOOKING
     // ----------------------------
-    const { data: result, error: rpcError } = await supabase.rpc('create_booking_service_aware', {
-      p_key: idempotencyKey,
-      p_ttl_hours: IDEMPOTENCY_TTL_HOURS,
-      p_business_id: params.p_business_id,
-      p_slot_id: params.p_slot_id,
-      p_customer_name: params.p_customer_name,
-      p_customer_phone: params.p_customer_phone,
-      p_booking_id: params.p_booking_id,
-      p_customer_user_id: params.p_customer_user_id,
-      p_total_duration_minutes: params.p_total_duration_minutes,
-      p_total_price_cents: params.p_total_price_cents,
-      p_services_count: params.p_services_count,
-      p_service_data: params.p_service_data,
-    });
+    const { data: result, error: rpcError } = await supabase.rpc(
+      'create_booking_idempotent_reserve',
+      {
+        p_key: idempotencyKey,
+        p_ttl_hours: IDEMPOTENCY_TTL_HOURS,
+        p_business_id: params.p_business_id,
+        p_slot_id: params.p_slot_id,
+        p_customer_name: params.p_customer_name,
+        p_customer_phone: params.p_customer_phone,
+        p_booking_id: params.p_booking_id,
+        p_customer_user_id: params.p_customer_user_id,
+        p_total_duration_minutes: params.p_total_duration_minutes,
+        p_total_price_cents: params.p_total_price_cents,
+        p_services_count: params.p_services_count,
+        p_service_data: params.p_service_data,
+      }
+    );
 
     if (rpcError) throw rpcError;
 

@@ -141,8 +141,7 @@ export default function PublicBookingPage({
 
     const fetchServices = async () => {
       try {
-        const res = await fetch(`/api/owner/services?bookingLink=${businessSlug}`);
-
+        const res = await fetch(`/api/owner/services?businessId=${business.id}`);
         const data = await res.json();
 
         if (data.success) {
@@ -749,8 +748,8 @@ export default function PublicBookingPage({
         credentials: 'include',
         body: JSON.stringify({
           salon_id: business.id,
+          slot_id: selectedSlot.id,
           date: selectedDate,
-          slot_start: selectedSlot.start_time, // Service-aware start time
           customer_name: customerName.trim(),
           customer_phone: phoneDigits,
           service_ids: selectedServices, // Drives duration calculation

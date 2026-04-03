@@ -203,10 +203,14 @@ export class DashboardService {
       if (options.fromDate) slotQuery = slotQuery.gte('date', options.fromDate);
       if (options.toDate) slotQuery = slotQuery.lte('date', options.toDate);
 
-      const { data: slots } = await slotQuery;
-      if (slots && slots.length > 0) {
+      const { data: slots, error: slotsError } = await slotQuery;
+      if (slotsError) {
+        console.error('[Dashboard] Slots query error (non-fatal for future dates):', slotsError);
+        slotIds = [];
+      } else if (slots && slots.length > 0) {
         slotIds = slots.map((s) => s.id);
       } else {
+        // No slots for date range (future date) - return empty safely BEFORE bookings query
         return {
           businesses,
           stats: {
@@ -235,7 +239,8 @@ export class DashboardService {
         'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at'
       )
       .in('business_id', businessIds)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000); // Safety limit to prevent massive queries
 
     if (slotIds) {
       bookingsQuery = bookingsQuery.in('slot_id', slotIds);
@@ -244,8 +249,8 @@ export class DashboardService {
     const { data: bookings, error: bookingsError } = await bookingsQuery;
 
     if (bookingsError) {
-      console.error('[Dashboard] Error fetching bookings:', bookingsError);
-      throw new Error(bookingsError.message || ERROR_MESSAGES.DATABASE_ERROR);
+      console.error('[Dashboard] Non-fatal bookings error (proceeding with empty):', bookingsError);
+      // Don't throw for Supabase query issues - return empty data
     }
 
     const allBookings = bookings || [];
@@ -253,12 +258,17 @@ export class DashboardService {
     const bookingSlotIds = [...new Set(allBookings.map((b) => b.slot_id).filter(Boolean))];
     let slots: Slot[] = [];
     if (bookingSlotIds.length > 0) {
-      const { data: slotsData } = await supabase
+      const { data: slotsData, error: slotDetailsError } = await supabase
         .from('slots')
         .select('id, business_id, date, start_time, end_time, status, reserved_until')
         .in('id', bookingSlotIds);
 
-      slots = (slotsData || []) as Slot[];
+      if (slotDetailsError) {
+        console.error('[Dashboard] Slot details error:', slotDetailsError);
+      } else {
+        slots = (slotsData || []) as Slot[];
+      }
+    } else {
     }
 
     const bookingIds = allBookings.map((b) => b.id).filter(Boolean);
@@ -281,6 +291,7 @@ export class DashboardService {
         rating: Number(review.rating),
         comment: review.comment ?? null,
       }));
+    } else {
     }
 
     const slotMap = new Map<string, Slot>();
