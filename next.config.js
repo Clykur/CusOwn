@@ -3,7 +3,14 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // ✅ Add this to silence Turbopack vs webpack conflict
-  turbopack: {},
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
 
   distDir: '.next',
 

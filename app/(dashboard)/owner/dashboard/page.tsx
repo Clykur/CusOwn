@@ -3,8 +3,6 @@
 import { useEffect, useCallback, useRef, useMemo, useState, memo } from 'react';
 import dynamic from 'next/dynamic';
 import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
-import BookingCard from '@/components/owner/booking-card';
-import PullToRefresh from '@/components/ui/pull-to-refresh';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
 import { BookingWithDetails } from '@/types';
 import { IconCheck, IconCross } from '@/components/ui/status-icons';
@@ -46,7 +44,7 @@ const StatsGrid = memo(function StatsGrid() {
   const stats = useOwnerDashboardStore((state) => state.stats);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 xl:grid-cols-2 gap-6">
       <Stat label="Total Businesses" value={stats?.totalBusinesses ?? 0} />
       <Stat label="Total Bookings" value={stats?.totalBookings ?? 0} />
       <Stat label="Confirmed" value={stats?.confirmedBookings ?? 0} />
@@ -96,50 +94,6 @@ function SearchInput() {
   );
 }
 
-const DateFilters = memo(function DateFilters() {
-  const fromDate = useOwnerDashboardStore((state) => state.fromDate);
-  const toDate = useOwnerDashboardStore((state) => state.toDate);
-  const setFromDate = useOwnerDashboardStore((state) => state.setFromDate);
-  const setToDate = useOwnerDashboardStore((state) => state.setToDate);
-
-  return (
-    <>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-gray-500">From</span>
-        <div className="w-40 lg:w-44">
-          <DateFilter value={fromDate} onChange={setFromDate} />
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-gray-500">To</span>
-        <div className="w-40 lg:w-44">
-          <DateFilter value={toDate} onChange={setToDate} />
-        </div>
-      </div>
-    </>
-  );
-});
-
-const MobileDateFilters = memo(function MobileDateFilters() {
-  const fromDate = useOwnerDashboardStore((state) => state.fromDate);
-  const toDate = useOwnerDashboardStore((state) => state.toDate);
-  const setFromDate = useOwnerDashboardStore((state) => state.setFromDate);
-  const setToDate = useOwnerDashboardStore((state) => state.setToDate);
-
-  return (
-    <div className="flex gap-3">
-      <div className="flex flex-col flex-1">
-        <span className="text-xs font-semibold text-gray-500 mb-1">From</span>
-        <DateFilter value={fromDate} onChange={setFromDate} />
-      </div>
-      <div className="flex flex-col flex-1">
-        <span className="text-xs font-semibold text-gray-500 mb-1">To</span>
-        <DateFilter value={toDate} onChange={setToDate} />
-      </div>
-    </div>
-  );
-});
-
 export default function OwnerDashboardPage() {
   const { initialUser } = useOwnerSession();
 
@@ -151,6 +105,8 @@ export default function OwnerDashboardPage() {
   const bookings = useOwnerDashboardStore((state) => state.bookings);
   const fromDate = useOwnerDashboardStore((state) => state.fromDate);
   const toDate = useOwnerDashboardStore((state) => state.toDate);
+  const setFromDate = useOwnerDashboardStore((state) => state.setFromDate);
+  const setToDate = useOwnerDashboardStore((state) => state.setToDate);
   const searchTerm = useOwnerDashboardStore((state) => state.searchTerm);
   const processingBookingId = useOwnerDashboardStore((state) => state.processingBookingId);
   const setProcessingBookingId = useOwnerDashboardStore((state) => state.setProcessingBookingId);
@@ -186,65 +142,74 @@ export default function OwnerDashboardPage() {
     return useOwnerDashboardStore.getState().bookings.find((b) => b.id === bookingId);
   }, []);
 
-  const fetchDashboard = useCallback(async () => {
-    if (!initialUser?.id) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const params = new URLSearchParams();
-      if (fromDate) params.append('fromDate', fromDate);
-      if (toDate) params.append('toDate', toDate);
-
-      cancelRequests('owner-dashboard');
-
-      const url = `/api/owner/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await dedupFetch(url, {
-        credentials: 'include',
-        dedupKey: `owner-dashboard:${fromDate || 'all'}:${toDate || 'all'}`,
-        cancelPrevious: true,
-      });
-
-      if (!response.ok) {
+  const fetchDashboard = useCallback(
+    async (explicitFrom?: string, explicitTo?: string) => {
+      if (!initialUser?.id) {
         setIsLoading(false);
         return;
       }
 
-      const json = await response.json();
-      if (json?.data) {
-        const { stats: dashboardStats, recentBookings, bookingsByBusiness } = json.data;
+      try {
+        // Use explicitly passed dates if provided, otherwise fall back to store
+        const currentFrom =
+          explicitFrom !== undefined ? explicitFrom : useOwnerDashboardStore.getState().fromDate;
+        const currentTo =
+          explicitTo !== undefined ? explicitTo : useOwnerDashboardStore.getState().toDate;
 
-        setStats({
-          totalBusinesses: dashboardStats?.totalBusinesses ?? 0,
-          totalBookings: dashboardStats?.totalBookings ?? 0,
-          confirmedBookings: dashboardStats?.confirmedBookings ?? 0,
-          pendingBookings: dashboardStats?.pendingBookings ?? 0,
-          cancelledBookings: dashboardStats?.cancelledBookings ?? 0,
+        const params = new URLSearchParams();
+        if (currentFrom) params.append('fromDate', currentFrom);
+        if (currentTo) params.append('toDate', currentTo);
+
+        cancelRequests('owner-dashboard');
+
+        const url = `/api/owner/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
+        const response = await dedupFetch(url, {
+          credentials: 'include',
+          dedupKey: `owner-dashboard:${currentFrom || 'all'}:${currentTo || 'all'}`,
+          cancelPrevious: true,
         });
 
-        const allBookings: BookingWithDetails[] = [];
-        if (bookingsByBusiness) {
-          Object.values(bookingsByBusiness).forEach((businessBookings) => {
-            if (Array.isArray(businessBookings)) {
-              allBookings.push(...(businessBookings as BookingWithDetails[]));
-            }
-          });
-        } else if (Array.isArray(recentBookings)) {
-          allBookings.push(...recentBookings);
+        if (!response.ok) {
+          setIsLoading(false);
+          return;
         }
 
-        allBookings.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-        setBookings(allBookings);
+        const json = await response.json();
+        if (json?.data) {
+          const { stats: dashboardStats, recentBookings, bookingsByBusiness } = json.data;
+
+          setStats({
+            totalBusinesses: dashboardStats?.totalBusinesses ?? 0,
+            totalBookings: dashboardStats?.totalBookings ?? 0,
+            confirmedBookings: dashboardStats?.confirmedBookings ?? 0,
+            pendingBookings: dashboardStats?.pendingBookings ?? 0,
+            cancelledBookings: dashboardStats?.cancelledBookings ?? 0,
+          });
+
+          const allBookings: BookingWithDetails[] = [];
+          if (bookingsByBusiness) {
+            Object.values(bookingsByBusiness).forEach((businessBookings) => {
+              if (Array.isArray(businessBookings)) {
+                allBookings.push(...(businessBookings as BookingWithDetails[]));
+              }
+            });
+          } else if (Array.isArray(recentBookings)) {
+            allBookings.push(...recentBookings);
+          }
+
+          allBookings.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+          setBookings(allBookings);
+        }
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') {
+          console.error('[OwnerDashboard] Failed to fetch dashboard:', err);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      if ((err as Error)?.name !== 'AbortError') {
-        console.error('[OwnerDashboard] Failed to fetch dashboard:', err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [initialUser?.id, fromDate, toDate, setIsLoading, setStats, setBookings]);
+    },
+    [initialUser?.id, setIsLoading, setStats, setBookings]
+  );
 
   const fetchBookings = useCallback(async () => {
     await fetchDashboard();
@@ -261,9 +226,19 @@ export default function OwnerDashboardPage() {
     },
   });
 
+  // Fetch on mount only
   useEffect(() => {
     fetchDashboard();
-  }, [fetchDashboard]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUser?.id]);
+
+  // Fetch when dates change — pass values directly to avoid store read timing race
+  useEffect(() => {
+    if (!initialUser?.id) return;
+    setIsLoading(true);
+    fetchDashboard(fromDate ?? '', toDate ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromDate, toDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -281,6 +256,12 @@ export default function OwnerDashboardPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showSearch]);
+
+  const handleClearFilters = useCallback(() => {
+    useOwnerDashboardStore.getState().clearFilters();
+    setIsLoading(true);
+    fetchDashboard('', '');
+  }, [fetchDashboard, setIsLoading]);
 
   const handleAccept = async (bookingId: string) => {
     if (processingBookingId) return;
@@ -316,7 +297,6 @@ export default function OwnerDashboardPage() {
           updated_at: prevBooking.updated_at,
           undo_used_at: prevBooking.undo_used_at,
         });
-
         const result = await response.json();
         showToast(result.error || 'Failed to accept booking', 'error', 2000);
       }
@@ -366,7 +346,6 @@ export default function OwnerDashboardPage() {
           updated_at: prevBooking.updated_at,
           undo_used_at: prevBooking.undo_used_at,
         });
-
         const result = await response.json();
         showToast(result.error || 'Failed to reject booking', 'error', 2000);
       }
@@ -414,7 +393,7 @@ export default function OwnerDashboardPage() {
         const json = await res.json();
 
         if (res.ok) {
-          updateBooking(bookingId, json); // Update with full server data
+          updateBooking(bookingId, json);
           showToast(UI_CONTEXT.REVERTED_TO_PENDING, 'success', 2000);
           publishBookingUpdated(bookingId, 'pending');
         } else {
@@ -509,10 +488,6 @@ export default function OwnerDashboardPage() {
     ]
   );
 
-  const handleBookingRescheduled = useCallback(() => {
-    fetchBookings();
-  }, [fetchBookings]);
-
   const handleNoShowMarked = useCallback(
     (bookingId: string) => {
       updateBooking(bookingId, { no_show: true });
@@ -545,97 +520,81 @@ export default function OwnerDashboardPage() {
 
       <div>
         <h2 className="text-xl font-semibold text-slate-900 mb-4">Your Customers</h2>
-        <div className="bg-white border border-slate-200 rounded-lg p-6 overflow-visible">
-          <div className="hidden md:flex items-center justify-between mb-4 relative">
-            <h2 className="text-lg font-semibold">Bookings</h2>
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 overflow-visible">
+          {/* Unified filter bar — all screen sizes */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-4">
+            {/* Title */}
+            <h2 className="text-lg font-semibold shrink-0 mr-auto">Bookings</h2>
 
-            <div ref={searchContainerRef} className="flex items-center gap-3 relative">
-              <button
-                onClick={() => setShowSearch((prev) => !prev)}
-                className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
-              >
-                <ExploreIcon className="h-4 w-4 text-gray-600" />
-              </button>
-
-              <div className="flex flex-row gap-3">
-                <DateFilters />
+            {/* From date */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-sm font-semibold text-gray-500 whitespace-nowrap">From</span>
+              <div className="w-36 sm:w-40">
+                <DateFilter value={fromDate} onChange={setFromDate} />
               </div>
             </div>
-          </div>
 
-          <div className="md:hidden mb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Bookings</h2>
+            {/* To date */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-sm font-semibold text-gray-500 whitespace-nowrap">To</span>
+              <div className="w-36 sm:w-40">
+                <DateFilter value={toDate} onChange={setToDate} />
+              </div>
+            </div>
+
+            {/* Clear + Search */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleClearFilters}
+                className="h-9 px-3 text-sm font-medium flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition whitespace-nowrap"
+              >
+                Clear
+              </button>
               <button
                 onClick={() => setShowSearch((prev) => !prev)}
                 className="h-9 w-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition"
+                aria-label="Toggle search"
               >
                 <ExploreIcon className="h-4 w-4 text-gray-600" />
               </button>
             </div>
-            <MobileDateFilters />
           </div>
 
+          {/* Search input */}
           {showSearch && (
             <div ref={searchContainerRef} className="mb-4">
               <SearchInput />
             </div>
           )}
 
-          <div className="lg:hidden">
-            <PullToRefresh onRefresh={async () => fetchBookings()}>
-              <div className="space-y-4">
-                {filteredBookings.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No bookings for selected date range</p>
-                  </div>
-                ) : (
-                  filteredBookings.map((booking) => (
-                    <BookingCard
-                      key={booking.id}
-                      booking={booking}
-                      onAccept={handleAccept}
-                      onReject={handleReject}
-                      processingId={processingBookingId}
-                      onRescheduled={handleBookingRescheduled}
-                      onNoShowMarked={handleNoShowMarked}
-                      onUndoAccept={handleUndoAccept}
-                      onUndoReject={handleUndoReject}
-                      undoWindowMinutes={UNDO_ACCEPT_REJECT_WINDOW_MINUTES}
-                    />
-                  ))
-                )}
-              </div>
-            </PullToRefresh>
-          </div>
-
-          <div className="hidden lg:block">
-            {filteredBookings.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No bookings for selected date range</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
+          {/* Table — all screen sizes */}
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No bookings for selected date range</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:-mx-6">
+              <div className="inline-block min-w-full px-4 sm:px-6 align-middle">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Customer
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Date & Time
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Booking ID
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Business
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                         Rating
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status & actions
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Status & Actions
                       </th>
                     </tr>
                   </thead>
@@ -656,8 +615,8 @@ export default function OwnerDashboardPage() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -691,11 +650,11 @@ const BookingTableRow = memo(function BookingTableRow({
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">{booking.customer_name}</div>
         <div className="text-sm text-gray-500">{booking.customer_phone}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
         {booking.slot ? (
           <div>
             <div className="text-sm text-gray-900">
@@ -709,21 +668,21 @@ const BookingTableRow = memo(function BookingTableRow({
           <span className="text-sm text-gray-500">N/A</span>
         )}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
         <span className="text-sm text-gray-500 font-mono">{booking.booking_id}</span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
         {booking.review?.rating ? (
           <StarRating value={booking.review.rating} readonly size="sm" />
         ) : (
           '—'
         )}
       </td>
-      <td className="px-6 py-4 text-sm font-medium">
-        <div className="flex flex-wrap gap-2 items-center">
+      <td className="px-4 sm:px-6 py-4 text-sm font-medium">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           {(() => {
             if (booking.status === 'pending' && !isSlotExpired) {
               return (
@@ -800,9 +759,9 @@ const BookingTableRow = memo(function BookingTableRow({
             </>
           )}
 
-          {(booking.status === 'rejected' && !canUndo(booking)) ||
-          booking.status === 'cancelled' ||
-          String(booking.status) === 'expired' ? (
+          {((booking.status === 'rejected' && !canUndo(booking)) ||
+            booking.status === 'cancelled' ||
+            String(booking.status) === 'expired') && (
             <span
               className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
                 booking.status === 'rejected'
@@ -818,7 +777,7 @@ const BookingTableRow = memo(function BookingTableRow({
                     : 'Cancelled'
                   : 'Expired'}
             </span>
-          ) : null}
+          )}
         </div>
       </td>
     </tr>
