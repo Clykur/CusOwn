@@ -229,6 +229,25 @@ const envSchema = z.object({
   NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
 });
 
+/**
+ * Pre-parse diagnostics: log missing critical env vars in production before validation throws.
+ * Helps identify configuration issues at server startup.
+ */
+if (IS_PRODUCTION && IS_SERVER_BUNDLE && !IS_NEXT_PRODUCTION_BUILD) {
+  const requiredVars = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+  if (IS_SERVER_BUNDLE) {
+    requiredVars.push('SUPABASE_SERVICE_ROLE_KEY');
+  }
+  const missing = requiredVars.filter((key) => !process.env[key]?.trim());
+  if (missing.length > 0) {
+    console.error(
+      `[env] CRITICAL: Missing required environment variables in production: ${missing.join(', ')}. ` +
+        'Set these in your deployment environment (Vercel, AWS, Docker, etc.):\n' +
+        missing.map((key) => `  - ${key}`).join('\n')
+    );
+  }
+}
+
 const rawEnv = envSchema.parse(process.env);
 
 export const env = {
@@ -328,11 +347,17 @@ function assertValidProductionSupabaseEnv(): void {
 
   for (const { key, value } of pairs) {
     if (!value?.trim()) {
-      throw new Error(`Missing required environment variable: ${key}`);
+      throw new Error(
+        `[env] Production server requires ${key}. ` +
+          `Set it in your deployment environment (Vercel, AWS, Docker, etc.) ` +
+          `or in a .env.production file.`
+      );
     }
     if (looksLikePlaceholderEnvValue(value)) {
       throw new Error(
-        `Invalid environment variable ${key}: value must not contain placeholder or template patterns (e.g. placeholder, your-project-id, your-anon-key).`
+        `[env] Production ${key} uses a placeholder or template value. ` +
+          `Replace it with a real Supabase project value. ` +
+          `Placeholder indicators: placeholder, your-project-id, your-anon-key, etc.`
       );
     }
   }
