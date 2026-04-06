@@ -5,11 +5,11 @@ import { Suspense } from 'react';
 import { AnalyticsClient } from '@/components/analytics-client';
 import { PerformanceMonitor } from '@/components/performance-monitor';
 import { AuthFlowDebug } from '@/components/auth/auth-flow-debug';
-import { env } from '@/config/env';
+import { publicEnv } from '@/config/env.public';
 import './globals.css';
 import '@/lib/init/events';
 
-const isDev = env.nodeEnv === 'development';
+const isDev = publicEnv.nodeEnv === 'development';
 
 const inter = Inter({ subsets: ['latin'] });
 

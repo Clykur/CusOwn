@@ -84,4 +84,5 @@ node_modules/.cache
 
 # cache directories
 node_modules/.cache
-.cache
+.cache.venv/
+.venv/
