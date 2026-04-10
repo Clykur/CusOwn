@@ -248,7 +248,10 @@ if (IS_PRODUCTION && IS_SERVER_BUNDLE && !IS_NEXT_PRODUCTION_BUILD) {
   }
 }
 
-const rawEnv = envSchema.parse(process.env);
+const rawEnv =
+  typeof window === 'undefined'
+    ? envSchema.parse(process.env)
+    : (process.env as any);
 
 export const env = {
   nodeEnv: rawEnv.NODE_ENV,
