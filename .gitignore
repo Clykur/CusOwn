@@ -86,3 +86,4 @@ node_modules/.cache
 node_modules/.cache
 .cache.venv/
 .venv/
+.code-workspace
