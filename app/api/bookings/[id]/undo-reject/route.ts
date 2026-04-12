@@ -5,11 +5,11 @@ import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
-import { userService } from '@/services/user.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { auditService } from '@/services/audit.service';
-import { hasPermission, PERMISSIONS } from '@/services/permission.service';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
+import { logStructured } from '@/lib/observability/structured-log';
+import { canManageBookingForBusiness } from '@/lib/utils/booking-business-access.server';
 
 const undoRejectRateLimit = enhancedRateLimit({
   maxRequests: 10,
@@ -36,19 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const ctx = await getAuthContext(request);
     if (!ctx) {
       logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
-      return errorResponse('Authentication required', 401);
-    }
-
-    const canReject = await hasPermission(ctx.user.id, PERMISSIONS.BOOKINGS_REJECT);
-    if (!canReject) {
-      logAuthDeny({
-        user_id: ctx.user.id,
-        route: ROUTE,
-        reason: 'auth_denied',
-        permission: PERMISSIONS.BOOKINGS_REJECT,
-        resource: id,
-      });
-      return errorResponse('Access denied', 403);
+      return errorResponse(ERROR_MESSAGES.AUTHENTICATION_REQUIRED, 401);
     }
 
     const booking = await bookingService.getBookingByUuidWithDetails(id);
@@ -56,17 +44,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    const isAdmin = await hasPermission(ctx.user.id, PERMISSIONS.ADMIN_ACCESS);
-    const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-    const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
-    if (!ownsBusiness && !isAdmin) {
+    if (!booking.salon) {
+      return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
+    }
+
+    const allowed = await canManageBookingForBusiness(
+      ctx.user.id,
+      ctx.profile,
+      booking.business_id
+    );
+    if (!allowed) {
       logAuthDeny({
         user_id: ctx.user.id,
         route: ROUTE,
         reason: 'auth_denied',
+        role: (ctx.profile as { user_type?: string })?.user_type ?? 'unknown',
         resource: id,
       });
-      return errorResponse('Access denied', 403);
+      return errorResponse(ERROR_MESSAGES.BOOKING_MANAGE_ACCESS_DENIED, 403);
     }
 
     const updated = await bookingService.revertRejectToPending(id, ctx.user.id);
@@ -82,9 +77,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       console.error('[SECURITY] Failed to create audit log:', auditError);
     }
 
-    console.log(
-      `[SECURITY] Booking undo reject: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${ctx.user.id.substring(0, 8)}...`
-    );
+    logStructured('info', 'Booking undo reject', {
+      action: 'booking_undo_reject',
+      booking_id: id,
+    });
 
     const response = successResponse(updated, SUCCESS_MESSAGES.BOOKING_REVERTED_TO_PENDING);
     setNoCacheHeaders(response);

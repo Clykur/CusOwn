@@ -17,7 +17,7 @@ vi.mock('@/repositories/slot.repository', () => ({
   updateSlotStatus: (...args: unknown[]) => mockUpdateSlotStatus(...args),
   setSlotReserved: (...args: unknown[]) => mockSetSlotReserved(...args),
   hasSlotsForDate: vi.fn().mockResolvedValue(false),
-  getOccupiedIntervalsForDate: vi.fn().mockResolvedValue([]),
+  getExtendedOccupancyMinuteIntervalsForDate: vi.fn().mockResolvedValue([]),
   getSlotsByIntervals: vi.fn().mockResolvedValue([]),
   insertSlots: vi.fn().mockResolvedValue(undefined),
   releaseExpiredReservationsForBusinessDate: vi.fn().mockResolvedValue(0),
@@ -51,8 +51,9 @@ vi.mock('@/services/slot-optimizer.service', () => ({
   dateSlotOptimizer: { getMissingDates: vi.fn().mockResolvedValue([]) },
 }));
 
-vi.mock('@/lib/slot-availability-intervals', () => ({
-  subtractOccupiedFromFullDay: vi.fn().mockReturnValue([]),
+vi.mock('@/lib/slot-capacity-timeline', () => ({
+  canScheduleWithinCapacity: vi.fn().mockReturnValue(true),
+  overlapsAnyBlocked: vi.fn().mockReturnValue(false),
 }));
 
 describe('slot.service', () => {

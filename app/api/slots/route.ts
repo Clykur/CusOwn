@@ -1,10 +1,15 @@
 import { NextRequest } from 'next/server';
 import { slotService } from '@/services/slot.service';
 import { salonService } from '@/services/salon.service';
+import { serviceService } from '@/services/service.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { getClientIp } from '@/lib/utils/security';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/config/constants';
+import {
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+} from '@/config/constants';
 import { businessHoursService } from '@/services/business-hours.service';
 import { getISTDateString, getISTDate, toMinutes } from '@/lib/time/ist';
 import {
@@ -13,6 +18,8 @@ import {
   setApiRedisCache,
   API_REDIS_TTL,
 } from '@/lib/cache/api-redis-cache';
+import { computeTotalBookingDurationMinutes } from '@/lib/slot-booking-duration';
+import type { MinuteInterval } from '@/lib/slot-capacity-timeline';
 
 /** Sanitize user-controlled values for logging to prevent log injection (newlines, etc.). */
 function sanitizeForLog(value: unknown): string {
@@ -25,6 +32,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const salonId = searchParams.get('salon_id');
     const date = searchParams.get('date') || getISTDateString();
+    const rawServiceIds = searchParams.get('service_ids') ?? searchParams.get('serviceIds') ?? '';
+    const serviceFingerprint =
+      rawServiceIds
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .sort()
+        .join(',') || 'default';
 
     if (!salonId) {
       return errorResponse('Salon ID is required', 400);
@@ -40,8 +55,11 @@ export async function GET(request: NextRequest) {
       return errorResponse('Invalid date format', 400);
     }
 
-    // Check Redis cache first (short TTL for slots due to real-time nature)
-    const redisKey = buildApiRedisKeyFromPath('/api/slots', { salon_id: salonId, date });
+    const redisKey = buildApiRedisKeyFromPath('/api/slots', {
+      salon_id: salonId,
+      date,
+      svc: serviceFingerprint.slice(0, 200),
+    });
     const redisCached = await getApiRedisCache<{
       closed: boolean;
       slots: unknown[];
@@ -56,7 +74,6 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // Parallel: fetch salon and business hours simultaneously
     const [salon, hours] = await Promise.all([
       salonService.getSalonById(salonId),
       businessHoursService.getEffectiveHours(salonId, date),
@@ -83,68 +100,76 @@ export async function GET(request: NextRequest) {
         message,
         slots: [],
       };
-      // Cache closed status in Redis (longer TTL since it's static for the day)
       await setApiRedisCache(redisKey, closedData, 60);
       return successResponse(closedData);
     }
 
-    // Generate slots if not exist
+    let requestedDurationMinutes: number | undefined;
+    if (rawServiceIds.trim()) {
+      const ids = [
+        ...new Set(
+          rawServiceIds
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        ),
+      ].slice(0, 10);
+      if (ids.some((id) => !isValidUUID(id))) {
+        return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
+      }
+      if (ids.length > 0) {
+        const services = await serviceService.validateServices(ids, salonId);
+        requestedDurationMinutes = computeTotalBookingDurationMinutes(services);
+        if (requestedDurationMinutes <= 0) {
+          return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
+        }
+      }
+    }
+
     await slotService.generateSlotsForDate(salonId, date, {
       opening_time: salon.opening_time,
       closing_time: salon.closing_time,
       slot_duration: salon.slot_duration,
     });
 
+    const todayStr = getISTDateString();
+    const istNow = getISTDate();
+    const currentMinutes = istNow.getHours() * 60 + istNow.getMinutes();
+
+    const blocked: MinuteInterval[] = [];
+    if (hours.break_start_time && hours.break_end_time) {
+      blocked.push({
+        startMin: toMinutes(hours.break_start_time),
+        endMin: toMinutes(hours.break_end_time),
+      });
+    }
+
     const slots = await slotService.getAvailableSlots(
       salonId,
       date,
       {
-        opening_time: salon.opening_time,
-        closing_time: salon.closing_time,
+        opening_time: hours.opening_time,
+        closing_time: hours.closing_time,
         slot_duration: salon.slot_duration,
+        concurrent_booking_capacity:
+          salon.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY,
       },
-      { skipCleanup: true }
+      {
+        skipCleanup: true,
+        requestedDurationMinutes,
+        todayDateStringIST: todayStr,
+        nowMinutesIST: currentMinutes,
+        blockedIntervalsMin: blocked,
+      }
     );
-
-    // Filter slots using already-fetched hours (no extra DB calls)
-    const todayStr = getISTDateString();
-    const now = getISTDate();
-    const open = toMinutes(hours.opening_time);
-    const close = toMinutes(hours.closing_time);
-    const breakStart = hours.break_start_time ? toMinutes(hours.break_start_time) : null;
-    const breakEnd = hours.break_end_time ? toMinutes(hours.break_end_time) : null;
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const isToday = date === todayStr;
-
-    const validSlots = (slots || []).filter((slot) => {
-      const slotStart = toMinutes(slot.start_time);
-      const slotEnd = toMinutes(slot.end_time);
-
-      // Outside business hours
-      if (slotStart < open || slotEnd > close) return false;
-
-      // Overlaps break time
-      if (breakStart !== null && breakEnd !== null) {
-        if (slotStart < breakEnd && slotEnd > breakStart) return false;
-      }
-
-      // Today: skip closed or already-passed slots
-      if (isToday) {
-        if (currentMinutes >= close) return false;
-        if (slotStart <= currentMinutes) return false;
-      }
-
-      return true;
-    });
 
     const slotsData = {
       closed: false,
-      slots: validSlots,
+      slots: slots || [],
       opening_time: hours.opening_time,
       closing_time: hours.closing_time,
     };
 
-    // Cache in Redis with short TTL (slots change frequently)
     await setApiRedisCache(redisKey, slotsData, API_REDIS_TTL.SLOTS);
 
     const response = successResponse(slotsData);
@@ -171,14 +196,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('Salon ID and date are required', 400);
     }
 
-    // Validate UUID format
     const { isValidUUID } = await import('@/lib/utils/security');
     if (!isValidUUID(salon_id)) {
       console.warn(`[SECURITY] Invalid salon ID format from IP: ${sanitizeForLog(clientIP)}`);
       return errorResponse('Invalid salon ID', 400);
     }
 
-    // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
       console.warn(`[SECURITY] Invalid date format from IP: ${sanitizeForLog(clientIP)}`);
@@ -194,13 +217,11 @@ export async function POST(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
-    // Authorization: User must own the business or be admin
     const { getServerUser } = await import('@/lib/supabase/server-auth');
     const { userService } = await import('@/services/user.service');
     const user = await getServerUser(request);
 
     if (user) {
-      // Parallel: fetch user businesses and profile simultaneously for auth check
       const [userBusinesses, profile] = await Promise.all([
         userService.getUserBusinesses(user.id),
         userService.getUserProfile(user.id),

@@ -15,6 +15,19 @@ export const SLOT_STATUS = {
 
 export const DEFAULT_SLOT_DURATION = 30;
 
+/** Default concurrent bookings (chairs). DB column `concurrent_booking_capacity` overrides when present. */
+export const DEFAULT_CONCURRENT_BOOKING_CAPACITY = 1;
+
+/** Upper bound for owner-editable concurrent booking capacity (chairs/stations). */
+export const MAX_CONCURRENT_BOOKING_CAPACITY = 50;
+
+/** Extra minutes per service after duration (prep/cleanup); summed with each service when computing total booking length. */
+export const DEFAULT_SERVICE_BOOKING_BUFFER_MINUTES = 0;
+
+/** Bounds for computed booking duration (multi-service + buffer). */
+export const MIN_BOOKING_DURATION_MINUTES = 1;
+export const MAX_BOOKING_DURATION_MINUTES = 480;
+
 // Generate slots for 7 days initially (matches lazy generation window)
 export const DAYS_TO_GENERATE_SLOTS = 7;
 
@@ -180,6 +193,10 @@ export const ERROR_MESSAGES = {
   REMINDER_ALREADY_SENT: 'Reminder already sent',
   RATE_LIMIT_EXCEEDED: 'Too many requests. Please try again later.',
   UNAUTHORIZED: 'Unauthorized',
+  /** Session or bearer token missing or invalid. */
+  AUTHENTICATION_REQUIRED: 'Authentication required',
+  /** Authenticated user cannot act on this booking’s business (not owner / not allowed role). */
+  BOOKING_MANAGE_ACCESS_DENIED: 'You do not have permission to manage this booking',
   /** Cron routes when CRON_SECRET is unset in production (should fail at startup; fail-closed if reached). */
   CRON_AUTH_NOT_CONFIGURED: 'Cron authentication is not configured',
   IDEMPOTENCY_KEY_REQUIRED: 'Idempotency key required: send x-idempotency-key header',

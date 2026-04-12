@@ -88,11 +88,14 @@ describe('security-headers', () => {
       expect(csp).toContain("object-src 'none'");
     });
 
-    it('includes connect-src with self and supabase in CSP', () => {
+    it('includes connect-src with supabase wss, payments, and Vercel insights in CSP', () => {
       const headers = getSecurityHeaders();
       const csp = headers['Content-Security-Policy'];
       expect(csp).toContain("'self'");
       expect(csp).toContain('connect-src');
+      expect(csp).toContain('wss://*.supabase.co');
+      expect(csp).toContain('https://api.razorpay.com');
+      expect(csp).toContain('https://vitals.vercel-insights.com');
     });
 
     it('does not set Strict-Transport-Security in non-production', () => {

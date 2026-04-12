@@ -23,6 +23,7 @@ import { auditService } from '@/services/audit.service';
 import { hasPermission, PERMISSIONS } from '@/services/permission.service';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 import { logStructured } from '@/lib/observability/structured-log';
+import { canManageBookingForBusiness } from '@/lib/utils/booking-business-access.server';
 
 const rejectRateLimit = enhancedRateLimit({
   maxRequests: 10,
@@ -82,21 +83,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const ctx = await getAuthContext(request);
     if (ctx) {
-      const canReject = await hasPermission(ctx.user.id, PERMISSIONS.BOOKINGS_REJECT);
-      if (!canReject) {
-        logAuthDeny({
-          user_id: ctx.user.id,
-          route: ROUTE,
-          reason: 'auth_denied',
-          permission: PERMISSIONS.BOOKINGS_REJECT,
-          resource: id,
-        });
-        return errorResponse('Access denied', 403);
-      }
-      const isAdmin = await hasPermission(ctx.user.id, PERMISSIONS.ADMIN_ACCESS);
       const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
       const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
-      if (!ownsBusiness && !isAdmin) {
+      const asOwnerOrAdmin = await canManageBookingForBusiness(
+        ctx.user.id,
+        ctx.profile,
+        booking.business_id
+      );
+      const withRejectPermission =
+        (await hasPermission(ctx.user.id, PERMISSIONS.BOOKINGS_REJECT)) && ownsBusiness;
+      if (!asOwnerOrAdmin && !withRejectPermission) {
         logAuthDeny({
           user_id: ctx.user.id,
           route: ROUTE,

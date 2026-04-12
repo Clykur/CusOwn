@@ -11,6 +11,19 @@ vi.mock('@/lib/cache/next-cache', () => ({
   getCachedBusiness: vi.fn().mockResolvedValue(null),
   getCachedBusinessByLink: vi.fn().mockResolvedValue(null),
 }));
+
+vi.mock('@/lib/cache/api-redis-cache', () => ({
+  buildApiRedisKeyFromPath: vi.fn().mockReturnValue('redis-slots-key'),
+  getApiRedisCache: vi.fn().mockResolvedValue(null),
+  setApiRedisCache: vi.fn().mockResolvedValue(undefined),
+  API_REDIS_TTL: { SLOTS: 10 },
+}));
+
+vi.mock('@/services/service.service', () => ({
+  serviceService: {
+    validateServices: vi.fn(),
+  },
+}));
 import { NextRequest } from 'next/server';
 import { ERROR_MESSAGES } from '@/config/constants';
 
@@ -104,7 +117,11 @@ describe('GET /api/slots', () => {
       closing_time: '18:00',
       slot_duration: 30,
     });
-    mockGetEffectiveHours.mockResolvedValue({ isClosed: true });
+    mockGetEffectiveHours.mockResolvedValue({
+      isClosed: true,
+      opening_time: '09:00:00',
+      closing_time: '18:00:00',
+    });
     const { GET } = await import('@/app/api/slots/route');
     const req = new NextRequest(`http://localhost/api/slots?salon_id=${salonId}&date=2025-03-15`, {
       method: 'GET',
@@ -125,7 +142,13 @@ describe('GET /api/slots', () => {
     const salonId = '00000000-0000-4000-8000-000000000001';
     const salon = { id: salonId, opening_time: '09:00', closing_time: '18:00', slot_duration: 30 };
     mockGetSalonById.mockResolvedValue(salon);
-    mockGetEffectiveHours.mockResolvedValue({ isClosed: false });
+    mockGetEffectiveHours.mockResolvedValue({
+      isClosed: false,
+      opening_time: '09:00:00',
+      closing_time: '18:00:00',
+      break_start_time: null,
+      break_end_time: null,
+    });
     mockGetAvailableSlots.mockResolvedValue([
       { id: 'slot1', start_time: '09:00', end_time: '09:30', status: 'available' },
     ]);

@@ -29,10 +29,7 @@ const salonAccessRateLimit = enhancedRateLimit({
   keyPrefix: 'salon_access',
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ bookingLink: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Apply rate limiting
     const rateLimitResponse = await salonAccessRateLimit(request);
@@ -40,16 +37,16 @@ export async function GET(
       return rateLimitResponse;
     }
 
-    const { bookingLink } = await params;
+    const { id } = await params;
     const clientIP = getClientIp(request);
 
-    if (!bookingLink) {
+    if (!id) {
       console.warn(`[SECURITY] Missing booking link from IP: ${clientIP}`);
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
     // Check if it's a UUID (salon ID) or a booking link (slug)
-    const isUUID = isValidUUID(bookingLink);
+    const isUUID = isValidUUID(id);
 
     // If it's a UUID, require token validation for security
     if (isUUID) {
@@ -65,14 +62,14 @@ export async function GET(
           } catch {}
         }
 
-        if (!token || !validateSalonToken(bookingLink, token)) {
+        if (!token || !validateSalonToken(id, token)) {
           return errorResponse('Invalid or missing access token', 403);
         }
       }
     }
 
     // Check Redis cache first (for public booking link access)
-    const redisKey = buildApiRedisKeyFromPath(`/api/salons/${bookingLink}`);
+    const redisKey = buildApiRedisKeyFromPath(`/api/salons/${id}`);
     let salon: Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
 
     // Only use Redis cache for non-UUID (public slug) access without auth context
@@ -86,18 +83,14 @@ export async function GET(
 
     // Check in-memory cache if not found in Redis
     if (!salon) {
-      const cacheKey = buildApiCacheKey('GET', `/api/salons/${bookingLink}`);
+      const cacheKey = buildApiCacheKey('GET', `/api/salons/${id}`);
       const cachedSalon = getCachedApiResponse<{ data: unknown }>(cacheKey)?.data;
       salon = cachedSalon as Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
       if (!salon) {
         if (isUUID) {
-          salon = await dedupe(`salon:id:${bookingLink}`, () =>
-            salonService.getSalonById(bookingLink)
-          );
+          salon = await dedupe(`salon:id:${id}`, () => salonService.getSalonById(id));
         } else {
-          salon = await dedupe(`salon:slug:${bookingLink}`, () =>
-            salonService.getSalonByBookingLink(bookingLink)
-          );
+          salon = await dedupe(`salon:slug:${id}`, () => salonService.getSalonByBookingLink(id));
         }
         if (salon) {
           // Cache in both Redis (for public slug access) and in-memory
@@ -110,11 +103,11 @@ export async function GET(
     }
 
     if (!salon) {
-      console.warn(`[SECURITY] Salon not found from IP: ${clientIP}, Link: ${bookingLink}`);
+      console.warn(`[SECURITY] Salon not found from IP: ${clientIP}, Link: ${id}`);
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
-    // SECURITY: For owner dashboard access via bookingLink (slug), ALWAYS verify ownership
+    // SECURITY: For owner dashboard access via id (slug), ALWAYS verify ownership
     // This prevents unauthorized access to owner dashboards via guessable slugs
     if (!isUUID && salon) {
       // Check if this is an owner dashboard access attempt
@@ -128,7 +121,7 @@ export async function GET(
 
         if (!user) {
           console.warn(
-            `[SECURITY] Unauthenticated owner dashboard access attempt from IP: ${clientIP}, BookingLink: ${bookingLink}`
+            `[SECURITY] Unauthenticated owner dashboard access attempt from IP: ${clientIP}, BookingLink: ${id}`
           );
           return errorResponse('Authentication required', 401);
         }
@@ -136,16 +129,14 @@ export async function GET(
         // Verify ownership
         const { userService } = await import('@/services/user.service');
         const userBusinesses = await userService.getUserBusinesses(user.id);
-        const hasAccess = userBusinesses.some(
-          (b) => b.id === salon.id || b.booking_link === bookingLink
-        );
+        const hasAccess = userBusinesses.some((b) => b.id === salon.id || b.booking_link === id);
 
         if (!hasAccess) {
           const profile = await userService.getUserProfile(user.id);
           const isAdmin = profile?.user_type === 'admin';
           if (!isAdmin) {
             console.warn(
-              `[SECURITY] Unauthorized owner dashboard access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Business: ${salon.id.substring(0, 8)}..., BookingLink: ${bookingLink}`
+              `[SECURITY] Unauthorized owner dashboard access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Business: ${salon.id.substring(0, 8)}..., BookingLink: ${id}`
             );
             return errorResponse('Access denied', 403);
           }

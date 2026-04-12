@@ -5,7 +5,9 @@
 
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import type { Slot } from '@/types';
-import { SLOT_STATUS } from '@/config/constants';
+import { BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
+import { normalizeTime, timeToMinutes } from '@/lib/utils/time';
+import type { MinuteInterval } from '@/lib/slot-capacity-timeline';
 
 export type SlotRowInsert = Omit<Slot, 'id' | 'created_at'>;
 
@@ -56,6 +58,92 @@ export async function getOccupiedIntervalsForDate(
   if (booked) intervals.push(...booked);
   if (reserved) intervals.push(...reserved);
   return intervals;
+}
+
+/**
+ * Occupancy intervals in minutes for capacity-aware availability.
+ * Uses slot start + max(booking total_duration, slot length) so multi-service spans block overlapping starts.
+ * Booked and active reserved slots only; expired reservations excluded.
+ */
+export async function getExtendedOccupancyMinuteIntervalsForDate(
+  businessId: string,
+  date: string,
+  nowIso: string
+): Promise<MinuteInterval[]> {
+  const supabase = requireSupabaseAdmin();
+  const { data: slotRows, error } = await supabase
+    .from('slots')
+    .select('id, start_time, end_time, status, reserved_until')
+    .eq('business_id', businessId)
+    .eq('date', date)
+    .in('status', [SLOT_STATUS.BOOKED, SLOT_STATUS.RESERVED]);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = slotRows ?? [];
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const slotIds = rows.map((r: { id: string }) => r.id);
+  const { data: bookingRows, error: bookingError } = await supabase
+    .from('bookings')
+    .select('slot_id, total_duration_minutes, status')
+    .in('slot_id', slotIds);
+
+  if (bookingError) {
+    throw new Error(bookingError.message);
+  }
+
+  const bookingBySlot = new Map<
+    string,
+    { total_duration_minutes: number | null; status: string }
+  >();
+  for (const b of bookingRows ?? []) {
+    const row = b as { slot_id: string; total_duration_minutes: number | null; status: string };
+    if (!bookingBySlot.has(row.slot_id)) {
+      bookingBySlot.set(row.slot_id, row);
+    }
+  }
+
+  const out: MinuteInterval[] = [];
+
+  for (const row of rows as Array<{
+    id: string;
+    start_time: string;
+    end_time: string;
+    status: string;
+    reserved_until: string | null;
+  }>) {
+    if (row.status === SLOT_STATUS.RESERVED) {
+      if (!row.reserved_until || row.reserved_until < nowIso) {
+        continue;
+      }
+    }
+
+    const startMin = timeToMinutes(normalizeTime(row.start_time));
+    const endMinSlot = timeToMinutes(normalizeTime(row.end_time));
+    const slotLen = Math.max(0, endMinSlot - startMin);
+
+    const b = bookingBySlot.get(row.id);
+    if (b?.status === BOOKING_STATUS.CANCELLED || b?.status === BOOKING_STATUS.REJECTED) {
+      continue;
+    }
+
+    const total = b?.total_duration_minutes;
+    const dur =
+      total != null && Number.isFinite(total) && total > 0 ? Math.max(total, slotLen) : slotLen;
+
+    if (dur <= 0) {
+      continue;
+    }
+
+    out.push({ startMin, endMin: startMin + dur });
+  }
+
+  return out;
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   filterFields,
   filterBookingUpdateFields,
   filterBusinessUpdateFields,
+  filterOwnerBusinessUpdateFields,
   filterUserProfileUpdateFields,
   validateStringLength,
   validateEnum,
@@ -106,6 +107,28 @@ export function runUnitInputFilterTests(): void {
   runTest('should_validateEnum_return_false_when_not_string', () => {
     const allowed = ['a', 'b'] as const;
     assert(validateEnum(123, allowed) === false, 'Expected false');
+  });
+
+  runTest('should_filterOwnerBusinessUpdateFields_allow_capacity_and_structured_address', () => {
+    const body = {
+      salon_name: 'X',
+      concurrent_booking_capacity: 3,
+      city: 'Mumbai',
+      latitude: 19.1,
+      longitude: 72.9,
+      address_line1: 'Line 1',
+      postal_code: '400001',
+      evil: 'drop',
+    };
+    const out = filterOwnerBusinessUpdateFields(body);
+    assert(
+      out.concurrent_booking_capacity === 3 &&
+        out.city === 'Mumbai' &&
+        out.latitude === 19.1 &&
+        out.address_line1 === 'Line 1',
+      `Expected capacity/location fields, got ${JSON.stringify(out)}`
+    );
+    assert(!('evil' in out), 'Expected evil key dropped');
   });
 }
 

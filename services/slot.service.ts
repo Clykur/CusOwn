@@ -4,12 +4,15 @@ import {
   DAYS_TO_GENERATE_SLOTS,
   SLOT_STATUS,
   SLOT_GENERATION_WINDOW_DAYS,
+  DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+  MAX_BOOKING_DURATION_MINUTES,
+  MIN_BOOKING_DURATION_MINUTES,
 } from '@/config/constants';
 import { downtimeService } from './downtime.service';
 import { slotTemplateCache, slotPoolManager, dateSlotOptimizer } from './slot-optimizer.service';
 import {
   hasSlotsForDate,
-  getOccupiedIntervalsForDate,
+  getExtendedOccupancyMinuteIntervalsForDate,
   getSlotsByIntervals,
   getSlotById,
   insertSlots,
@@ -20,10 +23,12 @@ import {
   releaseSlotReserved,
   setSlotBooked,
 } from '@/repositories/slot.repository';
-import { generateTimeSlots } from '@/lib/utils/time';
-import { subtractOccupiedFromFullDay } from '@/lib/slot-availability-intervals';
-
-const INITIAL_SLOT_DAYS = DAYS_TO_GENERATE_SLOTS;
+import { generateTimeSlots, normalizeTime, timeToMinutes } from '@/lib/utils/time';
+import {
+  canScheduleWithinCapacity,
+  overlapsAnyBlocked,
+  type MinuteInterval,
+} from '@/lib/slot-capacity-timeline';
 import { slotStateMachine } from '@/lib/state/slot-state-machine';
 import { emitSlotReserved, emitSlotBooked, emitSlotReleased } from '@/lib/events/slot-events';
 import { safeMetrics } from '@/lib/monitoring/safe-metrics';
@@ -40,6 +45,20 @@ type SalonTimeConfig = {
   opening_time: string;
   closing_time: string;
   slot_duration: number;
+  /** Max overlapping bookings (chairs); defaults to 1. */
+  concurrent_booking_capacity?: number;
+};
+
+export type AvailableSlotsOptions = {
+  skipCleanup?: boolean;
+  /** Total appointment length in minutes; defaults to business slot_duration. */
+  requestedDurationMinutes?: number;
+  /** IST YYYY-MM-DD when applying "past slot" rules; omit to skip same-day past filter. */
+  todayDateStringIST?: string;
+  /** Minutes since midnight (IST) for today; used with todayDateStringIST. */
+  nowMinutesIST?: number;
+  /** Break / closure windows in minutes-from-midnight (half-open overlap check). */
+  blockedIntervalsMin?: MinuteInterval[];
 };
 
 export class SlotService {
@@ -47,7 +66,7 @@ export class SlotService {
     const today = new Date();
     const slotsToCreate: Array<Omit<Slot, 'id' | 'created_at'>> = [];
 
-    for (let i = 0; i < INITIAL_SLOT_DAYS; i++) {
+    for (let i = 0; i < DAYS_TO_GENERATE_SLOTS; i++) {
       const targetDate = new Date(today);
       targetDate.setDate(today.getDate() + i);
       const dateString = targetDate.toISOString().split('T')[0];
@@ -171,7 +190,7 @@ export class SlotService {
     salonId: string,
     date: string,
     salonConfig?: SalonTimeConfig,
-    options?: { skipCleanup?: boolean }
+    options?: AvailableSlotsOptions
   ): Promise<Slot[]> {
     const startTime = Date.now();
     const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
@@ -192,7 +211,7 @@ export class SlotService {
     salonId: string,
     normalizedDate: string,
     salonConfig?: SalonTimeConfig,
-    options?: { skipCleanup?: boolean }
+    options?: AvailableSlotsOptions
   ): Promise<Slot[]> {
     const now = new Date();
     const nowIso = now.toISOString();
@@ -233,35 +252,77 @@ export class SlotService {
       return [];
     }
 
-    const fullDayIntervals = generateTimeSlots(
+    const grid = generateTimeSlots(
       salonConfig.opening_time,
       salonConfig.closing_time,
       salonConfig.slot_duration
     );
-    if (fullDayIntervals.length === 0) {
+    if (grid.length === 0) {
       return [];
     }
 
-    const occupied = await getOccupiedIntervalsForDate(salonId, normalizedDate, nowIso);
-    const occupiedAsIntervals = occupied.map((o) => ({ start: o.start_time, end: o.end_time }));
-    const availableIntervals = subtractOccupiedFromFullDay(fullDayIntervals, occupiedAsIntervals);
-    let slotRows = await getSlotsByIntervals(salonId, normalizedDate, availableIntervals);
+    const requested = options?.requestedDurationMinutes ?? salonConfig.slot_duration;
+    const duration = Math.floor(requested);
+    if (duration < MIN_BOOKING_DURATION_MINUTES || duration > MAX_BOOKING_DURATION_MINUTES) {
+      return [];
+    }
+
+    const capacity = salonConfig.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY;
+
+    const openMin = timeToMinutes(normalizeTime(salonConfig.opening_time));
+    const closeMin = timeToMinutes(normalizeTime(salonConfig.closing_time));
+    if (openMin >= closeMin || duration > closeMin - openMin) {
+      return [];
+    }
+
+    const occupancy = await getExtendedOccupancyMinuteIntervalsForDate(
+      salonId,
+      normalizedDate,
+      nowIso
+    );
+
+    const blocked = options?.blockedIntervalsMin ?? [];
+    const todayStr = options?.todayDateStringIST;
+    const nowMinIst = options?.nowMinutesIST;
+    const isTodayFiltered =
+      todayStr !== undefined && nowMinIst !== undefined && normalizedDate === todayStr;
+
+    const passingGridCells: Array<{ start: string; end: string }> = [];
+
+    for (const cell of grid) {
+      const startMin = timeToMinutes(normalizeTime(cell.start));
+      const appointmentEnd = startMin + duration;
+
+      if (appointmentEnd > closeMin) {
+        continue;
+      }
+      if (overlapsAnyBlocked(startMin, appointmentEnd, blocked)) {
+        continue;
+      }
+      if (isTodayFiltered && startMin <= nowMinIst!) {
+        continue;
+      }
+      if (!canScheduleWithinCapacity(occupancy, startMin, appointmentEnd, capacity)) {
+        continue;
+      }
+      passingGridCells.push({ start: cell.start, end: cell.end });
+    }
+
+    if (passingGridCells.length === 0) {
+      if (!options?.skipCleanup) {
+        await releaseExpiredReservationsForBusinessDate(salonId, normalizedDate, nowIso);
+      }
+      return [];
+    }
+
+    let slotRows = await getSlotsByIntervals(salonId, normalizedDate, passingGridCells);
 
     if (!options?.skipCleanup) {
       await releaseExpiredReservationsForBusinessDate(salonId, normalizedDate, nowIso);
     }
 
-    const todayDateString = now.toISOString().split('T')[0];
-    const isToday = normalizedDate === todayDateString;
-
     const processedSlots: Slot[] = [];
     for (const slot of slotRows) {
-      if (isToday) {
-        const [hours, minutes] = slot.start_time.split(':').map(Number);
-        const slotDateTime = new Date(now);
-        slotDateTime.setHours(hours, minutes, 0, 0);
-        if (now >= slotDateTime) continue;
-      }
       processedSlots.push({
         ...slot,
         status: SLOT_STATUS.AVAILABLE,

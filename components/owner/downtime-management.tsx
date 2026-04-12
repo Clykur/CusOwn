@@ -33,6 +33,8 @@ interface DowntimeManagementProps {
   onClosureReasonChange: (value: string) => void;
   onAddHoliday: () => void;
   onAddClosure: () => void;
+  onRemoveHoliday?: (holidayId: string) => void;
+  onRemoveClosure?: (closureId: string) => void;
 }
 
 function DowntimeManagementComponent({
@@ -50,6 +52,8 @@ function DowntimeManagementComponent({
   onClosureReasonChange,
   onAddHoliday,
   onAddClosure,
+  onRemoveHoliday,
+  onRemoveClosure,
 }: DowntimeManagementProps) {
   return (
     <div className="space-y-6">
@@ -98,6 +102,15 @@ function DowntimeManagementComponent({
                     <p className="text-sm text-gray-600">{holiday.holiday_name}</p>
                   )}
                 </div>
+                {onRemoveHoliday && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveHoliday(holiday.id)}
+                    className="text-sm font-medium text-red-600 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -154,6 +167,15 @@ function DowntimeManagementComponent({
                   </p>
                   {closure.reason && <p className="text-sm text-gray-600">{closure.reason}</p>}
                 </div>
+                {onRemoveClosure && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveClosure(closure.id)}
+                    className="text-sm font-medium text-red-600 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             ))}
           </div>

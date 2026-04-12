@@ -125,15 +125,22 @@ export default function OwnerLayoutShell({
   const isProfile = safePathname === '/owner/profile';
   const isCreateBusiness = safePathname === '/owner/setup';
   const isBusinesses = safePathname === '/owner/businesses';
+  const isBusinessSetupFlow = /^\/owner\/businesses\/[^/]+\/setup$/.test(safePathname);
   const isBusinessDetail =
     safePathname.startsWith('/owner/') &&
     safePathname !== '/owner/dashboard' &&
     safePathname !== '/owner/setup' &&
     safePathname !== '/owner/businesses' &&
+    !isBusinessSetupFlow &&
     safePathname !== '/owner/profile' &&
     safePathname.split('/').filter(Boolean).length === 2;
   const isOwnerMainArea =
-    isDashboard || isCreateBusiness || isBusinesses || isBusinessDetail || isProfile;
+    isDashboard ||
+    isCreateBusiness ||
+    isBusinesses ||
+    isBusinessDetail ||
+    isBusinessSetupFlow ||
+    isProfile;
   const mainSpacing = '';
 
   return (
@@ -158,6 +165,12 @@ export default function OwnerLayoutShell({
                 )}
                 {isBusinesses && (
                   <OwnerHeader title="My Businesses" subtitle="View and manage your businesses" />
+                )}
+                {isBusinessSetupFlow && (
+                  <OwnerHeader
+                    title="Finish business setup"
+                    subtitle="Set working hours, breaks, and holidays"
+                  />
                 )}
                 {isProfile && (
                   <OwnerHeader title="My Profile" subtitle="Manage your account and preferences" />

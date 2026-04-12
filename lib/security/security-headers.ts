@@ -8,15 +8,26 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-/** Allowed connect-src for CSP: self, Supabase, Google OAuth, Vercel Analytics. */
+/** connect-src: self, Supabase (HTTPS + WSS for Realtime), OAuth, payments, Vercel (Speed Insights uses vitals host). */
 function getCspConnectSrc(): string {
   const parts = ["'self'"];
-  if (SUPABASE_URL) parts.push(SUPABASE_URL.replace(/\/$/, ''));
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  if (supabaseUrl) {
+    try {
+      parts.push(supabaseUrl.replace(/\/$/, ''));
+    } catch {
+      // ignore invalid URL at build time
+    }
+  }
   parts.push(
     'https://*.supabase.co',
+    'wss://*.supabase.co',
     'https://accounts.google.com',
+    'https://api.razorpay.com',
     'https://va.vercel-scripts.com',
-    'https://vercel.live'
+    'https://vercel.live',
+    'https://vitals.vercel-insights.com',
+    'https://*.vercel-insights.com'
   );
   return parts.join(' ');
 }

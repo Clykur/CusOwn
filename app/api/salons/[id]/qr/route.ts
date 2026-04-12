@@ -8,27 +8,24 @@ import { ERROR_MESSAGES } from '@/config/constants';
 import { setCacheHeaders } from '@/lib/cache/next-cache';
 
 /**
- * GET /api/salons/[bookingLink]/qr
+ * GET /api/salons/[id]/qr
  * Generate or retrieve QR code for a salon.
  * Use ?regenerate=1 to force a new QR (e.g. after fixing production URL).
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ bookingLink: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { bookingLink } = await params;
+    const { id } = await params;
     const regenerate = request.nextUrl.searchParams.get('regenerate') === '1';
 
-    if (!bookingLink) {
+    if (!id) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
     // Get salon by booking link
-    const isUUID = isValidUUID(bookingLink);
+    const isUUID = isValidUUID(id);
     const salon = isUUID
-      ? await salonService.getSalonById(bookingLink)
-      : await salonService.getSalonByBookingLink(bookingLink);
+      ? await salonService.getSalonById(id)
+      : await salonService.getSalonByBookingLink(id);
 
     if (!salon) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);

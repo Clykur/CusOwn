@@ -26,7 +26,7 @@ export default function PeakHoursHeatmap({
   const max = Math.max(...values.map((v) => v.count), 1);
 
   return (
-    <Card className="rounded-xl border border-slate-200 shadow-sm">
+    <Card className="rounded-xl border border-slate-200 shadow-sm min-h-[250px] w-full min-w-0">
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Peak Hours Heatmap</h3>
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-12">
         {values.map((item) => (

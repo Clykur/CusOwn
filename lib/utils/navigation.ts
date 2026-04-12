@@ -207,6 +207,8 @@ export const ROUTES = {
   OWNER_DASHBOARD: (bookingLink: string) => `/owner/${bookingLink}`,
   OWNER_DASHBOARD_BASE: '/owner/dashboard',
   OWNER_SETUP: '/owner/setup',
+  /** Post-creation wizard: hours, breaks, holidays (businessId = UUID). */
+  OWNER_BUSINESS_SETUP: (businessId: string) => `/owner/businesses/${businessId}/setup`,
   OWNER_PROFILE: '/owner/profile',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_BUSINESS: (businessId: string) => `/admin/businesses/${businessId}`,

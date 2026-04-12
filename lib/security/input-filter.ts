@@ -76,6 +76,7 @@ export const filterOwnerBusinessUpdateFields = (
   opening_time: string;
   closing_time: string;
   slot_duration: number;
+  concurrent_booking_capacity: number;
   address: string;
   location: string;
   category: string;
@@ -84,6 +85,11 @@ export const filterOwnerBusinessUpdateFields = (
   pincode: string;
   latitude: number;
   longitude: number;
+  address_line1: string;
+  address_line2: string;
+  state: string;
+  country: string;
+  postal_code: string;
 }> => {
   const allowedFields = [
     'salon_name',
@@ -92,6 +98,7 @@ export const filterOwnerBusinessUpdateFields = (
     'opening_time',
     'closing_time',
     'slot_duration',
+    'concurrent_booking_capacity',
     'address',
     'location',
     'category',
@@ -100,6 +107,11 @@ export const filterOwnerBusinessUpdateFields = (
     'pincode',
     'latitude',
     'longitude',
+    'address_line1',
+    'address_line2',
+    'state',
+    'country',
+    'postal_code',
   ] as const;
   return filterFields(body, allowedFields);
 };

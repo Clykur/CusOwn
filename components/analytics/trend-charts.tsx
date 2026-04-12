@@ -52,8 +52,9 @@ function AreaChart({ data }: { data: { x: string; y: number }[] }) {
   const values = safeData.map((d) => d.y);
   const max = Math.max(...values, 1);
   const step = w / Math.max(1, safeData.length - 1);
-  const points = safeData.map((d, i) => `${i * step},${h - (d.y / max) * (h - 12)}`).join(' L ');
-  const dAttr = `M0,${h} L ${points} L ${w},${h} Z`;
+  const coords = safeData.map((d, i) => `${i * step},${h - (d.y / max) * (h - 12)}`);
+  const polylinePoints = coords.join(' ');
+  const dAttr = `M0,${h} L ${coords.join(' L ')} L ${w},${h} Z`;
   return (
     <div className="w-full min-w-0">
       <svg
@@ -66,7 +67,7 @@ function AreaChart({ data }: { data: { x: string; y: number }[] }) {
         <line x1={0} y1={h - 12} x2={w} y2={h - 12} stroke="#e5e7eb" strokeWidth={1} />
         <path d={dAttr} fill="rgba(0,0,0,0.06)" />
         <polyline
-          points={points}
+          points={polylinePoints}
           fill="none"
           stroke="#0f766e"
           strokeWidth={2}
@@ -168,12 +169,12 @@ export default function TrendCharts({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
         <h3 className="text-sm font-semibold mb-2 text-slate-900">Bookings Over Time</h3>
-        <div className="min-h-[160px] min-w-0">
+        <div className="min-h-[250px] w-full min-w-0">
           <LineChart data={bookingsSeries} color="#111827" />
         </div>
 
         <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">Revenue Over Time</h3>
-        <div className="min-h-[160px] min-w-0">
+        <div className="min-h-[250px] w-full min-w-0">
           <AreaChart data={revenueSeries} />
         </div>
       </div>

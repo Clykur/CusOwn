@@ -8,7 +8,7 @@ import { RedirectSkeleton } from '@/components/ui/skeleton';
 
 /**
  * Legacy route: /dashboard/[salonId] is deprecated.
- * One canonical path: /owner/[bookingLink].
+ * One canonical path: /owner/[id] (booking slug or UUID segment).
  * Redirects to owner business dashboard.
  */
 export default function DashboardPage() {
