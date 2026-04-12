@@ -4,7 +4,12 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_ROUTES, ERROR_MESSAGES, VALIDATION } from '@/config/constants';
+import {
+  API_ROUTES,
+  ERROR_MESSAGES,
+  VALIDATION,
+  DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+} from '@/config/constants';
 import { MediaListItem, Slot } from '@/types';
 import { useSlotUpdates } from '@/lib/realtime/use-slot-updates';
 import { useVisibilityRefresh } from '@/lib/hooks/use-visibility-refresh';
@@ -45,7 +50,7 @@ interface UploadQueueItem {
 export default function OwnerBusinessPage() {
   const params = useParams();
   const router = useRouter();
-  const bookingLink = typeof params?.bookingLink === 'string' ? params.bookingLink : '';
+  const routeId = typeof params?.id === 'string' ? params.id : '';
 
   const salon = useOwnerBusinessStore((state) => state.salon);
   const setSalon = useOwnerBusinessStore((state) => state.setSalon);
@@ -63,9 +68,11 @@ export default function OwnerBusinessPage() {
   const holidays = useOwnerBusinessStore((state) => state.holidays);
   const setHolidays = useOwnerBusinessStore((state) => state.setHolidays);
   const addHoliday = useOwnerBusinessStore((state) => state.addHoliday);
+  const removeHoliday = useOwnerBusinessStore((state) => state.removeHoliday);
   const closures = useOwnerBusinessStore((state) => state.closures);
   const setClosures = useOwnerBusinessStore((state) => state.setClosures);
   const addClosure = useOwnerBusinessStore((state) => state.addClosure);
+  const removeClosure = useOwnerBusinessStore((state) => state.removeClosure);
   const shopPhotos = useOwnerBusinessStore((state) => state.shopPhotos);
   const setShopPhotos = useOwnerBusinessStore((state) => state.setShopPhotos);
   const removeShopPhoto = useOwnerBusinessStore((state) => state.removeShopPhoto);
@@ -100,8 +107,19 @@ export default function OwnerBusinessPage() {
     opening_time: '',
     closing_time: '',
     slot_duration: 30,
+    concurrent_booking_capacity: DEFAULT_CONCURRENT_BOOKING_CAPACITY,
     address: '',
     location: '',
+    city: '',
+    area: '',
+    pincode: '',
+    latitude: '',
+    longitude: '',
+    address_line1: '',
+    address_line2: '',
+    state: '',
+    country: '',
+    postal_code: '',
   });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -133,14 +151,14 @@ export default function OwnerBusinessPage() {
   });
 
   useEffect(() => {
-    if (!bookingLink) return;
+    if (!routeId) return;
     let cancelled = false;
 
     const fetchAllData = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        let url = `${API_ROUTES.SALONS}/${bookingLink}`;
+        let url = `${API_ROUTES.SALONS}/${routeId}`;
         if (token) url += `?token=${encodeURIComponent(token)}`;
 
         const headers: HeadersInit = {};
@@ -166,11 +184,11 @@ export default function OwnerBusinessPage() {
           if (
             response.status === 403 &&
             !token &&
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingLink)
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeId)
           ) {
             try {
               const { getSecureOwnerDashboardUrlClient } = await import('@/lib/utils/navigation');
-              const secureUrl = await getSecureOwnerDashboardUrlClient(bookingLink);
+              const secureUrl = await getSecureOwnerDashboardUrlClient(routeId);
               window.location.href = secureUrl;
               return;
             } catch (urlError) {
@@ -189,7 +207,7 @@ export default function OwnerBusinessPage() {
 
         if (!salonData.qr_code) {
           parallelFetches.push(
-            fetch(`${API_ROUTES.SALONS}/${bookingLink}/qr`)
+            fetch(`${API_ROUTES.SALONS}/${routeId}/qr`)
               .then((res) => res.json())
               .then((qrResult) => {
                 if (!cancelled && qrResult.success && qrResult.data?.qr_code) {
@@ -308,7 +326,7 @@ export default function OwnerBusinessPage() {
       cancelled = true;
     };
   }, [
-    bookingLink,
+    routeId,
     selectedDate,
     setSalon,
     updateSalon,
@@ -567,7 +585,7 @@ export default function OwnerBusinessPage() {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const response = await fetch(`/api/businesses/${salon.id}/downtime/holidays`, {
+      const response = await fetch(`/api/owner/businesses/${salon.id}/holidays`, {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -596,7 +614,7 @@ export default function OwnerBusinessPage() {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const response = await fetch(`/api/businesses/${salon.id}/downtime/closures`, {
+      const response = await fetch(`/api/owner/businesses/${salon.id}/closures`, {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -628,6 +646,64 @@ export default function OwnerBusinessPage() {
     }
   };
 
+  const handleRemoveHoliday = async (holidayId: string) => {
+    if (!salon?.id) return;
+    if (!window.confirm('Remove this holiday?')) return;
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch(
+        `/api/owner/businesses/${salon.id}/holidays/${encodeURIComponent(holidayId)}`,
+        { method: 'DELETE', credentials: 'include', headers }
+      );
+      if (res.ok) {
+        removeHoliday(holidayId);
+        showToast('Holiday removed', 'success');
+      } else {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || ERROR_MESSAGES.UNEXPECTED_ERROR, 'error');
+      }
+    } catch {
+      showToast('Failed to remove holiday', 'error');
+    }
+  };
+
+  const handleRemoveClosure = async (closureId: string) => {
+    if (!salon?.id) return;
+    if (!window.confirm('Remove this closure?')) return;
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch(
+        `/api/owner/businesses/${salon.id}/closures/${encodeURIComponent(closureId)}`,
+        { method: 'DELETE', credentials: 'include', headers }
+      );
+      if (res.ok) {
+        removeClosure(closureId);
+        showToast('Closure removed', 'success');
+      } else {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || ERROR_MESSAGES.UNEXPECTED_ERROR, 'error');
+      }
+    } catch {
+      showToast('Failed to remove closure', 'error');
+    }
+  };
+
   const openEditModal = () => {
     if (!salon) return;
     setEditForm({
@@ -639,41 +715,68 @@ export default function OwnerBusinessPage() {
       opening_time: salon.opening_time?.substring(0, 5) ?? '10:00',
       closing_time: salon.closing_time?.substring(0, 5) ?? '21:00',
       slot_duration: salon.slot_duration ?? 30,
+      concurrent_booking_capacity:
+        salon.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY,
       address: salon.address ?? '',
       location: salon.location ?? '',
+      city: salon.city ?? '',
+      area: salon.area ?? '',
+      pincode: salon.pincode ?? '',
+      latitude: salon.latitude != null ? String(salon.latitude) : '',
+      longitude: salon.longitude != null ? String(salon.longitude) : '',
+      address_line1: salon.address_line1 ?? '',
+      address_line2: salon.address_line2 ?? '',
+      state: salon.state ?? '',
+      country: salon.country ?? '',
+      postal_code: salon.postal_code ?? '',
     });
     setEditError(null);
     openModal(MODAL_IDS.EDIT_BUSINESS);
   };
 
   const handleEditSave = async () => {
-    if (!salon || !bookingLink) return;
+    if (!salon || !routeId) return;
     setEditSaving(true);
     setEditError(null);
     try {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(bookingLink)}`, {
+      const latTrim = editForm.latitude.trim();
+      const lngTrim = editForm.longitude.trim();
+      const body: Record<string, unknown> = {
+        salon_name: editForm.salon_name.trim(),
+        owner_name: editForm.owner_name.trim(),
+        whatsapp_number: editForm.whatsapp_number,
+        opening_time:
+          editForm.opening_time.length === 5
+            ? `${editForm.opening_time}:00`
+            : editForm.opening_time,
+        closing_time:
+          editForm.closing_time.length === 5
+            ? `${editForm.closing_time}:00`
+            : editForm.closing_time,
+        slot_duration: editForm.slot_duration,
+        concurrent_booking_capacity: editForm.concurrent_booking_capacity,
+        address: editForm.address.trim(),
+        location: editForm.location.trim(),
+        city: editForm.city.trim(),
+        area: editForm.area.trim(),
+        pincode: editForm.pincode.trim(),
+        address_line1: editForm.address_line1.trim(),
+        address_line2: editForm.address_line2.trim(),
+        state: editForm.state.trim(),
+        country: editForm.country.trim(),
+        postal_code: editForm.postal_code.trim(),
+      };
+      if (latTrim !== '') body.latitude = Number(latTrim);
+      if (lngTrim !== '') body.longitude = Number(lngTrim);
+
+      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(routeId)}`, {
         method: 'PATCH',
         headers,
         credentials: 'include',
-        body: JSON.stringify({
-          salon_name: editForm.salon_name.trim(),
-          owner_name: editForm.owner_name.trim(),
-          whatsapp_number: editForm.whatsapp_number,
-          opening_time:
-            editForm.opening_time.length === 5
-              ? `${editForm.opening_time}:00`
-              : editForm.opening_time,
-          closing_time:
-            editForm.closing_time.length === 5
-              ? `${editForm.closing_time}:00`
-              : editForm.closing_time,
-          slot_duration: editForm.slot_duration,
-          address: editForm.address.trim(),
-          location: editForm.location.trim(),
-        }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -693,7 +796,7 @@ export default function OwnerBusinessPage() {
   };
 
   const handleDelete = async () => {
-    if (!salon || !bookingLink) return;
+    if (!salon || !routeId) return;
     if (!window.confirm('Are you sure you want to delete this business? This cannot be undone.'))
       return;
     setDeleteSaving(true);
@@ -701,7 +804,7 @@ export default function OwnerBusinessPage() {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {};
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
-      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(bookingLink)}`, {
+      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(routeId)}`, {
         method: 'DELETE',
         headers,
         credentials: 'include',
@@ -722,9 +825,9 @@ export default function OwnerBusinessPage() {
   const breadcrumbItems = useMemo(
     () => [
       { label: 'Businesses', href: '/owner/businesses' },
-      { label: salon?.salon_name || 'Business Details', href: `/owner/${bookingLink}` },
+      { label: salon?.salon_name || 'Business Details', href: `/owner/${routeId}` },
     ],
-    [bookingLink, salon?.salon_name]
+    [routeId, salon?.salon_name]
   );
 
   if (isLoading) {
@@ -733,7 +836,7 @@ export default function OwnerBusinessPage() {
         <Breadcrumb
           items={[
             { label: 'Businesses', href: '/owner/businesses' },
-            { label: 'Loading...', href: `/owner/${bookingLink}` },
+            { label: 'Loading...', href: `/owner/${routeId}` },
           ]}
         />
         <div className="h-8 bg-slate-200 rounded w-64 mb-2 animate-pulse" />
@@ -753,7 +856,7 @@ export default function OwnerBusinessPage() {
         <Breadcrumb
           items={[
             { label: 'Businesses', href: '/owner/businesses' },
-            { label: 'Business Details', href: `/owner/${bookingLink}` },
+            { label: 'Business Details', href: `/owner/${routeId}` },
           ]}
         />
         <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
@@ -868,6 +971,8 @@ export default function OwnerBusinessPage() {
               onClosureReasonChange={setNewClosureReason}
               onAddHoliday={handleAddHoliday}
               onAddClosure={handleAddClosure}
+              onRemoveHoliday={handleRemoveHoliday}
+              onRemoveClosure={handleRemoveClosure}
             />
           ) : (
             <div className="w-full">

@@ -10,11 +10,15 @@ import {
   VALIDATION,
   UI_CONTEXT,
   BUSINESS_CATEGORIES_FALLBACK,
+  DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+  MAX_CONCURRENT_BOOKING_CAPACITY,
 } from '@/config/constants';
 import { CreateSalonInput } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
+
+type ServiceDraftRow = { name: string; duration_minutes: number; price_inr: number };
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
 import { formatPhoneNumber } from '@/lib/utils/string';
 
@@ -50,6 +54,7 @@ export default function CreateBusinessForm({
     pincode: '',
     latitude: 0,
     longitude: 0,
+    concurrent_booking_capacity: DEFAULT_CONCURRENT_BOOKING_CAPACITY,
   });
   const [ownerBusinesses, setOwnerBusinesses] = useState<
     { salon_name: string; whatsapp_number: string }[] | null
@@ -57,6 +62,9 @@ export default function CreateBusinessForm({
   const [businessCategories, setBusinessCategories] = useState<{ value: string; label: string }[]>(
     BUSINESS_CATEGORIES_FALLBACK
   );
+  const [serviceRows, setServiceRows] = useState<ServiceDraftRow[]>([
+    { name: '', duration_minutes: 30, price_inr: 0 },
+  ]);
 
   useEffect(() => {
     getCSRFToken().catch(console.error);
@@ -117,6 +125,15 @@ export default function CreateBusinessForm({
   ) => {
     const { name, value } = e.target;
     let processedValue = value;
+    if (name === 'concurrent_booking_capacity') {
+      const n = Math.min(
+        MAX_CONCURRENT_BOOKING_CAPACITY,
+        Math.max(1, parseInt(value, 10) || DEFAULT_CONCURRENT_BOOKING_CAPACITY)
+      );
+      setFormData((prev) => ({ ...prev, concurrent_booking_capacity: n }));
+      setError(null);
+      return;
+    }
     if ((name === 'opening_time' || name === 'closing_time') && value) {
       processedValue = value.length === 5 ? `${value}:00` : value;
     }
@@ -176,11 +193,22 @@ export default function CreateBusinessForm({
         'Content-Type': 'application/json',
       };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const servicesPayload = serviceRows
+        .filter((s) => s.name.trim().length > 0)
+        .map((s) => ({
+          name: s.name.trim(),
+          duration_minutes: Math.max(1, Math.floor(Number(s.duration_minutes)) || 1),
+          price_cents: Math.max(0, Math.round(Number(s.price_inr) * 100)),
+        }));
+
       const response = await fetch(API_ROUTES.SALONS, {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          ...(servicesPayload.length > 0 ? { services: servicesPayload } : {}),
+        }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
@@ -188,16 +216,7 @@ export default function CreateBusinessForm({
       }
       const result = await response.json();
       if (result.success && result.data) {
-        const bookingLink = result.data.booking_link;
-        const bookingUrl = result.data.booking_url;
-        const qrCode = result.data.qr_code;
-
-        // go to services instead of showing success
-        router.push(
-          `/onboarding/services?businessId=${result.data.id}&bookingLink=${bookingLink}&bookingUrl=${encodeURIComponent(
-            bookingUrl
-          )}&qrCode=${encodeURIComponent(qrCode || '')}`
-        );
+        router.push(ROUTES.OWNER_BUSINESS_SETUP(result.data.id));
         return;
       } else {
         throw new Error(result.error || 'Failed to create business. Please try again.');
@@ -422,6 +441,119 @@ export default function CreateBusinessForm({
               </option>
             ))}
           </select>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+          <label
+            htmlFor="concurrent_booking_capacity"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+          >
+            Concurrent bookings (chairs / stations)
+          </label>
+          <input
+            type="number"
+            id="concurrent_booking_capacity"
+            name="concurrent_booking_capacity"
+            min={1}
+            max={MAX_CONCURRENT_BOOKING_CAPACITY}
+            value={formData.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY}
+            onChange={handleChange}
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+          />
+          <p className="mt-1.5 text-xs text-gray-600">
+            How many appointments can run at the same time (default{' '}
+            {DEFAULT_CONCURRENT_BOOKING_CAPACITY}).
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900">
+              Services (optional)
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                setServiceRows((rows) => [
+                  ...rows,
+                  { name: '', duration_minutes: 30, price_inr: 0 },
+                ])
+              }
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+            >
+              + Add service
+            </button>
+          </div>
+          <div className="space-y-3">
+            {serviceRows.map((row, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-gray-200 pb-3 last:border-0"
+              >
+                <div className="sm:col-span-5">
+                  <label className="block text-xs text-gray-600 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={row.name}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setServiceRows((prev) =>
+                        prev.map((r, i) => (i === index ? { ...r, name: v } : r))
+                      );
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
+                    placeholder="e.g. Haircut"
+                    maxLength={200}
+                  />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="block text-xs text-gray-600 mb-1">Duration (min)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={row.duration_minutes}
+                    onChange={(e) => {
+                      const v = Math.max(1, parseInt(e.target.value, 10) || 1);
+                      setServiceRows((prev) =>
+                        prev.map((r, i) => (i === index ? { ...r, duration_minutes: v } : r))
+                      );
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
+                  />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="block text-xs text-gray-600 mb-1">Price (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={row.price_inr}
+                    onChange={(e) => {
+                      const v = Math.max(0, parseFloat(e.target.value) || 0);
+                      setServiceRows((prev) =>
+                        prev.map((r, i) => (i === index ? { ...r, price_inr: v } : r))
+                      );
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
+                  />
+                </div>
+                <div className="sm:col-span-1 flex justify-end">
+                  {serviceRows.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setServiceRows((prev) => prev.filter((_, i) => i !== index))}
+                      className="text-xs font-medium text-red-600 hover:text-red-800"
+                      aria-label="Remove service row"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-gray-600">
+            Leave rows empty to skip; you can add services later. Price is stored in paise (₹ ×
+            100).
+          </p>
         </div>
         <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
           <div className="flex items-center justify-between mb-2">

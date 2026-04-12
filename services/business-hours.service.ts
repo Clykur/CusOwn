@@ -48,25 +48,41 @@ export class BusinessHoursService {
       .select('*')
       .eq('business_id', businessId)
       .eq('day_of_week', dayOfWeek)
-      .single();
+      .maybeSingle();
 
-    if (!weekly) return null;
-
-    if (weekly.is_closed) {
-      return { isClosed: true };
+    if (weekly) {
+      if (weekly.is_closed) {
+        return { isClosed: true };
+      }
+      if (!weekly.opening_time || !weekly.closing_time) {
+        return null;
+      }
+      return {
+        isClosed: false,
+        opening_time: weekly.opening_time,
+        closing_time: weekly.closing_time,
+        break_start_time: weekly.break_start_time,
+        break_end_time: weekly.break_end_time,
+      };
     }
 
-    // If weekly hours exist but times are missing, treat as not configured
-    if (!weekly.opening_time || !weekly.closing_time) {
+    // Backward compatibility: no per-day row yet → use businesses.opening_time / closing_time
+    const { data: biz } = await this.supabase
+      .from('businesses')
+      .select('opening_time, closing_time')
+      .eq('id', businessId)
+      .maybeSingle();
+
+    if (!biz?.opening_time || !biz?.closing_time) {
       return null;
     }
 
     return {
       isClosed: false,
-      opening_time: weekly.opening_time,
-      closing_time: weekly.closing_time,
-      break_start_time: weekly.break_start_time,
-      break_end_time: weekly.break_end_time,
+      opening_time: biz.opening_time,
+      closing_time: biz.closing_time,
+      break_start_time: null,
+      break_end_time: null,
     };
   }
 

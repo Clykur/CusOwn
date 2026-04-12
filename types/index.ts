@@ -1,7 +1,52 @@
 import { z } from 'zod';
-import { SLOT_DURATIONS, BOOKING_STATUS, SLOT_STATUS } from '@/config/constants';
+import {
+  SLOT_DURATIONS,
+  BOOKING_STATUS,
+  SLOT_STATUS,
+  MAX_CONCURRENT_BOOKING_CAPACITY,
+} from '@/config/constants';
 
 export const slotDurationSchema = z.enum(SLOT_DURATIONS.map(String) as [string, ...string[]]);
+
+/** Accepts HH:MM or HH:MM:SS (IST wall-clock). */
+const wallTimeSchema = z.preprocess(
+  (v) => {
+    if (typeof v !== 'string') return v;
+    const t = v.trim();
+    return t.length === 5 && /^\d{2}:\d{2}$/.test(t) ? `${t}:00` : t;
+  },
+  z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format')
+);
+
+const weeklyHourRowSchema = z.object({
+  day: z.string().min(1),
+  open: wallTimeSchema,
+  close: wallTimeSchema,
+  is_closed: z.boolean().optional(),
+});
+
+const breakRowSchema = z.object({
+  day: z.string().min(1),
+  start: wallTimeSchema,
+  end: wallTimeSchema,
+});
+
+const holidayRowSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reason: z.string().max(200).optional(),
+});
+
+const closureRowSchema = z.object({
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reason: z.string().max(200).optional(),
+});
+
+const createSalonServiceRowSchema = z.object({
+  name: z.string().min(1).max(200),
+  duration_minutes: z.coerce.number().int().positive(),
+  price_cents: z.coerce.number().int().min(0),
+});
 
 export const createSalonSchema = z.object({
   salon_name: z
@@ -17,12 +62,8 @@ export const createSalonSchema = z.object({
     .min(10, 'WhatsApp number must be at least 10 digits')
     .max(15, 'WhatsApp number must be at most 15 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid WhatsApp number format'),
-  opening_time: z
-    .string()
-    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
-  closing_time: z
-    .string()
-    .regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format'),
+  opening_time: wallTimeSchema,
+  closing_time: wallTimeSchema,
   slot_duration: slotDurationSchema,
   address: z
     .string()
@@ -38,6 +79,22 @@ export const createSalonSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   category: z.string().max(50).optional().default('salon'),
+  concurrent_booking_capacity: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_CONCURRENT_BOOKING_CAPACITY)
+    .optional(),
+  address_line1: z.string().max(300).optional(),
+  address_line2: z.string().max(300).optional(),
+  state: z.string().max(100).optional(),
+  country: z.string().max(100).optional(),
+  postal_code: z.string().max(20).optional(),
+  weekly_hours: z.array(weeklyHourRowSchema).optional(),
+  breaks: z.array(breakRowSchema).optional(),
+  holidays: z.array(holidayRowSchema).optional(),
+  closures: z.array(closureRowSchema).optional(),
+  services: z.array(createSalonServiceRowSchema).max(50).optional(),
 });
 
 export type CreateSalonInput = z.infer<typeof createSalonSchema>;
@@ -50,6 +107,8 @@ export type Salon = {
   opening_time: string;
   closing_time: string;
   slot_duration: number;
+  /** Max overlapping appointments; businesses.concurrent_booking_capacity. */
+  concurrent_booking_capacity?: number;
   booking_link: string;
   address?: string;
   location?: string;
@@ -58,6 +117,11 @@ export type Salon = {
   pincode?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  state?: string | null;
+  country?: string | null;
+  postal_code?: string | null;
   qr_code?: string | null;
   category?: string;
   owner_user_id?: string | null;

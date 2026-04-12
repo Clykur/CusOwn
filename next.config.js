@@ -1,5 +1,29 @@
 const path = require('path');
 
+/** Duplicates lib/security/security-headers getCspConnectSrc (next.config cannot import TS). */
+function getCspConnectSrc() {
+  const parts = ["'self'"];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  if (supabaseUrl) {
+    try {
+      parts.push(supabaseUrl.replace(/\/$/, ''));
+    } catch {
+      // ignore
+    }
+  }
+  parts.push(
+    'https://*.supabase.co',
+    'wss://*.supabase.co',
+    'https://accounts.google.com',
+    'https://api.razorpay.com',
+    'https://va.vercel-scripts.com',
+    'https://vercel.live',
+    'https://vitals.vercel-insights.com',
+    'https://*.vercel-insights.com'
+  );
+  return parts.join(' ');
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // ✅ Add this to silence Turbopack vs webpack conflict
@@ -38,7 +62,8 @@ const nextConfig = {
 
   experimental: {
     optimizePackageImports: [],
-    staleTimes: { dynamic: 30, static: 300 },
+    /** Softer client-router cache for dynamic routes (faster return navigations). */
+    staleTimes: { dynamic: 120, static: 300 },
   },
 
   webpack: (config, { isServer, dev }) => {
@@ -90,11 +115,11 @@ const nextConfig = {
       "base-uri 'self'",
       "frame-ancestors 'none'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://vercel.live",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com",
+      `connect-src ${getCspConnectSrc()}`,
       "frame-src 'self' https://api.razorpay.com https://accounts.google.com https://*.supabase.co https://vercel.live https://*.vercel.live",
       "form-action 'self'",
       'upgrade-insecure-requests',

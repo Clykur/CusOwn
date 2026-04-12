@@ -3,13 +3,10 @@ import PublicBookingPage from '@/components/booking/public-booking-page';
 import { salonService } from '@/services/salon.service';
 import { businessHoursService } from '@/services/business-hours.service';
 import { downtimeService } from '@/services/downtime.service';
-import { getISTDateString } from '@/lib/time/ist';
-import {
-  getSlotsByIntervals,
-  releaseExpiredReservationsForBusinessDate,
-} from '@/repositories/slot.repository';
-import { subtractOccupiedFromFullDay } from '@/lib/slot-availability-intervals';
-import { SLOT_STATUS } from '@/config/constants';
+import { slotService } from '@/services/slot.service';
+import { getISTDateString, getISTDate, toMinutes } from '@/lib/time/ist';
+import { DEFAULT_CONCURRENT_BOOKING_CAPACITY } from '@/config/constants';
+import type { MinuteInterval } from '@/lib/slot-capacity-timeline';
 import type { Slot } from '@/types';
 
 type Props = { params: Promise<{ businessSlug: string }> };
@@ -23,7 +20,6 @@ export default async function CustomerBookPage({ params }: Props) {
     redirect('/');
   }
 
-  // Server-side parallel fetch for instant page load
   const [business, todayStr] = await Promise.all([
     salonService.getSalonByBookingLink(businessSlug),
     Promise.resolve(getISTDateString()),
@@ -33,14 +29,12 @@ export default async function CustomerBookPage({ params }: Props) {
     return <PublicBookingPage businessSlug={businessSlug} />;
   }
 
-  // Parallel fetch: hours, downtime, and prepare for slots
   const [hours, closures, holidays] = await Promise.all([
     businessHoursService.getEffectiveHours(business.id, todayStr),
     downtimeService.getBusinessClosures(business.id).catch(() => []),
     downtimeService.getBusinessHolidays(business.id).catch(() => []),
   ]);
 
-  // Pre-compute closed dates for calendar
   const closedDates: string[] = [];
   holidays.forEach((h: { holiday_date: string }) => closedDates.push(h.holiday_date));
   closures.forEach((c: { start_date: string; end_date: string }) => {
@@ -56,7 +50,6 @@ export default async function CustomerBookPage({ params }: Props) {
     }
   });
 
-  // Fetch initial slots for today (skip if closed)
   let initialSlots: Slot[] = [];
   let initialClosedMessage: string | null = null;
 
@@ -71,36 +64,34 @@ export default async function CustomerBookPage({ params }: Props) {
       initialClosedMessage = 'Shop closed today';
     }
   } else {
-    // Fetch slots for today
     try {
-      const { getOccupiedIntervalsForDate } = await import('@/repositories/slot.repository');
-      const nowIso = new Date().toISOString();
-      const [occupied] = await Promise.all([
-        getOccupiedIntervalsForDate(business.id, todayStr, nowIso),
-        releaseExpiredReservationsForBusinessDate(business.id, todayStr, nowIso),
-      ]);
-      const fullDay = [{ start: hours.opening_time, end: hours.closing_time }];
-      const occupiedIntervals = occupied.map((o) => ({ start: o.start_time, end: o.end_time }));
-      const availableIntervals = subtractOccupiedFromFullDay(fullDay, occupiedIntervals);
-      const slotRows = await getSlotsByIntervals(business.id, todayStr, availableIntervals);
-
-      const now = new Date();
-      const todayDateString = now.toISOString().split('T')[0];
-      const isToday = todayStr === todayDateString;
-
-      for (const slot of slotRows) {
-        if (isToday) {
-          const [h, m] = slot.start_time.split(':').map(Number);
-          const slotDateTime = new Date(now);
-          slotDateTime.setHours(h, m, 0, 0);
-          if (now >= slotDateTime) continue;
-        }
-        initialSlots.push({
-          ...slot,
-          status: SLOT_STATUS.AVAILABLE,
-          reserved_until: null,
-        } as Slot);
+      const istNow = getISTDate();
+      const nowMinutesIST = istNow.getHours() * 60 + istNow.getMinutes();
+      const blocked: MinuteInterval[] = [];
+      if (hours.break_start_time && hours.break_end_time) {
+        blocked.push({
+          startMin: toMinutes(hours.break_start_time),
+          endMin: toMinutes(hours.break_end_time),
+        });
       }
+
+      initialSlots = await slotService.getAvailableSlots(
+        business.id,
+        todayStr,
+        {
+          opening_time: hours.opening_time,
+          closing_time: hours.closing_time,
+          slot_duration: business.slot_duration,
+          concurrent_booking_capacity:
+            business.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+        },
+        {
+          skipCleanup: true,
+          todayDateStringIST: todayStr,
+          nowMinutesIST: nowMinutesIST,
+          blockedIntervalsMin: blocked,
+        }
+      );
     } catch {
       // Non-fatal: client will fetch on mount
     }

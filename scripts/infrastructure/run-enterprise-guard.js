@@ -14,12 +14,12 @@ const ROOT = process.cwd();
 function run(label, cmd, args, opts = {}) {
   process.stdout.write(`\n=== ${label} ===\n`);
 
-  const useShell = cmd === npmCmd;
-
   const result = spawnSync(cmd, args, {
     stdio: 'inherit',
     cwd: ROOT,
-    shell: useShell,
+    // Match strict-build / quality-gate: shell only on Windows (.cmd shims). Using shell:true
+    // for npm on macOS/Linux breaks or no-ops some Node versions' spawnSync argument handling.
+    shell: isWindows,
     ...opts,
   });
 

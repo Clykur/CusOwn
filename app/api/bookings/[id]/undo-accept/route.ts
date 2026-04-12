@@ -5,11 +5,11 @@ import { getClientIp, isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/config/constants';
 import { getAuthContext } from '@/lib/utils/api-auth-pipeline';
-import { userService } from '@/services/user.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { auditService } from '@/services/audit.service';
-import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
+import { logStructured } from '@/lib/observability/structured-log';
+import { canManageBookingForBusiness } from '@/lib/utils/booking-business-access.server';
 
 const undoAcceptRateLimit = enhancedRateLimit({
   maxRequests: 10,
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const ctx = await getAuthContext(request);
     if (!ctx) {
       logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
-      return errorResponse('Authentication required', 401);
+      return errorResponse(ERROR_MESSAGES.AUTHENTICATION_REQUIRED, 401);
     }
 
     const booking = await bookingService.getBookingByUuidWithDetails(id);
@@ -44,9 +44,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-    const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
-    if (!ownsBusiness && !isAdminProfile(ctx.profile)) {
+    if (!booking.salon) {
+      return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
+    }
+
+    const allowed = await canManageBookingForBusiness(
+      ctx.user.id,
+      ctx.profile,
+      booking.business_id
+    );
+    if (!allowed) {
       logAuthDeny({
         user_id: ctx.user.id,
         route: ROUTE,
@@ -54,7 +61,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         role: (ctx.profile as { user_type?: string })?.user_type ?? 'unknown',
         resource: id,
       });
-      return errorResponse('Access denied', 403);
+      return errorResponse(ERROR_MESSAGES.BOOKING_MANAGE_ACCESS_DENIED, 403);
     }
 
     const updated = await bookingService.revertConfirmToPending(id, ctx.user.id);
@@ -70,9 +77,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       console.error('[SECURITY] Failed to create audit log:', auditError);
     }
 
-    console.log(
-      `[SECURITY] Booking undo accept: IP: ${clientIP}, Booking: ${id.substring(0, 8)}..., User: ${ctx.user.id.substring(0, 8)}...`
-    );
+    logStructured('info', 'Booking undo accept', {
+      action: 'booking_undo_accept',
+      booking_id: id,
+    });
 
     const response = successResponse(updated, SUCCESS_MESSAGES.BOOKING_REVERTED_TO_PENDING);
     setNoCacheHeaders(response);

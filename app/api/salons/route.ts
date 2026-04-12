@@ -51,6 +51,17 @@ export async function POST(request: NextRequest) {
       'pincode',
       'latitude',
       'longitude',
+      'concurrent_booking_capacity',
+      'address_line1',
+      'address_line2',
+      'state',
+      'country',
+      'postal_code',
+      'weekly_hours',
+      'breaks',
+      'holidays',
+      'closures',
+      'services',
     ] as const;
     const filteredBody = filterFields(body, allowedFields);
 

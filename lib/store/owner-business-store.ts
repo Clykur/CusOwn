@@ -56,8 +56,10 @@ interface OwnerBusinessState {
 
   setHolidays: (holidays: Holiday[]) => void;
   addHoliday: (holiday: Holiday) => void;
+  removeHoliday: (holidayId: string) => void;
   setClosures: (closures: Closure[]) => void;
   addClosure: (closure: Closure) => void;
+  removeClosure: (closureId: string) => void;
 
   setShopPhotos: (photos: ShopPhoto[]) => void;
   addShopPhoto: (photo: ShopPhoto) => void;
@@ -119,9 +121,19 @@ export const useOwnerBusinessStore = create<OwnerBusinessState>()(
 
       addHoliday: (holiday) => set((state) => ({ holidays: [...state.holidays, holiday] })),
 
+      removeHoliday: (holidayId) =>
+        set((state) => ({
+          holidays: state.holidays.filter((h) => h.id !== holidayId),
+        })),
+
       setClosures: (closures) => set({ closures }),
 
       addClosure: (closure) => set((state) => ({ closures: [...state.closures, closure] })),
+
+      removeClosure: (closureId) =>
+        set((state) => ({
+          closures: state.closures.filter((c) => c.id !== closureId),
+        })),
 
       setShopPhotos: (shopPhotos) => set({ shopPhotos }),
 

@@ -20,6 +20,7 @@ export default defineConfig({
       'scripts/unit-middleware/**/*.test.ts',
       'scripts/unit-database/**/*.test.ts',
       'scripts/unit-utils/unit-discovery-fallback.test.ts',
+      'scripts/unit-utils/unit-slot-capacity-timeline.test.ts',
       'scripts/integration/**/*.test.ts',
       'scripts/security/**/*.test.ts',
       'scripts/e2e/**/*.test.ts',

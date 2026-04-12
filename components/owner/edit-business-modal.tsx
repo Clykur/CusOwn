@@ -1,7 +1,12 @@
 'use client';
 
 import { memo } from 'react';
-import { SLOT_DURATIONS, VALIDATION } from '@/config/constants';
+import {
+  SLOT_DURATIONS,
+  VALIDATION,
+  DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+  MAX_CONCURRENT_BOOKING_CAPACITY,
+} from '@/config/constants';
 
 export interface EditBusinessFormData {
   salon_name: string;
@@ -10,8 +15,19 @@ export interface EditBusinessFormData {
   opening_time: string;
   closing_time: string;
   slot_duration: number;
+  concurrent_booking_capacity: number;
   address: string;
   location: string;
+  city: string;
+  area: string;
+  pincode: string;
+  latitude: string;
+  longitude: string;
+  address_line1: string;
+  address_line2: string;
+  state: string;
+  country: string;
+  postal_code: string;
 }
 
 interface EditBusinessModalProps {
@@ -120,6 +136,27 @@ function EditBusinessModalComponent({
             </select>
           </div>
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Concurrent bookings (max {MAX_CONCURRENT_BOOKING_CAPACITY})
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={MAX_CONCURRENT_BOOKING_CAPACITY}
+              value={editForm.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY}
+              onChange={(e) =>
+                onFormChange((f) => ({
+                  ...f,
+                  concurrent_booking_capacity: Math.min(
+                    MAX_CONCURRENT_BOOKING_CAPACITY,
+                    Math.max(1, parseInt(e.target.value, 10) || DEFAULT_CONCURRENT_BOOKING_CAPACITY)
+                  ),
+                }))
+              }
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Location / City</label>
             <input
               type="text"
@@ -127,6 +164,114 @@ function EditBusinessModalComponent({
               onChange={(e) => onFormChange((f) => ({ ...f, location: e.target.value }))}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
               maxLength={200}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+              <input
+                type="text"
+                value={editForm.city}
+                onChange={(e) => onFormChange((f) => ({ ...f, city: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                maxLength={100}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Area</label>
+              <input
+                type="text"
+                value={editForm.area}
+                onChange={(e) => onFormChange((f) => ({ ...f, area: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                maxLength={100}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
+            <input
+              type="text"
+              value={editForm.pincode}
+              onChange={(e) => onFormChange((f) => ({ ...f, pincode: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              maxLength={10}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Latitude</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={editForm.latitude}
+                onChange={(e) => onFormChange((f) => ({ ...f, latitude: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                placeholder="-90 to 90"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Longitude</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={editForm.longitude}
+                onChange={(e) => onFormChange((f) => ({ ...f, longitude: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                placeholder="-180 to 180"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Address line 1</label>
+            <input
+              type="text"
+              value={editForm.address_line1}
+              onChange={(e) => onFormChange((f) => ({ ...f, address_line1: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              maxLength={300}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Address line 2</label>
+            <input
+              type="text"
+              value={editForm.address_line2}
+              onChange={(e) => onFormChange((f) => ({ ...f, address_line2: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              maxLength={300}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+              <input
+                type="text"
+                value={editForm.state}
+                onChange={(e) => onFormChange((f) => ({ ...f, state: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                maxLength={100}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+              <input
+                type="text"
+                value={editForm.country}
+                onChange={(e) => onFormChange((f) => ({ ...f, country: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                maxLength={100}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Postal code</label>
+            <input
+              type="text"
+              value={editForm.postal_code}
+              onChange={(e) => onFormChange((f) => ({ ...f, postal_code: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              maxLength={20}
             />
           </div>
           <div>

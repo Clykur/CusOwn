@@ -57,6 +57,7 @@ const ALLOWED_URL_HOSTS = new Set([
   'api.razorpay.com',
   'accounts.google.com',
   'va.vercel-scripts.com',
+  'vitals.vercel-insights.com',
   '*.supabase.co',
   'api.bigdatacloud.net', // Geo: BigDataCloud API (config/constants.ts)
   'www.bigdatacloud.com', // Geo: BigDataCloud docs (lib/geo comment)

@@ -26,6 +26,8 @@ export type BusinessSpecialHours = {
   opening_time?: string | null;
   closing_time?: string | null;
   is_closed: boolean;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -63,6 +65,37 @@ export class DowntimeService {
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
+  }
+
+  /** Delete a holiday only if it belongs to the business (idempotent no-op when no row). */
+  async removeHolidayForBusiness(holidayId: string, businessId: string): Promise<boolean> {
+    const supabaseAdmin = requireSupabaseAdmin();
+    const { data, error } = await supabaseAdmin
+      .from('business_holidays')
+      .delete()
+      .eq('id', holidayId)
+      .eq('business_id', businessId)
+      .select('id');
+
+    if (error) {
+      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    return Array.isArray(data) && data.length > 0;
+  }
+
+  async removeClosureForBusiness(closureId: string, businessId: string): Promise<boolean> {
+    const supabaseAdmin = requireSupabaseAdmin();
+    const { data, error } = await supabaseAdmin
+      .from('business_closures')
+      .delete()
+      .eq('id', closureId)
+      .eq('business_id', businessId)
+      .select('id');
+
+    if (error) {
+      throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
+    }
+    return Array.isArray(data) && data.length > 0;
   }
 
   async getBusinessHolidays(businessId: string): Promise<BusinessHoliday[]> {
@@ -140,16 +173,44 @@ export class DowntimeService {
     closingTime?: string,
     isClosed: boolean = false
   ): Promise<BusinessSpecialHours> {
+    return this.upsertSpecialHoursRow(businessId, dayOfWeek, {
+      opening_time: openingTime ?? null,
+      closing_time: closingTime ?? null,
+      is_closed: isClosed,
+    });
+  }
+
+  /**
+   * Upsert one weekday row (open/close/closed/breaks). Uses unique (business_id, day_of_week).
+   */
+  async upsertSpecialHoursRow(
+    businessId: string,
+    dayOfWeek: number,
+    row: {
+      opening_time?: string | null;
+      closing_time?: string | null;
+      is_closed?: boolean;
+      break_start_time?: string | null;
+      break_end_time?: string | null;
+    }
+  ): Promise<BusinessSpecialHours> {
     const supabaseAdmin = requireSupabaseAdmin();
+    const payload: Record<string, unknown> = {
+      business_id: businessId,
+      day_of_week: dayOfWeek,
+      opening_time: row.opening_time ?? null,
+      closing_time: row.closing_time ?? null,
+      is_closed: row.is_closed ?? false,
+    };
+    if (row.break_start_time !== undefined) {
+      payload.break_start_time = row.break_start_time;
+    }
+    if (row.break_end_time !== undefined) {
+      payload.break_end_time = row.break_end_time;
+    }
     const { data, error } = await supabaseAdmin
       .from('business_special_hours')
-      .upsert({
-        business_id: businessId,
-        day_of_week: dayOfWeek,
-        opening_time: openingTime || null,
-        closing_time: closingTime || null,
-        is_closed: isClosed,
-      })
+      .upsert(payload)
       .select()
       .single();
 
@@ -159,7 +220,32 @@ export class DowntimeService {
     if (!data) {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
-    return data;
+    return data as BusinessSpecialHours;
+  }
+
+  /**
+   * Replace weekly grid: one row per entry (typically 7 days). Caller validates ranges.
+   */
+  async replaceWeeklySpecialHours(
+    businessId: string,
+    rows: Array<{
+      day_of_week: number;
+      opening_time?: string | null;
+      closing_time?: string | null;
+      is_closed: boolean;
+      break_start_time?: string | null;
+      break_end_time?: string | null;
+    }>
+  ): Promise<void> {
+    for (const r of rows) {
+      await this.upsertSpecialHoursRow(businessId, r.day_of_week, {
+        opening_time: r.opening_time,
+        closing_time: r.closing_time,
+        is_closed: r.is_closed,
+        break_start_time: r.break_start_time ?? null,
+        break_end_time: r.break_end_time ?? null,
+      });
+    }
   }
 
   async getBusinessSpecialHours(businessId: string): Promise<BusinessSpecialHours[]> {

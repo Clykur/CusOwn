@@ -27,8 +27,8 @@ export default function RevenueTrendChart({
   return (
     <Card className="rounded-xl border border-slate-200 shadow-sm min-w-0">
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Revenue Over Time</h3>
-      <div className="min-w-0" style={{ width: '100%', height: 288 }}>
-        <ResponsiveContainer width="100%" height={288}>
+      <div className="min-h-[250px] w-full min-w-0" style={{ height: 250 }}>
+        <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={dailyData}>
             <defs>
               <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">

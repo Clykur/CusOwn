@@ -513,7 +513,7 @@ export default function PublicBookingPage({
     // Service-aware: include selected services
     const serviceIdsParam =
       selectedServices.length > 0 ? `serviceIds=${selectedServices.join(',')}` : '';
-    const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`;
+    const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}${serviceIdsParam ? `&${serviceIdsParam}` : ''}`;
     dedupFetch(fetchUrl, {
       credentials: 'include',
       dedupKey: `slots:${business.id}:${selectedDate}:${serviceIdsParam || 'none'}`,
@@ -617,10 +617,12 @@ export default function PublicBookingPage({
   const refetchSlots = useCallback(async () => {
     if (!business) return;
     try {
+      const refetchSvc =
+        selectedServices.length > 0 ? `serviceIds=${selectedServices.join(',')}` : '';
       const r = await dedupFetch(
-        `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}`,
+        `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}${refetchSvc ? `&${refetchSvc}` : ''}`,
         {
-          dedupKey: `slots-refetch:${business.id}:${selectedDate}`,
+          dedupKey: `slots-refetch:${business.id}:${selectedDate}:${refetchSvc || 'none'}`,
           cancelPrevious: true,
         }
       );
@@ -631,7 +633,7 @@ export default function PublicBookingPage({
         console.error('[PublicBookingPage] Refetch slots failed:', err);
       }
     }
-  }, [business, selectedDate, setSlots]);
+  }, [business, selectedDate, setSlots, selectedServices]);
 
   const handleSlotSelect = useCallback(
     async (slot: Slot) => {
