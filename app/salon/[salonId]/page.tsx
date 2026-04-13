@@ -59,8 +59,13 @@ export default function SalonDetailPage() {
   const setCustomerPhone = useBookingFlowStore((s) => s.setCustomerPhone);
   const error = useBookingFlowStore((s) => s.error);
   const setError = useBookingFlowStore((s) => s.setError);
-  const success = useBookingFlowStore((s) => s.success);
-  const setSuccess = useBookingFlowStore((s) => s.setSuccess);
+
+  const [success, setSuccess] = useState<{
+    bookingId: string;
+    whatsappUrl?: string;
+    bookingStatusUrl?: string;
+  } | null>(null);
+
   const resetBookingFlow = useBookingFlowStore((s) => s.reset);
 
   useEffect(() => {

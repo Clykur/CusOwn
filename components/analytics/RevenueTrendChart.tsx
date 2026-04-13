@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@tremor/react';
 import {
   Area,
   AreaChart,
@@ -25,7 +24,7 @@ export default function RevenueTrendChart({
   dailyData: { date: string; revenue?: number; totalBookings: number }[];
 }) {
   return (
-    <Card className="rounded-xl border border-slate-200 shadow-sm min-w-0">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm min-w-0 p-6">
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Revenue Over Time</h3>
       <div className="min-h-[250px] w-full min-w-0" style={{ height: 250 }}>
         <ResponsiveContainer width="100%" height={250}>
@@ -55,6 +54,6 @@ export default function RevenueTrendChart({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </div>
   );
 }

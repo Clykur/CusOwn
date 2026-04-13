@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@tremor/react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 const COLORS = ['#10b981', '#64748b', '#f59e0b'];
@@ -19,15 +18,12 @@ export default function StatusBreakdownChart({
     { name: 'Rejected', value: analytics?.rejectedBookings ?? 0 },
     { name: 'Cancelled', value: analytics?.cancelledBookings ?? 0 },
   ];
-
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <Card className="rounded-xl border border-slate-200 shadow-sm min-h-[250px] w-full min-w-0">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm min-h-[250px] w-full min-w-0 p-6">
       <h3 className="mb-4 text-sm font-semibold text-slate-900">Booking Status Breakdown</h3>
-
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-        {/* Chart */}
         <div className="w-full sm:w-1/2 flex justify-center min-h-[250px]">
           <div className="w-full max-w-[280px] aspect-square min-h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -44,23 +40,17 @@ export default function StatusBreakdownChart({
                     <Cell key={entry.name} fill={COLORS[index]} />
                   ))}
                 </Pie>
-
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Legend */}
         <div className="w-full sm:w-1/2">
           <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
-
           <p className="text-3xl font-bold text-slate-900 mb-4">{total}</p>
-
           <div className="space-y-3">
             {data.map((item, idx) => {
               const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
-
               return (
                 <div key={item.name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 text-slate-700">
@@ -70,7 +60,6 @@ export default function StatusBreakdownChart({
                     />
                     {item.name}
                   </div>
-
                   <span className="font-medium text-slate-900">{pct}%</span>
                 </div>
               );
@@ -78,6 +67,6 @@ export default function StatusBreakdownChart({
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

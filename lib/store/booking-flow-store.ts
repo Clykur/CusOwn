@@ -3,7 +3,6 @@
 import { create } from 'zustand';
 import { PHONE_DIGITS } from '@/config/constants';
 import type { PublicBusiness, Slot } from '@/types';
-import type { BookingSuccessData } from '@/components/booking/booking-success-view';
 
 interface BookingFlowState {
   business: PublicBusiness | null;
@@ -25,8 +24,6 @@ interface BookingFlowState {
   submitting: boolean;
   error: string | null;
   slotValidationError: string | null;
-
-  success: BookingSuccessData | null;
 
   setBusiness: (business: PublicBusiness | null) => void;
   setBusinessSlug: (slug: string) => void;
@@ -51,8 +48,6 @@ interface BookingFlowState {
   setSubmitting: (submitting: boolean) => void;
   setError: (error: string | null) => void;
   setSlotValidationError: (error: string | null) => void;
-
-  setSuccess: (data: BookingSuccessData | null) => void;
 
   clearSelection: () => void;
   clearForm: () => void;
@@ -176,8 +171,6 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
   setError: (error) => set({ error }),
 
   setSlotValidationError: (slotValidationError) => set({ slotValidationError }),
-
-  setSuccess: (success) => set({ success }),
 
   clearSelection: () => set({ selectedSlot: null, slotValidationError: null }),
 

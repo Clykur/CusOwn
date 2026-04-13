@@ -196,133 +196,122 @@ export class DashboardService {
     const businessIds = businesses.map((b) => b.id);
     const todayStr = getISTDateString();
 
-    let slotIds: string[] | null = null;
-    if (options?.fromDate || options?.toDate) {
-      let slotQuery = supabase.from('slots').select('id').in('business_id', businessIds);
+    // ---------------------------
+    // PAGINATION (CRITICAL FIX)
+    // ---------------------------
+    let allBookings: any[] = [];
+    let from = 0;
+    const pageSize = 1000;
 
-      if (options.fromDate) slotQuery = slotQuery.gte('date', options.fromDate);
-      if (options.toDate) slotQuery = slotQuery.lte('date', options.toDate);
+    let pageCount = 0;
+    while (true) {
+      pageCount++;
+      let query = supabase
+        .from('bookings')
+        .select(
+          'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at'
+        )
+        .in('business_id', businessIds)
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
 
-      const { data: slots, error: slotsError } = await slotQuery;
-      if (slotsError) {
-        console.error('[Dashboard] Slots query error (non-fatal for future dates):', slotsError);
-        slotIds = [];
-      } else if (slots && slots.length > 0) {
-        slotIds = slots.map((s) => s.id);
-      } else {
-        // No slots for date range (future date) - return empty safely BEFORE bookings query
-        return {
-          businesses,
-          stats: {
-            totalBusinesses: businesses.length,
-            totalBookings: 0,
-            confirmedBookings: 0,
-            pendingBookings: 0,
-            rejectedBookings: 0,
-            cancelledBookings: 0,
-            noShowCount: 0,
-            conversionRate: 0,
-            cancellationRate: 0,
-            noShowRate: 0,
-          },
-          todaysBookings: [],
-          pendingBookingsList: [],
-          recentBookings: [],
-          bookingsByBusiness: {},
-        };
+      // Direct date filtering on created_at
+      if (options?.fromDate) {
+        query = query.gte('created_at', options.fromDate);
       }
+      if (options?.toDate) {
+        query = query.lte('created_at', options.toDate);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('[DASHBOARD] Pagination page', pageCount, 'error:', error);
+        break;
+      }
+
+      if (!data || data.length === 0) {
+        break;
+      }
+
+      allBookings.push(...data);
+
+      if (data.length < pageSize) {
+        break;
+      }
+
+      from += pageSize;
     }
 
-    let bookingsQuery = supabase
-      .from('bookings')
-      .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at'
-      )
-      .in('business_id', businessIds)
-      .order('created_at', { ascending: false })
-      .limit(1000); // Safety limit to prevent massive queries
-
-    if (slotIds) {
-      bookingsQuery = bookingsQuery.in('slot_id', slotIds);
-    }
-
-    const { data: bookings, error: bookingsError } = await bookingsQuery;
-
-    if (bookingsError) {
-      console.error('[Dashboard] Non-fatal bookings error (proceeding with empty):', bookingsError);
-      // Don't throw for Supabase query issues - return empty data
-    }
-
-    const allBookings = bookings || [];
-
+    // ---------------------------
+    // RELATED DATA
+    // ---------------------------
     const bookingSlotIds = [...new Set(allBookings.map((b) => b.slot_id).filter(Boolean))];
+
     let slots: Slot[] = [];
     if (bookingSlotIds.length > 0) {
-      const { data: slotsData, error: slotDetailsError } = await supabase
+      const { data } = await supabase
         .from('slots')
         .select('id, business_id, date, start_time, end_time, status, reserved_until')
         .in('id', bookingSlotIds);
 
-      if (slotDetailsError) {
-        console.error('[Dashboard] Slot details error:', slotDetailsError);
-      } else {
-        slots = (slotsData || []) as Slot[];
-      }
-    } else {
+      slots = (data || []) as Slot[];
     }
 
-    const bookingIds = allBookings.map((b) => b.id).filter(Boolean);
+    const bookingIds = allBookings.map((b) => b.id);
 
     let reviews: ReviewSummary[] = [];
     if (bookingIds.length > 0) {
-      const { data: reviewsData, error: reviewsError } = await supabase
+      const { data, error } = await supabase
         .from('reviews')
         .select('id, booking_id, rating, comment')
         .in('booking_id', bookingIds);
 
-      if (reviewsError) {
-        console.error('[Dashboard] Error fetching reviews:', reviewsError);
-        throw new Error(reviewsError.message || ERROR_MESSAGES.DATABASE_ERROR);
+      if (error) {
+        console.error('[Dashboard] Reviews error:', error);
+        throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
       }
 
-      reviews = (reviewsData || []).map((review) => ({
-        id: review.id,
-        booking_id: review.booking_id,
-        rating: Number(review.rating),
-        comment: review.comment ?? null,
+      reviews = (data || []).map((r) => ({
+        id: r.id,
+        booking_id: r.booking_id,
+        rating: Number(r.rating),
+        comment: r.comment ?? null,
       }));
-    } else {
     }
 
-    const slotMap = new Map<string, Slot>();
-    slots.forEach((slot) => slotMap.set(slot.id, slot));
+    // ---------------------------
+    // MAP + ENRICH
+    // ---------------------------
+    const slotMap = new Map(slots.map((s) => [s.id, s]));
+    const businessMap = new Map(businesses.map((b) => [b.id, b]));
+    const reviewMap = new Map(reviews.map((r) => [r.booking_id, r]));
 
-    const businessMap = new Map<string, Salon>();
-    businesses.forEach((business) => businessMap.set(business.id, business));
-
-    const reviewMap = new Map<string, ReviewSummary>();
-    reviews.forEach((review) => {
-      reviewMap.set(review.booking_id, review);
-    });
-
-    const enrichedBookings: BookingWithDetails[] = allBookings.map((booking) => ({
-      ...booking,
-      slot: slotMap.get(booking.slot_id) || undefined,
-      salon: businessMap.get(booking.business_id) || undefined,
-      review: reviewMap.get(booking.id) || undefined,
+    const enrichedBookings: BookingWithDetails[] = allBookings.map((b) => ({
+      ...b,
+      slot: slotMap.get(b.slot_id),
+      salon: businessMap.get(b.business_id),
+      review: reviewMap.get(b.id),
     }));
 
+    // ---------------------------
+    // STATS
+    // ---------------------------
     const totalBookings = enrichedBookings.length;
+
     const confirmedBookings = enrichedBookings.filter((b) => b.status === 'confirmed').length;
     const pendingBookings = enrichedBookings.filter((b) => b.status === 'pending').length;
     const rejectedBookings = enrichedBookings.filter((b) => b.status === 'rejected').length;
     const cancelledBookings = enrichedBookings.filter((b) => b.status === 'cancelled').length;
-    const noShowCount = enrichedBookings.filter((b) => b.no_show === true).length;
+    const noShowCount = enrichedBookings.filter((b) => b.no_show).length;
 
-    const conversionRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
-    const cancellationRate = totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
-    const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
+    const conversionRate = totalBookings ? (confirmedBookings / totalBookings) * 100 : 0;
+    const cancellationRate = totalBookings ? (cancelledBookings / totalBookings) * 100 : 0;
+    const noShowRate = confirmedBookings ? (noShowCount / confirmedBookings) * 100 : 0;
 
+    // ---------------------------
+    // GROUPING
+    // ---------------------------
     const todaysBookings = enrichedBookings.filter((b) => b.slot?.date === todayStr);
     const pendingBookingsList = enrichedBookings.filter((b) => b.status === 'pending');
     const recentBookings = enrichedBookings.slice(0, 50);

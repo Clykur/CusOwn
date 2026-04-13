@@ -65,16 +65,16 @@ function FilterDropdownComponent({
       <button
         type="button"
         onClick={toggleOpen}
-        className="flex h-11 w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-800 shadow-sm transition-colors hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+        className="flex h-11 w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-3.5 text-sm text-slate-800 shadow-sm transition-colors hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
       >
         <span className="truncate">{selectedText}</span>
         <span className="ml-2 text-xs text-slate-500">{open ? '▲' : '▼'}</span>
       </button>
 
       {open ? (
-        <div className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+        <div className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
           {options.map((option) => (
-            <FilterOption
+            <FilterOptionItem
               key={option.value}
               option={option}
               multi={multi}
@@ -88,7 +88,7 @@ function FilterDropdownComponent({
   );
 }
 
-const FilterOption = memo(function FilterOption({
+const FilterOptionItem = memo(function FilterOptionItem({
   option,
   multi,
   inputGroupName,
@@ -107,13 +107,13 @@ const FilterOption = memo(function FilterOption({
   );
 
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
+    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-gray-50">
       <input
         type={multi ? 'checkbox' : 'radio'}
         name={multi ? undefined : inputGroupName}
         checked={option.checked}
         onChange={handleChange}
-        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-300"
+        className="h-4 w-4 rounded border-gray-300 text-slate-900 focus:ring-gray-300"
       />
       <span>{option.label}</span>
     </label>

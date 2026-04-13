@@ -1,15 +1,8 @@
 'use client';
 
-import { Card } from '@tremor/react';
 import { useMemo, useState } from 'react';
 
-type ServiceRow = {
-  id: string;
-  name: string;
-  count: number;
-  revenueCents?: number;
-};
-
+type ServiceRow = { id: string; name: string; count: number; revenueCents?: number };
 type SortKey = 'name' | 'count' | 'revenue' | 'avgRevenue' | 'conversion';
 
 function formatCurrency(cents?: number): string {
@@ -61,30 +54,31 @@ export default function ServicePerformanceTable({ services }: { services: Servic
   };
 
   return (
-    <Card className="rounded-xl border border-slate-200 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">Service Performance</h3>
         <span className="text-xs text-slate-500">Top 5 highlighted</span>
       </div>
-
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead>
-            <tr className="bg-slate-50/80">
-              {[
-                ['name', 'Service'],
-                ['count', 'Bookings'],
-                ['revenue', 'Revenue'],
-                ['avgRevenue', 'Avg Revenue'],
-                ['conversion', 'Conversion %'],
-              ].map(([key, label]) => (
+            <tr className="bg-gray-50/80">
+              {(
+                [
+                  ['name', 'Service'],
+                  ['count', 'Bookings'],
+                  ['revenue', 'Revenue'],
+                  ['avgRevenue', 'Avg Revenue'],
+                  ['conversion', 'Conversion %'],
+                ] as const
+              ).map(([key, label]) => (
                 <th
                   key={key}
                   className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
                   <button
                     type="button"
-                    onClick={() => onSort(key as SortKey)}
+                    onClick={() => onSort(key)}
                     className="inline-flex items-center gap-1 hover:text-slate-800"
                   >
                     {label}
@@ -94,7 +88,7 @@ export default function ServicePerformanceTable({ services }: { services: Servic
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
+          <tbody className="divide-y divide-gray-100 bg-white">
             {rows.map((row, index) => (
               <tr key={row.id} className={index < 5 ? 'bg-indigo-50/30' : ''}>
                 <td className="px-4 py-3 text-sm font-medium text-slate-800">{row.name}</td>
@@ -109,6 +103,6 @@ export default function ServicePerformanceTable({ services }: { services: Servic
           </tbody>
         </table>
       </div>
-    </Card>
+    </div>
   );
 }
