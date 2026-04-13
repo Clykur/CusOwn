@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
@@ -36,7 +37,6 @@ const loadingAnimation = {
         a: { a: 0, k: [0, 0, 0] },
         s: { a: 0, k: [100, 100, 100] },
       },
-      ao: 0,
       shapes: [
         {
           ty: 'gr',
@@ -46,7 +46,6 @@ const loadingAnimation = {
               ty: 'el',
               s: { a: 0, k: [80, 80] },
               p: { a: 0, k: [0, 0] },
-              nm: 'Ellipse Path 1',
             },
             {
               ty: 'st',
@@ -55,13 +54,11 @@ const loadingAnimation = {
               w: { a: 0, k: 4 },
               lc: 2,
               lj: 1,
-              ml: 4,
               d: [
-                { n: 'd', nm: 'dash', v: { a: 0, k: 60 } },
-                { n: 'g', nm: 'gap', v: { a: 0, k: 200 } },
+                { n: 'd', v: { a: 0, k: 60 } },
+                { n: 'g', v: { a: 0, k: 200 } },
                 {
                   n: 'o',
-                  nm: 'offset',
                   v: {
                     a: 1,
                     k: [
@@ -71,30 +68,17 @@ const loadingAnimation = {
                   },
                 },
               ],
-              nm: 'Stroke 1',
-            },
-            {
-              ty: 'tr',
-              p: { a: 0, k: [0, 0] },
-              a: { a: 0, k: [0, 0] },
-              s: { a: 0, k: [100, 100] },
-              r: { a: 0, k: 0 },
-              o: { a: 0, k: 100 },
             },
           ],
-          nm: 'Ellipse 1',
         },
       ],
-      ip: 0,
-      op: 120,
-      st: 0,
     },
   ],
 };
 
-const SPLASH_SHOWN_KEY = 'cusown_splash_shown';
-
 export function SplashScreen() {
+  const pathname = usePathname();
+
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
@@ -104,32 +88,36 @@ export function SplashScreen() {
   useEffect(() => {
     setMounted(true);
 
-    // Check if user has already seen the splash screen
-    const hasSeenSplash = localStorage.getItem(SPLASH_SHOWN_KEY);
-    if (hasSeenSplash) {
+    const allowedRoutes = ['/', '/customer/dashboard', '/owner/dashboard'];
+
+    // Not an allowed route → don't show splash
+    if (!allowedRoutes.includes(pathname)) {
       setVisible(false);
       return;
     }
 
-    // First-time visitor - show splash screen
+    // Per-session control
+    const sessionKey = `splash_shown_${pathname}`;
+    const hasSeen = sessionStorage.getItem(sessionKey);
+
+    if (hasSeen) {
+      setVisible(false);
+      return;
+    }
+
+    // Show splash
     setShouldShow(true);
     setTimeout(() => setShowContent(true), 100);
 
-    const minDuration = 3500;
-
     const hideTimeout = setTimeout(() => {
-      // Mark splash as shown for future visits
-      localStorage.setItem(SPLASH_SHOWN_KEY, 'true');
+      sessionStorage.setItem(sessionKey, 'true');
       setFadeOut(true);
       setTimeout(() => setVisible(false), 500);
-    }, minDuration);
+    }, 3500);
 
-    return () => {
-      clearTimeout(hideTimeout);
-    };
-  }, []);
+    return () => clearTimeout(hideTimeout);
+  }, [pathname]);
 
-  // Don't render if not mounted, not visible, or shouldn't show
   if (!mounted || !visible || !shouldShow) return null;
 
   return (
@@ -137,9 +125,7 @@ export function SplashScreen() {
       className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-white transition-all duration-500 ${
         fadeOut ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
       }`}
-      style={{ backgroundColor: 'white' }}
     >
-      {/* Main content */}
       <div
         className={`relative flex flex-col items-center transition-all duration-700 ${
           showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
@@ -150,9 +136,9 @@ export function SplashScreen() {
           CusOwn
         </h1>
 
-        {/* Lottie Loading Animation */}
+        {/* Loader */}
         <div className="w-20 h-20 mb-10">
-          <Lottie animationData={loadingAnimation} loop={true} />
+          <Lottie animationData={loadingAnimation} loop />
         </div>
 
         {/* Branding */}

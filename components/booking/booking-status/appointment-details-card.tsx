@@ -12,7 +12,7 @@ interface AppointmentDetailsCardProps {
     start_time: string;
     end_time: string;
   };
-  serviceName?: string;
+  services?: { name: string }[];
   review?: {
     rating: number;
     comment?: string;
@@ -24,7 +24,7 @@ interface AppointmentDetailsCardProps {
 
 function AppointmentDetailsCardComponent({
   slot,
-  serviceName,
+  services,
   review,
   status,
   bookingId,
@@ -79,7 +79,11 @@ function AppointmentDetailsCardComponent({
         </div>
         <div>
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Service</p>
-          <p className="font-semibold text-slate-900">{serviceName || '—'}</p>
+          <div className="font-semibold text-slate-900">
+            {services && services.length > 0
+              ? services.map((service, index) => <p key={index}>{service.name}</p>)
+              : '—'}
+          </div>{' '}
         </div>
         <div>
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Time</p>

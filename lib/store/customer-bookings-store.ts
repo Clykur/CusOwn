@@ -43,12 +43,14 @@ interface CustomerBookingsState {
   isInitialLoad: boolean;
   isRefreshing: boolean;
   lastFetchedAt: number | null;
+  shouldRefetch: boolean;
 
   setBookings: (bookings: CustomerBooking[]) => void;
   updateBooking: (bookingId: string, updates: Partial<CustomerBooking>) => void;
   setIsInitialLoad: (loading: boolean) => void;
   setIsRefreshing: (refreshing: boolean) => void;
   setLastFetchedAt: (timestamp: number) => void;
+  invalidateBookings: () => void;
   reset: () => void;
 }
 
@@ -59,14 +61,15 @@ const initialState = {
   isInitialLoad: true,
   isRefreshing: false,
   lastFetchedAt: null,
+  shouldRefetch: false,
 };
 
 export const useCustomerBookingsStore = create<CustomerBookingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...initialState,
 
-      setBookings: (bookings) => set({ bookings }),
+      setBookings: (bookings) => set({ bookings, shouldRefetch: false }),
 
       updateBooking: (bookingId, updates) =>
         set((state) => ({
@@ -77,7 +80,9 @@ export const useCustomerBookingsStore = create<CustomerBookingsState>()(
 
       setIsRefreshing: (isRefreshing) => set({ isRefreshing }),
 
-      setLastFetchedAt: (lastFetchedAt) => set({ lastFetchedAt }),
+      setLastFetchedAt: (lastFetchedAt) => set({ lastFetchedAt, shouldRefetch: false }),
+
+      invalidateBookings: () => set({ shouldRefetch: true, lastFetchedAt: Date.now() }),
 
       reset: () => set(initialState),
     }),
@@ -95,10 +100,19 @@ const computeStats = (bookings: CustomerBooking[]): CustomerBookingsStats => {
   let upcoming = 0;
   let completed = 0;
 
+  const now = new Date();
+
   for (const b of bookings) {
-    if (b.status === 'confirmed' || b.status === 'pending') {
+    let isFuture = false;
+
+    if (b.slot && b.slot.date && b.slot.start_time) {
+      const bookingTime = new Date(`${b.slot.date}T${b.slot.start_time}`);
+      isFuture = bookingTime > now;
+    }
+
+    if ((b.status === 'confirmed' || b.status === 'pending') && isFuture) {
       upcoming++;
-    } else if (b.status === 'cancelled' || b.status === 'rejected' || b.status === 'expired') {
+    } else {
       completed++;
     }
   }

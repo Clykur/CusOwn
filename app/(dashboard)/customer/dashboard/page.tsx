@@ -61,10 +61,12 @@ export default function CustomerDashboardPage() {
   const isInitialLoad = useCustomerBookingsStore((state) => state.isInitialLoad);
   const isRefreshing = useCustomerBookingsStore((state) => state.isRefreshing);
   const lastFetchedAt = useCustomerBookingsStore((state) => state.lastFetchedAt);
+  const shouldRefetch = useCustomerBookingsStore((state) => state.shouldRefetch);
   const setBookings = useCustomerBookingsStore((state) => state.setBookings);
   const setIsInitialLoad = useCustomerBookingsStore((state) => state.setIsInitialLoad);
   const setIsRefreshing = useCustomerBookingsStore((state) => state.setIsRefreshing);
   const setLastFetchedAt = useCustomerBookingsStore((state) => state.setLastFetchedAt);
+  const invalidateBookings = useCustomerBookingsStore((state) => state.invalidateBookings);
 
   const lastRefetchRef = useRef(0);
   const MIN_REFETCH_INTERVAL = 3000;
@@ -116,23 +118,22 @@ export default function CustomerDashboardPage() {
     [setBookings, setIsInitialLoad, setIsRefreshing, setLastFetchedAt]
   );
 
+  // Refetch on shouldRefetch flag, URL param, or initialUser change
   useEffect(() => {
-    if (!hasMountedRef.current) return;
-    if (!initialUser?.id) {
-      setIsInitialLoad(false);
-      return;
-    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const justBooked = urlParams.get('justBooked') === 'true' || shouldRefetch;
 
-    const hasFreshCache = lastFetchedAt && Date.now() - lastFetchedAt < CACHE_TTL;
-
-    // Skip fetch entirely if cache is fresh (prefetched or recent)
-    if (hasFreshCache) {
-      setIsInitialLoad(false);
-      return;
-    }
+    if (!hasMountedRef.current || !initialUser?.id || !justBooked) return;
 
     refetchBookings(true);
-  }, [initialUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Clear URL param after refetch
+    if (urlParams.get('justBooked')) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('justBooked');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [shouldRefetch, initialUser?.id, refetchBookings]);
 
   const handleVisibilityRefresh = useCallback(() => {
     const now = Date.now();
