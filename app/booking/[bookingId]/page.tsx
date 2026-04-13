@@ -144,7 +144,7 @@ export default function BookingStatusPage() {
           {booking.slot && (
             <AppointmentDetailsCard
               slot={booking.slot}
-              serviceName={booking?.service_name}
+              services={booking.services ?? [{ name: booking.service_name }]}
               review={booking.review}
               status={booking.status}
               bookingId={booking.id}

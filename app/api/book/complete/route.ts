@@ -169,10 +169,11 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    const bookingStatusUrl = getBookingStatusUrl(booking.booking_id, request);
+    const bookingStatusUrl = new URL(getBookingStatusUrl(booking.booking_id, request));
+    bookingStatusUrl.searchParams.set('justBooked', 'true');
     const response = successResponse({
       booking_id: booking.booking_id,
-      booking_status_url: bookingStatusUrl,
+      booking_status_url: bookingStatusUrl.toString(),
     });
     setNoCacheHeaders(response);
     return response;
