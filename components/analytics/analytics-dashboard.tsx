@@ -13,25 +13,25 @@ import AnalyticsSkeleton from '@/components/analytics/AnalyticsSkeleton';
 const BookingTrendChart = dynamic(() => import('@/components/analytics/BookingTrendChart'), {
   ssr: false,
   loading: () => (
-    <div className="h-80 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+    <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
   ),
 });
 const RevenueTrendChart = dynamic(() => import('@/components/analytics/RevenueTrendChart'), {
   ssr: false,
   loading: () => (
-    <div className="h-80 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+    <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
   ),
 });
 const StatusBreakdownChart = dynamic(() => import('@/components/analytics/StatusBreakdownChart'), {
   ssr: false,
   loading: () => (
-    <div className="h-80 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+    <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
   ),
 });
 const PeakHoursHeatmap = dynamic(() => import('@/components/analytics/PeakHoursHeatmap'), {
   ssr: false,
   loading: () => (
-    <div className="h-72 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+    <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
   ),
 });
 const ServicePerformanceTable = dynamic(
@@ -39,7 +39,7 @@ const ServicePerformanceTable = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-72 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+      <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
     ),
   }
 );
@@ -283,7 +283,7 @@ export default function AnalyticsDashboard({
 
   if (!selectedBusinessId) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+      <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
         <p className="text-sm font-medium text-slate-700">No business selected</p>
       </div>
     );
@@ -313,7 +313,7 @@ export default function AnalyticsDashboard({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-gray-300 bg-white p-10 text-center shadow-sm"
+          className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm"
         >
           <p className="text-base font-semibold text-slate-900">
             No booking activity in selected period
@@ -322,10 +322,10 @@ export default function AnalyticsDashboard({
             Try widening the date range, sharing your booking link, or running a promotion.
           </p>
           <div className="mt-4 inline-flex gap-2">
-            <span className="rounded-md border border-gray-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-700">
+            <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-slate-700">
               Create promotion
             </span>
-            <span className="rounded-md border border-gray-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-700">
+            <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-slate-700">
               Share booking link
             </span>
           </div>
@@ -337,14 +337,14 @@ export default function AnalyticsDashboard({
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <Suspense
               fallback={
-                <div className="h-80 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+                <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
               }
             >
               <BookingTrendChart dailyData={dailyData} />
             </Suspense>
             <Suspense
               fallback={
-                <div className="h-80 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+                <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
               }
             >
               <RevenueTrendChart dailyData={dailyData} />
@@ -354,14 +354,14 @@ export default function AnalyticsDashboard({
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <Suspense
               fallback={
-                <div className="h-80 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+                <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
               }
             >
               <StatusBreakdownChart analytics={analytics} />
             </Suspense>
             <Suspense
               fallback={
-                <div className="h-72 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+                <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
               }
             >
               <PeakHoursHeatmap peakHours={peakHours} />
@@ -370,7 +370,7 @@ export default function AnalyticsDashboard({
 
           <Suspense
             fallback={
-              <div className="h-72 animate-pulse rounded-xl border border-gray-300 bg-slate-100" />
+              <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
             }
           >
             <ServicePerformanceTable

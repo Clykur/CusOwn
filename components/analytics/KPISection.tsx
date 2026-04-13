@@ -2,7 +2,6 @@
 
 import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Card } from '@tremor/react';
 
 function currency(cents?: number): string {
   const value = (cents || 0) / 100;
@@ -29,10 +28,10 @@ const KPICompactCard = memo(function KPICompactCard({
   value: string;
 }) {
   return (
-    <Card className="rounded-xl border border-slate-200 p-3.5 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</p>
       <p className="mt-1.5 text-xl font-semibold text-slate-900">{value}</p>
-    </Card>
+    </div>
   );
 });
 

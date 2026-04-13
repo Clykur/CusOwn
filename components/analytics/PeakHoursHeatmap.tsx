@@ -1,7 +1,5 @@
 'use client';
 
-import { Card } from '@tremor/react';
-
 function intensity(value: number, max: number): string {
   if (max <= 0) return 'bg-slate-100';
   const ratio = value / max;
@@ -19,14 +17,11 @@ export default function PeakHoursHeatmap({
 }) {
   const map = new Map<number, number>();
   peakHours.forEach((p) => map.set(p.hour, p.bookingCount));
-  const values = Array.from({ length: 24 }).map((_, hour) => ({
-    hour,
-    count: map.get(hour) || 0,
-  }));
+  const values = Array.from({ length: 24 }).map((_, hour) => ({ hour, count: map.get(hour) || 0 }));
   const max = Math.max(...values.map((v) => v.count), 1);
 
   return (
-    <Card className="rounded-xl border border-slate-200 shadow-sm min-h-[250px] w-full min-w-0">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm min-h-[250px] w-full min-w-0 p-6">
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Peak Hours Heatmap</h3>
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-12">
         {values.map((item) => (
@@ -42,6 +37,6 @@ export default function PeakHoursHeatmap({
         ))}
       </div>
       <p className="mt-3 text-xs text-slate-500">Darker blocks indicate higher booking density.</p>
-    </Card>
+    </div>
   );
 }

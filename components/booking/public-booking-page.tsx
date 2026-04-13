@@ -31,7 +31,6 @@ import { useBookingFlowStore, selectAvailableSlots } from '@/lib/store';
 
 import SlotSelectionGrid from './slot-selection-grid';
 import CustomerBookingForm from './customer-booking-form';
-import BookingSuccessView from './booking-success-view';
 
 const CalendarGrid = dynamic(() => import('@/components/booking/calendar-grid'), {
   loading: () => (
@@ -114,21 +113,34 @@ export default function PublicBookingPage({
   const setError = useBookingFlowStore((state) => state.setError);
   const slotValidationError = useBookingFlowStore((state) => state.slotValidationError);
   const setSlotValidationError = useBookingFlowStore((state) => state.setSlotValidationError);
-  const success = useBookingFlowStore((state) => state.success);
-  const setSuccess = useBookingFlowStore((state) => state.setSuccess);
   const reset = useBookingFlowStore((state) => state.reset);
 
   const midnightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slotRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [, setTimeTick] = useState(0);
   const restoredFromPendingRef = useRef(false);
-  const [services, setServices] = useState<{ id: string; name: string }[]>([]);
+  const [services, setServices] = useState<
+    {
+      id: string;
+      business_id: string;
+      name: string;
+      description?: string | null;
+      duration_minutes: number;
+      price_cents: number;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    }[]
+  >([]);
 
   const searchParams = useSearchParams();
   const serviceId = searchParams?.get('serviceId') ?? null;
 
   // ── Multi-select: array instead of single string ──────────────────────────
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+  const businessIdMemo = useMemo(() => business?.id ?? null, [business?.id]);
+  const servicesKey = useMemo(() => selectedServices.slice().sort().join(','), [selectedServices]);
 
   const toggleService = useCallback((id: string) => {
     setSelectedServices((prev) =>
@@ -141,7 +153,7 @@ export default function PublicBookingPage({
 
     const fetchServices = async () => {
       try {
-        const res = await fetch(`/api/owner/services?businessId=${business.id}`);
+        const res = await fetch(`/api/public/services?businessId=${business.id}`);
         const data = await res.json();
 
         if (data.success) {
@@ -289,7 +301,7 @@ export default function PublicBookingPage({
     slots,
     onSlotsUpdate: handleRealtimeSlotsUpdate,
     onSlotChange: handleSlotStatusChange,
-    enabled: !!business && !!selectedDate && !success,
+    enabled: !!business && !!selectedDate,
     skipInitialRefetch: slots.length > 0,
   });
 
@@ -482,53 +494,45 @@ export default function PublicBookingPage({
     }
   }, [businessSlug, setSelectedDate, initialDate, selectedDate]);
 
-  // Track if initial slots have been applied to skip redundant fetch
-  const initialSlotsFetchedRef = useRef(false);
-  useEffect(() => {
-    if (!business || !selectedDate) return;
-    let cancelled = false;
-    let loadingTimerId: ReturnType<typeof setTimeout> | null = null;
+  const isFetchingSlots = useRef(false);
 
-    // Use cached data immediately if available (instant UI response)
-    const cached = slotCache.get(selectedDate);
-    if (cached) {
-      setSlots(cached);
-      setDateLoading(false);
-      // Skip fetch if this is the initial date with server-provided data
-      if (
-        selectedDate === initialDate &&
-        !initialSlotsFetchedRef.current &&
-        (initialSlots?.length || initialClosedMessage)
-      ) {
-        initialSlotsFetchedRef.current = true;
+  // Dedicated slots fetch with debounce, guard, minimal deps
+  useEffect(() => {
+    if (!businessIdMemo || !selectedDate || isFetchingSlots.current) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const debouncedFetch = async () => {
+      isFetchingSlots.current = true;
+
+      const cached = slotCache.get(selectedDate);
+      if (cached) {
+        setSlots(cached);
+        setDateLoading(false);
+        isFetchingSlots.current = false;
         return;
       }
-    } else {
+
       setDateLoading(true);
-    }
+      setClosedMessage(null);
+      cancelRequests(`slots:${businessIdMemo}`);
 
-    setClosedMessage(null);
-    cancelRequests(`slots:${business.id}`);
+      const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : '';
+      const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${selectedDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`;
+      try {
+        const res = await dedupFetch(fetchUrl, {
+          credentials: 'include',
+          dedupKey: `slots:${businessIdMemo}:${selectedDate}:${servicesKey || 'none'}`,
+          cancelPrevious: true,
+        });
+        const result = await res.json();
 
-    // Service-aware: include selected services
-    const serviceIdsParam =
-      selectedServices.length > 0 ? `serviceIds=${selectedServices.join(',')}` : '';
-    const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}${serviceIdsParam ? `&${serviceIdsParam}` : ''}`;
-    dedupFetch(fetchUrl, {
-      credentials: 'include',
-      dedupKey: `slots:${business.id}:${selectedDate}:${serviceIdsParam || 'none'}`,
-      cancelPrevious: true,
-    })
-      .then((res) => res.json())
-      .then((result) => {
-        if (cancelled) return;
         if (result?.success && result?.data) {
           if (result.data.closed) {
             setClosedMessage(result.data.message || 'Shop is closed on this day.');
             setSlots([]);
             addClosedDate(selectedDate);
             cacheSlots(selectedDate, []);
-            setDateLoading(false);
             return;
           }
           setClosedMessage(null);
@@ -539,6 +543,7 @@ export default function PublicBookingPage({
           cacheSlots(selectedDate, loadedSlots);
           removeClosedDate(selectedDate);
 
+          // Rebook logic (one-time)
           if (!rebookAppliedRef.current) {
             const raw = sessionStorage.getItem('rebookData');
             if (raw) {
@@ -557,12 +562,14 @@ export default function PublicBookingPage({
             }
           }
 
+          // Restore pending (conditional)
           if (!restoredFromPendingRef.current && !rebookAppliedRef.current) {
             restorePendingBooking(loadedSlots);
           } else if (rebookAppliedRef.current && !restoredFromPendingRef.current) {
             restoredFromPendingRef.current = true;
           }
 
+          // Validate selected slot
           if (selectedSlot) {
             const updated = loadedSlots.find((s: Slot) => s.id === selectedSlot.id);
             if (!updated || updated.status !== 'available') {
@@ -572,68 +579,62 @@ export default function PublicBookingPage({
             }
           }
         }
-        setDateLoading(false);
-      })
-      .catch((err) => {
-        // Silently ignore aborted/debounced requests - this is expected during rapid interactions
-        if ((err as Error)?.name === 'AbortError') return;
-        // Only log unexpected errors
-        if (!cancelled) {
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') {
           console.error('[PublicBookingPage] Failed to fetch slots:', err);
-          setDateLoading(false);
         }
-      });
-    return () => {
-      cancelled = true;
-      // Clear loading timer
-      if (loadingTimerId) clearTimeout(loadingTimerId);
-      // Cancel any pending debounced request for this date
-      if (business?.id) {
-        cancelDebounce(`slots:${business.id}:${selectedDate}`);
+      } finally {
+        isFetchingSlots.current = false;
+        setDateLoading(false);
       }
     };
+
+    timeoutId = setTimeout(debouncedFetch, 300);
+
+    return () => clearTimeout(timeoutId);
   }, [
-    business,
+    businessIdMemo,
     selectedDate,
-    restorePendingBooking,
+    servicesKey,
     slotCache,
-    setSlots,
-    cacheSlots,
+    restorePendingBooking,
     addClosedDate,
+    cacheSlots,
     removeClosedDate,
+    selectedSlot,
     setClosedMessage,
-    setDateLoading,
     setCustomerName,
     setCustomerPhone,
+    setDateLoading,
     setSelectedSlot,
     setSlotValidationError,
-    selectedSlot,
-    initialDate,
-    initialSlots,
-    initialClosedMessage,
-    selectedServices,
+    setSlots,
   ]);
 
   const refetchSlots = useCallback(async () => {
-    if (!business) return;
+    if (!businessIdMemo || isFetchingSlots.current) return;
+
     try {
-      const refetchSvc =
-        selectedServices.length > 0 ? `serviceIds=${selectedServices.join(',')}` : '';
+      const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : '';
       const r = await dedupFetch(
-        `${API_ROUTES.SLOTS}?salon_id=${business.id}&date=${selectedDate}${refetchSvc ? `&${refetchSvc}` : ''}`,
+        `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${selectedDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`,
         {
-          dedupKey: `slots-refetch:${business.id}:${selectedDate}:${refetchSvc || 'none'}`,
+          dedupKey: `slots-refetch:${businessIdMemo}:${selectedDate}:${servicesKey || 'none'}`,
           cancelPrevious: true,
         }
       );
       const j = await r.json();
-      if (j?.success) setSlots(Array.isArray(j.data) ? j.data : (j.data?.slots ?? []));
+      if (j?.success) {
+        const newSlots = Array.isArray(j.data) ? j.data : (j.data?.slots ?? []);
+        setSlots(newSlots);
+        cacheSlots(selectedDate, newSlots);
+      }
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
         console.error('[PublicBookingPage] Refetch slots failed:', err);
       }
     }
-  }, [business, selectedDate, setSlots, selectedServices]);
+  }, [businessIdMemo, selectedDate, servicesKey, setSlots, cacheSlots]);
 
   const handleSlotSelect = useCallback(
     async (slot: Slot) => {
@@ -668,7 +669,7 @@ export default function PublicBookingPage({
         if (!result?.success || result?.data?.status !== 'available') {
           setSlotValidationError('This slot was just booked. Please select another.');
           setSelectedSlot(null);
-          await refetchSlots();
+          setTimeout(refetchSlots, 0);
         }
       } catch (err) {
         clearTimeout(validationTimeoutId);
@@ -733,7 +734,7 @@ export default function PublicBookingPage({
       const verifyResult = await verifyRes.json();
       if (!verifyResult?.success || verifyResult?.data?.status !== 'available') {
         setSelectedSlot(null);
-        await refetchSlots();
+        setTimeout(refetchSlots, 0);
         throw new Error('This slot is no longer available. Please select another.');
       }
 
@@ -761,12 +762,11 @@ export default function PublicBookingPage({
       if (!res.ok) {
         if (res.status === 409) {
           setSelectedSlot(null);
-          await refetchSlots();
+          setTimeout(refetchSlots, 0);
         }
         throw new Error(result?.error || 'Failed to create booking');
       }
       if (result?.success && result?.data) {
-        setSuccess(result.data); // stops realtime listener
         clearPendingBooking();
         router.push(ROUTES.BOOKING_STATUS(result.data.booking.booking_id));
         return;
@@ -775,7 +775,7 @@ export default function PublicBookingPage({
       setError(err instanceof Error ? err.message : 'An error occurred');
       if (err instanceof Error && err.message.includes('no longer available')) {
         setSelectedSlot(null);
-        await refetchSlots();
+        setTimeout(refetchSlots, 0);
       }
     } finally {
       setSubmitting(false);
@@ -875,9 +875,9 @@ export default function PublicBookingPage({
     );
   }
 
-  if (success) {
-    return <BookingSuccessView success={success} />;
-  }
+  // if (success) {
+  //   return <BookingSuccessView success={success} />;
+  // }
 
   return (
     <div className="w-full pb-24 flex flex-col gap-6">
@@ -909,25 +909,37 @@ export default function PublicBookingPage({
             {services.length === 0 ? (
               <p className="text-sm text-slate-400">Loading services…</p>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {services.map((service) => {
                   const checked = selectedServices.includes(service.id);
                   return (
                     <label
                       key={service.id}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-150 group hover:scale-[1.01] active:scale-[0.98] sm:p-5 sm:py-3.5 ${
                         checked
-                          ? 'border-slate-900 bg-slate-50'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
+                          ? 'border-2 border-slate-900 bg-slate-50 shadow-sm ring-1 ring-slate-200 ring-offset-1'
+                          : 'border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleService(service.id)}
-                        className="w-4 h-4 rounded accent-slate-900 cursor-pointer"
-                      />
-                      <span className="text-sm text-slate-800">{service.name}</span>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleService(service.id)}
+                          className="w-5 h-5 rounded accent-slate-900 flex-shrink-0 cursor-pointer"
+                        />
+                        <span className="text-sm font-medium text-slate-900 truncate sm:text-base">
+                          {service.name}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5 text-right ml-4 min-w-[100px] sm:ml-6 sm:min-w-[140px]">
+                        <span className="text-xs text-slate-600 sm:text-sm">
+                          {service.duration_minutes} mins
+                        </span>
+                        <span className="text-sm font-semibold text-slate-900 sm:text-base">
+                          ₹{(service.price_cents / 100).toFixed(0)}
+                        </span>
+                      </div>
                     </label>
                   );
                 })}
