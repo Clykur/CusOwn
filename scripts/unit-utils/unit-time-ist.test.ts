@@ -4,7 +4,7 @@
  * getISTDate, getISTDateString, toMinutes. Deterministic where applicable.
  */
 
-import { getISTDate, getISTDateString, toMinutes } from '../../lib/time/ist';
+import { getISTDate, getISTDateString, getISTNowMinutes, toMinutes } from '../../lib/time/ist';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -26,6 +26,12 @@ export function runUnitTimeIstTests(): void {
   runTest('getISTDateString returns YYYY-MM-DD format', () => {
     const out = getISTDateString();
     assert(/^\d{4}-\d{2}-\d{2}$/.test(out), `Expected YYYY-MM-DD, got '${out}'`);
+  });
+
+  runTest('getISTNowMinutes returns number in day range', () => {
+    const out = getISTNowMinutes();
+    assert(typeof out === 'number', 'Must be number');
+    assert(out >= 0 && out < 24 * 60, `Expected [0, 1440), got ${out}`);
   });
 
   runTest('toMinutes returns 0 for null and undefined', () => {

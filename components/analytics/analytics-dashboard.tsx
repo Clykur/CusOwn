@@ -1,46 +1,59 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import AnalyticsHeader from '@/components/analytics/AnalyticsHeader';
-import AnalyticsFilters from '@/components/analytics/AnalyticsFilters';
+import AnalyticsFilters, { AnalyticsMobileToolbar } from '@/components/analytics/AnalyticsFilters';
+import { OWNER_SCREEN_TITLE_CLASSNAME, UI_CONTEXT } from '@/config/constants';
+import { cn } from '@/lib/utils/cn';
 import KPISection from '@/components/analytics/KPISection';
 import OperationalHealthPanel from '@/components/analytics/OperationalHealthPanel';
 import AnalyticsSkeleton from '@/components/analytics/AnalyticsSkeleton';
 
+/** Lazy chart/table slot — same classes as previous inline fallbacks. */
+function AnalyticsPanelSkeleton({ height }: { height: 'h-72' | 'h-80' }) {
+  return (
+    <div
+      className={`${height} animate-pulse rounded-xl border border-gray-200 bg-gray-100`}
+      aria-hidden
+    />
+  );
+}
+
+function AnalyticsSectionHeading({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <h2
+      id={id}
+      className="px-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500"
+    >
+      {children}
+    </h2>
+  );
+}
+
 const BookingTrendChart = dynamic(() => import('@/components/analytics/BookingTrendChart'), {
   ssr: false,
-  loading: () => (
-    <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-  ),
+  loading: () => <AnalyticsPanelSkeleton height="h-80" />,
 });
 const RevenueTrendChart = dynamic(() => import('@/components/analytics/RevenueTrendChart'), {
   ssr: false,
-  loading: () => (
-    <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-  ),
+  loading: () => <AnalyticsPanelSkeleton height="h-80" />,
 });
 const StatusBreakdownChart = dynamic(() => import('@/components/analytics/StatusBreakdownChart'), {
   ssr: false,
-  loading: () => (
-    <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-  ),
+  loading: () => <AnalyticsPanelSkeleton height="h-80" />,
 });
 const PeakHoursHeatmap = dynamic(() => import('@/components/analytics/PeakHoursHeatmap'), {
   ssr: false,
-  loading: () => (
-    <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-  ),
+  loading: () => <AnalyticsPanelSkeleton height="h-72" />,
 });
 const ServicePerformanceTable = dynamic(
   () => import('@/components/analytics/ServicePerformanceTable'),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-    ),
+    loading: () => <AnalyticsPanelSkeleton height="h-72" />,
   }
 );
 
@@ -113,7 +126,6 @@ export default function AnalyticsDashboard({
   onBusinessChange: (value: string) => void;
 }) {
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [dailyData, setDailyData] = useState<DailyPoint[]>([]);
   const [peakHours, setPeakHours] = useState<PeakHourPoint[]>([]);
@@ -128,6 +140,8 @@ export default function AnalyticsDashboard({
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [exporting, setExporting] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [filtersActiveHighlight, setFiltersActiveHighlight] = useState(false);
 
   const cacheKey = `${selectedBusinessId}:${startDate}:${endDate}`;
 
@@ -148,7 +162,6 @@ export default function AnalyticsDashboard({
         setLastUpdatedAt(parsed.lastUpdatedAt ? new Date(parsed.lastUpdatedAt) : null);
         hasCached = true;
         setLoading(false);
-        setRefreshing(true);
       }
     } catch {
       // ignore cache parse errors
@@ -237,7 +250,6 @@ export default function AnalyticsDashboard({
       }
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [cacheKey, endDate, selectedBusinessId, startDate]);
 
@@ -294,8 +306,32 @@ export default function AnalyticsDashboard({
   }
 
   return (
-    <div className="w-full space-y-6 bg-slate-50/60 px-1 pb-16">
-      <AnalyticsHeader refreshing={refreshing}>
+    <div className="w-full space-y-5 bg-slate-50/60 px-0 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-1 md:space-y-7 md:pb-16">
+      <div className="mb-6 md:mb-8 px-0 sm:px-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-1 md:mb-2')}>
+              {UI_CONTEXT.OWNER_ANALYTICS_PAGE_TITLE}
+            </h1>
+            <p className="hidden text-sm leading-snug text-gray-600 md:block md:text-base">
+              {UI_CONTEXT.OWNER_ANALYTICS_PAGE_SUBTITLE}
+            </p>
+          </div>
+          <div className="shrink-0 pt-0.5 md:hidden">
+            <AnalyticsMobileToolbar
+              onExport={handleExport}
+              exporting={exporting}
+              onOpenFilters={() => setFilterSheetOpen(true)}
+              hasActiveFilters={filtersActiveHighlight}
+            />
+          </div>
+        </div>
+        <p className="mt-2 text-sm leading-snug text-gray-600 md:hidden">
+          {UI_CONTEXT.OWNER_ANALYTICS_PAGE_SUBTITLE}
+        </p>
+      </div>
+
+      <AnalyticsHeader>
         <AnalyticsFilters
           businesses={businesses}
           selectedBusinessId={selectedBusinessId}
@@ -306,6 +342,9 @@ export default function AnalyticsDashboard({
           setEndDate={setEndDate}
           onExport={handleExport}
           exporting={exporting}
+          filterSheetOpen={filterSheetOpen}
+          onFilterSheetOpenChange={setFilterSheetOpen}
+          onHasActiveFiltersChange={setFiltersActiveHighlight}
         />
       </AnalyticsHeader>
 
@@ -331,74 +370,75 @@ export default function AnalyticsDashboard({
           </div>
         </motion.div>
       ) : (
-        <>
-          <KPISection analytics={analytics} advanced={advancedAnalytics} />
+        <div className="space-y-6 md:space-y-8">
+          <section className="space-y-3" aria-labelledby="analytics-section-kpis">
+            <AnalyticsSectionHeading id="analytics-section-kpis">
+              {UI_CONTEXT.OWNER_ANALYTICS_SECTION_KPIS}
+            </AnalyticsSectionHeading>
+            <KPISection analytics={analytics} advanced={advancedAnalytics} />
+          </section>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <Suspense
-              fallback={
-                <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-              }
-            >
-              <BookingTrendChart dailyData={dailyData} />
-            </Suspense>
-            <Suspense
-              fallback={
-                <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-              }
-            >
-              <RevenueTrendChart dailyData={dailyData} />
-            </Suspense>
-          </div>
+          <section className="space-y-3" aria-labelledby="analytics-section-trends">
+            <AnalyticsSectionHeading id="analytics-section-trends">
+              {UI_CONTEXT.OWNER_ANALYTICS_SECTION_TRENDS}
+            </AnalyticsSectionHeading>
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
+              <Suspense fallback={<AnalyticsPanelSkeleton height="h-80" />}>
+                <BookingTrendChart dailyData={dailyData} />
+              </Suspense>
+              <Suspense fallback={<AnalyticsPanelSkeleton height="h-80" />}>
+                <RevenueTrendChart dailyData={dailyData} />
+              </Suspense>
+            </div>
+          </section>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <Suspense
-              fallback={
-                <div className="h-80 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-              }
-            >
-              <StatusBreakdownChart analytics={analytics} />
-            </Suspense>
-            <Suspense
-              fallback={
-                <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-              }
-            >
-              <PeakHoursHeatmap peakHours={peakHours} />
-            </Suspense>
-          </div>
+          <section className="space-y-3" aria-labelledby="analytics-section-status">
+            <AnalyticsSectionHeading id="analytics-section-status">
+              {UI_CONTEXT.OWNER_ANALYTICS_SECTION_STATUS_PEAK}
+            </AnalyticsSectionHeading>
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
+              <Suspense fallback={<AnalyticsPanelSkeleton height="h-80" />}>
+                <StatusBreakdownChart analytics={analytics} />
+              </Suspense>
+              <Suspense fallback={<AnalyticsPanelSkeleton height="h-72" />}>
+                <PeakHoursHeatmap peakHours={peakHours} />
+              </Suspense>
+            </div>
+          </section>
 
-          <Suspense
-            fallback={
-              <div className="h-72 animate-pulse rounded-xl border border-gray-200 bg-gray-100" />
-            }
-          >
-            <ServicePerformanceTable
-              services={
-                advancedAnalytics?.servicePopularityRanking?.length
-                  ? advancedAnalytics.servicePopularityRanking.map((s) => ({
-                      id: s.serviceId,
-                      name: s.serviceName,
-                      count: s.bookingCount,
-                      revenueCents: 0,
-                    }))
-                  : (analytics?.services ?? [])
-              }
+          <section aria-label={UI_CONTEXT.OWNER_ANALYTICS_SECTION_SERVICES}>
+            <Suspense fallback={<AnalyticsPanelSkeleton height="h-72" />}>
+              <ServicePerformanceTable
+                services={
+                  advancedAnalytics?.servicePopularityRanking?.length
+                    ? advancedAnalytics.servicePopularityRanking.map((s) => ({
+                        id: s.serviceId,
+                        name: s.serviceName,
+                        count: s.bookingCount,
+                        revenueCents: 0,
+                      }))
+                    : (analytics?.services ?? [])
+                }
+              />
+            </Suspense>
+          </section>
+
+          <section aria-label={UI_CONTEXT.OWNER_ANALYTICS_SECTION_OPERATIONS}>
+            <OperationalHealthPanel
+              insights={{
+                failedBookings: analytics?.failedBookings ?? 0,
+                cronHealthy: true,
+                systemErrors: analytics?.systemErrors ?? 0,
+                upcoming: analytics?.upcoming ?? 0,
+                repeatCustomers: retention
+                  ? retention.filter((r) => r.totalBookings > 1).length
+                  : 0,
+                customerGrowth: null,
+              }}
+              lastUpdatedAt={lastUpdatedAt}
             />
-          </Suspense>
-
-          <OperationalHealthPanel
-            insights={{
-              failedBookings: analytics?.failedBookings ?? 0,
-              cronHealthy: true,
-              systemErrors: analytics?.systemErrors ?? 0,
-              upcoming: analytics?.upcoming ?? 0,
-              repeatCustomers: retention ? retention.filter((r) => r.totalBookings > 1).length : 0,
-              customerGrowth: null,
-            }}
-            lastUpdatedAt={lastUpdatedAt}
-          />
-        </>
+          </section>
+        </div>
       )}
     </div>
   );

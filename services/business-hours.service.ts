@@ -1,7 +1,7 @@
 // /services/business-hours.service.ts
 
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
-import { getISTDate, getISTDateString, toMinutes } from '@/lib/time/ist';
+import { getISTDateString, getISTNowMinutes, toMinutes } from '@/lib/time/ist';
 
 export class BusinessHoursService {
   private supabase = requireSupabaseAdmin();
@@ -93,7 +93,6 @@ export class BusinessHoursService {
     endTime: string
   ): Promise<{ valid: boolean; reason?: string }> {
     const todayStr = getISTDateString();
-    const now = getISTDate();
 
     if (slotDate < todayStr) {
       return { valid: false, reason: 'Cannot book past date' };
@@ -130,7 +129,7 @@ export class BusinessHoursService {
 
     // Today time validation
     if (slotDate === todayStr) {
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentMinutes = getISTNowMinutes();
 
       if (currentMinutes >= close) {
         return { valid: false, reason: 'Shop closed for today' };

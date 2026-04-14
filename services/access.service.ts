@@ -16,6 +16,7 @@ import {
   type CapabilityName,
 } from '@/config/constants';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { env } from '@/config/env';
 
 const VALID_ROLES = new Set<string>(ROLES);
 const VALID_CAPABILITIES = new Set<string>(Object.values(CAPABILITIES));
@@ -77,6 +78,16 @@ export async function hasRole(userId: string, role: string): Promise<boolean> {
 }
 
 /**
+ * Same customer-area gate as layouts using ACCESS_CUSTOMER_DASHBOARD: uses getRoles
+ * (user_roles with user_type fallback) plus ROLE_CAPABILITIES. Keeps API aligned with
+ * requireCustomer when RBAC rows are missing but profile.user_type is set.
+ */
+export async function hasCustomerDashboardAccess(userId: string): Promise<boolean> {
+  const roles = await getRoles(userId);
+  return getCapabilitiesFromRoles(roles).has(CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD);
+}
+
+/**
  * Derive capabilities from roles. Admin has all; owner/customer only their own.
  */
 export function getCapabilitiesFromRoles(roles: string[]): Set<CapabilityName> {
@@ -120,9 +131,7 @@ function buildBaseUrl(headers: Headers): string {
   const proto = headers.get('x-forwarded-proto') ?? 'http';
   const h = host.split(':')[0]?.toLowerCase();
   const port =
-    process.env.NODE_ENV === 'development' && h === 'localhost' && !host.includes(':')
-      ? ':3000'
-      : '';
+    env.nodeEnv === 'development' && h === 'localhost' && !host.includes(':') ? ':3000' : '';
   return `${proto}://${h}${port ? (host.includes(':') ? host : host + port) : host}/`;
 }
 

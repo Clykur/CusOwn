@@ -42,6 +42,7 @@ export {
   OwnerProfileSkeleton,
   OwnerAnalyticsSkeleton,
   BusinessCreateSkeleton,
+  OwnerSalonDetailLoadingBody,
 } from './owner/owner-skeletons';
 
 // Customer skeletons
@@ -58,4 +59,5 @@ export {
   BookingStatusSkeleton,
   AcceptRejectSkeleton,
   SetupSkeleton,
+  CalendarGridLoadingSkeleton,
 } from './booking/booking-skeletons';

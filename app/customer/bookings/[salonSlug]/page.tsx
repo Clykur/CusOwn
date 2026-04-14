@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { setRebookData } from '@/components/booking/booking-utils';
-import { UI_CUSTOMER } from '@/config/constants';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails } from '@/types';
 import Breadcrumb from '@/components/ui/breadcrumb';
@@ -118,7 +118,7 @@ function BookingDetailModal({
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 id="booking-detail-title" className="text-lg font-semibold text-slate-900">
+            <h2 id="booking-detail-title" className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
               {UI_CUSTOMER.VIEW_DETAILS}
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">Booking details</p>
@@ -302,7 +302,7 @@ export default function CustomerSalonBookingsPage() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-slate-900">{heading}</h2>
+            <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{heading}</h2>
             {salonSlug && (
               <button
                 type="button"

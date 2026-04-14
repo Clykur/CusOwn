@@ -8,6 +8,8 @@ import Calendar from '@/src/icons/calendar.svg';
 type Props = {
   value: string;
   onChange: (date: string) => void;
+  /** Shown when `value` is empty (e.g. “All dates”). */
+  emptyLabel?: string;
 };
 
 function formatToYYYYMMDD(date: Date) {
@@ -104,7 +106,7 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
   );
 }
 
-export default function DateFilter({ value, onChange }: Props) {
+export default function DateFilter({ value, onChange, emptyLabel }: Props) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
@@ -164,10 +166,12 @@ export default function DateFilter({ value, onChange }: Props) {
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className={`h-10 w-full flex items-center justify-between px-4 text-sm border rounded-lg transition
-            ${value ? 'border-black bg-gray-50' : 'border-gray-300 bg-white hover:bg-gray-50'}`}
+          className={`h-11 w-full flex items-center justify-between rounded-xl px-4 text-sm shadow-sm transition md:h-10 md:rounded-lg md:shadow-none
+            ${value ? 'border border-black bg-gray-50' : 'border border-slate-200 bg-white hover:bg-slate-50'}`}
         >
-          <span>{value || formatToYYYYMMDD(today)}</span>
+          <span className={!value && emptyLabel ? 'text-gray-500' : undefined}>
+            {value || emptyLabel || formatToYYYYMMDD(today)}
+          </span>
           <Calendar className="h-4 w-4 text-gray-600" />
         </button>
       </div>

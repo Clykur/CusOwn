@@ -120,8 +120,8 @@ export function AdminLayoutShell({
     >
       <div className="flex min-h-screen overflow-x-hidden bg-white">
         <AdminSidebar />
-        <main className="min-h-screen flex-1 lg:ml-64 w-full">
-          <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
+        <main className="min-h-screen flex-1 lg:ml-64 w-full min-w-0" suppressHydrationWarning>
+          <div className="w-full py-8 px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
             <div className="flex flex-col gap-6">{children}</div>
           </div>
         </main>

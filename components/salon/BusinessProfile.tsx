@@ -256,36 +256,61 @@ export const BusinessProfile = () => {
 
     let cancelled = false;
 
-    fetch(`/api/reviews?business_id=${salon.id}`, { cache: FETCH_CACHE })
-      .then((res) => res.json())
-      .then(
-        (result: {
+    const rc = Number(salon.review_count ?? 0);
+    const ra = salon.rating_avg != null ? Number(salon.rating_avg) : null;
+    if (rc > 0) {
+      setReviewData({
+        rating_avg: ra != null && !Number.isNaN(ra) ? Number(ra.toFixed(1)) : 0,
+        review_count: rc,
+        rating_counts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      });
+    } else {
+      setReviewData(null);
+    }
+
+    fetch(`/api/reviews?business_id=${encodeURIComponent(salon.id)}`, { cache: 'no-store' })
+      .then(async (res) => {
+        const result = (await res.json()) as {
           success?: boolean;
-          data?: { rating_avg: number; review_count: number; reviews: { rating: number }[] };
-        }) => {
-          if (cancelled) return;
+          data?: {
+            rating_avg: number;
+            review_count: number;
+            reviews: { rating: number }[];
+            rating_counts?: Record<number, number>;
+          };
+        };
+        if (cancelled) return;
+        if (!res.ok || !result.success || !result.data) return;
 
-          if (result.success && result.data) {
-            const reviews = result.data.reviews || [];
-            const rating_counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        const reviews = result.data.reviews || [];
+        const fromApi = result.data.rating_counts;
+        const rating_counts: Record<number, number> = fromApi
+          ? {
+              1: fromApi[1] ?? 0,
+              2: fromApi[2] ?? 0,
+              3: fromApi[3] ?? 0,
+              4: fromApi[4] ?? 0,
+              5: fromApi[5] ?? 0,
+            }
+          : { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
-            reviews.forEach((review) => {
-              const rating = Number(review.rating);
-              if (rating_counts[rating] !== undefined) {
-                rating_counts[rating]++;
-              }
-            });
-
-            setReviewData({
-              rating_avg: result.data.rating_avg || 0,
-              review_count: result.data.review_count || 0,
-              rating_counts,
-            });
-          }
+        if (!fromApi) {
+          reviews.forEach((review) => {
+            const rating = Number(review.rating);
+            if (rating_counts[rating] !== undefined) {
+              rating_counts[rating]++;
+            }
+          });
         }
-      )
+
+        setReviewData({
+          rating_avg: result.data.rating_avg || 0,
+          review_count: result.data.review_count || 0,
+          rating_counts,
+        });
+      })
       .catch(() => {
-        // Silently handle error
+        // Keep salon-seeded reviewData if fetch fails
       });
 
     return () => {
@@ -444,7 +469,7 @@ export const BusinessProfile = () => {
 };
 
 function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
-  if (!reviewData || (reviewData.rating_avg === 0 && reviewData.review_count === 0)) {
+  if (!reviewData || reviewData.review_count === 0) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>

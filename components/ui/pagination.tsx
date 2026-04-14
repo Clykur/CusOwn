@@ -4,6 +4,7 @@ import { memo, useMemo, useCallback } from 'react';
 import { Button } from './button';
 import ChevronLeftIcon from '@/src/icons/chevron-left.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
+import { cn } from '@/lib/utils/cn';
 
 interface PaginationProps {
   currentPage: number;
@@ -11,6 +12,9 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   totalItems: number;
   itemsPerPage: number;
+  /** Noun for the summary line, e.g. "salons" or "bookings". */
+  itemsLabel?: string;
+  className?: string;
 }
 
 function PaginationComponent({
@@ -19,6 +23,8 @@ function PaginationComponent({
   onPageChange,
   totalItems,
   itemsPerPage,
+  itemsLabel = 'salons',
+  className,
 }: PaginationProps) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -69,11 +75,16 @@ function PaginationComponent({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200">
+    <div
+      className={cn(
+        'mt-4 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-4 sm:flex-row',
+        className
+      )}
+    >
       <div className="text-sm text-gray-600">
         Showing <span className="font-semibold text-gray-900">{startItem}</span> to{' '}
         <span className="font-semibold text-gray-900">{endItem}</span> of{' '}
-        <span className="font-semibold text-gray-900">{totalItems}</span> salons
+        <span className="font-semibold text-gray-900">{totalItems}</span> {itemsLabel}
       </div>
 
       <div className="flex items-center gap-2">

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
+  APP_SCREEN_TITLE_CLASSNAME,
   SLOT_DURATIONS,
   API_ROUTES,
   ERROR_MESSAGES,
@@ -278,7 +279,7 @@ export default function CreateBusinessForm({
     <>
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
         <div className="flex justify-center items-center py-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create Your Business</h1>
+          <h1 className={APP_SCREEN_TITLE_CLASSNAME}>Create Your Business</h1>
         </div>
         <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
           <p className="text-xs md:text-sm text-blue-800">

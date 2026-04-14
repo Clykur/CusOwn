@@ -35,10 +35,10 @@ function isMissingConcurrentBookingCapacityError(
 }
 
 const SALON_SELECT_BY_LINK_WITH_CAPACITY =
-  'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, concurrent_booking_capacity, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code';
+  'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, concurrent_booking_capacity, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code, rating_avg, review_count';
 
 const SALON_SELECT_BY_LINK_NO_CAPACITY =
-  'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code';
+  'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code, rating_avg, review_count';
 
 const SALON_SELECT_BY_ID_WITH_CAPACITY =
   'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, concurrent_booking_capacity, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at, rating_avg, review_count, city, area, pincode, latitude, longitude, address_line1, address_line2, state, country, postal_code';

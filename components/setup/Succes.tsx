@@ -7,6 +7,8 @@ import CheckIcon from '@/src/icons/check.svg';
 import DownloadIcon from '@/src/icons/download.svg';
 import LinkIcon from '@/src/icons/link.svg';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
+import { APP_SCREEN_TITLE_CLASSNAME } from '@/config/constants';
+import { cn } from '@/lib/utils/cn';
 
 type Props = {
   bookingLink: string;
@@ -28,7 +30,7 @@ export default function BusinessSuccess({ bookingLink, bookingUrl, qrCode }: Pro
           <CheckIcon className="w-10 h-10 text-green-600" />
         </div>
 
-        <h2 className="text-2xl font-bold mb-2">Business Created Successfully</h2>
+        <h2 className={cn(APP_SCREEN_TITLE_CLASSNAME, 'mb-2')}>Business Created Successfully</h2>
         <p className="text-gray-600 mb-6">
           Your booking page is live and ready to accept customers.
         </p>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ERROR_MESSAGES } from '@/config/constants';
+import { ERROR_MESSAGES, OWNER_SCREEN_TITLE_CLASSNAME } from '@/config/constants';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { supabaseAuth } from '@/lib/supabase/auth';
@@ -232,7 +232,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{salonName}</h1>
+        <h1 className={OWNER_SCREEN_TITLE_CLASSNAME}>{salonName}</h1>
         <p className="mt-1 text-sm text-slate-600">
           Set weekly hours, an optional daily break, and holidays. You can change these anytime from
           your business page.

@@ -49,7 +49,7 @@ export default function BookingLayoutFallback({ children }: BookingLayoutFallbac
   if (!checked) {
     return (
       <div className="min-h-screen bg-white">
-        <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">{children}</div>
+        <div className="w-full py-8 px-4 sm:px-6 lg:px-8">{children}</div>
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function BookingLayoutFallback({ children }: BookingLayoutFallbac
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">{children}</div>
+      <div className="w-full py-8 px-4 sm:px-6 lg:px-8">{children}</div>
     </div>
   );
 }

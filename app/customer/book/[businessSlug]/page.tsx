@@ -4,7 +4,7 @@ import { salonService } from '@/services/salon.service';
 import { businessHoursService } from '@/services/business-hours.service';
 import { downtimeService } from '@/services/downtime.service';
 import { slotService } from '@/services/slot.service';
-import { getISTDateString, getISTDate, toMinutes } from '@/lib/time/ist';
+import { getISTDateString, getISTNowMinutes, toMinutes } from '@/lib/time/ist';
 import { DEFAULT_CONCURRENT_BOOKING_CAPACITY } from '@/config/constants';
 import type { MinuteInterval } from '@/lib/slot-capacity-timeline';
 import type { Slot } from '@/types';
@@ -65,8 +65,7 @@ export default async function CustomerBookPage({ params }: Props) {
     }
   } else {
     try {
-      const istNow = getISTDate();
-      const nowMinutesIST = istNow.getHours() * 60 + istNow.getMinutes();
+      const nowMinutesIST = getISTNowMinutes();
       const blocked: MinuteInterval[] = [];
       if (hours.break_start_time && hours.break_end_time) {
         blocked.push({

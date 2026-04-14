@@ -192,13 +192,14 @@ export default function OwnerSidebar({
                 className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
+                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-600">
                   {profileImageUrl ? (
                     <Image
                       src={profileImageUrl}
                       alt="Owner profile"
-                      width={36}
-                      height={36}
+                      fill
+                      className="object-cover"
+                      sizes="36px"
                       unoptimized
                     />
                   ) : (

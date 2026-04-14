@@ -11,7 +11,7 @@ import {
   DEFAULT_CONCURRENT_BOOKING_CAPACITY,
 } from '@/config/constants';
 import { businessHoursService } from '@/services/business-hours.service';
-import { getISTDateString, getISTDate, toMinutes } from '@/lib/time/ist';
+import { getISTDateString, getISTNowMinutes, toMinutes } from '@/lib/time/ist';
 import {
   buildApiRedisKeyFromPath,
   getApiRedisCache,
@@ -133,8 +133,7 @@ export async function GET(request: NextRequest) {
     });
 
     const todayStr = getISTDateString();
-    const istNow = getISTDate();
-    const currentMinutes = istNow.getHours() * 60 + istNow.getMinutes();
+    const currentMinutes = getISTNowMinutes();
 
     const blocked: MinuteInterval[] = [];
     if (hours.break_start_time && hours.break_end_time) {

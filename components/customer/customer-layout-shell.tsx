@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import CustomerHeader from '@/components/customer/customer-header';
+import { MobileBrandHeader } from '@/components/layout/mobile-brand-header';
 import CustomerSidebar from '@/components/customer/customer-sidebar';
 import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
 import {
@@ -14,6 +15,7 @@ import { ROUTES } from '@/lib/utils/navigation';
 import { UI_CUSTOMER } from '@/config/constants';
 import { useMounted } from '@/lib/hooks/use-mounted';
 import { prefetchCustomerDashboard } from '@/lib/prefetch/customer-dashboard';
+import { cn } from '@/lib/utils/cn';
 
 function getCustomerHeader(pathname: string): {
   title: string;
@@ -32,7 +34,7 @@ function getCustomerHeader(pathname: string): {
   if (pathname === ROUTES.CUSTOMER_SALON_LIST)
     return {
       title: UI_CUSTOMER.NAV_EXPLORE_SERVICES,
-      subtitle: UI_CUSTOMER.HEADER_BROWSE_SUB,
+      subtitle: '',
     };
   if (pathname === ROUTES.CUSTOMER_PROFILE)
     return {
@@ -179,7 +181,13 @@ export default function CustomerLayoutShell({
   } else {
     content = (
       <>
-        {showHeader && <CustomerHeader title={header.title} subtitle={header.subtitle} />}
+        {showHeader && (
+          <CustomerHeader
+            title={header.title}
+            subtitle={header.subtitle}
+            className={isSalonList ? 'hidden md:mb-8 md:block' : undefined}
+          />
+        )}
         {children}
       </>
     );
@@ -190,9 +198,12 @@ export default function CustomerLayoutShell({
       <RatingPromptProvider />
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className={`flex-1 lg:ml-60 w-full ${mainSpacing}`}>
-          <div className="mx-auto w-full max-w-[1200px] py-8 px-4 sm:px-6 lg:px-6">
-            <div className="flex flex-col gap-6">{content}</div>
+        <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
+          <MobileBrandHeader />
+          <div className="w-full px-4 pb-8 pt-4 sm:px-6 md:py-8 lg:px-8" suppressHydrationWarning>
+            <div className={cn('flex flex-col', isSalonList ? 'gap-2 md:gap-6' : 'gap-6')}>
+              {content}
+            </div>
           </div>
         </main>
         <CustomerMobileBottomNav sidebarOpen={sidebarOpen} />

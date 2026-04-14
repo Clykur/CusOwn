@@ -2,7 +2,12 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { BOOKING_STATUS } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
+
+export type OwnerDashboardStatusFilter =
+  | 'all'
+  | (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS];
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -17,6 +22,9 @@ interface OwnerDashboardState {
   bookings: BookingWithDetails[];
   fromDate: string;
   toDate: string;
+  /** Client-side only; empty = all businesses */
+  businessIdFilter: string;
+  statusFilter: OwnerDashboardStatusFilter;
   searchTerm: string;
   processingBookingId: string | null;
   isLoading: boolean;
@@ -29,6 +37,8 @@ interface OwnerDashboardState {
   setFromDate: (date: string) => void;
   setToDate: (date: string) => void;
   setDateRange: (from: string, to: string) => void;
+  setBusinessIdFilter: (businessId: string) => void;
+  setStatusFilter: (filter: OwnerDashboardStatusFilter) => void;
   setSearchTerm: (term: string) => void;
   setProcessingBookingId: (id: string | null) => void;
   setIsLoading: (loading: boolean) => void;
@@ -40,11 +50,26 @@ interface OwnerDashboardState {
 
 const CACHE_TTL_MS = 30_000;
 
-const initialState = {
+const initialState: Pick<
+  OwnerDashboardState,
+  | 'stats'
+  | 'bookings'
+  | 'fromDate'
+  | 'toDate'
+  | 'businessIdFilter'
+  | 'statusFilter'
+  | 'searchTerm'
+  | 'processingBookingId'
+  | 'isLoading'
+  | 'isRefreshing'
+  | 'lastFetchedAt'
+> = {
   stats: null,
   bookings: [],
   fromDate: '',
   toDate: '',
+  businessIdFilter: '',
+  statusFilter: 'all',
   searchTerm: '',
   processingBookingId: null,
   isLoading: true,
@@ -90,6 +115,10 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
 
       setDateRange: (fromDate, toDate) => set({ fromDate, toDate }),
 
+      setBusinessIdFilter: (businessIdFilter) => set({ businessIdFilter }),
+
+      setStatusFilter: (statusFilter) => set({ statusFilter }),
+
       setSearchTerm: (searchTerm) => set({ searchTerm }),
 
       setProcessingBookingId: (processingBookingId) => set({ processingBookingId }),
@@ -100,16 +129,21 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
 
       setLastFetchedAt: (lastFetchedAt) => set({ lastFetchedAt }),
 
-      clearFilters: () => set({ fromDate: '', toDate: '', searchTerm: '' }),
+      clearFilters: () =>
+        set({
+          fromDate: '',
+          toDate: '',
+          businessIdFilter: '',
+          statusFilter: 'all',
+          searchTerm: '',
+        }),
 
       reset: () => set(initialState),
     }),
     {
-      name: 'owner-dashboard-store',
-      partialize: (state) => ({
-        fromDate: state.fromDate,
-        toDate: state.toDate,
-      }),
+      /** v2: do not persist date filters (they hid bookings via API + localStorage). */
+      name: 'owner-dashboard-store-v2',
+      partialize: () => ({}),
     }
   )
 );

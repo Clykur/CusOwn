@@ -1,5 +1,7 @@
 'use client';
 
+import { UI_CONTEXT } from '@/config/constants';
+
 function statusMeta(value: number, warningAt: number, criticalAt: number) {
   if (value >= criticalAt)
     return { label: 'Critical', cls: 'bg-rose-50 text-rose-700 border-rose-200' };
@@ -61,22 +63,35 @@ export default function OperationalHealthPanel({
   ];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">Operational Intelligence</h3>
-        <span className="text-xs text-slate-500">
-          Last updated {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}
-        </span>
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 p-4 md:p-6 md:pb-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <h3 className="text-sm font-semibold text-slate-900">
+            {UI_CONTEXT.OWNER_ANALYTICS_OPERATIONAL_INTEL_TITLE}
+          </h3>
+          <span className="text-xs text-slate-500">
+            Last updated {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}
+          </span>
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2.5 p-3 sm:gap-3 md:grid-cols-2 md:p-6 xl:grid-cols-3">
         {cards.map((c) => (
-          <div key={c.title} className="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">{c.title}</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900">{c.value}</p>
+          <div
+            key={c.title}
+            className="rounded-xl border border-gray-200 bg-gray-50/80 p-3.5 md:rounded-lg md:p-4"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-500">
+                  {c.title}
+                </p>
+                <p className="mt-1.5 break-words text-lg font-semibold tabular-nums text-slate-900 md:text-xl">
+                  {c.value}
+                </p>
               </div>
-              <span className={`rounded-md border px-2 py-0.5 text-xs font-medium ${c.status.cls}`}>
+              <span
+                className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-medium md:text-xs ${c.status.cls}`}
+              >
                 {c.status.label}
               </span>
             </div>

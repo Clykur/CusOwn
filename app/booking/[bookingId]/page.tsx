@@ -3,10 +3,16 @@
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { UI_CUSTOMER, UI_CONTEXT, UI_ERROR_CONTEXT } from '@/config/constants';
+import {
+  CUSTOMER_SCREEN_TITLE_CLASSNAME,
+  UI_CUSTOMER,
+  UI_CONTEXT,
+  UI_ERROR_CONTEXT,
+} from '@/config/constants';
 import { publicEnv } from '@/config/env.public';
 import { ROUTES } from '@/lib/utils/navigation';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
+import { cn } from '@/lib/utils/cn';
 import { BookingStatusSkeleton } from '@/components/ui/skeleton';
 import RefreshIcon from '@/src/icons/refresh.svg';
 import { useBookingStatusPolling } from '@/lib/hooks/use-booking-status-polling';
@@ -66,7 +72,7 @@ export default function BookingStatusPage() {
       <div className="w-full pb-24 flex flex-col gap-8">
         <div className="w-full">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">
+            <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-4')}>
               {UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}
             </h2>
             <p className="text-slate-600 mb-6">{error || 'Booking not found.'}</p>
@@ -100,7 +106,7 @@ export default function BookingStatusPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <h1 className="text-xl font-semibold text-slate-900">
+            <h1 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
               {UI_CUSTOMER.HEADER_BOOKING_DETAILS}
             </h1>
             <button

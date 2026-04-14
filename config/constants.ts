@@ -325,7 +325,110 @@ export const UI_CONTEXT = {
   /** Create business: info when owner reuses a WhatsApp number already used for another business. */
   WHATSAPP_ALREADY_USED_FOR: (businessName: string) =>
     `This number is already used for "${businessName}". You can use it for this business too.`,
+  /** Owner dashboard: table filters — default is all bookings; filters narrow the list client-side. */
+  OWNER_DASHBOARD_FILTERS_HINT:
+    'All bookings load by default. Narrow by appointment date, status, business, or search.',
+  OWNER_DASHBOARD_APPOINTMENT_FROM: 'Appointment from',
+  OWNER_DASHBOARD_APPOINTMENT_TO: 'Appointment to',
+  OWNER_DASHBOARD_DATE_ALL: 'All dates',
+  OWNER_DASHBOARD_STATUS: 'Status',
+  OWNER_DASHBOARD_STATUS_ALL: 'All statuses',
+  OWNER_DASHBOARD_BUSINESS: 'Business',
+  OWNER_DASHBOARD_BUSINESS_ALL: 'All businesses',
+  OWNER_DASHBOARD_CLEAR_FILTERS: 'Reset filters',
+  OWNER_DASHBOARD_SHOWING_COUNT: (shown: number, total: number) =>
+    `Showing ${shown} of ${total} bookings`,
+  /** Shown after the showing-count line when any filter or search is applied. */
+  OWNER_DASHBOARD_FILTERS_ACTIVE: 'Filters active',
+  OWNER_DASHBOARD_STATUS_OPTION_PENDING: 'Pending',
+  OWNER_DASHBOARD_STATUS_OPTION_CONFIRMED: 'Confirmed',
+  OWNER_DASHBOARD_STATUS_OPTION_REJECTED: 'Rejected',
+  OWNER_DASHBOARD_STATUS_OPTION_CANCELLED: 'Cancelled',
+  OWNER_DASHBOARD_NO_MATCH_FILTERS: 'No bookings match your filters.',
+  OWNER_DASHBOARD_NO_BOOKINGS: 'No bookings yet.',
+  OWNER_DASHBOARD_SEARCH_PLACEHOLDER: 'Search by name, booking ID, phone, business…',
+  /** Mobile pagination summary: noun after total count (lowercase). */
+  OWNER_DASHBOARD_PAGINATION_ITEMS_NOUN: 'bookings',
+  /** Mobile: toolbar icon to expand search. */
+  OWNER_DASHBOARD_MOBILE_OPEN_SEARCH: 'Open search',
+  /** Mobile: toolbar icon to open filters sheet. */
+  OWNER_DASHBOARD_MOBILE_OPEN_FILTERS: 'Open filters',
+  /** Mobile: filters bottom sheet title. */
+  OWNER_DASHBOARD_MOBILE_FILTERS_SHEET_TITLE: 'Filters',
+  /** Mobile: close filters sheet (primary action). */
+  OWNER_DASHBOARD_MOBILE_FILTERS_DONE: 'Done',
+  /** Mobile: dismiss filters overlay. */
+  OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY: 'Close filters',
+  /** Owner analytics: filter field labels and export. */
+  OWNER_ANALYTICS_START_DATE: 'Start date',
+  OWNER_ANALYTICS_END_DATE: 'End date',
+  OWNER_ANALYTICS_QUICK_RANGE: 'Quick range',
+  OWNER_ANALYTICS_EXPORT_CSV: 'Export CSV',
+  OWNER_ANALYTICS_EXPORTING: 'Exporting…',
+  /** Icon-only download: accessible name for CSV export. */
+  OWNER_ANALYTICS_DOWNLOAD_CSV_ARIA: 'Download analytics as CSV',
+  OWNER_ANALYTICS_PRESET_OVERALL: 'Overall',
+  OWNER_ANALYTICS_PRESET_TODAY: 'Today',
+  OWNER_ANALYTICS_PRESET_7D: '7 Days',
+  OWNER_ANALYTICS_PRESET_30D: '30 Days',
+  OWNER_ANALYTICS_PRESET_90D: '90 Days',
+  /** Analytics filters sheet: short hint under title. */
+  OWNER_ANALYTICS_FILTERS_HINT:
+    'Choose a business, date range, or quick preset. Download uses the selected range.',
+  OWNER_ANALYTICS_PAGE_TITLE: 'Analytics',
+  OWNER_ANALYTICS_PAGE_SUBTITLE: 'Track business performance, growth, and key trends.',
+  /** Analytics dashboard section headings (mobile layout grouping). */
+  OWNER_ANALYTICS_SECTION_KPIS: 'Overview',
+  OWNER_ANALYTICS_SECTION_TRENDS: 'Trends',
+  OWNER_ANALYTICS_SECTION_STATUS_PEAK: 'Status & peak hours',
+  OWNER_ANALYTICS_SECTION_SERVICES: 'Services',
+  OWNER_ANALYTICS_SERVICE_PERFORMANCE_TITLE: 'Service performance',
+  OWNER_ANALYTICS_SECTION_OPERATIONS: 'Operational health',
+  OWNER_ANALYTICS_OPERATIONAL_INTEL_TITLE: 'Operational intelligence',
+  OWNER_ANALYTICS_SVC_COL_SERVICE: 'Service',
+  OWNER_ANALYTICS_SVC_COL_BOOKINGS: 'Bookings',
+  OWNER_ANALYTICS_SVC_COL_REVENUE: 'Revenue',
+  OWNER_ANALYTICS_SVC_COL_AVG: 'Avg revenue',
+  OWNER_ANALYTICS_SVC_COL_CONV: 'Conversion',
+  /** Profile page: subsection heading — contact fields. */
+  PROFILE_SECTION_CONTACT: 'Contact',
+  /** Profile page: subsection heading — account metadata. */
+  PROFILE_SECTION_ACCOUNT: 'Account',
+  /** Profile page: initials avatar `aria-label` when name and email are missing. */
+  PROFILE_INITIALS_ARIA_FALLBACK: 'Your account',
+  /** Auth login (/auth/login): role-specific headings. */
+  AUTH_LOGIN_HEADING_OWNER: 'Sign in to create your business',
+  AUTH_LOGIN_DESC_OWNER:
+    'Create your booking page and start accepting appointments from customers.',
+  AUTH_LOGIN_HEADING_CUSTOMER: 'Sign in to book appointments',
+  AUTH_LOGIN_DESC_CUSTOMER: 'Access your bookings and book new appointments in one place.',
+  AUTH_LOGIN_HEADING_DEFAULT: 'Sign in to continue',
+  AUTH_LOGIN_DESC_DEFAULT: 'Sign in with Google to access your account.',
+  AUTH_LOGIN_CTA_GOOGLE: 'Continue with Google',
+  AUTH_LOGIN_TERMS_NOTICE: 'By signing in, you agree to our Terms of Service and Privacy Policy.',
+  AUTH_LOGIN_BACK_HOME: 'Back to home',
 } as const;
+
+/** Owner dashboard: mobile card list page size (desktop table is unpaginated). */
+export const OWNER_DASHBOARD_MOBILE_BOOKINGS_PER_PAGE = 10;
+
+/** Customer dashboard: favourite salons list — cards/table page size. */
+export const CUSTOMER_DASHBOARD_SALONS_PER_PAGE = 10;
+
+/** Customer explore salons (/customer/categories/salon) — pagination page size. */
+export const CUSTOMER_EXPLORE_SALONS_PER_PAGE = 10;
+
+/**
+ * Tailwind classes for primary screen titles (customer & owner shells and page headers).
+ */
+export const APP_SCREEN_TITLE_CLASSNAME =
+  'text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl';
+
+/** Customer-area imports (alias of APP_SCREEN_TITLE_CLASSNAME). */
+export const CUSTOMER_SCREEN_TITLE_CLASSNAME = APP_SCREEN_TITLE_CLASSNAME;
+
+/** Owner-area imports (alias of APP_SCREEN_TITLE_CLASSNAME). */
+export const OWNER_SCREEN_TITLE_CLASSNAME = APP_SCREEN_TITLE_CLASSNAME;
 
 /** Customer flow UI – generic, multi-service-ready copy. No category names. */
 export const UI_CUSTOMER = {
@@ -345,6 +448,20 @@ export const UI_CUSTOMER = {
   STAT_UPCOMING: 'Upcoming',
   STAT_COMPLETED: 'Completed',
   SECTION_APPOINTMENTS: 'Your Favourite Salons',
+  /** Dashboard salon row/card field labels. */
+  DASHBOARD_SALON_FIELD_LOCATION: 'Location',
+  DASHBOARD_SALON_FIELD_OWNER: 'Owner',
+  DASHBOARD_SALON_FIELD_PHONE: 'Phone',
+  /** Pagination summary on customer dashboard salon list. */
+  DASHBOARD_PAGINATION_ITEMS_NOUN: 'salons',
+  /** Customer dashboard table (desktop). */
+  DASHBOARD_TABLE_COL_SALON: 'Salon name',
+  DASHBOARD_TABLE_COL_LOCATION: 'Location',
+  DASHBOARD_TABLE_COL_OWNER: 'Owner name',
+  DASHBOARD_TABLE_COL_PHONE: 'Phone number',
+  DASHBOARD_TABLE_COL_ACTIONS: 'Actions',
+  /** Deleted / inactive salon on customer dashboard. */
+  SALON_UNAVAILABLE: 'Unavailable',
   EMPTY_ACTIVITY: "You don't have any appointments yet.",
   CTA_EXPLORE_SERVICES: 'Explore Services',
   DISCOVER_HEADING: 'Discover Services Near You',
@@ -396,6 +513,32 @@ export const UI_CUSTOMER = {
   SIGN_IN_TO_COMPLETE_BOOKING: 'Sign in to complete your booking',
   SLOTS_NONE: 'No slots available for this date',
   SLOT_NO_LONGER_AVAILABLE: 'Your selected slot is no longer available. Please select another.',
+  /** Customer salon detail (/customer/salon/[id]): gallery & history. */
+  SALON_DETAILS_SHOP_PHOTOS: 'Shop photos',
+  /** Breadcrumb when salon name not yet loaded. */
+  SALON_DETAILS_BREADCRUMB_FALLBACK: 'Salon details',
+  SALON_DETAILS_BOOKING_HISTORY: 'Booking history',
+  SALON_DETAILS_NO_PHOTOS: 'No shop photos yet.',
+  SALON_DETAILS_NO_BOOKINGS: "You don't have any bookings at this salon yet.",
+  SALON_HISTORY_FIELD_BOOKING_REF: 'Booking ID',
+  SALON_HISTORY_FIELD_DATE: 'Date',
+  SALON_HISTORY_FIELD_SLOT: 'Time',
+  SALON_HISTORY_FIELD_RATING: 'Rating',
+  SALON_HISTORY_STATUS_EXPIRED: 'Expired',
+  SALON_HISTORY_STATUS_CONFIRMED: 'Confirmed',
+  SALON_HISTORY_STATUS_PENDING: 'Pending',
+  SALON_HISTORY_STATUS_REJECTED: 'Rejected',
+  SALON_HISTORY_STATUS_CANCELLED: 'Cancelled',
+  /** Customer explore salons (/customer/categories/salon) — mobile toolbar & sheet. */
+  EXPLORE_MOBILE_OPEN_SEARCH: 'Open search',
+  EXPLORE_MOBILE_OPEN_FILTERS: 'Open filters and location',
+  EXPLORE_FILTERS_SHEET_TITLE: 'Filters',
+  EXPLORE_FILTERS_SHEET_HINT: 'Search salons, pick a location, or use your current position.',
+  EXPLORE_FILTER_LOCATION_LABEL: 'Locations',
+  EXPLORE_ALL_LOCATIONS: 'All locations',
+  EXPLORE_USE_MY_LOCATION: 'Use my location',
+  EXPLORE_FILTERS_DONE: 'Done',
+  EXPLORE_MOBILE_CLOSE_SHEET: 'Close',
 } as const;
 
 /** Contextual error messages (no internal details). */

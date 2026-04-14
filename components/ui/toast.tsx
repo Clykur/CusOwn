@@ -34,7 +34,7 @@ export function Toast({
     <div
       role="alert"
       aria-live="polite"
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-4 py-3 rounded-lg shadow-lg border ${variantStyles} text-sm font-medium`}
+      className={`fixed left-1/2 top-6 z-[100] -translate-x-1/2 px-4 py-3 text-sm font-medium shadow-lg border rounded-lg md:bottom-6 md:top-auto ${variantStyles}`}
     >
       {variant === 'success' && (
         <span className="inline-flex items-center gap-2">

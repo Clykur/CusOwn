@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { UI_CUSTOMER } from '@/config/constants';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { setRebookData } from '@/components/booking/booking-utils';
 import SalonDetailsHeader from '@/components/customer/SalonDetailsHeader';
@@ -134,42 +134,52 @@ export default function CustomerSalonDetailsPage() {
 
   const breadcrumbItems = useMemo(
     () => [
-      { label: 'My Activity', href: '/customer/dashboard' },
-      { label: salon?.salon_name || 'Salon Details', href: `/customer/salon/${salonId}` },
+      { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: '/customer/dashboard' },
+      {
+        label: salon?.salon_name || UI_CUSTOMER.SALON_DETAILS_BREADCRUMB_FALLBACK,
+        href: `/customer/salon/${salonId}`,
+      },
     ],
     [salon?.salon_name, salonId]
   );
 
   if (loading) {
     return (
-      <div className="w-full pb-24 flex flex-col gap-6" aria-busy="true" aria-label="Loading salon">
+      <div
+        className="flex w-full flex-col gap-6 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8"
+        aria-busy="true"
+        aria-label="Loading salon"
+      >
         <Breadcrumb
           items={[
-            { label: 'My Activity', href: '/customer/dashboard' },
-            { label: 'Loading...', href: `/customer/salon/${salonId}` },
+            { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: '/customer/dashboard' },
+            { label: '…', href: `/customer/salon/${salonId}` },
           ]}
         />
         <div className="h-10 w-64 rounded-lg image-skeleton-shine" />
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="h-6 w-28 mb-4 rounded image-skeleton-shine" />
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 h-6 w-32 rounded image-skeleton-shine" />
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="aspect-[3/2] w-full rounded-xl image-skeleton-shine break-inside-avoid mb-4"
+                className="aspect-[3/2] w-full rounded-lg image-skeleton-shine sm:rounded-xl"
                 aria-hidden
               />
             ))}
           </div>
         </div>
-        <div className="py-10 text-center text-sm text-slate-500">Loading booking history…</div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 h-5 w-40 rounded image-skeleton-shine" />
+          <div className="h-32 rounded-xl image-skeleton-shine" />
+        </div>
       </div>
     );
   }
 
   if (error || !salon) {
     return (
-      <div className="w-full pb-24">
+      <div className="w-full pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         <Breadcrumb
           items={[
             { label: 'My Activity', href: '/customer/dashboard' },
@@ -192,7 +202,7 @@ export default function CustomerSalonDetailsPage() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-slate-800">Salon No Longer Available</h2>
+          <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>Salon No Longer Available</h2>
           <p className="text-slate-500 text-center max-w-sm">
             This salon has been removed from our platform. Your booking history with this salon is
             still saved in your activity.
@@ -209,7 +219,7 @@ export default function CustomerSalonDetailsPage() {
   }
 
   return (
-    <div className="w-full pb-24 flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
       <Breadcrumb items={breadcrumbItems} />
 
       <SalonDetailsHeader
@@ -223,20 +233,22 @@ export default function CustomerSalonDetailsPage() {
 
       <SalonShopPhotos photos={photos} />
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Booking History</h2>
+      <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+            {UI_CUSTOMER.SALON_DETAILS_BOOKING_HISTORY}
+          </h2>
           <button
             type="button"
             onClick={handleRebook}
             disabled={!salon}
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex min-h-[44px] w-full touch-manipulation items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-[8.5rem]"
           >
             {UI_CUSTOMER.REBOOK}
           </button>
         </div>
         <SalonBookingHistoryTable bookings={bookings} />
-      </div>
+      </section>
     </div>
   );
 }

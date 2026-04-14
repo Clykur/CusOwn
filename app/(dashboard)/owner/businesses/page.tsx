@@ -52,33 +52,42 @@ export default function OwnerBusinessesPage() {
   if (loading) return <OwnerBusinessesSkeleton />;
 
   return (
-    <div className="w-full pb-24 flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-4 pb-24 md:gap-6">
       {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
         {businesses.map((b) => (
           <Link
             key={b.id}
             href={`/owner/${b.booking_link}`}
-            className="bg-white border border-slate-200 rounded-lg p-6 hover:border-slate-400 transition"
+            className="rounded-xl border border-slate-200/90 bg-white p-4 transition hover:border-slate-300 hover:bg-slate-50/50 active:bg-slate-50 md:rounded-lg md:p-6"
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{b.salon_name}</h2>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base font-semibold leading-snug text-gray-900 md:text-lg">
+                  {b.salon_name}
+                </h2>
 
                 {b.location && (
-                  <p className="flex items-center text-gray-600 mt-2 text-sm">
-                    <MapPinIcon className="w-4 h-4 mr-1" aria-hidden="true" />
-                    {b.location}
+                  <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 md:mt-2 md:text-sm">
+                    <MapPinIcon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" aria-hidden="true" />
+                    <span className="min-w-0 truncate">{b.location}</span>
                   </p>
                 )}
               </div>
 
-              <span className="text-gray-400 text-xl">›</span>
+              <span
+                className="shrink-0 text-lg leading-none text-slate-400 md:text-xl"
+                aria-hidden="true"
+              >
+                ›
+              </span>
             </div>
 
-            <div className="border-t mt-6 pt-4 flex items-center justify-between">
-              <span className="text-sm text-gray-500">Created {formatDate(b.created_at)}</span>
-              <span className="font-semibold text-black">Manage</span>
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 md:mt-6 md:pt-4">
+              <span className="text-xs text-gray-500 md:text-sm">
+                Created {formatDate(b.created_at)}
+              </span>
+              <span className="text-xs font-semibold text-slate-900 md:text-sm">Manage</span>
             </div>
           </Link>
         ))}

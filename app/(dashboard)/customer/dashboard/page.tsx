@@ -4,12 +4,13 @@ import { useEffect, useCallback, useRef, memo } from 'react';
 import Link from 'next/link';
 
 import { ROUTES } from '@/lib/utils/navigation';
-import { UI_CUSTOMER } from '@/config/constants';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@/config/constants';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
 import CustomerBookingsTable from '@/components/customer/CustomerBookingsTable';
 import BookingsIcon from '@/src/icons/bookings.svg';
-import SummaryCardSkeleton from '@/components/customer/summary-card.skeleton';
+import { CustomerDashboardInitialLoadSkeleton } from '@/components/customer/customer-dashboard-initial.skeleton';
 import { dedupFetch, cancelRequests } from '@/lib/utils/fetch-dedup';
+import { cn } from '@/lib/utils/cn';
 import { useVisibilityRefresh } from '@/lib/hooks/use-visibility-refresh';
 import { useCustomerBookingsStore, useBookingsStats } from '@/lib/store';
 
@@ -60,14 +61,11 @@ export default function CustomerDashboardPage() {
   const bookings = useCustomerBookingsStore((state) => state.bookings);
   const isInitialLoad = useCustomerBookingsStore((state) => state.isInitialLoad);
   const isRefreshing = useCustomerBookingsStore((state) => state.isRefreshing);
-  const lastFetchedAt = useCustomerBookingsStore((state) => state.lastFetchedAt);
   const shouldRefetch = useCustomerBookingsStore((state) => state.shouldRefetch);
   const setBookings = useCustomerBookingsStore((state) => state.setBookings);
   const setIsInitialLoad = useCustomerBookingsStore((state) => state.setIsInitialLoad);
   const setIsRefreshing = useCustomerBookingsStore((state) => state.setIsRefreshing);
   const setLastFetchedAt = useCustomerBookingsStore((state) => state.setLastFetchedAt);
-  const invalidateBookings = useCustomerBookingsStore((state) => state.invalidateBookings);
-
   const lastRefetchRef = useRef(0);
   const MIN_REFETCH_INTERVAL = 3000;
   const hasMountedRef = useRef(false);
@@ -118,21 +116,27 @@ export default function CustomerDashboardPage() {
     [setBookings, setIsInitialLoad, setIsRefreshing, setLastFetchedAt]
   );
 
-  // Refetch on shouldRefetch flag, URL param, or initialUser change
+  // Load bookings whenever the dashboard is shown with a logged-in user.
+  // Previously we only refetched for ?justBooked=true — that left the list empty after
+  // bookings created without that param and when prefetch had cached an older empty result.
   useEffect(() => {
+    if (!hasMountedRef.current || !initialUser?.id) return;
+
     const urlParams = new URLSearchParams(window.location.search);
-    const justBooked = urlParams.get('justBooked') === 'true' || shouldRefetch;
+    const justBookedParam = urlParams.get('justBooked') === 'true';
 
-    if (!hasMountedRef.current || !initialUser?.id || !justBooked) return;
+    void refetchBookings(true);
 
-    refetchBookings(true);
-
-    // Clear URL param after refetch
-    if (urlParams.get('justBooked')) {
+    if (justBookedParam) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('justBooked');
       window.history.replaceState({}, '', newUrl);
     }
+  }, [initialUser?.id, refetchBookings]);
+
+  useEffect(() => {
+    if (!hasMountedRef.current || !initialUser?.id || !shouldRefetch) return;
+    void refetchBookings(true);
   }, [shouldRefetch, initialUser?.id, refetchBookings]);
 
   const handleVisibilityRefresh = useCallback(() => {
@@ -151,33 +155,15 @@ export default function CustomerDashboardPage() {
   });
 
   if (isInitialLoad && bookings.length === 0) {
-    return (
-      <div className="w-full pb-24 flex flex-col gap-8 animate-in fade-in duration-200">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <SummaryCardSkeleton />
-          <SummaryCardSkeleton />
-          <SummaryCardSkeleton />
-        </div>
-        <div>
-          <div className="h-7 w-40 bg-slate-200 rounded mb-4 animate-pulse" aria-hidden />
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <div className="animate-pulse space-y-3">
-              <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />
-              <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />
-              <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <CustomerDashboardInitialLoadSkeleton />;
   }
 
   return (
-    <div className="w-full pb-24 flex flex-col gap-8 animate-in fade-in duration-150">
+    <div className="flex w-full flex-col gap-6 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] animate-in fade-in duration-150 sm:gap-8 md:pb-8">
       <StatsSection />
 
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 mb-4">
+        <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-4')}>
           {UI_CUSTOMER.SECTION_APPOINTMENTS}
         </h2>
         {bookings.length === 0 ? (

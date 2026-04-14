@@ -4,6 +4,7 @@ export {
   selectBookingCounts,
   type DashboardStats,
   type OwnerDashboardState,
+  type OwnerDashboardStatusFilter,
 } from './owner-dashboard-store';
 
 export {
