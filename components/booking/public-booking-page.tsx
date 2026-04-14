@@ -1000,7 +1000,7 @@ export default function PublicBookingPage({
             <div className="mb-6 md:mb-8">
               <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_TIME}</p>
               <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 sm:p-4">
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:grid-cols-4 lg:grid-cols-5">
                   <SlotSelectionGrid
                     displaySlots={filteredSlots}
                     isTodayClosed={isTodayClosed}
