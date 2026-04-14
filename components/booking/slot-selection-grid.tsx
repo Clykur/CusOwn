@@ -83,7 +83,7 @@ function SlotSelectionGridComponent({
               onSlotSelect?.(slot);
             }}
             disabled={isBooked || validatingSlot || submitting}
-            className={`min-h-[2.75rem] min-w-[6.75rem] shrink-0 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+            className={`min-h-[2.75rem] w-full min-w-0 rounded-lg border px-1.5 py-2 text-xs font-medium leading-tight transition-colors sm:px-2.5 sm:text-sm ${
               isBooked
                 ? 'cursor-not-allowed border-slate-100 bg-slate-100/80 text-slate-400'
                 : validatingSlot && isSelected
