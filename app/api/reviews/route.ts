@@ -5,7 +5,11 @@ import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
 import { filterFields, validateStringLength } from '@/lib/security/input-filter';
 import { containsProfanity } from '@/lib/content/profanity-filter';
-import { createReview, listReviewsByBusiness } from '@/services/review.service';
+import {
+  createReview,
+  getReviewRatingCountsForBusiness,
+  listReviewsByBusiness,
+} from '@/services/review.service';
 import { isValidUUID } from '@/lib/utils/security';
 import {
   ERROR_MESSAGES,
@@ -110,21 +114,31 @@ export async function GET(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
-    const result = await listReviewsByBusiness(businessId, page, limit);
+    const supabase = requireSupabaseAdmin();
+    const [result, bizRow, rating_counts] = await Promise.all([
+      listReviewsByBusiness(businessId, page, limit),
+      supabase
+        .from('businesses')
+        .select('rating_avg, review_count')
+        .eq('id', businessId)
+        .maybeSingle(),
+      getReviewRatingCountsForBusiness(businessId),
+    ]);
 
     const reviews = result.reviews ?? [];
+    const biz = bizRow.data as { rating_avg: number | null; review_count: number } | null;
 
-    const reviewCount = reviews.length;
-
+    const reviewCount = biz?.review_count ?? result.total;
     const ratingAvg =
-      reviewCount > 0
-        ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviewCount
+      biz?.rating_avg != null && Number.isFinite(Number(biz.rating_avg))
+        ? Number(Number(biz.rating_avg).toFixed(1))
         : 0;
 
     return successResponse({
       reviews,
-      rating_avg: Number(ratingAvg.toFixed(1)),
+      rating_avg: ratingAvg,
       review_count: reviewCount,
+      rating_counts,
       pagination: {
         page: result.page,
         limit: result.limit,

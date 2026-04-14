@@ -1,11 +1,14 @@
 /**
- * API auth pipeline: permission-based (O(1) lookup). No hardcoded role strings.
+ * API auth pipeline: permission-based (O(1) lookup) for admin/owner; customer routes use
+ * hasCustomerDashboardAccess (same capability as customer layouts).
  * getServerUser → getAuthContext → requirePermission / requireAuth.
  * [AUTH] console logs are server-side only; they appear in the terminal (npm run dev), not in the browser DevTools.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { CAPABILITIES } from '@/config/constants';
 import { getServerUser, getServerUserProfile } from '@/lib/supabase/server-auth';
+import { hasCustomerDashboardAccess } from '@/services/access.service';
 import { hasPermission, PERMISSIONS } from '@/services/permission.service';
 import type { ProfileLike } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
@@ -81,7 +84,22 @@ export async function requireCustomer(
   request: NextRequest,
   route: string
 ): Promise<NextResponse | AuthContext> {
-  return requirePermission(request, route, PERMISSIONS.BOOKINGS_READ);
+  const ctx = await getAuthContext(request);
+  if (!ctx) {
+    logAuthDeny({ route, reason: 'auth_missing' });
+    return errorResponse('Authentication required', 401);
+  }
+  const allowed = await hasCustomerDashboardAccess(ctx.user.id);
+  if (!allowed) {
+    logAuthDeny({
+      user_id: ctx.user.id,
+      route,
+      reason: 'auth_denied',
+      audit_metadata: { capability: CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD },
+    });
+    return errorResponse('Access denied', 403);
+  }
+  return ctx;
 }
 
 /**

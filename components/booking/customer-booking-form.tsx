@@ -39,7 +39,7 @@ function CustomerBookingFormComponent({
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           required
-          className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
+          className="w-full min-h-11 px-4 py-2.5 text-base text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
           placeholder={UI_CUSTOMER.PLACEHOLDER_NAME}
         />
       </div>
@@ -58,7 +58,7 @@ function CustomerBookingFormComponent({
           pattern="[0-9]{10}"
           inputMode="numeric"
           autoComplete="tel"
-          className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
+          className="w-full min-h-11 px-4 py-2.5 text-base text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
           placeholder={UI_CUSTOMER.PLACEHOLDER_PHONE}
         />
       </div>
@@ -72,7 +72,7 @@ function CustomerBookingFormComponent({
       <button
         type="submit"
         disabled={submitting || !selectedSlot || validatingSlot || shopClosed}
-        className="w-full bg-slate-900 text-white font-semibold py-3 px-6 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full min-h-12 bg-slate-900 text-base font-semibold text-white py-3 px-6 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {submitting ? (
           <>

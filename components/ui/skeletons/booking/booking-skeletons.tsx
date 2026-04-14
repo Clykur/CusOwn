@@ -83,3 +83,14 @@ export function SetupSkeleton() {
     </div>
   );
 }
+
+/** Lazy `calendar-grid` strip — slate pulse cells (matches previous inline placeholder). */
+export function CalendarGridLoadingSkeleton({ cells = 14 }: { cells?: number }) {
+  return (
+    <div className="grid grid-cols-7 gap-1 mb-4" aria-busy="true">
+      {Array.from({ length: cells }).map((_, i) => (
+        <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
+      ))}
+    </div>
+  );
+}

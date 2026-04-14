@@ -93,6 +93,8 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
       selectedSlot: null,
       slotValidationError: null,
       error: null,
+      /** Per-day; avoid showing the previous day’s closed message or slots context. */
+      closedMessage: null,
       slots: cached ?? [],
       dateLoading: cached === undefined,
     });

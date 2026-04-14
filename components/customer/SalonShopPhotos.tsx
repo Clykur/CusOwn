@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { UI_CUSTOMER } from '@/config/constants';
 
 const GALLERY_IMAGE_WIDTH = 1200;
 const GALLERY_IMAGE_HEIGHT = 800;
@@ -11,10 +12,10 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className="relative aspect-[3/2] w-full overflow-hidden rounded-xl bg-slate-100">
+    <div className="relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-slate-100 sm:rounded-xl">
       <div
         className={`absolute inset-0 image-skeleton-shine transition-opacity duration-300 ${
-          loaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          loaded ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
         aria-hidden
       />
@@ -25,9 +26,9 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
         width={GALLERY_IMAGE_WIDTH}
         height={GALLERY_IMAGE_HEIGHT}
         quality={IMAGE_QUALITY_PREMIUM}
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        sizes="(max-width: 640px) 34vw, (max-width: 1024px) 33vw, 320px"
         loading="lazy"
-        className={`${className ?? ''} object-cover transition-all duration-500 group-hover:scale-105 ${
+        className={`${className ?? ''} h-full w-full object-cover transition-all duration-500 group-hover:scale-[1.03] ${
           loaded ? 'opacity-100' : 'opacity-0'
         }`}
         onLoad={() => setLoaded(true)}
@@ -42,28 +43,31 @@ export interface SalonShopPhotosProps {
 
 export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Shop Photos</h2>
+    <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-5 lg:p-6">
+      <h2 className="mb-4 text-lg font-semibold tracking-tight text-slate-900">
+        {UI_CUSTOMER.SALON_DETAILS_SHOP_PHOTOS}
+      </h2>
 
       {photos && photos.length > 0 ? (
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {photos.map((url, idx) => (
             <div
               key={idx}
-              className="relative group break-inside-avoid rounded-xl overflow-hidden border border-slate-100 bg-slate-50/50 shadow-md ring-1 ring-slate-200/30 gallery-shine hover:shadow-xl transition"
+              className="group relative overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50 shadow-sm ring-1 ring-slate-200/40 transition hover:shadow-md sm:rounded-xl"
             >
-              <GalleryImage src={url} alt={`Salon photo ${idx + 1}`} className="w-full h-full" />
+              <GalleryImage src={url} alt={`${UI_CUSTOMER.SALON_DETAILS_SHOP_PHOTOS} ${idx + 1}`} />
             </div>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
             <svg
-              className="w-8 h-8 text-slate-400"
+              className="h-8 w-8 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden
             >
               <path
                 strokeLinecap="round"
@@ -74,9 +78,9 @@ export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
             </svg>
           </div>
 
-          <p className="text-sm text-slate-500">No shop photos yet.</p>
+          <p className="text-sm text-slate-500">{UI_CUSTOMER.SALON_DETAILS_NO_PHOTOS}</p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

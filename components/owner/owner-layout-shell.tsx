@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import OwnerHeader from '@/components/owner/owner-header';
+import { MobileBrandHeader } from '@/components/layout/mobile-brand-header';
 import {
   OwnerSessionProvider,
   type OwnerInitialUser,
@@ -147,9 +148,10 @@ export default function OwnerLayoutShell({
     <OwnerSessionProvider initialUser={user ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <OwnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className={`flex-1 lg:ml-60 w-full ${mainSpacing}`}>
+        <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
+          <MobileBrandHeader />
           {isOwnerMainArea ? (
-            <div className="mx-auto w-full max-w-[1200px] py-8 px-4 sm:px-6 lg:px-6">
+            <div className="w-full px-4 pb-8 pt-4 sm:px-6 md:py-8 lg:px-8" suppressHydrationWarning>
               <div className="flex flex-col gap-6">
                 {isDashboard && (
                   <OwnerHeader
@@ -179,7 +181,12 @@ export default function OwnerLayoutShell({
               </div>
             </div>
           ) : (
-            <div className="px-4 sm:px-6 lg:px-12 xl:px-16 py-6 lg:py-8">{children}</div>
+            <div
+              className="w-full px-4 pb-6 pt-4 sm:px-6 md:py-8 lg:px-8 lg:py-8"
+              suppressHydrationWarning
+            >
+              {children}
+            </div>
           )}
         </main>
         <MobileBottomNav sidebarOpen={sidebarOpen} />

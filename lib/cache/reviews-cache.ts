@@ -49,7 +49,9 @@ export async function getCachedReviews(businessId: string): Promise<ReviewData |
 
 async function fetchReviews(businessId: string): Promise<ReviewData | null> {
   try {
-    const response = await fetch(`/api/reviews?business_id=${businessId}`);
+    const response = await fetch(`/api/reviews?business_id=${encodeURIComponent(businessId)}`, {
+      cache: 'no-store',
+    });
     const result = await response.json();
 
     if (result.success && result.data) {

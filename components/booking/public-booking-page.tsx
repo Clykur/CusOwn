@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   API_ROUTES,
   BOOKING_IDEMPOTENCY_HEADER,
+  CUSTOMER_SCREEN_TITLE_CLASSNAME,
   ERROR_MESSAGES,
   PHONE_DIGITS,
   UI_CUSTOMER,
@@ -15,7 +16,11 @@ import { generateUuidV7 } from '@/lib/uuid';
 import type { Slot } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
-import { BookingPageSkeleton, SlotGridSkeleton } from '@/components/ui/skeleton';
+import {
+  BookingPageSkeleton,
+  CalendarGridLoadingSkeleton,
+  SlotGridSkeleton,
+} from '@/components/ui/skeleton';
 import {
   getLocalTodayStr,
   isToday,
@@ -26,20 +31,16 @@ import {
   clearPendingBooking,
   getInitialRebookData,
 } from './booking-utils';
+import { cn } from '@/lib/utils/cn';
 import { dedupFetch, cancelRequests, cancelDebounce } from '@/lib/utils/fetch-dedup';
-import { useBookingFlowStore, selectAvailableSlots } from '@/lib/store';
+import { useBookingFlowStore } from '@/lib/store';
 
 import SlotSelectionGrid from './slot-selection-grid';
 import CustomerBookingForm from './customer-booking-form';
 
 const CalendarGrid = dynamic(() => import('@/components/booking/calendar-grid'), {
-  loading: () => (
-    <div className="grid grid-cols-7 gap-1 mb-4" aria-busy="true">
-      {Array.from({ length: 14 }).map((_, i) => (
-        <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
-      ))}
-    </div>
-  ),
+  ssr: false,
+  loading: () => <CalendarGridLoadingSkeleton cells={14} />,
 });
 
 import { useSlotUpdates } from '@/lib/realtime/use-slot-updates';
@@ -79,6 +80,8 @@ export default function PublicBookingPage({
   const router = useRouter();
   const rebookAppliedRef = useRef(false);
   const businessFetchedRef = useRef(!!initialBusiness);
+  /** Apply `?serviceId=` to selection only once — avoids re-adding after the user deselects. */
+  const urlServiceIdSeededRef = useRef(false);
 
   const business = useBookingFlowStore((state) => state.business);
   const setBusiness = useBookingFlowStore((state) => state.setBusiness);
@@ -139,7 +142,12 @@ export default function PublicBookingPage({
   // ── Multi-select: array instead of single string ──────────────────────────
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  const businessIdMemo = useMemo(() => business?.id ?? null, [business?.id]);
+  const serverBusinessPreview = useMemo(
+    () => (initialBusiness ? toPublicBusiness(initialBusiness) : null),
+    [initialBusiness]
+  );
+  const displayBusiness = business ?? serverBusinessPreview;
+  const businessIdMemo = useMemo(() => displayBusiness?.id ?? null, [displayBusiness?.id]);
   const servicesKey = useMemo(() => selectedServices.slice().sort().join(','), [selectedServices]);
 
   const toggleService = useCallback((id: string) => {
@@ -149,17 +157,22 @@ export default function PublicBookingPage({
   }, []);
 
   useEffect(() => {
-    if (!business?.id) return;
+    if (!businessIdMemo) return;
 
     const fetchServices = async () => {
       try {
-        const res = await fetch(`/api/public/services?businessId=${business.id}`);
+        const res = await fetch(`/api/public/services?businessId=${businessIdMemo}`);
         const data = await res.json();
 
         if (data.success) {
           setServices(data.data);
-          if (serviceId && data.data.some((s: any) => s.id === serviceId)) {
+          if (
+            !urlServiceIdSeededRef.current &&
+            serviceId &&
+            data.data.some((s: any) => s.id === serviceId)
+          ) {
             setSelectedServices([serviceId]);
+            urlServiceIdSeededRef.current = true;
           }
         } else {
           console.error('Services API error:', data);
@@ -170,16 +183,7 @@ export default function PublicBookingPage({
     };
 
     fetchServices();
-  }, [business?.id, businessSlug, serviceId]);
-
-  useEffect(() => {
-    if (serviceId && services.length > 0 && !selectedServices.includes(serviceId)) {
-      const serviceExists = services.some((s) => s.id === serviceId);
-      if (serviceExists) {
-        toggleService(serviceId);
-      }
-    }
-  }, [serviceId, services, selectedServices.length, toggleService, selectedServices]);
+  }, [businessIdMemo, businessSlug, serviceId]);
 
   // Initialize from server-side data for instant display
   const initialDataAppliedRef = useRef(false);
@@ -296,12 +300,12 @@ export default function PublicBookingPage({
   );
 
   useSlotUpdates({
-    businessId: business?.id ?? null,
+    businessId: businessIdMemo,
     date: selectedDate,
     slots,
     onSlotsUpdate: handleRealtimeSlotsUpdate,
     onSlotChange: handleSlotStatusChange,
-    enabled: !!business && !!selectedDate,
+    enabled: !!businessIdMemo && !!selectedDate,
     skipInitialRefetch: slots.length > 0,
   });
 
@@ -337,8 +341,8 @@ export default function PublicBookingPage({
       if (selectedSlot) {
         const now = new Date();
         const [h, m] = selectedSlot.start_time.split(':').map(Number);
-        const closeH = business?.closing_time
-          ? parseInt(business.closing_time.split(':')[0], 10)
+        const closeH = displayBusiness?.closing_time
+          ? parseInt(displayBusiness.closing_time.split(':')[0], 10)
           : 24;
         if (h * 60 + m <= now.getHours() * 60 + now.getMinutes() || isAfterBusinessHours(closeH)) {
           setSelectedSlot(null);
@@ -348,7 +352,7 @@ export default function PublicBookingPage({
     return () => {
       if (slotRefreshTimerRef.current) clearInterval(slotRefreshTimerRef.current);
     };
-  }, [selectedDate, selectedSlot, business?.closing_time, setSelectedSlot, setTimeTick]);
+  }, [selectedDate, selectedSlot, displayBusiness?.closing_time, setSelectedSlot, setTimeTick]);
 
   const restorePendingBooking = useCallback(
     (loadedSlots: Slot[]) => {
@@ -504,9 +508,15 @@ export default function PublicBookingPage({
 
     const debouncedFetch = async () => {
       isFetchingSlots.current = true;
+      const requestDate = selectedDate;
 
-      const cached = slotCache.get(selectedDate);
-      if (cached) {
+      const cached = slotCache.get(requestDate);
+      if (cached !== undefined) {
+        if (useBookingFlowStore.getState().selectedDate !== requestDate) {
+          isFetchingSlots.current = false;
+          return;
+        }
+        setClosedMessage(null);
         setSlots(cached);
         setDateLoading(false);
         isFetchingSlots.current = false;
@@ -518,21 +528,27 @@ export default function PublicBookingPage({
       cancelRequests(`slots:${businessIdMemo}`);
 
       const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : '';
-      const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${selectedDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`;
+      const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${requestDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`;
       try {
         const res = await dedupFetch(fetchUrl, {
           credentials: 'include',
-          dedupKey: `slots:${businessIdMemo}:${selectedDate}:${servicesKey || 'none'}`,
+          dedupKey: `slots:${businessIdMemo}:${requestDate}:${servicesKey || 'none'}`,
           cancelPrevious: true,
         });
         const result = await res.json();
+
+        if (useBookingFlowStore.getState().selectedDate !== requestDate) {
+          isFetchingSlots.current = false;
+          setDateLoading(false);
+          return;
+        }
 
         if (result?.success && result?.data) {
           if (result.data.closed) {
             setClosedMessage(result.data.message || 'Shop is closed on this day.');
             setSlots([]);
-            addClosedDate(selectedDate);
-            cacheSlots(selectedDate, []);
+            addClosedDate(requestDate);
+            cacheSlots(requestDate, []);
             return;
           }
           setClosedMessage(null);
@@ -540,8 +556,8 @@ export default function PublicBookingPage({
             ? result.data
             : (result.data.slots ?? []);
           setSlots(loadedSlots);
-          cacheSlots(selectedDate, loadedSlots);
-          removeClosedDate(selectedDate);
+          cacheSlots(requestDate, loadedSlots);
+          removeClosedDate(requestDate);
 
           // Rebook logic (one-time)
           if (!rebookAppliedRef.current) {
@@ -613,21 +629,23 @@ export default function PublicBookingPage({
 
   const refetchSlots = useCallback(async () => {
     if (!businessIdMemo || isFetchingSlots.current) return;
+    const requestDate = selectedDate;
 
     try {
       const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : '';
       const r = await dedupFetch(
-        `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${selectedDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`,
+        `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${requestDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`,
         {
-          dedupKey: `slots-refetch:${businessIdMemo}:${selectedDate}:${servicesKey || 'none'}`,
+          dedupKey: `slots-refetch:${businessIdMemo}:${requestDate}:${servicesKey || 'none'}`,
           cancelPrevious: true,
         }
       );
       const j = await r.json();
+      if (useBookingFlowStore.getState().selectedDate !== requestDate) return;
       if (j?.success) {
         const newSlots = Array.isArray(j.data) ? j.data : (j.data?.slots ?? []);
         setSlots(newSlots);
-        cacheSlots(selectedDate, newSlots);
+        cacheSlots(requestDate, newSlots);
       }
     } catch (err) {
       if ((err as Error)?.name !== 'AbortError') {
@@ -691,7 +709,7 @@ export default function PublicBookingPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting || !selectedSlot || !business) return;
+    if (submitting || !selectedSlot || !displayBusiness) return;
     if (!customerName.trim()) {
       setError('Please enter your name');
       return;
@@ -750,7 +768,7 @@ export default function PublicBookingPage({
         headers,
         credentials: 'include',
         body: JSON.stringify({
-          salon_id: business.id,
+          salon_id: displayBusiness.id,
           slot_id: selectedSlot.id,
           date: selectedDate,
           customer_name: customerName.trim(),
@@ -814,14 +832,14 @@ export default function PublicBookingPage({
 
   const { businessOpenHour, businessCloseHour } = useMemo(
     () => ({
-      businessOpenHour: business?.opening_time
-        ? parseInt(business.opening_time.split(':')[0], 10)
+      businessOpenHour: displayBusiness?.opening_time
+        ? parseInt(displayBusiness.opening_time.split(':')[0], 10)
         : 0,
-      businessCloseHour: business?.closing_time
-        ? parseInt(business.closing_time.split(':')[0], 10)
+      businessCloseHour: displayBusiness?.closing_time
+        ? parseInt(displayBusiness.closing_time.split(':')[0], 10)
         : 24,
     }),
-    [business?.opening_time, business?.closing_time]
+    [displayBusiness?.opening_time, displayBusiness?.closing_time]
   );
 
   const filteredSlots = useMemo(
@@ -834,17 +852,30 @@ export default function PublicBookingPage({
     [selectedDate, businessCloseHour]
   );
 
+  /** Clear selection when day changes, shop closes, or filters remove the slot (e.g. past times). */
+  useEffect(() => {
+    if (!selectedSlot) return;
+    const stillVisible = filteredSlots.some((s) => s.id === selectedSlot.id);
+    if (!stillVisible) setSelectedSlot(null);
+  }, [filteredSlots, selectedSlot, setSelectedSlot]);
+
+  /** Avoid loading skeleton when SSR passed business — matches server HTML and prevents hydration mismatch. */
+  const showLoadingShell = isLoading && !serverBusinessPreview;
+
   const breadcrumbItems = useMemo(
     () => [
       { label: 'My Activity', href: '/customer/dashboard' },
-      { label: business?.salon_name || 'Book Appointment', href: `/customer/book/${businessSlug}` },
+      {
+        label: displayBusiness?.salon_name || 'Book Appointment',
+        href: `/customer/book/${businessSlug}`,
+      },
     ],
-    [business?.salon_name, businessSlug]
+    [displayBusiness?.salon_name, businessSlug]
   );
 
-  if (isLoading) {
+  if (showLoadingShell) {
     return (
-      <div className="w-full">
+      <div className="w-full space-y-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         <Breadcrumb
           items={[
             { label: 'My Activity', href: '/customer/dashboard' },
@@ -856,20 +887,20 @@ export default function PublicBookingPage({
     );
   }
 
-  if (error && !business) {
+  if (error && !displayBusiness) {
     return (
-      <div className="w-full">
+      <div className="w-full space-y-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         <Breadcrumb
           items={[
             { label: 'My Activity', href: '/customer/dashboard' },
             { label: 'Book Appointment', href: `/customer/book/${businessSlug}` },
           ]}
         />
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 text-center shadow-sm sm:p-8">
+          <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-3')}>
             {ERROR_MESSAGES.SALON_NOT_FOUND}
           </h2>
-          <p className="text-slate-600">{error}</p>
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">{error}</p>
         </div>
       </div>
     );
@@ -879,89 +910,111 @@ export default function PublicBookingPage({
   //   return <BookingSuccessView success={success} />;
   // }
 
+  const sectionLabelClass =
+    'mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500';
+
   return (
-    <div className="w-full pb-24 flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:gap-6 md:pb-8">
       <Breadcrumb items={breadcrumbItems} />
 
       <div className="w-full">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">{business?.salon_name}</h1>
-          <p className="text-slate-600 mb-8">{UI_CUSTOMER.BOOK_PAGE_SUB}</p>
+        <div
+          className={cn(
+            'rounded-2xl bg-white',
+            'max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none',
+            'md:border md:border-slate-200/90 md:p-6 md:shadow-sm lg:p-8'
+          )}
+        >
+          <header className="mb-6 border-b border-slate-100 pb-5 max-md:mb-5 max-md:pb-4">
+            <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'break-words')}>
+              {displayBusiness?.salon_name}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+              {UI_CUSTOMER.BOOK_PAGE_SUB}
+            </p>
+          </header>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              {UI_CUSTOMER.LABEL_SELECT_DATE}
-            </label>
-            <CalendarGrid
-              selectedDate={selectedDate}
-              setSelectedDate={handleDateChange}
-              datesWithSlots={slotCache}
-              closedDates={closedDates}
-            />
-          </div>
-
-          {/* ── Multi-select Service Selection ─────────────────────────────── */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              {UI_CUSTOMER.LABEL_SELECT_SERVICE}
-            </label>
+          <div className="mb-6 md:mb-8">
+            <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_SERVICE}</p>
 
             {services.length === 0 ? (
               <p className="text-sm text-slate-400">Loading services…</p>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {services.map((service) => {
                   const checked = selectedServices.includes(service.id);
                   return (
                     <label
                       key={service.id}
-                      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-150 group hover:scale-[1.01] active:scale-[0.98] sm:p-5 sm:py-3.5 ${
+                      className={cn(
+                        'flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors sm:gap-4 sm:px-5 sm:py-4',
                         checked
-                          ? 'border-2 border-slate-900 bg-slate-50 shadow-sm ring-1 ring-slate-200 ring-offset-1'
-                          : 'border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50'
-                      }`}
+                          ? 'border-slate-900 bg-slate-50 shadow-sm'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70'
+                      )}
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex shrink-0 items-center self-stretch">
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleService(service.id)}
-                          className="w-5 h-5 rounded accent-slate-900 flex-shrink-0 cursor-pointer"
+                          className="h-5 w-5 cursor-pointer rounded border-slate-300 text-slate-900 accent-slate-900 focus:ring-2 focus:ring-slate-400 focus:ring-offset-0"
+                          aria-describedby={`service-meta-${service.id}`}
                         />
-                        <span className="text-sm font-medium text-slate-900 truncate sm:text-base">
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-base font-medium text-slate-900">
                           {service.name}
                         </span>
-                      </div>
-                      <div className="flex flex-col items-end gap-0.5 text-right ml-4 min-w-[100px] sm:ml-6 sm:min-w-[140px]">
-                        <span className="text-xs text-slate-600 sm:text-sm">
-                          {service.duration_minutes} mins
-                        </span>
-                        <span className="text-sm font-semibold text-slate-900 sm:text-base">
-                          ₹{(service.price_cents / 100).toFixed(0)}
+                        <span
+                          id={`service-meta-${service.id}`}
+                          className="mt-0.5 block text-xs text-slate-500"
+                        >
+                          {service.duration_minutes} min
                         </span>
                       </div>
+                      <span className="shrink-0 text-base font-semibold tabular-nums tracking-tight text-slate-900">
+                        ₹{(service.price_cents / 100).toFixed(0)}
+                      </span>
                     </label>
                   );
                 })}
               </div>
             )}
           </div>
-          {selectedDate && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                {UI_CUSTOMER.LABEL_SELECT_TIME}
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-                <SlotSelectionGrid
-                  isTodayClosed={isTodayClosed}
-                  closingTime={business?.closing_time}
-                  onSlotSelect={handleSlotSelect}
-                />
+
+          <div className="mb-6 md:mb-8">
+            <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_DATE}</p>
+            <div>
+              <CalendarGrid
+                rangeAnchorDate={initialDate ?? undefined}
+                selectedDate={selectedDate}
+                setSelectedDate={handleDateChange}
+                datesWithSlots={slotCache}
+                closedDates={closedDates}
+              />
+            </div>
+          </div>
+
+          {selectedDate ? (
+            <div className="mb-6 md:mb-8">
+              <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_TIME}</p>
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 sm:p-4">
+                <div className="flex flex-wrap gap-2">
+                  <SlotSelectionGrid
+                    displaySlots={filteredSlots}
+                    isTodayClosed={isTodayClosed}
+                    closingTime={displayBusiness?.closing_time}
+                    onSlotSelect={handleSlotSelect}
+                  />
+                </div>
               </div>
             </div>
-          )}
+          ) : null}
 
-          <CustomerBookingForm onSubmit={handleSubmit} />
+          <div className="max-md:rounded-2xl max-md:border max-md:border-slate-200/90 max-md:bg-slate-50/40 max-md:p-4">
+            <CustomerBookingForm onSubmit={handleSubmit} />
+          </div>
         </div>
       </div>
     </div>

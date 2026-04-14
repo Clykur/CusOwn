@@ -21,22 +21,27 @@ export default function PeakHoursHeatmap({
   const max = Math.max(...values.map((v) => v.count), 1);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm min-h-[250px] w-full min-w-0 p-6">
-      <h3 className="mb-3 text-sm font-semibold text-slate-900">Peak Hours Heatmap</h3>
-      <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-12">
-        {values.map((item) => (
-          <div key={item.hour} className="group relative">
-            <div
-              className={`h-10 rounded-md ${intensity(item.count, max)} transition-all`}
-              title={`${String(item.hour).padStart(2, '0')}:00 — ${item.count} bookings`}
-            />
-            <div className="mt-1 text-center text-[11px] text-slate-500">
-              {String(item.hour).padStart(2, '0')}
+    <div className="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
+      <h3 className="mb-1 text-sm font-semibold text-slate-900 md:mb-3">Peak Hours Heatmap</h3>
+      <p className="mb-3 text-xs text-slate-500 md:hidden">24-hour booking density (local time).</p>
+      <div className="-mx-1 overflow-x-auto pb-1 md:mx-0 md:overflow-visible">
+        <div className="grid w-full min-w-0 grid-cols-6 gap-1.5 sm:grid-cols-8 sm:gap-2 md:grid-cols-12">
+          {values.map((item) => (
+            <div key={item.hour} className="min-w-0">
+              <div
+                className={`aspect-square max-h-10 w-full rounded-md sm:h-10 sm:max-h-none ${intensity(item.count, max)} transition-all`}
+                title={`${String(item.hour).padStart(2, '0')}:00 — ${item.count} bookings`}
+              />
+              <div className="mt-1 text-center text-[10px] leading-none text-slate-500 sm:text-[11px]">
+                {String(item.hour).padStart(2, '0')}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-      <p className="mt-3 text-xs text-slate-500">Darker blocks indicate higher booking density.</p>
+      <p className="mt-3 text-[11px] leading-snug text-slate-500">
+        Darker blocks indicate higher booking density.
+      </p>
     </div>
   );
 }

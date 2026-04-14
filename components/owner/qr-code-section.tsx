@@ -21,7 +21,7 @@ function QRCodeSectionComponent({ qrCode, bookingLink }: QRCodeSectionProps) {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6">
       <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
         <div className="flex-shrink-0">
           {qrCode ? (
@@ -35,8 +35,8 @@ function QRCodeSectionComponent({ qrCode, bookingLink }: QRCodeSectionProps) {
           )}
         </div>
         <div className="flex-1 text-center md:text-left w-full md:w-auto">
-          <h2 className="text-lg lg:text-xl font-bold text-gray-900 mb-2">QR Code</h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <h2 className="mb-2 text-base font-bold text-gray-900 md:text-lg lg:text-xl">QR Code</h2>
+          <p className="mb-4 text-sm text-gray-600">
             Download and keep it safe. Stick it in your shop for customers to scan and book.
           </p>
           {qrCode && (

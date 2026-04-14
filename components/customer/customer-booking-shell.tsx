@@ -34,8 +34,8 @@ export default function CustomerBookingShell({ children, initialUser }: Customer
     <CustomerSessionProvider initialUser={initialUser ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 lg:ml-64 w-full">
-          <div className="mx-auto w-full max-w-[1200px] py-8 px-6 sm:px-8 lg:px-10">
+        <main className="flex-1 lg:ml-64 w-full min-w-0" suppressHydrationWarning>
+          <div className="w-full py-8 px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
             <div className="flex flex-col gap-8">
               <nav aria-label="Breadcrumb">
                 <Link

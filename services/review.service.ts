@@ -111,6 +111,31 @@ export async function listReviewsByBusiness(
 /**
  * Get reviews by booking IDs (for attaching to booking lists). Returns map of booking_id -> { rating, comment }.
  */
+/**
+ * Star histogram for a business (all visible reviews). Used by public business profile API.
+ */
+export async function getReviewRatingCountsForBusiness(
+  businessId: string
+): Promise<Record<number, number>> {
+  const supabase = requireSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('rating')
+    .eq('business_id', businessId)
+    .eq('is_hidden', false);
+
+  if (error) {
+    return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  }
+
+  const rating_counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const row of data ?? []) {
+    const r = Number((row as { rating: number }).rating);
+    if (r >= 1 && r <= 5) rating_counts[r]++;
+  }
+  return rating_counts;
+}
+
 export async function getReviewsByBookingIds(
   bookingIds: string[]
 ): Promise<Map<string, { rating: number; comment: string | null }>> {

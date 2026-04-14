@@ -16,14 +16,17 @@ interface ReviewSummaryProps {
 function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
   if (!reviewData || (reviewData.rating_avg === 0 && reviewData.review_count === 0)) {
     return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
-        <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
-          <div className="flex items-center gap-1 mb-2">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-slate-100/80 lg:p-6">
+        <h2 className="mb-1 text-base font-semibold text-slate-900 md:text-lg">Customer Reviews</h2>
+        <p className="mb-4 text-xs text-slate-500 md:text-sm">
+          Ratings from customers who booked with you
+        </p>
+        <div className="flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center">
+          <div className="mb-2 flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((i) => (
               <svg
                 key={i}
-                className="w-5 h-5 text-slate-300"
+                className="h-5 w-5 text-slate-300"
                 fill="currentColor"
                 viewBox="0 0 20 20"
                 aria-hidden="true"
@@ -32,7 +35,10 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
               </svg>
             ))}
           </div>
-          <p className="text-sm text-slate-500">No reviews yet.</p>
+          <p className="text-sm font-medium text-slate-600">No reviews yet</p>
+          <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-slate-500">
+            When customers leave feedback, it will show up here.
+          </p>
         </div>
       </div>
     );
@@ -41,8 +47,8 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
   const { rating_avg, review_count, rating_counts } = reviewData;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-slate-100/80 lg:p-6">
+      <h2 className="mb-4 text-base font-semibold text-slate-900 md:text-lg">Customer Reviews</h2>
 
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex flex-col items-center sm:items-start sm:min-w-[120px]">

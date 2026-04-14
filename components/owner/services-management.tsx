@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { OWNER_SCREEN_TITLE_CLASSNAME } from '@/config/constants';
 import AddIcon from '@/src/icons/create-business.svg';
 
 export type Service = {
@@ -128,7 +129,7 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6">
       <div className={`w-full ${className}`}>
         {toast && (
           <div className="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 w-full flex justify-center pointer-events-none">
@@ -149,8 +150,8 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900">Services</h2>
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <h2 className={OWNER_SCREEN_TITLE_CLASSNAME}>Services</h2>
           <button
             onClick={openAdd}
             className="bg-black text-white 

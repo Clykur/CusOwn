@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOptimisticMutation } from '@/lib/hooks/use-optimistic-action';
-import { UI_CUSTOMER } from '@/config/constants';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails, Slot } from '@/types';
 import dynamic from 'next/dynamic';
@@ -277,7 +277,7 @@ export default function BookingDetailsModal({
 
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{UI_CUSTOMER.VIEW_DETAILS}</h2>
+            <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{UI_CUSTOMER.VIEW_DETAILS}</h2>
 
             <p className="mt-0.5 text-sm text-slate-500">Booking details</p>
           </div>

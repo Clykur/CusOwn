@@ -3,14 +3,8 @@
 import { useRouter } from 'next/navigation';
 import ChevronRightIcon from '@/src/icons/chevron-right.svg';
 import { UI_CUSTOMER } from '@/config/constants';
+import { salonTelHref } from '@/components/customer/salon-tel-href';
 import type { BookingForSalonRow } from '@/components/customer/customer-bookings-types';
-
-function telHref(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 10) return `tel:+91${digits}`;
-  if (digits.length > 10 && digits.startsWith('91')) return `tel:+${digits}`;
-  return `tel:${phone}`;
-}
 
 export interface SalonRowProps {
   booking: BookingForSalonRow;
@@ -51,7 +45,7 @@ export default function SalonRow({ booking, salonId }: SalonRowProps) {
         </td>
         <td className="px-4 py-3.5 text-right align-middle">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-600 border border-amber-200">
-            Unavailable
+            {UI_CUSTOMER.SALON_UNAVAILABLE}
           </span>
         </td>
       </tr>
@@ -83,7 +77,7 @@ export default function SalonRow({ booking, salonId }: SalonRowProps) {
       <td className="px-4 py-3.5 text-left text-sm text-slate-700 align-middle">
         {phone ? (
           <a
-            href={telHref(phone)}
+            href={salonTelHref(phone)}
             className="hover:text-green-700 transition"
             onClick={(e) => e.stopPropagation()}
           >

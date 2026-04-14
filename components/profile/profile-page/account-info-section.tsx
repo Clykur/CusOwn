@@ -2,14 +2,32 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { formatDate } from '@/lib/utils/string';
-import { ERROR_MESSAGES, PHONE_DIGITS } from '@/config/constants';
+import { formatDate, formatPhoneNumber } from '@/lib/utils/string';
+import { ERROR_MESSAGES, PHONE_DIGITS, UI_CONTEXT } from '@/config/constants';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
 import { useOwnerSession } from '@/components/owner/owner-session-context';
 import { useCustomerSession } from '@/components/customer/customer-session-context';
 import { getUserTypeLabel, getUserTypeColor } from './types';
 import type { ProfileData, ProfileFormData } from './types';
+
+/** Initials for display when no profile photo is used (e.g. customer accounts). */
+function getProfileInitials(
+  fullName: string | null | undefined,
+  email: string | null | undefined
+): string {
+  const trimmed = (fullName ?? '').trim();
+  if (trimmed) {
+    const parts = trimmed.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase().slice(0, 2);
+    }
+    return trimmed.slice(0, 2).toUpperCase();
+  }
+  const local = (email ?? '').split('@')[0] ?? '';
+  const fromEmail = local.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2);
+  return (fromEmail || '?').toUpperCase();
+}
 
 interface AccountInfoSectionProps {
   profileData: ProfileData;
@@ -190,22 +208,28 @@ function AccountInfoSectionComponent({
     setError(null);
   };
 
+  const initials = getProfileInitials(profileData.profile?.full_name, profileData.email);
+  const identityLabelForInitials =
+    profileData.profile?.full_name?.trim() ||
+    profileData.email ||
+    UI_CONTEXT.PROFILE_INITIALS_ARIA_FALLBACK;
+
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
-        <div className="flex items-center flex-col sm:flex-row items-center gap-6">
-          {canShowProfileImage && (
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 group">
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 flex-1 flex-row items-start gap-3 sm:gap-4">
+          {canShowProfileImage ? (
+            <div className="group relative h-20 w-20 shrink-0 sm:h-28 sm:w-28">
               <Image
                 src={profileImageUrl || '/avatar-placeholder.svg'}
                 alt="Profile Picture"
                 fill
-                className="rounded-full object-cover border border-slate-200 shadow-sm"
-                sizes="(max-width: 640px) 96px, 112px"
+                className="rounded-full border border-slate-200 object-cover shadow-sm"
+                sizes="(max-width: 640px) 80px, 112px"
                 unoptimized
               />
               {editMode && (
-                <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white text-sm font-medium cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-sm font-medium text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   {uploadingImage ? 'Uploading...' : 'Change'}
                   <input
                     type="file"
@@ -219,16 +243,34 @@ function AccountInfoSectionComponent({
                 </label>
               )}
             </div>
+          ) : (
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-600 to-slate-900 text-[1.125rem] font-semibold leading-none tracking-tight text-white shadow-md ring-1 ring-slate-900/10 sm:h-28 sm:w-28 sm:text-2xl"
+              role="img"
+              aria-label={identityLabelForInitials}
+            >
+              {initials}
+            </div>
           )}
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Account information</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Your profile and sign-in details</p>
+          <div className="min-w-0 flex-1 pt-0.5 text-left">
+            <h3 className="text-lg font-semibold leading-snug text-slate-900">
+              Account information
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">
+              Your profile and sign-in details
+            </p>
+            {!canShowProfileImage && (
+              <p className="mt-2 truncate text-base font-medium text-slate-800 sm:text-[1.0625rem]">
+                {profileData.profile?.full_name?.trim() || profileData.email || 'Not set'}
+              </p>
+            )}
           </div>
         </div>
         {!editMode && (
           <button
+            type="button"
             onClick={() => setEditMode(true)}
-            className="shrink-0 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            className="w-full shrink-0 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto md:self-start"
           >
             Edit profile
           </button>
@@ -236,112 +278,156 @@ function AccountInfoSectionComponent({
       </div>
 
       {saveMessage && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {saveMessage}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Full name
-          </label>
-          {editMode ? (
-            <input
-              type="text"
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-              placeholder="Enter your full name"
-            />
-          ) : (
-            <p className="text-slate-900">{profileData.profile?.full_name || 'Not set'}</p>
-          )}
+      <div className="space-y-6">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
+          <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {UI_CONTEXT.PROFILE_SECTION_CONTACT}
+            </h4>
+          </div>
+          <dl className="divide-y divide-slate-100">
+            <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4 sm:gap-y-0">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Full name
+              </dt>
+              <dd className="min-w-0">
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 focus:border-transparent focus:ring-2 focus:ring-slate-900"
+                    placeholder="Enter your full name"
+                  />
+                ) : (
+                  <p className="text-base leading-relaxed text-slate-900">
+                    {profileData.profile?.full_name || 'Not set'}
+                  </p>
+                )}
+              </dd>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Email
+              </dt>
+              <dd className="min-w-0">
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
+                  <span className="break-all text-base leading-relaxed text-slate-900">
+                    {profileData.email || 'N/A'}
+                  </span>
+                  {profileData.email && profileData.email_confirmed ? (
+                    <span className="inline-flex w-fit shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200/80">
+                      Verified
+                    </span>
+                  ) : profileData.email ? (
+                    <span className="inline-flex w-fit shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200/80">
+                      Not verified
+                    </span>
+                  ) : null}
+                </div>
+              </dd>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Phone
+              </dt>
+              <dd className="min-w-0">
+                {editMode ? (
+                  <input
+                    type="tel"
+                    value={formData.phone_number}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, PHONE_DIGITS);
+                      setFormData({ ...formData, phone_number: digits });
+                    }}
+                    maxLength={PHONE_DIGITS}
+                    pattern="[0-9]{10}"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 focus:border-transparent focus:ring-2 focus:ring-slate-900"
+                    placeholder="10 digits"
+                  />
+                ) : (
+                  <p className="text-base leading-relaxed text-slate-900">
+                    {profileData.profile?.phone_number
+                      ? formatPhoneNumber(profileData.profile.phone_number)
+                      : 'Not set'}
+                  </p>
+                )}
+              </dd>
+            </div>
+          </dl>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Email
-          </label>
-          <p className="text-slate-900">{profileData.email || 'N/A'}</p>
-          {profileData.email && profileData.email_confirmed ? (
-            <span className="text-xs text-slate-500 mt-1">Verified</span>
-          ) : profileData.email ? (
-            <span className="text-xs text-amber-600 mt-1">Not verified</span>
-          ) : null}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Phone
-          </label>
-          {editMode ? (
-            <input
-              type="tel"
-              value={formData.phone_number}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, '').slice(0, PHONE_DIGITS);
-                setFormData({ ...formData, phone_number: digits });
-              }}
-              maxLength={PHONE_DIGITS}
-              pattern="[0-9]{10}"
-              inputMode="numeric"
-              autoComplete="tel"
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-              placeholder="10 digits"
-            />
-          ) : (
-            <p className="text-slate-900">{profileData.profile?.phone_number || 'Not set'}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Account type
-          </label>
-          {profileData.profile ? (
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getUserTypeColor(profileData.profile.user_type)}`}
-            >
-              {getUserTypeLabel(profileData.profile.user_type)}
-            </span>
-          ) : (
-            <p className="text-slate-500">No profile created yet</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Account created
-          </label>
-          <p className="text-slate-900">
-            {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">
-            Last sign-in
-          </label>
-          <p className="text-slate-900">
-            {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
-          </p>
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
+          <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {UI_CONTEXT.PROFILE_SECTION_ACCOUNT}
+            </h4>
+          </div>
+          <dl className="divide-y divide-slate-100">
+            <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-center sm:gap-x-4">
+              <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                Account type
+              </dt>
+              <dd className="min-w-0">
+                {profileData.profile ? (
+                  <span
+                    className={`inline-flex max-w-full rounded-full px-3 py-1 text-sm font-medium ${getUserTypeColor(profileData.profile.user_type)}`}
+                  >
+                    {getUserTypeLabel(profileData.profile.user_type)}
+                  </span>
+                ) : (
+                  <p className="text-slate-500">No profile created yet</p>
+                )}
+              </dd>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Account created
+              </dt>
+              <dd
+                className="min-w-0 text-base leading-relaxed text-slate-900"
+                suppressHydrationWarning
+              >
+                {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
+              </dd>
+            </div>
+            <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+                Last sign-in
+              </dt>
+              <dd
+                className="min-w-0 text-base leading-relaxed text-slate-900"
+                suppressHydrationWarning
+              >
+                {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
+              </dd>
+            </div>
+          </dl>
         </div>
       </div>
 
       {editMode && (
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:gap-3">
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {saving ? 'Saving...' : 'Save changes'}
           </button>
           <button
+            type="button"
             onClick={handleCancel}
             disabled={saving}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             Cancel
           </button>

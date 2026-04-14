@@ -7,6 +7,7 @@ import Link from 'next/link';
 import {
   API_ROUTES,
   ERROR_MESSAGES,
+  OWNER_SCREEN_TITLE_CLASSNAME,
   VALIDATION,
   DEFAULT_CONCURRENT_BOOKING_CAPACITY,
 } from '@/config/constants';
@@ -23,6 +24,8 @@ import DateFilter from '@/components/owner/date-filter';
 import { type EditBusinessFormData } from '@/components/owner/edit-business-modal';
 import { useOwnerBusinessStore, useUIStore, MODAL_IDS } from '@/lib/store';
 import Breadcrumb from '@/components/ui/breadcrumb';
+import { OwnerSalonDetailLoadingBody } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils/cn';
 
 const ReviewSummary = dynamic(() => import('@/components/owner/review-summary'), { ssr: false });
 const QRCodeSection = dynamic(() => import('@/components/owner/qr-code-section'));
@@ -832,43 +835,41 @@ export default function OwnerBusinessPage() {
 
   if (isLoading) {
     return (
-      <div className="w-full pb-24 flex flex-col gap-6">
+      <div className="flex w-full flex-col gap-5 pb-24 max-md:pb-28 md:gap-6">
         <Breadcrumb
+          className="max-md:mb-4 max-md:text-xs max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5"
           items={[
             { label: 'Businesses', href: '/owner/businesses' },
             { label: 'Loading...', href: `/owner/${routeId}` },
           ]}
         />
-        <div className="h-8 bg-slate-200 rounded w-64 mb-2 animate-pulse" />
-        <div className="h-4 bg-slate-200 rounded w-48 animate-pulse" />
-        <div className="bg-white border border-slate-200 rounded-lg p-6 animate-pulse">
-          <div className="h-48 bg-slate-200 rounded mb-4" />
-          <div className="h-6 bg-slate-200 rounded w-3/4 mb-2" />
-          <div className="h-4 bg-slate-200 rounded w-1/2" />
-        </div>
+        <OwnerSalonDetailLoadingBody />
       </div>
     );
   }
 
   if (error || !salon) {
     return (
-      <div className="w-full pb-24 flex flex-col gap-6">
+      <div className="flex w-full flex-col gap-4 pb-24 md:gap-6">
         <Breadcrumb
+          className="max-md:mb-4 max-md:text-xs max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5"
           items={[
             { label: 'Businesses', href: '/owner/businesses' },
             { label: 'Business Details', href: `/owner/${routeId}` },
           ]}
         />
-        <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Access Denied</h2>
-          <p className="text-slate-600 mb-8">Invalid booking link or salon not found.</p>
+        <div className="rounded-xl border border-slate-200/90 bg-white p-6 text-center shadow-sm max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none md:rounded-lg md:p-8 md:shadow-none">
+          <h2 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-3 md:mb-4')}>Access Denied</h2>
+          <p className="mb-6 text-sm text-slate-600 max-md:text-xs md:mb-8 md:text-base">
+            Invalid booking link or salon not found.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full pb-24 flex flex-col gap-6">
+    <div className="flex w-full flex-col gap-5 pb-24 max-md:pb-28 md:gap-6">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
@@ -879,12 +880,13 @@ export default function OwnerBusinessPage() {
         />
       ))}
 
-      <Breadcrumb items={breadcrumbItems} />
+      <Breadcrumb
+        className="max-md:mb-4 max-md:text-xs max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5"
+        items={breadcrumbItems}
+      />
 
-      <div className="space-y-2">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 truncate leading-tight">
-          {salon.salon_name}
-        </h1>
+      <div className="space-y-1">
+        <h1 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'truncate')}>{salon.salon_name}</h1>
       </div>
 
       <BusinessDetailsCard
@@ -921,11 +923,17 @@ export default function OwnerBusinessPage() {
         onDeletePhoto={handleDeletePhoto}
       />
 
-      <div className="bg-white border border-slate-200 rounded-lg">
-        <div className="flex gap-1 bg-slate-100 p-1 border-b border-slate-200 overflow-x-auto">
+      <div
+        className={cn(
+          'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]',
+          'md:rounded-lg md:shadow-none md:ring-0'
+        )}
+      >
+        <div className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-slate-100 p-1.5 max-md:rounded-t-2xl md:rounded-none">
           <button
+            type="button"
             onClick={() => setActiveTab('slots')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+            className={`flex-shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 max-md:text-xs md:px-4 md:py-3 md:text-base ${
               activeTab === 'slots'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -934,8 +942,9 @@ export default function OwnerBusinessPage() {
             Slots
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('downtime')}
-            className={`flex-shrink-0 px-4 py-3 font-semibold rounded-md transition-all duration-200 whitespace-nowrap ${
+            className={`flex-shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 max-md:text-xs md:px-4 md:py-3 md:text-base ${
               activeTab === 'downtime'
                 ? 'bg-white text-black shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -945,9 +954,11 @@ export default function OwnerBusinessPage() {
           </button>
         </div>
 
-        <div className="p-4 lg:p-6">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+        <div className="p-4 md:p-4 lg:p-6">
+          <div className="mb-4 md:mb-6">
+            <label className="mb-2 block text-xs font-medium text-gray-700 md:text-sm">
+              Select Date
+            </label>
             <div className="w-full sm:w-64 lg:w-72">
               <DateFilter value={selectedDate} onChange={setSelectedDate} />
             </div>

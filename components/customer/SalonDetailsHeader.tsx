@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { UI_CUSTOMER } from '@/config/constants';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@/config/constants';
+import { cn } from '@/lib/utils/cn';
 
 export interface SalonDetailsHeaderProps {
   salonName: string;
@@ -81,7 +82,7 @@ export default function SalonDetailsHeader({
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex flex-col">
-        <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-slate-900 leading-tight break-words">
+        <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'leading-tight break-words')}>
           {salonName}
         </h1>
 
@@ -98,33 +99,10 @@ export default function SalonDetailsHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {ownerImage && ownerImage !== '' ? (
-          <Image
-            src={ownerImage}
-            alt={ownerName || 'Owner'}
-            className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 shadow-md ring-1 ring-slate-200/50"
-            width={48}
-            height={48}
-            sizes="48px"
-            quality={95}
-            priority
-          />
-        ) : (
-          <Image
-            src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
-            alt={ownerName || 'Owner'}
-            className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 shadow-md"
-            width={48}
-            height={48}
-            sizes="48px"
-            unoptimized
-          />
-        )}
-
-        <div className="flex flex-col">
+      <div className="flex max-w-[min(100%,18rem)] shrink-0 items-center gap-3 sm:max-w-none">
+        <div className="flex min-w-0 flex-col text-right">
           {ownerName && ownerName.trim() !== '' && (
-            <span className="font-medium text-slate-900">{ownerName}</span>
+            <span className="font-medium leading-snug text-slate-900">{ownerName}</span>
           )}
 
           {ownerPhone && (
@@ -132,13 +110,38 @@ export default function SalonDetailsHeader({
               href={`https://wa.me/${ownerPhone}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-green-600 font-medium text-sm text-slate-600"
+              className="mt-0.5 text-sm font-medium text-slate-600 hover:text-green-600"
               title="Chat on WhatsApp"
             >
               {ownerPhone}
             </a>
           )}
         </div>
+
+        {ownerImage && ownerImage !== '' ? (
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-md ring-1 ring-slate-200/50">
+            <Image
+              src={ownerImage}
+              alt={ownerName || 'Owner'}
+              fill
+              className="object-cover"
+              sizes="48px"
+              quality={95}
+              priority
+            />
+          </div>
+        ) : (
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-md">
+            <Image
+              src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
+              alt={ownerName || 'Owner'}
+              fill
+              className="object-cover"
+              sizes="48px"
+              unoptimized
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,14 +1,37 @@
 // /lib/time/ist.ts
 
-export function getISTDate(): Date {
-  const now = new Date();
-  const istOffsetMinutes = 5.5 * 60;
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc + istOffsetMinutes * 60000);
+/** IANA zone for shop calendar and slot keys (India Standard Time). */
+export const IST_IANA_TIME_ZONE = 'Asia/Kolkata' as const;
+
+/**
+ * Calendar date (YYYY-MM-DD) in IST. Do not use `toISOString().split('T')[0]` — that is UTC and
+ * crosses the wrong local day near midnight IST.
+ */
+export function getISTDateString(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: IST_IANA_TIME_ZONE });
 }
 
-export function getISTDateString(): string {
-  return getISTDate().toISOString().split('T')[0];
+/**
+ * Current clock time in IST as minutes from midnight [0, 1439].
+ * Use for slot cleanup and “today” slot filtering (not server local time / not UTC).
+ */
+export function getISTNowMinutes(): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: IST_IANA_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
+}
+
+/**
+ * @deprecated Prefer {@link getISTNowMinutes} for time-of-day in IST. Retained for unit tests.
+ */
+export function getISTDate(): Date {
+  return new Date();
 }
 
 export function toMinutes(time: string | null | undefined): number {

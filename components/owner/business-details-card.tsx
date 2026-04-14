@@ -1,13 +1,33 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import type { Salon } from '@/types';
+import { cn } from '@/lib/utils/cn';
 
 interface BusinessDetailsCardProps {
   salon: Salon;
   onEdit: () => void;
   onDelete: () => void;
   deleteSaving: boolean;
+}
+
+function DetailField({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('min-w-0', className)}>
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-semibold leading-snug text-slate-900 md:font-medium">
+        {children}
+      </dd>
+    </div>
+  );
 }
 
 function BusinessDetailsCardComponent({
@@ -17,14 +37,22 @@ function BusinessDetailsCardComponent({
   deleteSaving,
 }: BusinessDetailsCardProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <h2 className="text-lg font-semibold text-slate-900">Business details</h2>
-        <div className="flex gap-3">
+    <div
+      className={cn(
+        'rounded-2xl border border-slate-200/90 bg-white p-4',
+        'shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]',
+        'md:rounded-lg md:p-5 md:shadow-none md:ring-0 lg:p-6'
+      )}
+    >
+      <div className="mb-4 flex flex-row items-center justify-between gap-3 border-b border-slate-100 pb-3 md:mb-5 md:pb-4">
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900 md:text-lg">
+          Business details
+        </h2>
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={onEdit}
-            className="px-4 py-2 border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+            className="rounded-lg border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/50 active:bg-slate-50 md:px-4 md:py-2 md:text-sm"
           >
             Edit
           </button>
@@ -32,47 +60,27 @@ function BusinessDetailsCardComponent({
             type="button"
             onClick={onDelete}
             disabled={deleteSaving}
-            className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 md:px-4 md:py-2 md:text-sm"
           >
             {deleteSaving ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-        <div>
-          <dt className="text-slate-500">Business name</dt>
-          <dd className="font-medium text-slate-900">{salon.salon_name}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">Owner name</dt>
-          <dd className="font-medium text-slate-900">{salon.owner_name}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">WhatsApp</dt>
-          <dd className="font-medium text-slate-900">{salon.whatsapp_number}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">Hours</dt>
-          <dd className="font-medium text-slate-900">
-            {salon.opening_time?.substring(0, 5)} – {salon.closing_time?.substring(0, 5)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-slate-500">Slot duration</dt>
-          <dd className="font-medium text-slate-900">{salon.slot_duration} min</dd>
-        </div>
-        {salon.location && (
-          <div>
-            <dt className="text-slate-500">Location</dt>
-            <dd className="font-medium text-slate-900">{salon.location}</dd>
-          </div>
-        )}
-        {salon.address && (
-          <div className="sm:col-span-2">
-            <dt className="text-slate-500">Address</dt>
-            <dd className="font-medium text-slate-900">{salon.address}</dd>
-          </div>
-        )}
+
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-4 md:gap-x-8 md:gap-y-5">
+        <DetailField label="Business name">{salon.salon_name}</DetailField>
+        <DetailField label="Owner name">{salon.owner_name}</DetailField>
+        <DetailField label="WhatsApp">{salon.whatsapp_number}</DetailField>
+        <DetailField label="Hours">
+          {salon.opening_time?.substring(0, 5)} – {salon.closing_time?.substring(0, 5)}
+        </DetailField>
+        <DetailField label="Slot duration">{salon.slot_duration} min</DetailField>
+        {salon.location ? <DetailField label="Location">{salon.location}</DetailField> : null}
+        {salon.address ? (
+          <DetailField label="Address" className="col-span-2">
+            {salon.address}
+          </DetailField>
+        ) : null}
       </dl>
     </div>
   );

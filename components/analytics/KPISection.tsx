@@ -28,9 +28,13 @@ const KPICompactCard = memo(function KPICompactCard({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-      <p className="mt-1.5 text-xl font-semibold text-slate-900">{value}</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-3.5">
+      <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 sm:text-[11px]">
+        {title}
+      </p>
+      <p className="mt-1 break-words text-base font-semibold text-slate-900 sm:mt-1.5 sm:text-xl">
+        {value}
+      </p>
     </div>
   );
 });
@@ -82,7 +86,7 @@ function KPISectionComponent({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-3">
         {memoizedKpis.map((kpi) => (
           <KPICompactCard key={kpi.title} title={kpi.title} value={kpi.value} />
         ))}

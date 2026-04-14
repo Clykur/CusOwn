@@ -1,45 +1,25 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 
+/** Sticky strip for analytics: optional summary + filters (no inner card shell). */
 export default function AnalyticsHeader({
   summary,
-  refreshing,
   children,
 }: {
   summary?: string;
-  refreshing?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="sticky top-0 z-20 -mx-1 border-b border-slate-200/80 bg-white/80 px-1 pb-4 pt-3 backdrop-blur-md">
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-end gap-2">
-          <div className="flex items-center gap-2">
-            {summary ? (
-              <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                {summary}
-              </span>
-            ) : null}
-            {refreshing ? (
-              <motion.span
-                initial={{ opacity: 0.4 }}
-                animate={{ opacity: 1 }}
-                transition={{
-                  repeat: Infinity,
-                  repeatType: 'reverse',
-                  duration: 0.8,
-                }}
-                className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
-              >
-                Refreshing
-              </motion.span>
-            ) : null}
-          </div>
+    <div className="sticky top-0 z-20 -mx-0 border-b border-slate-200/80 bg-white/80 px-0 pb-3 pt-2 backdrop-blur-md sm:-mx-1 sm:px-1">
+      {summary ? (
+        <div className="mb-3 flex items-center justify-end gap-2 px-0 sm:px-1">
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+            {summary}
+          </span>
         </div>
-        {children}
-      </div>
+      ) : null}
+      <div className="px-0 sm:px-1">{children}</div>
     </div>
   );
 }
