@@ -1,21 +1,36 @@
 import { NextRequest } from 'next/server';
 
+export const getValidString = (input: unknown, maxLen: number = 100): string | null => {
+  if (typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  if (trimmed.length === 0 || trimmed.length > maxLen) return null;
+  return trimmed;
+};
+
+export const requireString = (input: unknown, fieldName: string = 'value'): string => {
+  const valid = getValidString(input, 1000);
+  if (!valid) {
+    throw new Error(`Invalid or missing ${fieldName}: must be non-empty string <=1000 chars`);
+  }
+  return valid;
+};
+
+export const isValidToken = (input: string): boolean => {
+  return (
+    typeof input === 'string' &&
+    input.length >= 32 &&
+    input.length <= 4096 &&
+    /^[a-zA-Z0-9_-]+$/.test(input)
+  );
+};
+
 export const sanitizeString = (input: string): string => {
   if (typeof input !== 'string') {
     return '';
   }
-  let sanitized = input.trim();
-  let previous: string;
-  do {
-    previous = sanitized;
-    sanitized = sanitized
-      .replace(/[<>]/g, '')
-      .replace(/javascript:/gi, '')
-      .replace(/on\w+=/gi, '')
-      .replace(/script/gi, '');
-  } while (sanitized !== previous);
+  const trimmed = input.trim();
 
-  return sanitized;
+  return trimmed.replace(/[^a-zA-Z0-9@._+=\- /]/g, '');
 };
 
 export const sanitizeNumber = (input: unknown): number | null => {

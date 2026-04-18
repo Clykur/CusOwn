@@ -4,6 +4,7 @@ import { getServerUser } from '@/lib/supabase/server-auth';
 import { paymentService } from '@/services/payment.service';
 import { bookingService } from '@/services/booking.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
+import { getValidString } from '@/lib/security/input-sanitizer';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { ERROR_MESSAGES, BOOKING_STATUS } from '@/config/constants';
 
@@ -27,23 +28,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { payment_id: rawPaymentId, transaction_id: rawTransactionId } = body;
+    const validatedPaymentId = getValidString(body.payment_id);
+    const validatedTransactionId = getValidString(body.transaction_id);
 
-    const paymentId =
-      typeof rawPaymentId === 'string' && rawPaymentId.length > 0 ? rawPaymentId : null;
-
-    const transactionId =
-      typeof rawTransactionId === 'string' && rawTransactionId.length > 0 ? rawTransactionId : null;
-
-    if (!paymentId) {
+    if (!validatedPaymentId) {
       return errorResponse('Payment ID required', 400);
     }
 
-    if (!transactionId) {
+    if (!validatedTransactionId) {
       return errorResponse('Transaction ID required', 400);
     }
 
-    const payment = await paymentService.getPaymentByPaymentId(paymentId);
+    const payment = await paymentService.getPaymentByPaymentId(validatedPaymentId);
     if (!payment) {
       return errorResponse('Payment not found', 404);
     }
@@ -70,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const verifiedPayment = await paymentService.verifyUPIPayment(
       payment.id,
-      transactionId,
+      validatedTransactionId,
       user.id,
       isAdmin || isOwner ? 'manual' : 'manual',
       {}
