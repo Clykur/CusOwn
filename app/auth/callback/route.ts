@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
   const pendingRoleFromCookie = toSelectableRole(
     cookieStore.get(AUTH_PENDING_ROLE_COOKIE)?.value ?? null
   );
-  const selectedRole = pendingRoleFromCookie ?? queryRole;
+  const selectedRole = pendingRoleFromCookie;
   const cookiesToForward: {
     name: string;
     value: string;
