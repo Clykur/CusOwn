@@ -15,6 +15,35 @@ function sanitizeLogValue(value: unknown): string {
   return str.replace(/[\r\n]+/g, ' ');
 }
 
+/**
+ * Parse and validate OSRM base URL to prevent SSRF via misconfiguration.
+ * Only allows HTTP(S) and local loopback hosts used for local OSRM deployments.
+ */
+function getValidatedOsrmBaseUrl(rawUrl: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error('Invalid OSRM base URL');
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('OSRM URL must use http/https');
+  }
+
+  if (parsed.username || parsed.password) {
+    throw new Error('OSRM URL must not contain credentials');
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const allowedHosts = new Set(['localhost', '127.0.0.1', '::1']);
+  if (!allowedHosts.has(hostname)) {
+    throw new Error('OSRM URL host is not allowed');
+  }
+
+  return parsed;
+}
+
 interface RouteQuery {
   startLat: number;
   startLng: number;
@@ -333,7 +362,10 @@ export class RoutingService {
     assertValidCoordinates(endLat, endLng);
 
     const profile = mode === 'walking' ? 'foot' : 'car';
-    const url = `${this.osrmUrl}/route/v1/${profile}/${startLng},${startLat};${endLng},${endLat}?overview=false`;
+    const baseUrl = getValidatedOsrmBaseUrl(this.osrmUrl);
+    const url = new URL(baseUrl.toString());
+    url.pathname = `/route/v1/${profile}/${startLng},${startLat};${endLng},${endLat}`;
+    url.searchParams.set('overview', 'false');
     const cacheKey = `osrm:${profile}:${startLat},${startLng}:${endLat},${endLng}`;
 
     // check osrm cache
@@ -348,7 +380,7 @@ export class RoutingService {
     }
 
     try {
-      const resp = await fetch(url);
+      const resp = await fetch(url.toString());
       if (!resp.ok) {
         throw new Error(`OSRM request failed ${resp.status}`);
       }
