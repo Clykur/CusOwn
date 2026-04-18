@@ -57,7 +57,11 @@ class PerformanceMonitor {
 
   private generateSessionId(): string {
     if (typeof window === 'undefined') return 'server';
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    const randomBytes = window.crypto.getRandomValues(new Uint8Array(8));
+    const randomPart = Array.from(randomBytes, (byte) =>
+      byte.toString(16).padStart(2, '0')
+    ).join('');
+    return `${Date.now()}-${randomPart}`;
   }
 
   record(metric: Omit<PerformanceMetric, 'timestamp'>): void {
