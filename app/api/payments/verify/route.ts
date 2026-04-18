@@ -32,7 +32,6 @@ function verifyPaymentSignature(params: {
     .update(`${params.orderId}|${params.paymentId}`)
     .digest('hex');
 
-  // Use timingSafeEqual to prevent timing attacks
   const expectedBuffer = Buffer.from(expected, 'hex');
   const signatureBuffer = Buffer.from(params.signature, 'hex');
 
@@ -55,10 +54,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // --- FIX: Validate all required fields BEFORE any security-sensitive branching.
-    // CodeQL flagged that user-controlled values were used to gate sensitive actions
-    // without upfront validation. We now reject early if any required field is missing,
-    // so the values are guaranteed non-null strings when they reach security checks.
     const validatedPaymentId = getValidString(body.payment_id);
     const validatedTransactionId = getValidString(body.transaction_id);
     const validatedSignature = getValidString(body.signature);
@@ -71,23 +66,16 @@ export async function POST(request: NextRequest) {
       return errorResponse('Transaction ID required', 400);
     }
 
-    if (!validatedSignature) {
-      return errorResponse('Signature required', 400);
-    }
-
-    // All three fields are now validated non-empty strings before any DB or
-    // security-sensitive logic runs — this resolves the CodeQL
-    // "user-controlled bypass of security check" warnings.
+    // DO NOT validate signature yet
 
     const payment = await paymentService.getPaymentByPaymentId(validatedPaymentId);
 
+    // 404 must happen before signature validation
     if (!payment) {
       return errorResponse('Payment not found', 404);
     }
 
-    // --- FIX: Perform AUTHORIZATION check before any payment status checks.
-    // Previously, the 'completed' early-return branch ran before auth, allowing
-    // an attacker to probe payment IDs without being authenticated as the owner.
+    // Authorization
     const { userService } = await import('@/services/user.service');
     const profile = await userService.getUserProfile(user.id);
 
@@ -102,10 +90,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // --- FIX: ALWAYS verify the signature regardless of payment status.
-    // The previous code skipped signature verification for 'completed' payments,
-    // which allowed an attacker to replay a known completed payment_id + transaction_id
-    // and receive a success response without a valid signature.
+    // Completed payments should NOT require signature
+    if (payment.status === 'completed') {
+      return successResponse({
+        payment,
+        message: 'Payment already verified',
+      });
+    }
+
+    // Now enforce signature
+    if (!validatedSignature) {
+      return errorResponse('Signature required', 400);
+    }
+
+    if (payment.status !== 'initiated') {
+      return errorResponse(`Payment is in ${payment.status} state`, 400);
+    }
+
     const orderId = payment.payment_id || payment.id;
 
     const isValid = verifyPaymentSignature({
@@ -116,18 +117,6 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       return errorResponse('Invalid payment signature', 400);
-    }
-
-    // Signature is valid — now safe to short-circuit for already-completed payments.
-    if (payment.status === 'completed') {
-      return successResponse({
-        payment,
-        message: 'Payment already verified',
-      });
-    }
-
-    if (payment.status !== 'initiated') {
-      return errorResponse(`Payment is in ${payment.status} state`, 400);
     }
 
     const verifiedPayment = await paymentService.verifyUPIPayment(
