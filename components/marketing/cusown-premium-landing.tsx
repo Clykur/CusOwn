@@ -1342,7 +1342,7 @@ export function CusownPremiumLanding() {
                 onClick={() => go(ROUTES.SELECT_ROLE())}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="group inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-full bg-accent px-8 py-3.5 text-[15px] font-semibold text-zinc-950 shadow-[0_0_48px_-8px_rgba(34,197,94,0.55)] transition-[box-shadow,transform] hover:shadow-[0_0_64px_-4px_rgba(34,197,94,0.65)] sm:min-h-0 sm:py-0 sm:text-sm"
+                className="group inline-flex h-[3.25rem] min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-full bg-accent px-8 text-[15px] font-semibold text-zinc-950 shadow-[0_0_48px_-8px_rgba(34,197,94,0.55)] transition-[box-shadow,transform] hover:shadow-[0_0_64px_-4px_rgba(34,197,94,0.65)] sm:w-auto sm:text-base"
               >
                 Start {CUSOWN_PRICING.trialDays}-day trial
                 <ArrowRight
@@ -1355,7 +1355,7 @@ export function CusownPremiumLanding() {
                 onClick={() => go(ROUTES.SELECT_ROLE('customer'))}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex min-h-[3.25rem] items-center justify-center rounded-full border border-white/20 bg-transparent px-8 py-3.5 text-[15px] font-semibold text-white transition-colors hover:border-white/35 hover:bg-white/[0.06] sm:min-h-0 sm:py-0 sm:text-sm"
+                className="inline-flex h-[3.25rem] min-h-[3.25rem] w-full items-center justify-center rounded-full border border-white/20 bg-transparent px-8 text-[15px] font-semibold text-white transition-colors hover:border-white/35 hover:bg-white/[0.06] sm:w-auto sm:text-base"
               >
                 Browse businesses
               </motion.button>
