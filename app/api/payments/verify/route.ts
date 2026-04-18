@@ -27,17 +27,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { payment_id, transaction_id } = body;
+    const { payment_id: rawPaymentId, transaction_id: rawTransactionId } = body;
 
-    if (!payment_id || typeof payment_id !== 'string') {
+    const paymentId =
+      typeof rawPaymentId === 'string' && rawPaymentId.length > 0 ? rawPaymentId : null;
+
+    const transactionId =
+      typeof rawTransactionId === 'string' && rawTransactionId.length > 0 ? rawTransactionId : null;
+
+    if (!paymentId) {
       return errorResponse('Payment ID required', 400);
     }
 
-    if (!transaction_id || typeof transaction_id !== 'string') {
+    if (!transactionId) {
       return errorResponse('Transaction ID required', 400);
     }
 
-    const payment = await paymentService.getPaymentByPaymentId(payment_id);
+    const payment = await paymentService.getPaymentByPaymentId(paymentId);
     if (!payment) {
       return errorResponse('Payment not found', 404);
     }
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     const verifiedPayment = await paymentService.verifyUPIPayment(
       payment.id,
-      transaction_id,
+      transactionId,
       user.id,
       isAdmin || isOwner ? 'manual' : 'manual',
       {}

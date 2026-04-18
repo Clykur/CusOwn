@@ -633,7 +633,9 @@ export default function CreateBusinessForm({
                   Lat: {formData.latitude!.toFixed(6)}, Lng: {formData.longitude!.toFixed(6)}
                 </p>
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${formData.latitude},${formData.longitude}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${formData.latitude},${formData.longitude}`
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 inline-block text-blue-600 hover:underline"

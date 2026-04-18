@@ -48,16 +48,52 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const token = request.nextUrl.searchParams.get('token');
+
     let decodedToken: string | null = null;
+    let tokenValid = false;
+
     if (token) {
-      decodedToken = (() => {
-        try {
-          return decodeURIComponent(token);
-        } catch {
-          return token;
-        }
-      })();
+      // Basic input validation (prevents abuse + satisfies CodeQL)
+      if (typeof token !== 'string' || token.length === 0 || token.length > 500) {
+        logAuthDeny({
+          route: ROUTE,
+          reason: 'auth_invalid_token',
+          resource: id,
+        });
+
+        return NextResponse.json(
+          {
+            success: false,
+            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+            code: SECURE_LINK_RESPONSE_CODE,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Safe decode
+      try {
+        decodedToken = decodeURIComponent(token);
+      } catch {
+        logAuthDeny({
+          route: ROUTE,
+          reason: 'auth_invalid_token',
+          resource: id,
+        });
+
+        return NextResponse.json(
+          {
+            success: false,
+            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+            code: SECURE_LINK_RESPONSE_CODE,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Explicit validation (critical security check)
       const linkValidation = await validateOwnerActionLink('reject', id, decodedToken);
+
       if (!linkValidation.valid) {
         logAuthDeny({
           route: ROUTE,
@@ -65,6 +101,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           resource: id,
           audit_metadata: { link_validation_reason: linkValidation.reason },
         });
+
         return NextResponse.json(
           {
             success: false,
@@ -74,6 +111,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           { status: 403 }
         );
       }
+      tokenValid = true;
     }
 
     const booking = await bookingService.getBookingByUuidWithDetails(id);
@@ -101,7 +139,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
         return errorResponse('Access denied', 403);
       }
-    } else if (!token) {
+    } else if (!tokenValid) {
       logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
       return errorResponse('Authentication required', 401);
     }

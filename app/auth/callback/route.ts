@@ -124,32 +124,41 @@ async function ensureUserHasSelectedRole(
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
   const queryRole = toSelectableRole(requestUrl.searchParams.get('role'));
   const baseUrlFromRequest = getOAuthRedirect('/auth/callback', request);
   const baseUrl = `${new URL(baseUrlFromRequest).origin}/`;
 
+  const rawCode = requestUrl.searchParams.get('code');
+
+  const hasValidCode = typeof rawCode === 'string' && rawCode.length > 0 && rawCode.length <= 500;
+
+  if (!hasValidCode) {
+    const errDesc = requestUrl.searchParams.get('error_description');
+    const errCode = requestUrl.searchParams.get('error_code');
+    const err = requestUrl.searchParams.get('error');
+
+    if (errDesc || errCode || err) {
+      const safeError =
+        typeof errDesc === 'string' && errDesc.length <= 300
+          ? errDesc
+          : typeof err === 'string'
+            ? err
+            : 'auth_failed';
+
+      const msg = encodeURIComponent(safeError);
+
+      return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
+    }
+
+    return NextResponse.redirect(new URL(ROUTES.HOME, baseUrl));
+  }
+
+  const code = rawCode; // safe to use after validation
   console.info('[AUTH] callback: GET', {
     hasCode: !!code,
     error: requestUrl.searchParams.get('error') ?? null,
     error_description: requestUrl.searchParams.get('error_description') ?? null,
   });
-
-  if (!code) {
-    const errDesc = requestUrl.searchParams.get('error_description');
-    const errCode = requestUrl.searchParams.get('error_code');
-    const err = requestUrl.searchParams.get('error');
-    if (errDesc || errCode || err) {
-      console.info('[AUTH] callback: negative — no code, redirect to login with error', {
-        error: err ?? null,
-        error_description: errDesc ?? null,
-      });
-      const msg = encodeURIComponent(errDesc || err || 'auth_failed');
-      return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
-    }
-    console.info('[AUTH] callback: negative — no code, redirect to home');
-    return NextResponse.redirect(new URL(ROUTES.HOME, baseUrl));
-  }
 
   const cookieStore = await cookies();
   const pendingRoleFromCookie = toSelectableRole(

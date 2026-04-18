@@ -4,12 +4,18 @@ export const sanitizeString = (input: string): string => {
   if (typeof input !== 'string') {
     return '';
   }
-  return input
-    .trim()
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+=/gi, '')
-    .replace(/script/gi, '');
+  let sanitized = input.trim();
+  let previous: string;
+  do {
+    previous = sanitized;
+    sanitized = sanitized
+      .replace(/[<>]/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+=/gi, '')
+      .replace(/script/gi, '');
+  } while (sanitized !== previous);
+
+  return sanitized;
 };
 
 export const sanitizeNumber = (input: unknown): number | null => {
