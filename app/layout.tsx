@@ -1,5 +1,5 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import { Suspense } from 'react';
 import { AnalyticsClient } from '@/components/analytics-client';
@@ -11,7 +11,8 @@ import '@/lib/init/events';
 
 const isDev = publicEnv.nodeEnv === 'development';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
 
 export const metadata: Metadata = {
   title: 'CusOwn - Appointment Management for Service Businesses',
@@ -19,14 +20,20 @@ export const metadata: Metadata = {
     'A modern appointment and slot management platform for service businesses. Simple, reliable, and built to scale.',
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 /** Segment config must be a static literal (no conditional). Use force-dynamic so auth/chunk URLs work in dev and prod. */
 export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head />
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         <Script
           id="supabase-auth-safe"
           src="/scripts/supabase-auth-safe.js"

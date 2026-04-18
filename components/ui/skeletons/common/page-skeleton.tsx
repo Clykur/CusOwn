@@ -53,18 +53,29 @@ export function LoginSkeleton() {
 }
 
 export function SelectRoleSkeleton() {
+  const darkBase = 'rounded-lg bg-zinc-800/80';
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
-      <div className="max-w-2xl w-full">
-        <div className={`h-9 ${skeletonBase} w-48 mx-auto mb-2`} />
-        <div className={`h-5 ${skeletonBase} w-72 mx-auto mb-12`} />
-        <div className="grid sm:grid-cols-2 gap-6">
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 p-4"
+      aria-busy="true"
+    >
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,rgba(34,197,94,0.08),transparent_55%)]"
+        aria-hidden
+      />
+      <div className="relative w-full max-w-2xl">
+        <div className={`mx-auto mb-3 h-3 w-32 ${darkBase}`} />
+        <div className={`mx-auto mb-4 h-9 w-64 max-w-full ${darkBase}`} />
+        <div className={`mx-auto mb-12 h-4 w-80 max-w-full ${darkBase}`} />
+        <div className="grid grid-cols-1 divide-y divide-white/[0.08] border-y border-white/[0.08] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           {[1, 2].map((i) => (
-            <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 skeleton-shimmer">
-              <div className={`h-14 w-14 ${skeletonBase} rounded-xl mb-6`} />
-              <div className={`h-7 ${skeletonBase} w-2/3 mb-4`} />
-              <div className={`h-4 ${skeletonBase} w-full mb-2`} />
-              <div className={`h-4 ${skeletonBase} w-4/5`} />
+            <div key={i} className="flex gap-6 py-8 sm:py-10">
+              <div className={`h-10 w-10 shrink-0 ${darkBase}`} />
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className={`h-6 w-48 max-w-full ${darkBase}`} />
+                <div className={`h-4 w-full max-w-md ${darkBase}`} />
+                <div className={`h-3 w-2/3 ${darkBase}`} />
+              </div>
             </div>
           ))}
         </div>
