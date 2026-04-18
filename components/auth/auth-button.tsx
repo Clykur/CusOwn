@@ -12,12 +12,18 @@ type AuthButtonProps = {
   /** When null/undefined, show Sign In only. No fetch. */
   user?: AuthButtonUser;
   profile?: AuthButtonProfile;
+  /** Dark marketing surfaces (e.g. select-role, landing-style header). */
+  marketingDark?: boolean;
 };
 
 /**
  * Presentational auth controls. Receives user from parent (layout/props). Never fetches session.
  */
-export default function AuthButton({ user = null, profile }: AuthButtonProps) {
+export default function AuthButton({
+  user = null,
+  profile,
+  marketingDark = false,
+}: AuthButtonProps) {
   const router = useRouter();
   const userType =
     profile?.user_type === 'both' || profile?.user_type === 'owner'
@@ -26,10 +32,22 @@ export default function AuthButton({ user = null, profile }: AuthButtonProps) {
         ? 'customer'
         : null;
 
+  const primary = marketingDark
+    ? 'rounded-full bg-accent px-5 py-2 text-sm font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_24px_rgba(34,197,94,0.35)]'
+    : 'rounded-lg bg-black px-6 py-2 font-semibold text-white transition-colors hover:bg-gray-900';
+
+  const secondary = marketingDark
+    ? 'rounded-full border border-white/18 bg-white/[0.06] px-5 py-2 text-sm font-semibold text-white transition-colors hover:border-white/28 hover:bg-white/[0.1]'
+    : 'rounded-lg border-2 border-gray-300 bg-white px-6 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-50';
+
+  const ghost = marketingDark
+    ? 'px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white'
+    : 'px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900';
+
   if (!user?.id) {
     return (
       <Link href={typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN() : '/auth/login'}>
-        <button className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors">
+        <button type="button" className={primary}>
           Sign In
         </button>
       </Link>
@@ -38,18 +56,20 @@ export default function AuthButton({ user = null, profile }: AuthButtonProps) {
 
   if (userType === 'owner') {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
         <button
+          type="button"
           onClick={() => router.push(ROUTES.OWNER_DASHBOARD_BASE)}
-          className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
+          className={primary}
         >
           My Dashboard
         </button>
         <button
+          type="button"
           onClick={() => {
             window.location.href = '/api/auth/signout?redirect_to=%2F';
           }}
-          className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
+          className={ghost}
         >
           Sign Out
         </button>
@@ -58,24 +78,23 @@ export default function AuthButton({ user = null, profile }: AuthButtonProps) {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
       <button
+        type="button"
         onClick={() => router.push(ROUTES.CUSTOMER_DASHBOARD)}
-        className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
+        className={primary}
       >
         My Bookings
       </button>
-      <button
-        onClick={() => router.push(ROUTES.SALON_LIST)}
-        className="px-6 py-2 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-      >
+      <button type="button" onClick={() => router.push(ROUTES.SALON_LIST)} className={secondary}>
         Book Appointment
       </button>
       <button
+        type="button"
         onClick={() => {
           window.location.href = '/api/auth/signout?redirect_to=%2F';
         }}
-        className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
+        className={ghost}
       >
         Sign Out
       </button>

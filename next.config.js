@@ -50,6 +50,12 @@ const nextConfig = {
           'nlrmsamgpajuprldkpms.supabase.co',
         pathname: '/storage/v1/**',
       },
+      /** Landing product section placeholders; swap for /public assets when ready */
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
     ],
     qualities: [75, 85, 95],
   },
@@ -118,6 +124,7 @@ const nextConfig = {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://vercel.live",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co https:",
+      "media-src 'self' https://videos.pexels.com https://*.pexels.com blob:",
       "font-src 'self' data:",
       `connect-src ${getCspConnectSrc()}`,
       "frame-src 'self' https://api.razorpay.com https://accounts.google.com https://*.supabase.co https://vercel.live https://*.vercel.live",

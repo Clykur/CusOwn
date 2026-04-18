@@ -65,6 +65,8 @@ const ALLOWED_URL_HOSTS = new Set([
   'placeholder.supabase.co', // env default for unit tests/CI (config/env.ts)
   'nominatim.openstreetmap.org', // Geo: Nominatim default (config/constants.ts)
   'download.geofabrik.de', // OSM data docs (config/constants.ts GEO_OSM_DOWNLOAD_REF)
+  'videos.pexels.com', // Marketing landing hero video (config/marketing/cusown-landing.ts)
+  'images.unsplash.com', // Marketing product preview images (config/marketing/cusown-landing.ts)
 ]);
 
 const RULES = [
