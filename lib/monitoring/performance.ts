@@ -58,9 +58,9 @@ class PerformanceMonitor {
   private generateSessionId(): string {
     if (typeof window === 'undefined') return 'server';
     const randomBytes = window.crypto.getRandomValues(new Uint8Array(8));
-    const randomPart = Array.from(randomBytes, (byte) =>
-      byte.toString(16).padStart(2, '0')
-    ).join('');
+    const randomPart = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+      ''
+    );
     return `${Date.now()}-${randomPart}`;
   }
 
