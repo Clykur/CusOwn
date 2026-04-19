@@ -274,7 +274,13 @@ export default function CreateBusinessForm({
       { timeout: 10000 }
     );
   };
+  const lat = Number(formData.latitude);
+  const lng = Number(formData.longitude);
 
+  const mapsUrl =
+    Number.isFinite(lat) && Number.isFinite(lng)
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`
+      : null;
   const formContent = (
     <>
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
@@ -633,9 +639,7 @@ export default function CreateBusinessForm({
                   Lat: {formData.latitude!.toFixed(6)}, Lng: {formData.longitude!.toFixed(6)}
                 </p>
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    `${formData.latitude},${formData.longitude}`
-                  )}`}
+                  href={mapsUrl || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 inline-block text-blue-600 hover:underline"

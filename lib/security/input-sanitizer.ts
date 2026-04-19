@@ -48,8 +48,29 @@ export const cleanString = (input: unknown): string => {
   return trimmed.replace(/[^a-zA-Z0-9@._+=\- /]/g, '');
 };
 
-/* ✅ BACKWARD COMPATIBILITY */
-export const sanitizeString = cleanString;
+/* BACKWARD COMPATIBILITY */
+export const sanitizeString = (input: unknown): string => {
+  if (typeof input !== 'string') {
+    return '';
+  }
+
+  let sanitized = input.trim();
+  let previous: string;
+
+  do {
+    previous = sanitized;
+
+    sanitized = sanitized
+      .replace(/[<>]/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/data:/gi, '')
+      .replace(/vbscript:/gi, '')
+      .replace(/on\w+=/gi, '')
+      .replace(/script/gi, '');
+  } while (sanitized !== previous);
+
+  return sanitized;
+};
 
 /* =========================
    VALIDATION (STRICT)
