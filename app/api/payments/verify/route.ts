@@ -95,9 +95,17 @@ export async function POST(request: NextRequest) {
       return errorResponse('Unauthorized', 403);
     }
 
-    // 4. Signature validation (NO BYPASS)
+    // Early exit for already completed payments (idempotent, no signature needed)
+    if (payment.status === 'completed') {
+      return successResponse({
+        payment,
+        message: 'Payment already verified',
+      });
+    }
+
+    // 4. Signature validation (required for non-completed payments)
     if (!validatedSignature) {
-      return errorResponse('Signature required', 400);
+      return errorResponse('Signature required for verification', 400);
     }
 
     const orderId = payment.payment_id || payment.id;
@@ -112,20 +120,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid payment signature', 400);
     }
 
-    // 5. Status validation AFTER signature
-    if (payment.status !== 'initiated' && payment.status !== 'completed') {
-      return errorResponse(`Payment is in ${payment.status} state`, 400);
+    // 5. Status validation AFTER signature (only initiated allowed here)
+    if (payment.status !== 'initiated') {
+      return errorResponse(`Payment must be initiated, found ${payment.status}`, 400);
     }
 
-    // Already completed (safe now because signature is verified)
-    if (payment.status === 'completed') {
-      return successResponse({
-        payment,
-        message: 'Payment already verified',
-      });
-    }
-
-    // 6. Proceed with verification
+    // 5. Proceed with verification
     const verifiedPayment = await paymentService.verifyUPIPayment(
       payment.id,
       validatedTransactionId,
