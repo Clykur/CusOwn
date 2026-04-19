@@ -66,45 +66,38 @@ export async function POST(request: NextRequest) {
       return errorResponse('Transaction ID required', 400);
     }
 
-    // DO NOT validate signature yet
-
+    // 1. Fetch payment
     const payment = await paymentService.getPaymentByPaymentId(validatedPaymentId);
 
-    // 404 must happen before signature validation
     if (!payment) {
       return errorResponse('Payment not found', 404);
     }
 
-    // Authorization
+    // 2. Bind transaction to payment (anti-replay / mismatch protection)
+    if (payment.transaction_id && payment.transaction_id !== validatedTransactionId) {
+      return errorResponse('Transaction mismatch', 400);
+    }
+
+    // 3. Authorization (STRICT + EARLY)
     const { userService } = await import('@/services/user.service');
     const profile = await userService.getUserProfile(user.id);
 
     const isAdmin = profile?.user_type === 'admin';
     const isOwner = profile?.user_type === 'owner' || profile?.user_type === 'both';
 
-    if (!isAdmin && !isOwner) {
-      const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
+    const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
 
-      if (!booking || booking.customer_user_id !== user.id) {
-        return errorResponse('Unauthorized', 403);
-      }
+    if (!booking) {
+      return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    // Completed payments should NOT require signature
-    if (payment.status === 'completed') {
-      return successResponse({
-        payment,
-        message: 'Payment already verified',
-      });
+    if (!isAdmin && !isOwner && booking.customer_user_id !== user.id) {
+      return errorResponse('Unauthorized', 403);
     }
 
-    // Now enforce signature
+    // 4. Signature validation (NO BYPASS)
     if (!validatedSignature) {
       return errorResponse('Signature required', 400);
-    }
-
-    if (payment.status !== 'initiated') {
-      return errorResponse(`Payment is in ${payment.status} state`, 400);
     }
 
     const orderId = payment.payment_id || payment.id;
@@ -119,6 +112,20 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid payment signature', 400);
     }
 
+    // 5. Status validation AFTER signature
+    if (payment.status !== 'initiated' && payment.status !== 'completed') {
+      return errorResponse(`Payment is in ${payment.status} state`, 400);
+    }
+
+    // Already completed (safe now because signature is verified)
+    if (payment.status === 'completed') {
+      return successResponse({
+        payment,
+        message: 'Payment already verified',
+      });
+    }
+
+    // 6. Proceed with verification
     const verifiedPayment = await paymentService.verifyUPIPayment(
       payment.id,
       validatedTransactionId,
@@ -126,12 +133,6 @@ export async function POST(request: NextRequest) {
       'manual',
       {}
     );
-
-    const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
-
-    if (!booking) {
-      return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
-    }
 
     if (booking.status === BOOKING_STATUS.PENDING) {
       const supabaseAdmin = requireSupabaseAdmin();
@@ -158,14 +159,6 @@ export async function POST(request: NextRequest) {
       }
 
       const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(booking.id);
-
-      if (bookingWithDetails) {
-        const { emitBookingConfirmed } = await import('@/lib/events/booking-events');
-        const { safeMetrics } = await import('@/lib/monitoring/safe-metrics');
-
-        await emitBookingConfirmed(bookingWithDetails);
-        safeMetrics.increment('bookings.confirmed');
-      }
 
       return successResponse({
         payment: verifiedPayment,
