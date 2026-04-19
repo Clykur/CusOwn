@@ -72,12 +72,9 @@ const nextConfig = {
     staleTimes: { dynamic: 120, static: 300 },
   },
 
-  webpack: (config, { isServer, dev }) => {
-    if (dev) {
-      config.cache = {
-        type: 'memory',
-      };
-    }
+  webpack: (config, { isServer }) => {
+    // Do not force `cache: { type: 'memory' }` in dev — it can race with Next 16’s
+    // `.next/dev` chunk writes and produce ENOENT for vendor-chunks / manifests.
 
     if (!isServer) {
       config.resolve.alias = {

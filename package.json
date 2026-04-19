@@ -12,7 +12,9 @@
   "scripts": {
     "predev": "node scripts/infrastructure/check-node-version.js",
     "prebuild": "node scripts/infrastructure/check-node-version.js",
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:polling": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev --webpack",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "build:strict": "node scripts/infrastructure/strict-build.js",
     "build:fresh": "node scripts/infrastructure/clean-build-artifacts.js && npm run build:strict",

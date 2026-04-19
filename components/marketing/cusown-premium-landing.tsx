@@ -45,6 +45,19 @@ import {
 import { ROUTES } from '@/lib/utils/navigation';
 import { CusownMarketingNav } from '@/components/marketing/cusown-marketing-nav';
 
+/** Tailwind `lg` — desktop motion/parallax; below this keep mobile-tuned values. */
+function useMinWidthLg(): boolean {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = () => setMatches(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  return matches;
+}
+
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
   show: {
@@ -88,13 +101,23 @@ const capabilitiesIntroChild: Variants = {
   },
 };
 
-const capabilitiesRunwayItem: Variants = {
+const capabilitiesRunwayItemMobile: Variants = {
   hidden: { opacity: 0, x: 36, filter: 'blur(8px)' },
   show: {
     opacity: 1,
     x: 0,
     filter: 'blur(0px)',
     transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const capabilitiesRunwayItemLg: Variants = {
+  hidden: { opacity: 0, x: 52, filter: 'blur(12px)' },
+  show: {
+    opacity: 1,
+    x: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.82, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -127,7 +150,7 @@ const landingScrollPairStagger: Variants = {
   },
 };
 
-const landingScrollRevealItem: Variants = {
+const landingScrollRevealItemMobile: Variants = {
   hidden: { opacity: 0, y: 48, scale: 0.94, filter: 'blur(14px)' },
   show: {
     opacity: 1,
@@ -135,6 +158,17 @@ const landingScrollRevealItem: Variants = {
     scale: 1,
     filter: 'blur(0px)',
     transition: { duration: 0.88, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const landingScrollRevealItemLg: Variants = {
+  hidden: { opacity: 0, y: 64, scale: 0.92, filter: 'blur(18px)' },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: 'blur(0px)',
+    transition: { duration: 0.95, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -538,8 +572,13 @@ function BookingFlowColumn({
 
 function BuiltForSection() {
   const reduceMotion = useReducedMotion();
+  const isLg = useMinWidthLg();
   const introVariants = reduceMotion ? builtForIntroRevealReduced : builtForIntroReveal;
-  const rowVariants = reduceMotion ? landingScrollRevealReduced : landingScrollRevealItem;
+  const rowVariants = reduceMotion
+    ? landingScrollRevealReduced
+    : isLg
+      ? landingScrollRevealItemLg
+      : landingScrollRevealItemMobile;
   const footVariants = reduceMotion ? builtForFootRevealReduced : builtForFootReveal;
 
   return (
@@ -637,15 +676,23 @@ function BuiltForSection() {
 
 function ProductPreviewSection() {
   const reduceMotion = useReducedMotion();
+  const isLg = useMinWidthLg();
   const sectionRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'end start'],
   });
-  const desktopParallaxY = useTransform(scrollYProgress, [0, 1], [44, -44]);
-  const mobileParallaxY = useTransform(scrollYProgress, [0, 1], [-32, 36]);
-  const ownerParallaxY = useTransform(scrollYProgress, [0, 1], [36, -40]);
-  const mediaItemVariants = reduceMotion ? landingScrollRevealReduced : landingScrollRevealItem;
+  const desktopParallaxYLg = useTransform(scrollYProgress, [0, 1], [56, -56]);
+  const desktopParallaxYMobile = useTransform(scrollYProgress, [0, 1], [44, -44]);
+  const mobileParallaxYLg = useTransform(scrollYProgress, [0, 1], [-40, 44]);
+  const mobileParallaxYMobile = useTransform(scrollYProgress, [0, 1], [-32, 36]);
+  const ownerParallaxYLg = useTransform(scrollYProgress, [0, 1], [48, -52]);
+  const ownerParallaxYMobile = useTransform(scrollYProgress, [0, 1], [36, -40]);
+  const mediaItemVariants = reduceMotion
+    ? landingScrollRevealReduced
+    : isLg
+      ? landingScrollRevealItemLg
+      : landingScrollRevealItemMobile;
 
   return (
     <section
@@ -732,13 +779,19 @@ function ProductPreviewSection() {
             className="flex min-w-0 flex-col gap-8 lg:gap-10"
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, amount: 0.2, margin: '-64px 0px' }}
+            viewport={
+              isLg
+                ? { once: true, margin: '-100px' }
+                : { once: true, amount: 0.2, margin: '-64px 0px' }
+            }
             variants={landingScrollStagger}
           >
             <motion.div
               variants={mediaItemVariants}
               className="group min-w-0 will-change-transform"
-              style={reduceMotion ? undefined : { y: desktopParallaxY }}
+              style={
+                reduceMotion ? undefined : { y: isLg ? desktopParallaxYLg : desktopParallaxYMobile }
+              }
             >
               <div className="overflow-hidden rounded-2xl border border-white/[0.09] bg-zinc-900/40 ring-1 ring-white/[0.04]">
                 <div
@@ -774,7 +827,9 @@ function ProductPreviewSection() {
               <motion.figure
                 variants={mediaItemVariants}
                 className="group min-w-0 will-change-transform"
-                style={reduceMotion ? undefined : { y: mobileParallaxY }}
+                style={
+                  reduceMotion ? undefined : { y: isLg ? mobileParallaxYLg : mobileParallaxYMobile }
+                }
               >
                 <div className="overflow-hidden rounded-2xl border border-white/[0.09] bg-zinc-900/30 ring-1 ring-white/[0.04]">
                   <div className="relative mx-auto aspect-[10/16] w-full max-w-[min(82vw,300px)] sm:mx-0 sm:max-w-none">
@@ -795,7 +850,9 @@ function ProductPreviewSection() {
               <motion.figure
                 variants={mediaItemVariants}
                 className="group min-w-0 will-change-transform"
-                style={reduceMotion ? undefined : { y: ownerParallaxY }}
+                style={
+                  reduceMotion ? undefined : { y: isLg ? ownerParallaxYLg : ownerParallaxYMobile }
+                }
               >
                 <div className="overflow-hidden rounded-2xl border border-white/[0.09] bg-zinc-900/30 ring-1 ring-white/[0.04]">
                   <div className="relative aspect-[4/3] w-full bg-zinc-900">
@@ -1207,6 +1264,10 @@ function HeroVideo() {
 
 export function CusownPremiumLanding() {
   const router = useRouter();
+  const isLgViewport = useMinWidthLg();
+  const capabilitiesRunwayVariants = isLgViewport
+    ? capabilitiesRunwayItemLg
+    : capabilitiesRunwayItemMobile;
   const capabilitiesSectionRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress: capabilitiesScrollProgress } = useScroll({
     target: capabilitiesSectionRef,
@@ -1241,7 +1302,7 @@ export function CusownPremiumLanding() {
   }, []);
 
   return (
-    <div className="marketing-safe-x relative min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100">
+    <div className="marketing-safe-x relative min-h-screen max-lg:overflow-x-hidden bg-zinc-950 text-zinc-100">
       <div
         className="pointer-events-none fixed inset-0 z-[100] grain-overlay mix-blend-overlay"
         aria-hidden
@@ -1738,8 +1799,12 @@ export function CusownPremiumLanding() {
                       key={`${group.label}-header`}
                       initial="hidden"
                       whileInView="show"
-                      viewport={{ once: true, margin: '-12% 0px -8% 0px', amount: 0.2 }}
-                      variants={capabilitiesRunwayItem}
+                      viewport={
+                        isLgViewport
+                          ? { once: true, margin: '-100px 0px -72px 0px' }
+                          : { once: true, margin: '-12% 0px -8% 0px', amount: 0.2 }
+                      }
+                      variants={capabilitiesRunwayVariants}
                       className="border-b border-white/[0.07]"
                     >
                       <div className="py-8 sm:py-10 lg:py-11">
@@ -1765,12 +1830,16 @@ export function CusownPremiumLanding() {
                         key={f.title}
                         initial="hidden"
                         whileInView="show"
-                        viewport={{
-                          once: true,
-                          margin: '-12% 0px -10% 0px',
-                          amount: 0.35,
-                        }}
-                        variants={capabilitiesRunwayItem}
+                        viewport={
+                          isLgViewport
+                            ? { once: true, margin: '-120px 0px -96px 0px' }
+                            : {
+                                once: true,
+                                margin: '-12% 0px -10% 0px',
+                                amount: 0.35,
+                              }
+                        }
+                        variants={capabilitiesRunwayVariants}
                         className="group relative border-b border-white/[0.07]"
                       >
                         <div className="relative overflow-hidden py-10 sm:py-12 lg:py-14">
