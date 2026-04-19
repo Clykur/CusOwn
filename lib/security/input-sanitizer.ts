@@ -45,32 +45,11 @@ export const cleanString = (input: unknown): string => {
     return trimmed.slice(0, 1000);
   }
 
-  return trimmed.replace(/[^a-zA-Z0-9@._+=\- /]/g, '');
+  return trimmed.replace(/[^a-zA-Z0-9@._+\- /]/g, '');
 };
 
 /* BACKWARD COMPATIBILITY */
-export const sanitizeString = (input: unknown): string => {
-  if (typeof input !== 'string') {
-    return '';
-  }
-
-  let sanitized = input.trim();
-  let previous: string;
-
-  do {
-    previous = sanitized;
-
-    sanitized = sanitized
-      .replace(/[<>]/g, '')
-      .replace(/javascript:/gi, '')
-      .replace(/data:/gi, '')
-      .replace(/vbscript:/gi, '')
-      .replace(/on\w+=/gi, '')
-      .replace(/script/gi, '');
-  } while (sanitized !== previous);
-
-  return sanitized;
-};
+export const sanitizeString = cleanString;
 
 /* =========================
    VALIDATION (STRICT)
@@ -140,6 +119,11 @@ export const sanitizeNumber = (input: unknown): number | null => {
   if (typeof input === 'number') {
     return isNaN(input) || !isFinite(input) ? null : input;
   }
+   const trimmed = input.trim();
+
+if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
+  return null;
+}
   if (typeof input === 'string') {
     const parsed = parseFloat(input);
     return isNaN(parsed) || !isFinite(parsed) ? null : parsed;
@@ -178,7 +162,7 @@ export const sanitizeObject = <T extends Record<string, any>>(
    REQUEST BODY
 ========================= */
 
-export const sanitizeRequestBody = async (request: NextRequest): Promise<any> => {
+export const parseRequestBody = async (request: NextRequest): Promise<any> => {
   try {
     const body = await request.json();
 
