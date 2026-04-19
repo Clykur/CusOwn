@@ -54,10 +54,29 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const validatedPaymentId = getValidString(body.payment_id);
-    const validatedTransactionId = getValidString(body.transaction_id);
-    const validatedSignature = getValidString(body.signature);
+    // -------- STRICT INPUT EXTRACTION (no direct trust) --------
+    const rawPaymentId = body?.payment_id;
+    const rawTransactionId = body?.transaction_id;
+    const rawSignature = body?.signature;
 
+    if (typeof rawPaymentId !== 'string') {
+      return errorResponse('Invalid Payment ID', 400);
+    }
+
+    if (typeof rawTransactionId !== 'string') {
+      return errorResponse('Invalid Transaction ID', 400);
+    }
+
+    // Signature is validated later conditionally
+    if (rawSignature !== undefined && typeof rawSignature !== 'string') {
+      return errorResponse('Invalid Signature', 400);
+    }
+
+    const validatedPaymentId = getValidString(rawPaymentId);
+    const validatedTransactionId = getValidString(rawTransactionId);
+    const validatedSignature = rawSignature ? getValidString(rawSignature) : null;
+
+    // -------- SAFE INPUT VALIDATION (not security decisions) --------
     if (!validatedPaymentId) {
       return errorResponse('Payment ID required', 400);
     }
@@ -66,19 +85,19 @@ export async function POST(request: NextRequest) {
       return errorResponse('Transaction ID required', 400);
     }
 
-    // 1. Fetch payment
+    // 1. Fetch trusted payment
     const payment = await paymentService.getPaymentByPaymentId(validatedPaymentId);
 
     if (!payment) {
       return errorResponse('Payment not found', 404);
     }
 
-    // 2. Bind transaction to payment (anti-replay / mismatch protection)
+    // 2. Anti-replay / mismatch protection (trusted vs user input)
     if (payment.transaction_id && payment.transaction_id !== validatedTransactionId) {
       return errorResponse('Transaction mismatch', 400);
     }
 
-    // 3. Authorization (STRICT + EARLY)
+    // 3. Authorization (ONLY server-controlled data used)
     const { userService } = await import('@/services/user.service');
     const profile = await userService.getUserProfile(user.id);
 
@@ -95,7 +114,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('Unauthorized', 403);
     }
 
-    // Early exit for already completed payments (idempotent, no signature needed)
+    // 4. Idempotency shortcut (safe: server state only)
     if (payment.status === 'completed') {
       return successResponse({
         payment,
@@ -103,13 +122,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Signature validation (required for non-completed payments)
+    // 5. Signature required ONLY for pending verification
     if (!validatedSignature) {
       return errorResponse('Signature required for verification', 400);
     }
 
     const orderId = payment.payment_id || payment.id;
 
+    // 6. Cryptographic verification (actual security boundary)
     const isValid = verifyPaymentSignature({
       orderId,
       paymentId: validatedTransactionId,
@@ -120,12 +140,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid payment signature', 400);
     }
 
-    // 5. Status validation AFTER signature (only initiated allowed here)
+    // 7. State validation AFTER signature
     if (payment.status !== 'initiated') {
       return errorResponse(`Payment must be initiated, found ${payment.status}`, 400);
     }
 
-    // 5. Proceed with verification
+    // 8. Proceed with verification
     const verifiedPayment = await paymentService.verifyUPIPayment(
       payment.id,
       validatedTransactionId,
