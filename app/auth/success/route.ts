@@ -23,30 +23,43 @@ function isAllowedPath(to: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  let to = request.nextUrl.searchParams.get('to')?.trim() ?? '';
+  const rawTo = request.nextUrl.searchParams.get('to') ?? '';
   const baseUrl = `${request.nextUrl.origin}/`;
 
-  // Normalize: use path only (avoids doubled host if to was ever a full URL).
-  if (to.startsWith('http://') || to.startsWith('https://')) {
-    try {
-      to = new URL(to).pathname;
-    } catch {
-      to = '';
-    }
-  }
-  if (!to || !to.startsWith('/') || to.includes('//') || to.startsWith('/auth/')) {
-    return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
-  }
+  let safePath: string | null = null;
 
-  if (!isAllowedPath(to)) {
-    return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
+  if (typeof rawTo === 'string' && rawTo.length <= 200) {
+    let normalized = rawTo.trim();
+
+    // Convert absolute URL → pathname only
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+      try {
+        normalized = new URL(normalized).pathname;
+      } catch {
+        normalized = '';
+      }
+    }
+
+    // Basic structural validation
+    if (
+      normalized &&
+      normalized.startsWith('/') &&
+      !normalized.includes('//') &&
+      !normalized.startsWith('/auth/')
+    ) {
+      // Whitelist validation
+      if (isAllowedPath(normalized)) {
+        safePath = normalized;
+      }
+    }
   }
 
   const user = await getServerUser(request);
-  if (!user) {
+
+  if (!user || !safePath) {
     return NextResponse.redirect(new URL(ROUTES.AUTH_LOGIN(), baseUrl), 303);
   }
 
-  const targetUrl = new URL(to, baseUrl).toString();
+  const targetUrl = new URL(safePath, baseUrl).toString();
   return NextResponse.redirect(targetUrl, 303);
 }

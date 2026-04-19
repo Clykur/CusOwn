@@ -1,25 +1,51 @@
 import { NextRequest } from 'next/server';
+import crypto from 'crypto';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { paymentService } from '@/services/payment.service';
 import { bookingService } from '@/services/booking.service';
 import { enhancedRateLimit } from '@/lib/security/rate-limit-api.security';
+import { getValidString } from '@/lib/security/input-sanitizer';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { ERROR_MESSAGES, BOOKING_STATUS } from '@/config/constants';
+import { env } from '@/config/env';
 
 const verifyRateLimit = enhancedRateLimit({
   maxRequests: 20,
   windowMs: 60000,
-  perIP: true,
   keyPrefix: 'payment_verify',
 });
+
+function verifyPaymentSignature(params: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}): boolean {
+  const secret = env.payment.upiWebhookSecret;
+
+  if (!secret) {
+    throw new Error('UPI webhook secret not configured');
+  }
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${params.orderId}|${params.paymentId}`)
+    .digest('hex');
+
+  const expectedBuffer = Buffer.from(expected, 'hex');
+  const signatureBuffer = Buffer.from(params.signature, 'hex');
+
+  if (expectedBuffer.length !== signatureBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+}
 
 export async function POST(request: NextRequest) {
   try {
     const rateLimitResponse = await verifyRateLimit(request);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
+    if (rateLimitResponse) return rateLimitResponse;
 
     const user = await getServerUser(request);
     if (!user) {
@@ -27,98 +53,149 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { payment_id, transaction_id } = body;
 
-    if (!payment_id || typeof payment_id !== 'string') {
+    // -------- STRICT INPUT EXTRACTION (no direct trust) --------
+    const rawPaymentId = body?.payment_id;
+    const rawTransactionId = body?.transaction_id;
+    const rawSignature = body?.signature;
+
+    if (typeof rawPaymentId !== 'string') {
+      return errorResponse('Invalid Payment ID', 400);
+    }
+
+    if (typeof rawTransactionId !== 'string') {
+      return errorResponse('Invalid Transaction ID', 400);
+    }
+
+    // Signature is validated later conditionally
+    if (rawSignature !== undefined && typeof rawSignature !== 'string') {
+      return errorResponse('Invalid Signature', 400);
+    }
+
+    const validatedPaymentId = getValidString(rawPaymentId);
+    const validatedTransactionId = getValidString(rawTransactionId);
+    const validatedSignature = rawSignature ? getValidString(rawSignature) : null;
+
+    // -------- SAFE INPUT VALIDATION (not security decisions) --------
+    if (!validatedPaymentId) {
       return errorResponse('Payment ID required', 400);
     }
 
-    if (!transaction_id || typeof transaction_id !== 'string') {
+    if (!validatedTransactionId) {
       return errorResponse('Transaction ID required', 400);
     }
 
-    const payment = await paymentService.getPaymentByPaymentId(payment_id);
+    // 1. Fetch trusted payment
+    const payment = await paymentService.getPaymentByPaymentId(validatedPaymentId);
+
     if (!payment) {
       return errorResponse('Payment not found', 404);
     }
 
+    // 2. Anti-replay / mismatch protection (trusted vs user input)
+    if (payment.transaction_id && payment.transaction_id !== validatedTransactionId) {
+      return errorResponse('Transaction mismatch', 400);
+    }
+
+    // 3. Authorization (ONLY server-controlled data used)
     const { userService } = await import('@/services/user.service');
     const profile = await userService.getUserProfile(user.id);
+
     const isAdmin = profile?.user_type === 'admin';
     const isOwner = profile?.user_type === 'owner' || profile?.user_type === 'both';
 
-    if (!isAdmin && !isOwner) {
-      const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
-      if (!booking || booking.customer_user_id !== user.id) {
-        return errorResponse('Unauthorized', 403);
-      }
-    }
-
-    if (payment.status === 'completed') {
-      return successResponse({ payment, message: 'Payment already verified' });
-    }
-
-    if (payment.status !== 'initiated') {
-      return errorResponse(`Payment is in ${payment.status} state`, 400);
-    }
-
-    const verifiedPayment = await paymentService.verifyUPIPayment(
-      payment.id,
-      transaction_id,
-      user.id,
-      isAdmin || isOwner ? 'manual' : 'manual',
-      {}
-    );
-
     const booking = await bookingService.getBookingByUuidWithDetails(payment.booking_id);
+
     if (!booking) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
+    if (!isAdmin && !isOwner && booking.customer_user_id !== user.id) {
+      return errorResponse('Unauthorized', 403);
+    }
+
+    // 4. Idempotency shortcut (safe: server state only)
+    if (payment.status === 'completed') {
+      return successResponse({
+        payment,
+        message: 'Payment already verified',
+      });
+    }
+
+    // 5. Signature required ONLY for pending verification
+    if (!validatedSignature) {
+      return errorResponse('Signature required for verification', 400);
+    }
+
+    const orderId = payment.payment_id || payment.id;
+
+    // 6. Cryptographic verification (actual security boundary)
+    const isValid = verifyPaymentSignature({
+      orderId,
+      paymentId: validatedTransactionId,
+      signature: validatedSignature,
+    });
+
+    if (!isValid) {
+      return errorResponse('Invalid payment signature', 400);
+    }
+
+    // 7. State validation AFTER signature
+    if (payment.status !== 'initiated') {
+      return errorResponse(`Payment must be initiated, found ${payment.status}`, 400);
+    }
+
+    // 8. Proceed with verification
+    const verifiedPayment = await paymentService.verifyUPIPayment(
+      payment.id,
+      validatedTransactionId,
+      user.id,
+      'manual',
+      {}
+    );
+
     if (booking.status === BOOKING_STATUS.PENDING) {
-      try {
-        const supabaseAdmin = requireSupabaseAdmin();
-        const { data: result, error: funcError } = await supabaseAdmin.rpc(
-          'confirm_booking_with_payment',
-          {
-            p_payment_id: payment.id,
-            p_booking_id: booking.id,
-            p_slot_id: booking.slot_id,
-            p_actor_id: user.id,
-          }
-        );
+      const supabaseAdmin = requireSupabaseAdmin();
 
-        if (funcError) {
-          throw new Error(funcError.message);
+      const { data: result, error: funcError } = await supabaseAdmin.rpc(
+        'confirm_booking_with_payment',
+        {
+          p_booking_id: booking.id,
+          p_payment_id: payment.id,
+          p_transaction_id: validatedTransactionId,
         }
+      );
 
-        if (!result || !result.success) {
-          const errorMsg = result?.error || 'Booking confirmation failed';
-          await paymentService.markPaymentFailed(payment.id, errorMsg, user.id);
-          return errorResponse(errorMsg, 409);
-        }
-
-        const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(booking.id);
-        if (bookingWithDetails) {
-          const { emitBookingConfirmed } = await import('@/lib/events/booking-events');
-          const { safeMetrics } = await import('@/lib/monitoring/safe-metrics');
-          await emitBookingConfirmed(bookingWithDetails);
-          safeMetrics.increment('bookings.confirmed');
-        }
-      } catch (confirmError) {
-        await paymentService.markPaymentFailed(payment.id, 'Booking confirmation failed', user.id);
-        throw confirmError;
+      if (funcError) {
+        console.error('[PAYMENT_VERIFY] RPC error:', funcError);
+        await paymentService.markPaymentFailed(payment.id, funcError.message, user.id);
+        return errorResponse(funcError.message, 500);
       }
+
+      if (!result || !result.success) {
+        const errorMsg = result?.error || 'Booking confirmation failed';
+        await paymentService.markPaymentFailed(payment.id, errorMsg, user.id);
+        return errorResponse(errorMsg, 409);
+      }
+
+      const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(booking.id);
+
+      return successResponse({
+        payment: verifiedPayment,
+        booking: bookingWithDetails,
+        message: 'Payment verified and booking confirmed',
+      });
     }
 
     return successResponse({
       payment: verifiedPayment,
-      booking_id: booking.id,
-      message: 'Payment verified and booking confirmed',
+      message: 'Payment verified successfully',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Payment verification failed';
+
     console.error('[PAYMENT_VERIFY] Error:', error);
+
     return errorResponse(message, 500);
   }
 }

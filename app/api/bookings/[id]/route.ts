@@ -44,40 +44,49 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const token = request.nextUrl.searchParams.get('token');
-    if (token) {
+
+    let decodedToken: string | null = null;
+    let tokenValid = false;
+
+    if (token && typeof token === 'string' && token.length <= 500) {
       const rateLimitResponse = await getBookingWithTokenRateLimit(request);
       if (rateLimitResponse) return rateLimitResponse;
-      const decodedToken = (() => {
-        try {
-          return decodeURIComponent(token);
-        } catch {
-          return token;
-        }
-      })();
-      const statusValid = validateResourceToken('booking-status', id, decodedToken);
-      if (!statusValid) {
-        // Parallel: validate both action link types simultaneously
-        const [acceptValid, rejectValid] = await Promise.all([
-          validateOwnerActionLink('accept', id, decodedToken),
-          validateOwnerActionLink('reject', id, decodedToken),
-        ]);
 
-        if (!acceptValid.valid && !rejectValid.valid) {
-          const reason = acceptValid.valid === false ? acceptValid.reason : 'invalid';
-          logAuthDeny({
-            route: ROUTE,
-            reason: 'auth_invalid_token',
-            resource: id,
-            audit_metadata: { link_validation_reason: reason },
-          });
-          return NextResponse.json(
-            {
-              success: false,
-              error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
-              code: SECURE_LINK_RESPONSE_CODE,
-            },
-            { status: 403 }
-          );
+      try {
+        decodedToken = decodeURIComponent(token);
+      } catch {
+        decodedToken = null;
+      }
+
+      if (decodedToken) {
+        const statusValid = validateResourceToken('booking-status', id, decodedToken);
+
+        if (statusValid) {
+          tokenValid = true;
+        } else {
+          const [acceptValid, rejectValid] = await Promise.all([
+            validateOwnerActionLink('accept', id, decodedToken),
+            validateOwnerActionLink('reject', id, decodedToken),
+          ]);
+
+          if (acceptValid.valid || rejectValid.valid) {
+            tokenValid = true;
+          } else {
+            logAuthDeny({
+              route: ROUTE,
+              reason: 'auth_invalid_token',
+              resource: id,
+            });
+
+            return NextResponse.json(
+              {
+                success: false,
+                error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+                code: SECURE_LINK_RESPONSE_CODE,
+              },
+              { status: 403 }
+            );
+          }
         }
       }
     }
@@ -118,7 +127,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         isOwner = userBusinesses.some((b) => b.id === businessId);
       }
       const isAdmin = isAdminProfile(ctx.profile);
-      if (!isCustomer && !isOwner && !isAdmin && !token) {
+      if (!isCustomer && !isOwner && !isAdmin && !tokenValid) {
         logAuthDeny({
           user_id: ctx.user.id,
           route: ROUTE,
@@ -128,7 +137,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         });
         return errorResponse('Access denied', 403);
       }
-    } else if (!token) {
+    } else if (!tokenValid) {
       logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
       return errorResponse('Authentication required', 401);
     }

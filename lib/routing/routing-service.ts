@@ -15,6 +15,31 @@ function sanitizeLogValue(value: unknown): string {
   return str.replace(/[\r\n]+/g, ' ');
 }
 
+/**
+ * Parse and validate OSRM base URL to prevent SSRF via misconfiguration.
+ * Only allows HTTP(S) and local loopback hosts used for local OSRM deployments.
+ */
+function getValidatedOsrmBaseUrl(rawUrl: string): URL {
+  const parsed = new URL(rawUrl);
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('OSRM URL must use http/https');
+  }
+
+  if (parsed.username || parsed.password) {
+    throw new Error('OSRM URL must not contain credentials');
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '::1') {
+    throw new Error('OSRM URL host is not allowed');
+  }
+
+  // Critical: return only origin (removes any injected path/query)
+  return new URL(parsed.origin);
+}
+
 interface RouteQuery {
   startLat: number;
   startLng: number;
@@ -60,7 +85,7 @@ export class RoutingService {
   private isInitialized: boolean = false;
 
   // OSRM configuration and cache
-  private osrmUrl: string | null;
+  private osrmUrl: URL | null;
   private osrmCache: Map<string, { result: RouteResult; timestamp: number }>;
   private osrmCacheTtlMs: number = 60 * 60 * 1000; // 1h
 
@@ -77,7 +102,7 @@ export class RoutingService {
   private constructor() {
     this.cache = new Map();
     this.osrmCache = new Map();
-    this.osrmUrl = env.geo.osrmUrl || null;
+    this.osrmUrl = env.geo.osrmUrl ? getValidatedOsrmBaseUrl(env.geo.osrmUrl) : null;
   }
 
   /**
@@ -333,7 +358,21 @@ export class RoutingService {
     assertValidCoordinates(endLat, endLng);
 
     const profile = mode === 'walking' ? 'foot' : 'car';
-    const url = `${this.osrmUrl}/route/v1/${profile}/${startLng},${startLat};${endLng},${endLat}?overview=false`;
+    const baseUrl = this.osrmUrl!;
+    // Explicit numeric enforcement (helps SSRF analyzers)
+    if (
+      !Number.isFinite(startLat) ||
+      !Number.isFinite(startLng) ||
+      !Number.isFinite(endLat) ||
+      !Number.isFinite(endLng)
+    ) {
+      throw new Error('Invalid coordinates');
+    }
+
+    // Construct URL from trusted base ONLY
+    const url = new URL('/route/v1/', baseUrl);
+    url.pathname += `${profile}/${startLng},${startLat};${endLng},${endLat}`;
+    url.searchParams.set('overview', 'false');
     const cacheKey = `osrm:${profile}:${startLat},${startLng}:${endLat},${endLng}`;
 
     // check osrm cache
@@ -348,7 +387,7 @@ export class RoutingService {
     }
 
     try {
-      const resp = await fetch(url);
+      const resp = await fetch(url.toString());
       if (!resp.ok) {
         throw new Error(`OSRM request failed ${resp.status}`);
       }

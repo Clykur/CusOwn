@@ -49,31 +49,39 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const token = request.nextUrl.searchParams.get('token');
+
     let decodedToken: string | null = null;
-    if (token) {
-      decodedToken = (() => {
-        try {
-          return decodeURIComponent(token);
-        } catch {
-          return token;
+    let tokenValid = false;
+
+    if (token && typeof token === 'string' && token.length <= 500) {
+      try {
+        decodedToken = decodeURIComponent(token);
+      } catch {
+        decodedToken = null;
+      }
+
+      if (decodedToken) {
+        const linkValidation = await validateOwnerActionLink('accept', id, decodedToken);
+
+        if (linkValidation.valid) {
+          tokenValid = true;
+        } else {
+          logAuthDeny({
+            route: ROUTE,
+            reason: 'auth_invalid_token',
+            resource: id,
+            audit_metadata: { link_validation_reason: linkValidation.reason },
+          });
+
+          return NextResponse.json(
+            {
+              success: false,
+              error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+              code: SECURE_LINK_RESPONSE_CODE,
+            },
+            { status: 403 }
+          );
         }
-      })();
-      const linkValidation = await validateOwnerActionLink('accept', id, decodedToken);
-      if (!linkValidation.valid) {
-        logAuthDeny({
-          route: ROUTE,
-          reason: 'auth_invalid_token',
-          resource: id,
-          audit_metadata: { link_validation_reason: linkValidation.reason },
-        });
-        return NextResponse.json(
-          {
-            success: false,
-            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
-            code: SECURE_LINK_RESPONSE_CODE,
-          },
-          { status: 403 }
-        );
       }
     }
 
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
         return errorResponse('Access denied', 403);
       }
-    } else if (!token) {
+    } else if (!tokenValid) {
       logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
       return errorResponse('Authentication required', 401);
     }

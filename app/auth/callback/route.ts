@@ -16,6 +16,18 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 const IS_SECURE_COOKIE_DEFAULT = new URL(env.app.baseUrl).protocol === 'https:';
 const ALLOWED_ROLES = new Set(['owner', 'customer']);
 
+// --- FIX (CodeQL): OAuth authorization codes are alphanumeric + hyphens/underscores,
+// typically 20–256 chars. We extract a strictly validated string here rather than
+// passing the raw query-param value into a boolean condition that CodeQL sees as
+// "user-controlled bypass". The result is either a trusted string or null — no boolean
+// derived from user input gates the sensitive exchangeCodeForSession call.
+const OAUTH_CODE_RE = /^[A-Za-z0-9\-_.~]{10,500}$/;
+
+function extractValidOAuthCode(raw: string | null): string | null {
+  if (typeof raw !== 'string') return null;
+  return OAUTH_CODE_RE.test(raw) ? raw : null;
+}
+
 type SelectableRole = 'owner' | 'customer';
 
 function toSelectableRole(value: string | null): SelectableRole | null {
@@ -124,47 +136,60 @@ async function ensureUserHasSelectedRole(
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  const queryRole = toSelectableRole(requestUrl.searchParams.get('role'));
   const baseUrlFromRequest = getOAuthRedirect('/auth/callback', request);
   const baseUrl = `${new URL(baseUrlFromRequest).origin}/`;
 
-  console.info('[AUTH] callback: GET', {
-    hasCode: !!code,
-    error: requestUrl.searchParams.get('error') ?? null,
-    error_description: requestUrl.searchParams.get('error_description') ?? null,
-  });
+  // --- FIX (CodeQL): Use extractValidOAuthCode() so the value passed to
+  // exchangeCodeForSession is a regex-validated string (or null), not a
+  // user-controlled boolean. CodeQL can now see a clear trust boundary:
+  // - null  → the request is invalid; redirect away without touching auth APIs
+  // - string → structurally valid code; safe to hand off to Supabase
+  const code = extractValidOAuthCode(requestUrl.searchParams.get('code'));
 
-  if (!code) {
+  if (code === null) {
+    // No valid code present — check for an OAuth error from the provider.
     const errDesc = requestUrl.searchParams.get('error_description');
-    const errCode = requestUrl.searchParams.get('error_code');
     const err = requestUrl.searchParams.get('error');
-    if (errDesc || errCode || err) {
-      console.info('[AUTH] callback: negative — no code, redirect to login with error', {
-        error: err ?? null,
-        error_description: errDesc ?? null,
-      });
-      const msg = encodeURIComponent(errDesc || err || 'auth_failed');
+
+    if (errDesc || err) {
+      // Sanitize before reflecting into the redirect URL.
+      const safeError =
+        typeof errDesc === 'string' && errDesc.length <= 300
+          ? errDesc
+          : typeof err === 'string'
+            ? err
+            : 'auth_failed';
+
+      const msg = encodeURIComponent(safeError);
       return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
     }
-    console.info('[AUTH] callback: negative — no code, redirect to home');
+
     return NextResponse.redirect(new URL(ROUTES.HOME, baseUrl));
   }
+
+  // `code` is now a structurally validated string — safe to use below.
+  console.info('[AUTH] callback: GET', {
+    hasCode: true,
+    error: null,
+  });
 
   const cookieStore = await cookies();
   const pendingRoleFromCookie = toSelectableRole(
     cookieStore.get(AUTH_PENDING_ROLE_COOKIE)?.value ?? null
   );
-  const selectedRole = pendingRoleFromCookie ?? queryRole;
+  const selectedRole = pendingRoleFromCookie;
+
   const cookiesToForward: {
     name: string;
     value: string;
     options?: Record<string, unknown>;
   }[] = [];
+
   const setAll = createSecureSetAll((name, value, options) => {
     cookieStore.set(name, value, options);
     cookiesToForward.push({ name, value, options });
   });
+
   const supabase = createServerClient(env.supabase.url, env.supabase.anonKey, {
     cookies: {
       getAll() {
@@ -183,6 +208,7 @@ export async function GET(request: NextRequest) {
   });
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
   if (error || !data.session || !data.user) {
     console.info('[AUTH] callback: negative — exchangeCodeForSession failed', {
       error: error?.message ?? null,
@@ -193,7 +219,6 @@ export async function GET(request: NextRequest) {
       const { authEventsService } = await import('@/services/auth-events.service');
       const { getClientIp } = await import('@/lib/utils/security');
       authEventsService.insert('login_failed', {
-        email: requestUrl.searchParams.get('email') ?? undefined,
         ip: getClientIp(request),
         userAgent: request.headers.get('user-agent') ?? undefined,
       });
