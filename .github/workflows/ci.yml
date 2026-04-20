@@ -1,18 +1,15 @@
-# ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                    ENTERPRISE CI/CD PIPELINE v2.0                            ║
-# ║                                                                              ║
-# ║  Architecture: Layered job graph with proper caching                         ║
-# ║  Security: DevSecOps with SLSA Level 2 attestation                           ║
-# ║                                                                              ║
-# ║  Layer 1: Setup & Change Detection                                           ║
-# ║  Layer 2: Static Analysis (lint, typecheck) - parallel                       ║
-# ║  Layer 3: Security Scans (audit, license, secrets, custom) - parallel        ║
-# ║  Layer 4: Tests (unit, integration, security) - parallel                     ║
-# ║  Layer 5: Build & Artifacts (strict build, SBOM)                             ║
-# ║  Layer 6: Quality Gates (depcheck, ts-prune, lockfile, node version)         ║
-# ║  Layer 7: Pre-deploy Gate (all validations must pass)                        ║
-# ║  Layer 8: Deploy to Production (main branch only)                            ║
-# ╚══════════════════════════════════════════════════════════════════════════════╝
+# Cusown — CI/CD (Next.js / TypeScript / Supabase / npm)
+#
+# DAG overview:
+#   setup → parallel static (lint, typecheck, format) + config-quality + deps/licenses + scans + codeql
+#   static OK → parallel: unit / integration / security / CRUD / build
+#   build   → bundle-size check + optional .next artifact (same job; no cross-job download)
+#   PR:     pr-merge-gate  → required for fast feedback (≈3–5 min when cache warm; excludes CodeQL from gate)
+#   Push:   pre-deploy-gate → production path; includes CodeQL + validated SBOM
+#
+# Branch protection (recommended):
+#   - Pull requests: require "PR merge gate" + "Dependency Review"
+#   - main: require "Pre-deploy gate (production path)" for direct pushes (or rely on merge queue)
 
 name: CI
 
@@ -43,180 +40,167 @@ env:
   HUSKY: 0
 
 jobs:
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 1: SETUP
-  # ═══════════════════════════════════════════════════════════════════════════════
-
   setup:
-    name: Setup
+    name: setup
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
-      - name: Generate cache key
+      - name: Cache key (package-lock.json)
         id: cache-key
         run: |
           LOCK_HASH=$(sha256sum package-lock.json | cut -c1-16)
-          echo "key=deps-${{ runner.os }}-node${{ env.NODE_VERSION }}-${LOCK_HASH}" >> $GITHUB_OUTPUT
+          echo "key=deps-${{ runner.os }}-node${{ env.NODE_VERSION }}-${LOCK_HASH}" >> "$GITHUB_OUTPUT"
 
       - name: Cache node_modules
-        id: cache
+        id: cache-node-modules
         uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ steps.cache-key.outputs.key }}
-          restore-keys: deps-${{ runner.os }}-node${{ env.NODE_VERSION }}-
+          restore-keys: |
+            deps-${{ runner.os }}-node${{ env.NODE_VERSION }}-
 
-      - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
+      - name: npm ci (cache miss only)
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
-  env-validation:
-    name: Env & Config Validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    needs: [setup]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-      - name: Ensure .env.test
-        run: node scripts/infrastructure/ensure-env-test.js
-      - name: Validate env structure (verify-env)
-        run: npx dotenv-cli -e .env.test -- npx ts-node --project scripts/tsconfig.json scripts/verify-env.ts
-      - name: Node version check
-        run: node scripts/infrastructure/check-node-version.js
-
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 2: STATIC ANALYSIS (parallel)
-  # ═══════════════════════════════════════════════════════════════════════════════
-
   lint:
-    name: Lint
+    name: lint
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     needs: [setup]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
+      - name: npm ci (if restore incomplete)
         if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - run: npm run lint:strict
 
   typecheck:
-    name: Typecheck
+    name: typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     needs: [setup]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - run: npm run typecheck
 
   format-check:
-    name: Format Check
+    name: format-check
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     needs: [setup]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - run: npm run format:check
 
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 3: SECURITY SCANS (parallel)
-  # ═══════════════════════════════════════════════════════════════════════════════
-
-  dependency-audit:
-    name: Dependency Audit
+  config-quality:
+    name: config-quality
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     needs: [setup]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
+      - name: Ensure .env.test
+        run: node scripts/infrastructure/ensure-env-test.js
+      - name: verify-env
+        run: npx dotenv-cli -e .env.test -- npx ts-node --project scripts/tsconfig.json scripts/verify-env.ts
+      - name: Node version policy
+        run: node scripts/infrastructure/check-node-version.js
+      - name: Lockfile integrity
+        run: node scripts/infrastructure/check-lockfile.js
+      - name: depcheck
+        run: node scripts/infrastructure/run-quality-gate.js quality:depcheck
+      - name: ts-prune
+        run: node scripts/infrastructure/run-quality-gate.js quality:ts-prune
+
+  dependency-and-licenses:
+    name: dependency-and-licenses
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - run: npm run security:audit
       - run: npm run security:deps
-
-  license-check:
-    name: License Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
       - run: node scripts/infrastructure/run-license-check.js
 
   secret-scan:
-    name: Secret Scan
+    name: secret-scan
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup]
+    timeout-minutes: 8
     permissions:
       contents: read
       security-events: write
@@ -230,43 +214,42 @@ jobs:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   security-custom:
-    name: Security (Custom Rules)
+    name: security-custom
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     needs: [setup]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - run: node scripts/infrastructure/validate-security-and-quality.js
       - run: npm run security-check
 
   codeql:
-    name: CodeQL Analysis
+    name: codeql
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [setup]
     permissions:
       contents: read
       security-events: write
       actions: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
           queries: security-extended
@@ -283,26 +266,23 @@ jobs:
               - '**/*.test.ts'
               - '**/*.spec.ts'
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL Analysis
-        id: codeql
+      - id: codeql
         uses: github/codeql-action/analyze@v3
         with:
           category: /language:javascript-typescript
           upload: true
           output: sarif-results
 
-      - name: Upload SARIF artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codeql-sarif
           path: sarif-results
           retention-days: 30
 
-      - name: Fail on HIGH/CRITICAL findings
+      - name: Fail on CodeQL error/warning findings
         run: |
           SARIF_DIR="sarif-results"
           FAILED=false
@@ -319,64 +299,58 @@ jobs:
                 echo "::warning::CodeQL found ${WARNING_COUNT} high-severity issues"
                 FAILED=true
               fi
-              echo "## CodeQL Security" >> $GITHUB_STEP_SUMMARY
-              echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-              echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-              echo "| Critical | ${ERROR_COUNT:-0} |" >> $GITHUB_STEP_SUMMARY
-              echo "| High | ${WARNING_COUNT:-0} |" >> $GITHUB_STEP_SUMMARY
+              {
+                echo "## CodeQL"
+                echo "| Severity | Count |"
+                echo "|----------|-------|"
+                echo "| Critical | ${ERROR_COUNT:-0} |"
+                echo "| High | ${WARNING_COUNT:-0} |"
+              } >> "$GITHUB_STEP_SUMMARY"
             done
           fi
           if [ "$FAILED" = true ]; then
-            echo "::error::CodeQL found security issues. Fix before merging."
             exit 1
           fi
-          echo "CodeQL analysis passed" >> $GITHUB_STEP_SUMMARY
-
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 4: TESTS (parallel)
-  # ═══════════════════════════════════════════════════════════════════════════════
+          echo "CodeQL passed" >> "$GITHUB_STEP_SUMMARY"
 
   unit-tests:
-    name: Unit Tests
+    name: unit-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     needs: [setup, lint, typecheck, format-check]
     env:
       SALON_TOKEN_SECRET: test-secret # pragma: allowlist secret
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - name: Create .env.test
-        run: | # pragma: allowlist secret
+        run: |
           cat > .env.test << 'EOF'
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
           EOF
-      - name: Unit tests (ts-node)
-        run: npm run test:unit
+      - run: npm run test:unit
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
-      - name: Vitest unit tests (coverage enforced by thresholds)
-        run: npx dotenv-cli -e .env.test -- npx vitest run --config vitest.unit.config.mts --coverage
+      - run: npx dotenv-cli -e .env.test -- npx vitest run --config vitest.unit.config.mts --coverage
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
       - name: Coverage summary
         run: |
-          echo "## Unit test coverage" >> $GITHUB_STEP_SUMMARY
-          echo "Enforced by Vitest thresholds in \`vitest.unit.config.mts\` (statements/branches/functions/lines)." >> $GITHUB_STEP_SUMMARY
-          if [ -d coverage ]; then
-            echo "Coverage artifact uploaded below." >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## Unit coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "Thresholds: \`vitest.unit.config.mts\`." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: success()
         with:
@@ -385,24 +359,26 @@ jobs:
           retention-days: 7
 
   integration-tests:
-    name: Integration Tests
+    name: integration-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     needs: [setup, lint, typecheck, format-check]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - name: Create .env.test
-        run: | # pragma: allowlist secret
+        run: |
           cat > .env.test << 'EOF'
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
@@ -412,52 +388,24 @@ jobs:
       - run: npx dotenv-cli -e .env.test -- npm run test:database-migrations
 
   security-tests:
-    name: Security Tests
+    name: security-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     needs: [setup, lint, typecheck, format-check]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-      - name: Create .env.test
-        run: | # pragma: allowlist secret
-          cat > .env.test << 'EOF'
-          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
-          SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
-          EOF
-      - run: npm run test:phase4 || true
-      - run: npm run test:phase5 || true
-      - run: npm run test:phase6 || true
-        env:
-          NODE_OPTIONS: '--max-old-space-size=2048'
-
-  crud-checks:
-    name: CRUD & Data Layer
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    needs: [setup, lint, typecheck, format-check]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
       - name: Create .env.test
         run: |
           cat > .env.test << 'EOF'
@@ -465,37 +413,78 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
           EOF
-      - name: CRUD (repositories + migrations)
-        run: npm run test:crud
+      # These suites expect a real Supabase project (see scripts/test-utils.ts). CI uses placeholders only.
+      - name: Phase 4–6 (best-effort without live DB)
+        run: |
+          set +e
+          npm run test:phase4
+          a=$?
+          npm run test:phase5
+          b=$?
+          npm run test:phase6
+          c=$?
+          set -e
+          if [ "$a" -ne 0 ] || [ "$b" -ne 0 ] || [ "$c" -ne 0 ]; then
+            echo "::notice::Payment/RBAC/rate-limit integration tests skipped or failed (no live Supabase in CI). Wire repo secrets to enforce them."
+          fi
+          echo "## Security phases 4–6" >> "$GITHUB_STEP_SUMMARY"
+          echo "Best-effort with placeholder .env.test; use real Supabase secrets for hard enforcement." >> "$GITHUB_STEP_SUMMARY"
         env:
           NODE_OPTIONS: '--max-old-space-size=2048'
 
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 5: BUILD & ARTIFACTS
-  # ═══════════════════════════════════════════════════════════════════════════════
-
-  build:
-    name: Build
+  crud-checks:
+    name: crud-checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [setup, lint, typecheck, unit-tests]
+    timeout-minutes: 10
+    needs: [setup, lint, typecheck, format-check]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
       - uses: actions/cache@v4
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-      - name: Cache Next.js build
-        uses: actions/cache@v4
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
+      - name: Create .env.test
+        run: |
+          cat > .env.test << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          EOF
+      - run: npm run test:crud
+        env:
+          NODE_OPTIONS: '--max-old-space-size=2048'
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    needs: [setup, lint, typecheck, format-check]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+      - if: hashFiles('node_modules/.package-lock.json') == ''
+        run: npm ci
+      - uses: actions/cache@v4
         with:
           path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.js', 'tsconfig.json') }}
           restore-keys: nextjs-${{ runner.os }}-
       - name: Production build (strict)
         run: npm run build:strict
@@ -504,103 +493,71 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://example.com' }}
-      - name: Bundle size check
-        run: npm run quality:bundle-size
+      # Same job as build: avoids download-artifact failures (fork PR permissions, re-runs, name mismatch).
+      - name: Bundle size gate
+        run: node scripts/infrastructure/run-bundle-size-check.js
+      - name: Bundle size summary
+        run: echo "## Bundle size" >> "$GITHUB_STEP_SUMMARY" && echo "Checked via \`run-bundle-size-check.js\` (same runner as build)." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
-          name: build-${{ github.sha }}
+          name: next-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: .next
           retention-days: 1
 
   sbom:
-    name: SBOM
+    name: sbom
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     needs: [setup]
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (release branches)
+        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - uses: actions/setup-node@v4
+        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
+
       - uses: actions/cache@v4
+        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
         with:
           path: node_modules
           key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-      - run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+
+      - if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')) && hashFiles('node_modules/.package-lock.json') == '' }}
+        run: npm ci
+
+      - name: Generate CycloneDX SBOM
+        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+        run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+
+      - name: Validate SBOM
+        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
+        run: |
+          test -s sbom.json
+          jq -e '.bomFormat == "CycloneDX"' sbom.json
+
       - uses: actions/upload-artifact@v4
+        if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') }}
         with:
           name: sbom-${{ github.run_id }}
           path: sbom.json
           retention-days: 90
 
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 6: QUALITY GATES
-  # ═══════════════════════════════════════════════════════════════════════════════
-
-  quality-gates:
-    name: Quality Gates
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-      - run: node scripts/infrastructure/run-quality-gate.js quality:depcheck
-      - run: node scripts/infrastructure/run-quality-gate.js quality:ts-prune
-
-  lockfile-check:
-    name: Lockfile Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    needs: [setup]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ needs.setup.outputs.cache-key }}
-      - run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-      - run: node scripts/infrastructure/check-lockfile.js
-
-  node-version-check:
-    name: Node Version Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    needs: [setup]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - run: node scripts/infrastructure/check-node-version.js
-
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # DEPENDENCY REVIEW (PRs only)
-  # ═══════════════════════════════════════════════════════════════════════════════
+      - name: SBOM noop (non-release branches)
+        if: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/heads/release/') }}
+        run: echo "SBOM artifact only on main and release/*; job succeeded."
 
   dependency-review:
-    name: Dependency Review
+    name: dependency-review
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     permissions:
       contents: read
       pull-requests: write
@@ -611,21 +568,54 @@ jobs:
           fail-on-severity: high
           deny-licenses: GPL-3.0, AGPL-3.0
 
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 7: PRE-DEPLOY GATE
-  # ═══════════════════════════════════════════════════════════════════════════════
-
-  pre-deploy-gate:
-    name: Pre-deploy Gate
+  pr-merge-gate:
+    name: PR merge gate
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     needs:
       - lint
       - typecheck
       - format-check
-      - env-validation
-      - dependency-audit
-      - license-check
+      - config-quality
+      - dependency-and-licenses
+      - secret-scan
+      - security-custom
+      - unit-tests
+      - integration-tests
+      - security-tests
+      - crud-checks
+      - build
+      - sbom
+      - dependency-review
+    steps:
+      - name: Summary
+        run: |
+          {
+            echo "## PR merge gate passed"
+            echo "Required checks complete (CodeQL runs in parallel and gates **production** via pre-deploy)."
+            echo ""
+            echo "| Area | Jobs |"
+            echo "|------|------|"
+            echo "| Static | lint, typecheck, format-check |"
+            echo "| Config | config-quality |"
+            echo "| Deps | dependency-and-licenses, dependency-review |"
+            echo "| Security | secret-scan, security-custom |"
+            echo "| Tests | unit, integration, security, crud |"
+            echo "| Ship | build (incl. bundle size), sbom |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  pre-deploy-gate:
+    name: Pre-deploy gate (production path)
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs:
+      - lint
+      - typecheck
+      - format-check
+      - config-quality
+      - dependency-and-licenses
       - secret-scan
       - security-custom
       - codeql
@@ -634,30 +624,19 @@ jobs:
       - security-tests
       - crud-checks
       - build
-      - quality-gates
-      - lockfile-check
-      - node-version-check
+      - sbom
     steps:
-      - name: All checks passed
+      - name: Summary
         run: |
-          echo "## ✅ Pre-deploy Gate Passed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All required checks passed:" >> $GITHUB_STEP_SUMMARY
-          echo "- Lint, Typecheck, Format" >> $GITHUB_STEP_SUMMARY
-          echo "- Env & config validation" >> $GITHUB_STEP_SUMMARY
-          echo "- Security (audit, license, secrets, custom, CodeQL)" >> $GITHUB_STEP_SUMMARY
-          echo "- Tests (unit, integration, security, CRUD)" >> $GITHUB_STEP_SUMMARY
-          echo "- Coverage (Vitest thresholds)" >> $GITHUB_STEP_SUMMARY
-          echo "- Build, Quality gates" >> $GITHUB_STEP_SUMMARY
-
-  # ═══════════════════════════════════════════════════════════════════════════════
-  # LAYER 8: DEPLOYMENT (Production only)
-  # ═══════════════════════════════════════════════════════════════════════════════
+          {
+            echo "## Pre-deploy gate passed"
+            echo "All production blockers green, including **CodeQL**, **validated SBOM** (main/release), and **build + bundle size**."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 18
     needs: [pre-deploy-gate]
     if: |
       github.ref == 'refs/heads/main' &&
@@ -669,6 +648,8 @@ jobs:
     permissions:
       contents: read
       deployments: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -678,10 +659,10 @@ jobs:
         id: vercel-check
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "::warning::Vercel secrets not configured"
           else
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -690,24 +671,24 @@ jobs:
 
       - name: Deploy to Vercel
         if: steps.vercel-check.outputs.skip != 'true'
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@v42.2.0
         with:
-          # Vercel API requires CLI ≥47.2.2; amondnet/vercel-action defaults to an old CLI otherwise.
-          vercel-version: '51.2.1'
+          vercel-version: 51.8.0
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod --force'
-          scope: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-args: '--prod'
           github-comment: true
 
       - name: Deployment audit
         run: |
-          echo "## 🚀 Production Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Actor | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Timestamp | $(date -u +"%Y-%m-%d %H:%M:%S UTC") |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Production deployment"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Actor | ${{ github.actor }} |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Branch | ${{ github.ref_name }} |"
+            echo "| Time (UTC) | $(date -u +"%Y-%m-%d %H:%M:%S") |"
+          } >> "$GITHUB_STEP_SUMMARY"
