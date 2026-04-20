@@ -97,7 +97,6 @@ async function main() {
   let failed = 0;
   for (const { name, body, expectStatus = 400 } of cases) {
     const { status, ok } = await fuzzPostBookings(body, expectStatus);
-    const expectOk = status >= 200 && status < 300;
     if (!ok && status === expectStatus) {
       console.log(`  ✅ ${name}: ${status} (rejected as expected)`);
       passed++;

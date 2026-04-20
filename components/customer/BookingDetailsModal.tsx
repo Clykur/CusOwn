@@ -1,16 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useOptimisticMutation } from '@/lib/hooks/use-optimistic-action';
+import { useEffect, useMemo, useState } from 'react';
 import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@/config/constants';
 import { formatDate, formatTime } from '@/lib/utils/string';
 import { BookingWithDetails, Slot } from '@/types';
-import dynamic from 'next/dynamic';
 import { BookingActions } from '@/components/booking/booking-status/booking-actions';
-
-const RescheduleButton = dynamic(() => import('@/components/booking/reschedule-button'), {
-  ssr: false,
-});
 
 const ALLOWED_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled'] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -62,91 +56,6 @@ export default function BookingDetailsModal({
 
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [whatsappLoading, setWhatsappLoading] = useState(false);
-  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
-
-  const showCancelled = optimisticStatus === 'cancelled';
-
-  const canCancelByStatus = booking.status === 'confirmed' || booking.status === 'pending';
-
-  const appointmentDateTime = (() => {
-    if (!booking?.slot?.date || !booking?.slot?.start_time) return null;
-
-    const startTimeRaw = String(booking.slot.start_time);
-
-    const startTime = startTimeRaw.includes('T')
-      ? new Date(startTimeRaw)
-      : new Date(`${booking.slot.date}T${startTimeRaw}`);
-
-    const timeMs = startTime.getTime();
-
-    if (!Number.isFinite(timeMs)) return null;
-
-    return startTime;
-  })();
-
-  const msUntilAppointment = appointmentDateTime
-    ? appointmentDateTime.getTime() - Date.now()
-    : Number.POSITIVE_INFINITY;
-
-  const isCancellationTooLate =
-    canCancelByStatus &&
-    Number.isFinite(msUntilAppointment) &&
-    msUntilAppointment < cancellationMinHoursMs;
-
-  const cancelMutation = useOptimisticMutation({
-    mutationFn: async () => {
-      const { getCSRFToken } = await import('@/lib/utils/csrf-client');
-
-      const csrfToken = await getCSRFToken();
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
-      }
-
-      const response = await fetch(`/api/bookings/${booking.id}/cancel`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ cancelled_by: 'customer' }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to cancel booking');
-      }
-
-      return result;
-    },
-
-    onMutate: () => {
-      setOptimisticStatus('cancelled');
-    },
-
-    onSuccess: () => {
-      onCancelled();
-    },
-
-    onError: () => {
-      setOptimisticStatus(null);
-    },
-  });
-
-  const handleCancel = useCallback(async () => {
-    if (cancelMutation.isPending) return;
-
-    if (isCancellationTooLate) return;
-
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-
-    try {
-      await cancelMutation.mutate(undefined);
-    } catch {}
-  }, [cancelMutation, isCancellationTooLate]);
 
   /* ---------------- SLOT FETCHING ---------------- */
 

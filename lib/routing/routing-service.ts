@@ -328,7 +328,6 @@ export class RoutingService {
     mode: 'walking' | 'driving'
   ): RouteResult {
     const distance = haversineDistance(startLat, startLng, endLat, endLng);
-    const speed = mode === 'walking' ? 4.5 : 50; // km/h
     const timeMinutes = computeTravelTime(distance, mode);
 
     return {

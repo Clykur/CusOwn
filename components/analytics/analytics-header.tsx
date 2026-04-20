@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import DateFilter from '@/components/owner/date-filter';
 
 export default function AnalyticsHeader({

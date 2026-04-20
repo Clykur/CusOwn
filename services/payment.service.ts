@@ -65,8 +65,7 @@ export class PaymentService {
     bookingId: string,
     provider: PaymentProvider,
     amountCents: number,
-    idempotencyKey: string,
-    paymentType: 'full' | 'deposit' | 'cash' = 'full'
+    idempotencyKey: string
   ): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 

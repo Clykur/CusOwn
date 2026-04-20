@@ -14,13 +14,9 @@ import {
 
 export interface ProfilePageContentProps {
   embedded?: boolean;
-  fromOwner?: boolean;
 }
 
-export function ProfilePageContent({
-  embedded = false,
-  fromOwner = false,
-}: ProfilePageContentProps) {
+export function ProfilePageContent({ embedded = false }: ProfilePageContentProps) {
   const mounted = useMounted();
   const {
     loading,

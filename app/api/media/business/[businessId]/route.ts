@@ -20,7 +20,6 @@ import {
   IDEMPOTENCY_KEY_HEADER,
 } from '@/config/constants';
 
-const ROUTE_GET = 'GET /api/media/business/[businessId]';
 const ROUTE_POST = 'POST /api/media/business/[businessId]';
 
 const uploadRateLimit = enhancedRateLimit({

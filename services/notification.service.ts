@@ -1,5 +1,4 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { whatsappService } from './whatsapp.service';
 import { ERROR_MESSAGES } from '@/config/constants';
 
 export interface NotificationPreferences {
@@ -119,7 +118,6 @@ export class NotificationService {
 
     try {
       if (input.notificationType === 'whatsapp') {
-        const url = whatsappService.getWhatsAppUrl(input.recipient, input.message);
         status = 'sent';
         sentAt = new Date().toISOString();
       } else {

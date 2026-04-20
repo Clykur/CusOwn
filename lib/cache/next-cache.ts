@@ -1,10 +1,12 @@
 import { cache } from 'react';
 
-export const getCachedBusiness = cache(async (businessId: string) => {
+export const getCachedBusiness = cache(async () => {
+  // businessId unused placeholder
   return null;
 });
 
-export const getCachedBusinessByLink = cache(async (bookingLink: string) => {
+export const getCachedBusinessByLink = cache(async () => {
+  // bookingLink unused placeholder
   return null;
 });
 

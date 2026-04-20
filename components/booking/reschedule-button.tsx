@@ -3,7 +3,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Slot } from '@/types';
 import { formatDate, formatTime } from '@/lib/utils/string';
-import { Toast } from '@/components/ui/toast';
 import { useOptimisticMutation } from '@/lib/hooks/use-optimistic-action';
 import BookingsIcon from '@/src/icons/bookings.svg';
 
@@ -21,7 +20,6 @@ interface RescheduleButtonProps {
 export default function RescheduleButton({
   bookingId,
   currentSlot,
-  businessId,
   availableSlots,
   onRescheduled,
   rescheduledBy,
@@ -30,7 +28,7 @@ export default function RescheduleButton({
   const [showModal, setShowModal] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState('');
   const [reason, setReason] = useState('');
-  const [validatingSlot, setValidatingSlot] = useState(false);
+  const [validatingSlot] = useState(false);
   const [, setToastMessage] = useState<string | null>(null);
   const [optimisticSlot, setOptimisticSlot] = useState<Slot | null>(null);
 

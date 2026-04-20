@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { formatDate } from '@/lib/utils/string';
 
 function SmallSparkline({ values }: { values: number[] }) {
   const w = 120;

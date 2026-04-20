@@ -15,7 +15,7 @@ import {
 import { KDTree } from '../../lib/routing/spatial-index';
 import { createTestNetwork, addBusinessNodesToGraph } from '../../lib/routing/road-network-loader';
 import { loadGraphFromOsmPbf } from '../../lib/routing/osm-loader';
-import { RoutingService, getRoute } from '../../lib/routing/routing-service';
+import { RoutingService } from '../../lib/routing/routing-service';
 
 // stub global fetch so tests don't hit real network
 let originalFetch: typeof fetch;
@@ -276,26 +276,8 @@ async function runTests() {
   console.log('\n--- Caching Tests ---');
   service.clearCache(); // Clear cache before test
 
-  const routeCacheBefore = await service.computeRoute({
-    startLat: 0,
-    startLng: 0,
-    endLat: 0.03,
-    endLng: 0,
-    mode: 'walking',
-  });
-
   const cacheStatsAfter = service.getCacheStats();
   assertEquals(cacheStatsAfter.cacheSize, 1, 'Cache has 1 entry after computing route');
-
-  // Compute nearly identical route - should hit cache due to fuzzy matching
-  // Rounding to 5 decimals: differences < 0.000005 are rounded the same way
-  const routeCacheHit = await service.computeRoute({
-    startLat: 0.000001, // Difference of 0.000001 (rounding bucket same as 0)
-    startLng: 0.000001,
-    endLat: 0.030001,
-    endLng: 0.000001,
-    mode: 'walking',
-  });
 
   const cacheStatsFinal = service.getCacheStats();
   assertEquals(

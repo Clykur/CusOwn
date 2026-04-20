@@ -14,8 +14,7 @@
 import 'ts-node/register';
 import 'tsconfig-paths/register';
 import fetch from 'node-fetch';
-import { createClient } from '@supabase/supabase-js';
-import { bookingRetry } from '@/lib/booking-retry';
+import { withBookingRetry } from '@/lib/booking-retry';
 import {
   METRICS_BOOKING_DEADLOCK_RETRY_TOTAL,
   METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL,
@@ -29,7 +28,7 @@ async function simulateDatabaseDeadlock(runner: TestRunner) {
     const slot = await getRandomAvailableSlot(business.id);
 
     let attempts = 0;
-    await bookingRetry(async () => {
+    await withBookingRetry(async () => {
       attempts += 1;
       if (attempts === 1) {
         const err: any = new Error('deadlock detected');

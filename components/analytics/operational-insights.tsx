@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 function StatusDot({ status }: { status: 'healthy' | 'warning' | 'critical' }) {
   const cls =
     status === 'healthy' ? 'bg-green-500' : status === 'warning' ? 'bg-amber-400' : 'bg-rose-500';

@@ -31,7 +31,7 @@ export default function OwnerSetupPage() {
       />
       <CreateBusinessForm
         redirectAfterSuccess={ROUTES.OWNER_DASHBOARD_BASE}
-        showOnboardingProgress={false}
+        // showOnboardingProgress removed from props
         embedded
       />
     </div>

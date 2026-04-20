@@ -17,7 +17,7 @@ import {
 import { CreateSalonInput } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
-import { ROUTES, getOwnerDashboardUrl } from '@/lib/utils/navigation';
+import { ROUTES } from '@/lib/utils/navigation';
 
 type ServiceDraftRow = { name: string; duration_minutes: number; price_inr: number };
 import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
@@ -25,7 +25,6 @@ import { formatPhoneNumber } from '@/lib/utils/string';
 
 export type CreateBusinessFormProps = {
   redirectAfterSuccess?: string;
-  showOnboardingProgress?: boolean;
   /** When true, render without full-page wrapper (for owner layout). */
   embedded?: boolean;
   /** Called on successful business creation instead of navigating. When provided, the component will NOT auto-redirect. */
@@ -33,8 +32,7 @@ export type CreateBusinessFormProps = {
 };
 
 export default function CreateBusinessForm({
-  redirectAfterSuccess = ROUTES.OWNER_DASHBOARD_BASE,
-  embedded = false,
+  redirectAfterSuccess,
   onSuccess,
 }: CreateBusinessFormProps) {
   const router = useRouter();
@@ -217,7 +215,18 @@ export default function CreateBusinessForm({
       }
       const result = await response.json();
       if (result.success && result.data) {
-        router.push(ROUTES.OWNER_BUSINESS_SETUP(result.data.id));
+        if (onSuccess) {
+          const qrCode = result.qr_code || undefined;
+          onSuccess({
+            bookingLink: result.data.booking_link,
+            bookingUrl: `${window.location.origin}/b/${result.data.booking_link}`,
+            qrCode,
+          });
+        } else if (redirectAfterSuccess) {
+          router.push(redirectAfterSuccess);
+        } else {
+          router.push(ROUTES.OWNER_BUSINESS_SETUP(result.data.id));
+        }
         return;
       } else {
         throw new Error(result.error || 'Failed to create business. Please try again.');

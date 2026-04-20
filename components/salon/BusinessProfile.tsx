@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import Image from 'next/image';
-import { UI_CUSTOMER } from '@/config/constants';
 import {
   getCachedBusinessProfile,
   setCachedBusinessProfile,
@@ -13,43 +11,6 @@ import StarRating from '../booking/star-rating';
 import SalonDetailsHeader from '@/components/customer/SalonDetailsHeader';
 import SalonShopPhotos from '@/components/customer/SalonShopPhotos';
 import Breadcrumb from '@/components/ui/breadcrumb';
-
-const IMAGE_QUALITY_PREMIUM = 95;
-const GALLERY_IMAGE_WIDTH = 1200;
-const GALLERY_IMAGE_HEIGHT = 800;
-
-function PremiumGalleryImage({
-  src,
-  alt,
-  className,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-}) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <div className="relative aspect-[3/2] w-full overflow-hidden rounded-xl bg-slate-100">
-      <div
-        className={`absolute inset-0 image-skeleton-shine transition-opacity duration-300 ${
-          loaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        }`}
-        aria-hidden
-      />
-      <Image
-        src={src}
-        alt={alt}
-        width={GALLERY_IMAGE_WIDTH}
-        height={GALLERY_IMAGE_HEIGHT}
-        quality={IMAGE_QUALITY_PREMIUM}
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        loading="lazy"
-        className={`${className ?? ''} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-        onLoad={() => setLoaded(true)}
-      />
-    </div>
-  );
-}
 
 const getTimeParts = (time: string) => {
   const [h, m] = time.split(':').map(Number);
@@ -100,9 +61,9 @@ export const BusinessProfile = () => {
   const [salon, setSalon] = useState<Salon | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [statusText, setStatusText] = useState('');
-  const [subText, setSubText] = useState('');
+  const [, setIsOpen] = useState(false);
+  const [, setStatusText] = useState('');
+  const [, setSubText] = useState('');
   const [loading, setLoading] = useState(true);
   const [reviewData, setReviewData] = useState<ReviewData | null>(null);
 
@@ -145,7 +106,6 @@ export const BusinessProfile = () => {
         const salonData = result.data;
         setSalon(salonData);
 
-        const userId = (salonData as Salon & { owner_id?: string }).owner_id;
         const [servicesRes, mediaRes] = await Promise.all([
           fetch(`/api/owner/services?bookingLink=${slug}`, {
             cache: FETCH_CACHE,

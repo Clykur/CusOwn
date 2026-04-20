@@ -6,7 +6,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { serviceService, type Service } from '@/services/service.service';
 
-const mockFrom = vi.fn();
 const mockRequireSupabaseAdmin = vi.fn();
 
 vi.mock('@/lib/supabase/server', () => ({

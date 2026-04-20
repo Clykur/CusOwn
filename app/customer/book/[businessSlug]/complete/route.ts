@@ -116,17 +116,13 @@ export async function GET(request: NextRequest) {
 
     const salon = await salonService.getSalonById(payload.salon_id);
     const slot = await slotService.getSlotById(payload.slot_id);
-    let whatsappResult: { message?: string; whatsappUrl?: string } | undefined = undefined;
+    // whatsappResult unused
     if (salon && slot) {
       const bookingWithDetails = { ...booking, salon, slot };
       await emitBookingCreated(bookingWithDetails);
       await reminderService.scheduleBookingReminders(booking.id);
       try {
-        whatsappResult = whatsappService.generateBookingRequestMessage(
-          bookingWithDetails,
-          salon,
-          request
-        );
+        whatsappService.generateBookingRequestMessage(bookingWithDetails, salon, request);
       } catch {
         // non-fatal
       }

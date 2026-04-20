@@ -3,13 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_ROUTES, ERROR_MESSAGES, BUSINESS_CATEGORIES_FALLBACK } from '@/config/constants';
-import { CreateSalonInput } from '@/types';
-import { logError } from '@/lib/utils/error-handler';
+import { API_ROUTES, BUSINESS_CATEGORIES_FALLBACK } from '@/config/constants';
 import { getServerSessionClient } from '@/lib/auth/server-session-client';
 import { ROUTES } from '@/lib/utils/navigation';
 import { SetupSkeleton } from '@/components/ui/skeleton';
-import { getCSRFToken, clearCSRFToken } from '@/lib/utils/csrf-client';
+import { getCSRFToken } from '@/lib/utils/csrf-client';
 import CheckIcon from '@/src/icons/check.svg';
 import BusinessesIcon from '@/src/icons/businesses.svg';
 import InfoIcon from '@/src/icons/info.svg';
@@ -19,25 +17,9 @@ import { fetchUserState } from '@/lib/utils/user-state.client';
 
 export default function SetupPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [formData, setFormData] = useState<CreateSalonInput>({
-    salon_name: '',
-    owner_name: '',
-    whatsapp_number: '',
-    opening_time: '10:00:00',
-    closing_time: '21:00:00',
-    slot_duration: '30',
-    address: '',
-    location: '',
-    category: 'salon',
-    city: '',
-    area: '',
-    pincode: '',
-  });
-  const [businessCategories, setBusinessCategories] = useState<{ value: string; label: string }[]>(
+  const [, setBusinessCategories] = useState<{ value: string; label: string }[]>(
     BUSINESS_CATEGORIES_FALLBACK
   );
 

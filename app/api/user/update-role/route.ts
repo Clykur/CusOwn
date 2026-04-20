@@ -3,7 +3,6 @@ import { getClientIp } from '@/lib/utils/security';
 import { getServerUser } from '@/lib/supabase/server-auth';
 import { userService } from '@/services/user.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getRoles } from '@/services/access.service';
 import { auditService } from '@/services/audit.service';
 
 /**
@@ -47,16 +46,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('Cannot set role to admin', 403);
     }
 
-    const previousRoles = await getRoles(user.id);
-
     let newType: 'owner' | 'customer' | 'both' = role;
     if (currentType === 'owner' && role === 'customer') newType = 'both';
     else if (currentType === 'customer' && role === 'owner') newType = 'both';
     else if (currentType === 'both') newType = 'both';
 
     await userService.updateUserType(user.id, newType);
-
-    const newRoles = await getRoles(user.id);
 
     const { invalidateProfileCache } = await import('@/lib/cache/auth-cache');
     invalidateProfileCache(user.id);
@@ -72,10 +67,6 @@ export async function POST(request: NextRequest) {
     } catch (auditErr) {
       console.error('[SECURITY] Failed to create audit log for role change:', auditErr);
     }
-
-    console.log(
-      `[SECURITY] User role updated: IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., From: ${currentType}, To: ${newType}`
-    );
 
     return successResponse({
       user_type: newType,

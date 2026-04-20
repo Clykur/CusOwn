@@ -378,7 +378,7 @@ function SelectRoleContent() {
               <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
                 <CreateBusinessForm
                   embedded
-                  showOnboardingProgress={false}
+                  // showOnboardingProgress removed from props
                   onSuccess={handleBusinessCreated}
                 />
               </div>

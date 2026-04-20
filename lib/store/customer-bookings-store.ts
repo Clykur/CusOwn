@@ -66,7 +66,7 @@ const initialState = {
 
 export const useCustomerBookingsStore = create<CustomerBookingsState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       ...initialState,
 
       setBookings: (bookings) => set({ bookings, shouldRefetch: false }),

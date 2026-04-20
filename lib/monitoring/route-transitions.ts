@@ -20,7 +20,6 @@ const MAX_TRANSITION_HISTORY = 50;
 let currentTransition: RouteTransition | null = null;
 const transitionHistory: RouteTransition[] = [];
 let lastPathname: string | null = null;
-let transitionStartTime: number | null = null;
 
 type TransitionListener = (transition: RouteTransition) => void;
 const listeners: TransitionListener[] = [];
@@ -47,8 +46,6 @@ export function startRouteTransition(pathname: string): void {
     startTime: now,
     type: 'soft',
   };
-
-  transitionStartTime = now;
 }
 
 export function endRouteTransition(pathname: string): void {
@@ -95,7 +92,6 @@ export function endRouteTransition(pathname: string): void {
 
     lastPathname = pathname;
     currentTransition = null;
-    transitionStartTime = null;
   } else {
     lastPathname = pathname;
   }

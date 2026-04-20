@@ -91,7 +91,6 @@ export const getSecureSalonUrlClient = async (
           const secureUrl = data.data.url;
           // Cache the URL with timestamp
           salonUrlCache.set(salonId, { url: secureUrl, timestamp: Date.now() });
-          const duration = Date.now() - startTime;
           return secureUrl;
         } else {
           console.error('[CLIENT_URL_GEN] Invalid response structure:', {

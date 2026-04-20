@@ -18,7 +18,7 @@
  */
 
 import fs from 'fs';
-import { WeightedGraph, GraphNode, GraphEdge } from './graph-data-structures';
+import { WeightedGraph, GraphEdge } from './graph-data-structures';
 import { haversineDistance } from '../utils/geo';
 
 // optional dependency; add to package.json if you plan on using it
@@ -28,12 +28,6 @@ interface OsmNode {
   id: number;
   lat: number;
   lon: number;
-}
-
-interface OsmWay {
-  id: number;
-  nodes: number[];
-  tags: Record<string, string>;
 }
 
 /**

@@ -18,7 +18,6 @@ import { cache } from 'react';
 import {
   buildQueryCacheKey,
   withQueryCache,
-  invalidateBusinessProfileCache,
   QUERY_CACHE_TTL,
   QUERY_CACHE_PREFIX,
 } from '@/lib/cache/query-cache';

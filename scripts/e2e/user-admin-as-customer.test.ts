@@ -8,7 +8,6 @@
 import {
   supabase,
   TestRunner,
-  getRandomBusiness,
   getRandomAvailableSlot,
   getOrCreateTestUser,
   cleanupTestData,

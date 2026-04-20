@@ -10,32 +10,32 @@ import { reminderService } from '@/services/reminder.service';
 import { safeMetrics } from '@/lib/monitoring/safe-metrics';
 
 export const setupEventHandlers = (): void => {
-  eventBus.on<BookingCreatedEvent>('booking:created', async ({ booking }) => {
+  eventBus.on<BookingCreatedEvent>('booking:created', async () => {
     safeMetrics.increment('events.booking.created');
   });
 
-  eventBus.on<BookingConfirmedEvent>('booking:confirmed', async ({ booking }) => {
-    await reminderService.scheduleBookingReminders(booking.id);
+  eventBus.on<BookingConfirmedEvent>('booking:confirmed', async (event) => {
+    await reminderService.scheduleBookingReminders(event.booking.id);
     safeMetrics.increment('events.booking.confirmed');
   });
 
-  eventBus.on<BookingRejectedEvent>('booking:rejected', async ({ booking }) => {
+  eventBus.on<BookingRejectedEvent>('booking:rejected', async () => {
     safeMetrics.increment('events.booking.rejected');
   });
 
-  eventBus.on<BookingCancelledEvent>('booking:cancelled', async ({ booking }) => {
+  eventBus.on<BookingCancelledEvent>('booking:cancelled', async () => {
     safeMetrics.increment('events.booking.cancelled');
   });
 
-  eventBus.on<SlotReservedEvent>('slot:reserved', async ({ slot }) => {
+  eventBus.on<SlotReservedEvent>('slot:reserved', async () => {
     safeMetrics.increment('events.slot.reserved');
   });
 
-  eventBus.on<SlotBookedEvent>('slot:booked', async ({ slot }) => {
+  eventBus.on<SlotBookedEvent>('slot:booked', async () => {
     safeMetrics.increment('events.slot.booked');
   });
 
-  eventBus.on<SlotReleasedEvent>('slot:released', async ({ slot }) => {
+  eventBus.on<SlotReleasedEvent>('slot:released', async () => {
     safeMetrics.increment('events.slot.released');
   });
 };

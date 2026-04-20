@@ -3,15 +3,14 @@
  * buildAuditDescription is pure; no mocks. createAuditLog tested with mocked supabase.
  */
 
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import {
   auditService,
   buildAuditDescription,
   type AuditActionType,
-  type AuditEntityType,
 } from '@/services/audit.service';
 
-const { mockFrom, chain, auditLogRow } = vi.hoisted(() => {
+const { mockFrom } = vi.hoisted(() => {
   const auditLogRow = {
     id: 'audit-1',
     action_type: 'booking_confirmed',

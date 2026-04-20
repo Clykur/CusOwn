@@ -295,11 +295,6 @@ async function testE2EFlows() {
         cleanup.bookings.push(successResult.data.booking_id);
       }
 
-      // Collect all booking IDs that were actually created (successful ones)
-      const successfulBookingIds = results
-        .filter((r) => r.data?.success && r.data.booking_id)
-        .map((r) => r.data.booking_id);
-
       // Check bookings using the booking IDs we generated for this test
       // This ensures we only count bookings from this specific test run
       const { data: bookings } = await supabase

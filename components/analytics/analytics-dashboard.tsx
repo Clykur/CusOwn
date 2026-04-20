@@ -282,13 +282,6 @@ export default function AnalyticsDashboard({
     }
   }, [endDate, selectedBusinessId, startDate]);
 
-  const daysSelected = useMemo(() => {
-    const from = new Date(startDate);
-    const to = new Date(endDate);
-    const diff = Math.max(1, Math.floor((to.getTime() - from.getTime()) / 86400000) + 1);
-    return diff;
-  }, [endDate, startDate]);
-
   const hasNoActivity = useMemo(() => {
     return !loading && dailyData.length > 0 && dailyData.every((d) => d.totalBookings === 0);
   }, [dailyData, loading]);

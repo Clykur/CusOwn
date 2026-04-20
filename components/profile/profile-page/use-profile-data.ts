@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PHONE_DIGITS } from '@/config/constants';
-import {
-  ROUTES,
-  getOwnerDashboardUrl,
-  getSecureOwnerDashboardUrlClient,
-} from '@/lib/utils/navigation';
+import { ROUTES } from '@/lib/utils/navigation';
 import { batchFetchSecureBusinessUrls } from '@/lib/utils/batch-requests';
 import type { ProfileData, ProfileFormData } from './types';
 

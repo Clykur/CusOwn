@@ -1,11 +1,5 @@
 #!/usr/bin/env ts-node
-import {
-  supabase,
-  TestRunner,
-  getOrCreateTestUser,
-  getRandomBusiness,
-  simulateUserAction,
-} from '../test-utils';
+import { supabase, TestRunner, getOrCreateTestUser, simulateUserAction } from '../test-utils';
 async function testAdminJourney() {
   const runner = new TestRunner();
   let admin: any = null;

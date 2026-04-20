@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { salonService } from '@/services/salon.service';
@@ -15,9 +15,7 @@ import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
   METRICS_BOOKING_CREATED,
-  METRICS_BOOKING_CONFLICT_TOTAL,
   METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL,
-  METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL,
 } from '@/config/constants';
 import { BookingWithDetails } from '@/types';
 import { emitBookingCreated } from '@/lib/events/booking-events';
@@ -26,7 +24,6 @@ import { checkNonce, storeNonce } from '@/lib/security/nonce-store';
 import { abuseDetectionService } from '@/lib/security/abuse-detection';
 import { recordIpUserSighting, computeAndStoreRisk } from '@/services/fraud.service';
 import { hashIp } from '@/lib/fraud/ip-hash';
-import { logStructured } from '@/lib/observability/structured-log';
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 
 const IDEMPOTENCY_TTL_HOURS = 24;

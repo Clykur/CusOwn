@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 import { checkMediaHealth } from '@/lib/monitoring/health';
 import { successResponse, errorResponse } from '@/lib/utils/response';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const health = await checkMediaHealth();
     if (health.status === 'unhealthy') {

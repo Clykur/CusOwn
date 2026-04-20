@@ -1,6 +1,5 @@
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { ERROR_MESSAGES } from '@/config/constants';
-import type { ApiResponse } from '@/types';
 
 export type CreateReviewInput = {
   booking_id: string;

@@ -44,7 +44,7 @@ async function testBusinessSuspension() {
     await runner.runTest('Verify suspended business excluded from search', async () => {
       if (!testBusinessId) throw new Error('No business ID');
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('businesses')
         .select('id')
         .eq('suspended', false)
@@ -103,7 +103,7 @@ async function testBusinessSuspension() {
         throw new Error('Business booking link not found');
       }
 
-      const { data: found, error } = await supabase
+      const { error } = await supabase
         .from('businesses')
         .select('*')
         .eq('booking_link', business.booking_link)

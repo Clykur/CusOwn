@@ -84,13 +84,6 @@ class SlotTemplateCache {
  */
 class SlotPoolManager {
   private pendingGenerations: Map<string, Promise<void>> = new Map();
-  private generationQueue: Array<{
-    businessId: string;
-    date: string;
-    config: SalonTimeConfig;
-    resolve: () => void;
-    reject: (error: Error) => void;
-  }> = [];
 
   /**
    * Batch generate slots for multiple businesses with same config
@@ -251,7 +244,7 @@ export async function batchGenerateSlotsOptimized(
   }
 
   // Process each config group
-  for (const [configKey, group] of configGroups) {
+  for (const group of configGroups.values()) {
     // Get template once for entire group (cache hit)
     const firstConfig = group[0].config;
     const timeSlots = slotTemplateCache.getTemplate(firstConfig);

@@ -117,8 +117,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (bookingWithDetails?.salon?.address?.trim()) {
         const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
           bookingWithDetails,
-          bookingWithDetails.salon,
-          request
+          bookingWithDetails.salon
         );
         const response = successResponse(
           { ...booking, whatsapp_url: whatsappUrl },
@@ -151,11 +150,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const hasSalonAddress =
       !!bookingWithDetails.salon.address && bookingWithDetails.salon.address.trim() !== '';
     const whatsappUrl = hasSalonAddress
-      ? whatsappService.getConfirmationWhatsAppUrl(
-          bookingWithDetails,
-          bookingWithDetails.salon,
-          request
-        )
+      ? whatsappService.getConfirmationWhatsAppUrl(bookingWithDetails, bookingWithDetails.salon)
       : undefined;
 
     // Schedule reminders via queue (background) or directly
@@ -175,7 +170,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           entityId: id,
           newData: { status: 'confirmed', business_id: booking.business_id },
           actorRole: ctx?.profile?.user_type ?? undefined,
-          request,
         });
       } catch (auditError) {
         console.error('[SECURITY] Failed to create audit log:', auditError);
@@ -205,7 +199,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         entityId: bookingId,
         status: 'failed',
         metadata: { error_message: message },
-        request,
       });
     } catch (auditErr) {
       console.error('[SECURITY] Failed to create audit log for accept failure:', auditErr);
