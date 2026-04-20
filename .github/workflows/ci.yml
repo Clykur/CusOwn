@@ -3,7 +3,7 @@
 # DAG overview:
 #   setup → parallel static (lint, typecheck, format) + config-quality + deps/licenses + scans + codeql
 #   static OK → parallel: unit / integration / security / CRUD / build
-#   build   → bundle-size (uses .next artifact)
+#   build   → bundle-size check + optional .next artifact (same job; no cross-job download)
 #   PR:     pr-merge-gate  → required for fast feedback (≈3–5 min when cache warm; excludes CodeQL from gate)
 #   Push:   pre-deploy-gate → production path; includes CodeQL + validated SBOM
 #
@@ -493,29 +493,17 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://example.com' }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-${{ github.sha }}
-          path: .next
-          retention-days: 1
-
-  bundle-size:
-    name: bundle-size
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
-    needs: [build]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - uses: actions/download-artifact@v4
-        with:
-          name: build-${{ github.sha }}
-          path: .next
+      # Same job as build: avoids download-artifact failures (fork PR permissions, re-runs, name mismatch).
       - name: Bundle size gate
         run: node scripts/infrastructure/run-bundle-size-check.js
-      - name: Summary
-        run: echo "## Bundle size" >> "$GITHUB_STEP_SUMMARY" && echo "Checked against \`run-bundle-size-check.js\` limits." >> "$GITHUB_STEP_SUMMARY"
+      - name: Bundle size summary
+        run: echo "## Bundle size" >> "$GITHUB_STEP_SUMMARY" && echo "Checked via \`run-bundle-size-check.js\` (same runner as build)." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: next-build-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .next
+          retention-days: 1
 
   sbom:
     name: sbom
@@ -598,7 +586,6 @@ jobs:
       - security-tests
       - crud-checks
       - build
-      - bundle-size
       - sbom
       - dependency-review
     steps:
@@ -615,7 +602,7 @@ jobs:
             echo "| Deps | dependency-and-licenses, dependency-review |"
             echo "| Security | secret-scan, security-custom |"
             echo "| Tests | unit, integration, security, crud |"
-            echo "| Ship | build, bundle-size, sbom |"
+            echo "| Ship | build (incl. bundle size), sbom |"
           } >> "$GITHUB_STEP_SUMMARY"
 
   pre-deploy-gate:
@@ -637,14 +624,13 @@ jobs:
       - security-tests
       - crud-checks
       - build
-      - bundle-size
       - sbom
     steps:
       - name: Summary
         run: |
           {
             echo "## Pre-deploy gate passed"
-            echo "All production blockers green, including **CodeQL** and **validated SBOM** (main/release)."
+            echo "All production blockers green, including **CodeQL**, **validated SBOM** (main/release), and **build + bundle size**."
           } >> "$GITHUB_STEP_SUMMARY"
 
   deploy-production:
