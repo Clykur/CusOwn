@@ -1,6 +1,5 @@
-# Snyk Infrastructure as Code — scans `.github/` (workflows, composite actions).
-# Requires SNYK_TOKEN. Uploads SARIF to Code Scanning; scan errors do not fail the job
-# (findings still appear in SARIF / Security tab when Snyk produces output).
+# Snyk Infrastructure as Code — scans `.github/`. Does not fail the workflow on findings or upload issues.
+# Set SNYK_TOKEN in repo secrets.
 #
 # https://docs.snyk.io/products/snyk-infrastructure-as-code
 
@@ -22,7 +21,6 @@ permissions:
 
 jobs:
   snyk:
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     permissions:
       contents: read
       security-events: write
@@ -37,13 +35,22 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
-          snyk iac test .github --sarif-file-output=snyk.sarif || true
-          if [ ! -s snyk.sarif ]; then
+          stub_sarif() {
             printf '%s\n' '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"Snyk IaC","informationUri":"https://snyk.io"}},"results":[]}]}' > snyk.sarif
+          }
+          stub_sarif
+          if [ -z "${SNYK_TOKEN:-}" ]; then
+            echo "::notice::SNYK_TOKEN not set; skipping Snyk IaC."
+            exit 0
           fi
+          set +e
+          snyk iac test .github --sarif-file-output=snyk.sarif
+          if [ ! -s snyk.sarif ]; then stub_sarif; fi
+          exit 0
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif

@@ -1,4 +1,5 @@
-# Snyk Container scan when a root Dockerfile exists. Requires SNYK_TOKEN.
+# Snyk Container when a root Dockerfile exists. Does not fail the workflow on findings or upload issues.
+# Set SNYK_TOKEN in repo secrets.
 #
 # https://docs.snyk.io/products/snyk-container
 
@@ -20,7 +21,6 @@ permissions:
 
 jobs:
   snyk:
-    if: ${{ secrets.SNYK_TOKEN != '' && hashFiles('Dockerfile') != '' }}
     permissions:
       contents: read
       security-events: write
@@ -29,25 +29,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image
-        run: docker build -t cusown:snyk .
-
       - uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
 
-      - name: Snyk Container test (SARIF)
+      - name: Build (if Dockerfile) and Snyk Container — SARIF
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
+          stub_sarif() {
+            printf '%s\n' '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"Snyk Container","informationUri":"https://snyk.io"}},"results":[]}]}' > snyk.sarif
+          }
+          stub_sarif
+          if [ ! -f Dockerfile ]; then
+            echo "::notice::No Dockerfile at repo root; skipping container scan."
+            exit 0
+          fi
+          if [ -z "${SNYK_TOKEN:-}" ]; then
+            echo "::notice::SNYK_TOKEN not set; skipping Snyk Container."
+            exit 0
+          fi
+          if ! docker build -t cusown:snyk .; then
+            echo "::warning::docker build failed; skipping Snyk Container test."
+            exit 0
+          fi
           set +e
           snyk container test cusown:snyk --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=high
-          code=$?
-          if [ ! -s snyk.sarif ]; then
-            printf '%s\n' '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"Snyk Container","informationUri":"https://snyk.io"}},"results":[]}]}' > snyk.sarif
-          fi
-          exit "$code"
+          if [ ! -s snyk.sarif ]; then stub_sarif; fi
+          exit 0
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif

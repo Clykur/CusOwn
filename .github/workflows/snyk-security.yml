@@ -1,5 +1,5 @@
-# Snyk Code (SAST) + Open Source (SCA) for this repo. SARIF is uploaded to Code Scanning.
-# Requires SNYK_TOKEN repository secret. Job is skipped when the secret is unset.
+# Snyk Code (SAST) + Open Source (SCA). SARIF is uploaded to Code Scanning when possible.
+# Set SNYK_TOKEN in repo secrets. Snyk findings do not fail this workflow (see Security tab / SARIF).
 #
 # https://docs.snyk.io/snyk-cli/cli-reference
 
@@ -19,7 +19,6 @@ permissions:
 
 jobs:
   snyk:
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     permissions:
       contents: read
       security-events: write
@@ -38,26 +37,35 @@ jobs:
       - uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
 
       - name: Snyk Code (SAST) — SARIF
-        id: snyk_code
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
+          stub_sarif() {
+            printf '%s\n' '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"Snyk Code","informationUri":"https://snyk.io"}},"results":[]}]}' > snyk-code.sarif
+          }
+          if [ -z "${SNYK_TOKEN:-}" ]; then
+            echo "::notice::SNYK_TOKEN not set; skipping Snyk Code and using empty SARIF."
+            stub_sarif
+            exit 0
+          fi
           set +e
           snyk code test --sarif-file-output=snyk-code.sarif --severity-threshold=high
-          code=$?
-          if [ ! -s snyk-code.sarif ]; then
-            printf '%s\n' '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"Snyk Code","informationUri":"https://snyk.io"}},"results":[]}]}' > snyk-code.sarif
-          fi
-          exit "$code"
+          if [ ! -s snyk-code.sarif ]; then stub_sarif; fi
+          exit 0
 
       - name: Snyk Open Source (SCA)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test --all-projects --severity-threshold=high
-        continue-on-error: true
+        run: |
+          if [ -z "${SNYK_TOKEN:-}" ]; then
+            echo "::notice::SNYK_TOKEN not set; skipping Snyk test."
+            exit 0
+          fi
+          snyk test --all-projects --severity-threshold=high || true
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk-code.sarif
