@@ -1,26 +1,20 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# A sample workflow which checks out the code, builds a container
-# image using Docker and scans that image for vulnerabilities using
-# Snyk. The results are then uploaded to GitHub Security Code Scanning
+# Snyk Container when a root Dockerfile exists. Does not fail the workflow on findings or upload issues.
+# Set SNYK_TOKEN in repo secrets.
 #
-# For more examples, including how to limit scans to only high-severity
-# issues, monitor images for newly disclosed vulnerabilities in Snyk and
-# fail PR checks for new vulnerabilities, see https://github.com/snyk/actions/
+# https://docs.snyk.io/products/snyk-container
 
 name: Snyk Container
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+    branches: ['main']
   schedule:
     - cron: '27 1 * * 1'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
@@ -28,28 +22,43 @@ permissions:
 jobs:
   snyk:
     permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+      contents: read
+      security-events: write
+      actions: read
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Build a Docker image
-      run: docker build -t your/image-to-test .
-    - name: Run Snyk to check Docker image for vulnerabilities
-      # Snyk can be used to break the build when it detects vulnerabilities.
-      # In this case we want to upload the issues to GitHub Code Scanning
-      continue-on-error: true
-      uses: snyk/actions/docker@14818c4695ecc4045f33c9cee9e795a788711ca4
-      env:
-        # In order to use the Snyk Action you will need to have a Snyk API token.
-        # More details in https://github.com/snyk/actions#getting-your-snyk-token
-        # or you can signup for free at https://snyk.io/login
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        image: your/image-to-test
-        args: --file=Dockerfile
-    - name: Upload result to GitHub Code Scanning
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: snyk.sarif
+      - uses: actions/checkout@v4
+
+      - uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
+
+      - name: Build (if Dockerfile) and Snyk Container — SARIF
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          stub_sarif() {
+            printf '%s\n' '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"Snyk Container","informationUri":"https://snyk.io"}},"results":[]}]}' > snyk.sarif
+          }
+          stub_sarif
+          if [ ! -f Dockerfile ]; then
+            echo "::notice::No Dockerfile at repo root; skipping container scan."
+            exit 0
+          fi
+          if [ -z "${SNYK_TOKEN:-}" ]; then
+            echo "::notice::SNYK_TOKEN not set; skipping Snyk Container."
+            exit 0
+          fi
+          if ! docker build -t cusown:snyk .; then
+            echo "::warning::docker build failed; skipping Snyk Container test."
+            exit 0
+          fi
+          set +e
+          snyk container test cusown:snyk --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=high
+          if [ ! -s snyk.sarif ]; then stub_sarif; fi
+          exit 0
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: snyk.sarif

@@ -12,12 +12,20 @@ alwaysApply: true
    ```bash
    npm run security-check
    ```  
-   Must pass (package-lock.json present, no dangerous patterns in app/lib/components).
+   Must pass (package-lock.json present, no dangerous patterns in app/lib/components).  
+   **`npm run build`** also runs `security-check` via `prebuild`.
 
-2. **Commit package-lock.json**  
+2. **ESLint (security + bug rules)**  
+   `npm run lint:strict` extends `plugin:security/recommended-legacy` and **`plugin:sonarjs/recommended-legacy`** (duplicated branches, dead stores, weak hashing, etc.); noisy Sonar rules are turned off.  
+   Husky **pre-commit** and **`npm run guard:all`** (pre-push) run this.
+
+3. **Formatting**  
+   `npm run format:check` runs on **`guard:all`** (same as CI). Use **`npm run quality:static`** for lint + types + format without tests/build.
+
+4. **Commit package-lock.json**  
    If you added or changed dependencies, ensure `package-lock.json` is committed. CI fails if it is missing.
 
-3. **License check (CI)**  
+5. **License check (CI)**  
    `license-checker` is a devDependency. CI runs `npx --yes license-checker --production --json`; ensure production deps in package.json are valid so the step succeeds.
 
 ## Dangerous patterns (CI and security-check)

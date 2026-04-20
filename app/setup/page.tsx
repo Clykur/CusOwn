@@ -55,7 +55,6 @@ export default function SetupPage() {
 
     // Logged-in owner adding another business
     setCheckingAuth(false);
-    return;
   }, [fromOnboarding]);
 
   useEffect(() => {

@@ -118,15 +118,16 @@ export class UserService {
     await supabaseAdmin.from('user_roles').insert(inserts);
 
     const names = roleRows.map((r) => r.name);
-    const userType: UserType = names.includes('admin')
-      ? 'admin'
-      : names.includes('owner') && names.includes('customer')
-        ? 'both'
-        : names.includes('owner')
-          ? 'owner'
-          : names.includes('customer')
-            ? 'customer'
-            : 'customer';
+    let userType: UserType;
+    if (names.includes('admin')) {
+      userType = 'admin';
+    } else if (names.includes('owner') && names.includes('customer')) {
+      userType = 'both';
+    } else if (names.includes('owner')) {
+      userType = 'owner';
+    } else {
+      userType = 'customer';
+    }
     await this.upsertUserProfile(userId, { user_type: userType });
   }
 

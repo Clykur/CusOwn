@@ -8,35 +8,53 @@ dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const isCiPlaceholder =
-  process.env.CI === 'true' &&
-  (!supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('placeholder'));
+
+/** Same rules as scripts/infrastructure/check-live-supabase-env.js */
+export function isLiveSupabaseConfigured(): boolean {
+  const url = (supabaseUrl || '').trim();
+  const key = (supabaseServiceKey || '').trim();
+  if (!url || !key) return false;
+  if (/placeholder/i.test(url) || /placeholder/i.test(key)) return false;
+  if (key === 'placeholder-service-role-key' || key === 'placeholder-anon-key') return false;
+  try {
+    const { hostname } = new URL(url);
+    if (!hostname || hostname === 'placeholder.supabase.co') return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
 
 function createStubSupabase(): SupabaseClient {
   const stub = new Proxy({} as SupabaseClient, {
     get() {
       throw new Error(
-        'No real Supabase in CI. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local for local e2e/integration tests.'
+        'Supabase is not configured for integration tests. Set real NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local (they override .env.test placeholders).'
       );
     },
   });
   return stub;
 }
 
-export const supabase: SupabaseClient = isCiPlaceholder
-  ? createStubSupabase()
-  : !supabaseUrl || !supabaseServiceKey
-    ? (() => {
-        throw new Error(
-          'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local or .env.test'
-        );
-      })()
-    : createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      });
+const missingCred = !supabaseUrl || !supabaseServiceKey;
+
+export const supabase: SupabaseClient =
+  missingCred && process.env.CI === 'true'
+    ? createStubSupabase()
+    : missingCred
+      ? (() => {
+          throw new Error(
+            'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local or .env.test'
+          );
+        })()
+      : !isLiveSupabaseConfigured()
+        ? createStubSupabase()
+        : createClient(supabaseUrl, supabaseServiceKey, {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+          });
 
 export interface TestResult {
   name: string;

@@ -24,6 +24,7 @@ import {
 } from '@/lib/cache/api-response-cache';
 import { dedupe } from '@/lib/cache/request-dedup';
 import { runWithTiming } from '@/lib/monitoring/performance';
+import { parseBookingActionQueryToken } from '@/lib/utils/booking-action-token-query.server';
 
 const ROUTE = 'GET /api/bookings/[id]';
 
@@ -43,50 +44,61 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    const token = request.nextUrl.searchParams.get('token');
+    const rateLimitResponse = await getBookingWithTokenRateLimit(request);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    const tokenParse = parseBookingActionQueryToken(request);
 
     let decodedToken: string | null = null;
     let tokenValid = false;
 
-    if (token && typeof token === 'string' && token.length <= 500) {
-      const rateLimitResponse = await getBookingWithTokenRateLimit(request);
-      if (rateLimitResponse) return rateLimitResponse;
+    if (tokenParse.kind === 'malformed') {
+      logAuthDeny({
+        route: ROUTE,
+        reason: 'auth_invalid_token',
+        resource: id,
+      });
 
-      try {
-        decodedToken = decodeURIComponent(token);
-      } catch {
-        decodedToken = null;
-      }
+      return NextResponse.json(
+        {
+          success: false,
+          error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+          code: SECURE_LINK_RESPONSE_CODE,
+        },
+        { status: 400 }
+      );
+    }
 
-      if (decodedToken) {
-        const statusValid = validateResourceToken('booking-status', id, decodedToken);
+    if (tokenParse.kind === 'present') {
+      decodedToken = tokenParse.decoded;
 
-        if (statusValid) {
+      const statusValid = validateResourceToken('booking-status', id, decodedToken);
+
+      if (statusValid) {
+        tokenValid = true;
+      } else {
+        const [acceptValid, rejectValid] = await Promise.all([
+          validateOwnerActionLink('accept', id, decodedToken),
+          validateOwnerActionLink('reject', id, decodedToken),
+        ]);
+
+        if (acceptValid.valid || rejectValid.valid) {
           tokenValid = true;
         } else {
-          const [acceptValid, rejectValid] = await Promise.all([
-            validateOwnerActionLink('accept', id, decodedToken),
-            validateOwnerActionLink('reject', id, decodedToken),
-          ]);
+          logAuthDeny({
+            route: ROUTE,
+            reason: 'auth_invalid_token',
+            resource: id,
+          });
 
-          if (acceptValid.valid || rejectValid.valid) {
-            tokenValid = true;
-          } else {
-            logAuthDeny({
-              route: ROUTE,
-              reason: 'auth_invalid_token',
-              resource: id,
-            });
-
-            return NextResponse.json(
-              {
-                success: false,
-                error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
-                code: SECURE_LINK_RESPONSE_CODE,
-              },
-              { status: 403 }
-            );
-          }
+          return NextResponse.json(
+            {
+              success: false,
+              error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+              code: SECURE_LINK_RESPONSE_CODE,
+            },
+            { status: 403 }
+          );
         }
       }
     }

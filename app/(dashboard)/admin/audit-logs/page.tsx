@@ -39,15 +39,16 @@ function statusStyle(status: string): string {
   return (AUDIT_STATUS_STYLE as Record<string, string>)[status] ?? AUDIT_STYLE_NEUTRAL;
 }
 
+function formatAuditLogTimestamp(ts: string): string {
+  try {
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? ts : d.toLocaleString();
+  } catch {
+    return ts;
+  }
+}
+
 function LogDetailModal({ log, onClose }: { log: AuditLogItem; onClose: () => void }) {
-  const formatTimestamp = (ts: string) => {
-    try {
-      const d = new Date(ts);
-      return isNaN(d.getTime()) ? ts : d.toLocaleString();
-    } catch {
-      return ts;
-    }
-  };
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -81,7 +82,7 @@ function LogDetailModal({ log, onClose }: { log: AuditLogItem; onClose: () => vo
             <span className="font-medium text-slate-500">ID</span>
             <span className="break-all font-mono text-slate-800">{log.id}</span>
             <span className="font-medium text-slate-500">Timestamp</span>
-            <span className="text-slate-800">{formatTimestamp(log.timestamp)}</span>
+            <span className="text-slate-800">{formatAuditLogTimestamp(log.timestamp)}</span>
             <span className="font-medium text-slate-500">Actor</span>
             <span className="break-all font-mono text-slate-800">{log.actor ?? '—'}</span>
             <span className="font-medium text-slate-500">Action</span>
@@ -284,15 +285,6 @@ export default function AdminAuditLogsPage() {
     if (hasMore) fetchLogs(page + 1);
   };
 
-  const formatTimestamp = (ts: string) => {
-    try {
-      const d = new Date(ts);
-      return isNaN(d.getTime()) ? ts : d.toLocaleString();
-    } catch {
-      return ts;
-    }
-  };
-
   return (
     <div className="bg-slate-50/80 p-4 md:p-6">
       <AdminSectionWrapper title="Audit Logs" subtitle={UI_CONTEXT.ADMIN_CONSOLE}>
@@ -421,9 +413,9 @@ export default function AdminAuditLogsPage() {
                       >
                         <td
                           className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700"
-                          title={formatTimestamp(row.timestamp)}
+                          title={formatAuditLogTimestamp(row.timestamp)}
                         >
-                          {formatTimestamp(row.timestamp)}
+                          {formatAuditLogTimestamp(row.timestamp)}
                         </td>
                         <td
                           className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 font-mono text-slate-700"

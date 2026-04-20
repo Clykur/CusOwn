@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Enterprise guard: runs all CI-equivalent checks locally.
- * Order: env setup, lockfile, lint, typecheck, security, unit tests (ts-node + vitest), quality gates, build.
+ * Order: env setup, lockfile, lint, typecheck, security, unit tests (runner: tsx or ts-node transpile-only + vitest), quality gates, build.
  * If this passes, CI should pass.
  */
 const { spawnSync } = require('child_process');
@@ -44,6 +44,7 @@ run('Lockfile check', process.execPath, [path.join(__dirname, 'check-lockfile.js
 // 3. Lint and typecheck.
 run('Lint (strict)', npmCmd, ['run', 'lint:strict']);
 run('Typecheck', npmCmd, ['run', 'typecheck']);
+run('Format check (Prettier)', npmCmd, ['run', 'format:check']);
 
 // 4. Security: secrets, custom rules, pre-push check, audit.
 run('Secret scan', npmCmd, ['run', 'security:gitleaks']);

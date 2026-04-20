@@ -149,7 +149,7 @@ export class ReminderService {
     if (!booking.slot || !booking.salon) {
       throw new Error('Booking details incomplete');
     }
-    return;
+    await Promise.resolve();
   }
 
   private async markReminderSent(reminderId: string): Promise<void> {

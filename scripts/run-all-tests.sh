@@ -19,20 +19,18 @@ echo ""
 echo "📝 Output will be saved to: $OUTPUT_FILE"
 echo ""
 
-# Check if .env.local exists
-if [ ! -f .env.local ]; then
-  echo "❌ Error: .env.local file not found"
-  echo "Please create .env.local with NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+# Need at least one env file (same merge order as test-utils.ts: .env.test then .env.local)
+if [ ! -f .env.test ] && [ ! -f .env.local ]; then
+  echo "❌ Error: need .env.test and/or .env.local (see scripts/infrastructure/ensure-env-test.js)"
   exit 1
 fi
 
-# Detect placeholder Supabase (no real DB): skip e2e and DB-dependent tests, run only offline-safe ones
-SUPABASE_URL=$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' .env.local 2>/dev/null | cut -d= -f2- || true)
+# Merge-aware check: .env.test placeholders apply unless .env.local overrides (matches Node dotenv order)
 SKIP_DB_TESTS=false
-if echo "$SUPABASE_URL" | grep -q 'placeholder'; then
+if ! node "$SCRIPTS_DIR/infrastructure/check-live-supabase-env.js"; then
   SKIP_DB_TESTS=true
-  echo "⚠️  Supabase URL is a placeholder (no real DB). Skipping e2e and DB-dependent tests."
-  echo "   To run full suite, set real NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local"
+  echo "⚠️  Live Supabase is not configured (placeholder URL/key, or missing vars after merging .env.test + .env.local)."
+  echo "   Skipping e2e and DB-dependent phases. To run the full suite, set real values in .env.local."
   echo ""
 fi
 
@@ -48,14 +46,18 @@ echo "============================================================"
 echo ""
 
 if [ "$SKIP_DB_TESTS" = true ]; then
-  echo "Skipping user journey tests 1–12 (require real Supabase)."
+  echo "Skipping user journey tests 1–12 (require live Supabase)."
+  echo ""
+  echo "Running offline unit suites (ts-node + Vitest)..."
+  npm run test:unit
+  npm run test:unit:vitest
   echo ""
   echo "============================================================"
   echo "PRODUCTION-GRADE TEST SUITE (PHASES 1-9)"
   echo "============================================================"
   echo ""
-  echo "Skipping Phase 1–6, 8–9 (require real DB). Running Phase 7 only..."
-  npm run test:phase7 || echo "⚠️  Phase 7 failed"
+  echo "Skipping Phase 1–6, 8–9 (require live DB). Running Phase 7 only..."
+  npm run test:phase7
   echo ""
   echo "============================================================"
   echo "✅ ALL TEST SUITES COMPLETED (DB-dependent tests skipped)"
@@ -63,6 +65,7 @@ if [ "$SKIP_DB_TESTS" = true ]; then
   echo "Test run completed at: $(date)"
   echo "📝 Full output saved to: $OUTPUT_FILE"
   echo "============================================================"
+
 else
 # Run all user journey test scripts
 echo "Running user journey test 1/12: Customer Journey..."

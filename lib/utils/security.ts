@@ -215,8 +215,7 @@ export const validateResourceToken = (
           if (timingSafeEqual(tokenBuffer, expectedBuffer)) {
             const tokenAge = Math.abs(currentTime - timeWindow);
             const maxAge = TOKEN_VALIDITY_WINDOW + TOKEN_TIME_TOLERANCE;
-            if (tokenAge <= maxAge) return true;
-            return false; // expired
+            return tokenAge <= maxAge;
           }
         } catch {
           continue;

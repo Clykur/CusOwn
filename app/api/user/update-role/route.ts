@@ -46,10 +46,16 @@ export async function POST(request: NextRequest) {
       return errorResponse('Cannot set role to admin', 403);
     }
 
-    let newType: 'owner' | 'customer' | 'both' = role;
-    if (currentType === 'owner' && role === 'customer') newType = 'both';
-    else if (currentType === 'customer' && role === 'owner') newType = 'both';
-    else if (currentType === 'both') newType = 'both';
+    let newType: 'owner' | 'customer' | 'both';
+    if (currentType === 'both') {
+      newType = 'both';
+    } else if (currentType === 'owner' && role === 'customer') {
+      newType = 'both';
+    } else if (currentType === 'customer' && role === 'owner') {
+      newType = 'both';
+    } else {
+      newType = role;
+    }
 
     await userService.updateUserType(user.id, newType);
 

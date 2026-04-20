@@ -21,9 +21,12 @@ export default defineConfig({
       'scripts/unit-database/**/*.test.ts',
       'scripts/unit-utils/unit-discovery-fallback.test.ts',
       'scripts/unit-utils/unit-slot-capacity-timeline.test.ts',
-      'scripts/integration/**/*.test.ts',
-      'scripts/security/**/*.test.ts',
-      'scripts/e2e/**/*.test.ts',
+      'scripts/unit-utils/unit-day-of-week.test.ts',
+      'scripts/unit-utils/unit-analytics-chart-format.test.ts',
+      'scripts/unit-utils/unit-uuid-v7.test.ts',
+      'scripts/unit-utils/unit-business-schedule-validation.test.ts',
+      'scripts/unit-utils/unit-date-range-admin.test.ts',
+      // scripts/e2e and scripts/security are ts-node TestRunner scripts, not Vitest (see npm run test:all / test:phase*).
     ],
     exclude: [
       '**/api-health-route.test.ts',

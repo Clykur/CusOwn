@@ -46,7 +46,7 @@ export const QUERY_CACHE_PREFIX = {
  */
 function hashParams(params: unknown): string {
   const str = JSON.stringify(params);
-  return crypto.createHash('md5').update(str).digest('hex').substring(0, 12);
+  return crypto.createHash('sha256').update(str).digest('hex').substring(0, 12);
 }
 
 /**

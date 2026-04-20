@@ -39,13 +39,20 @@ export const isValidToken = (input: string): boolean => {
 export const cleanString = (input: unknown): string => {
   if (typeof input !== 'string') return '';
 
-  const trimmed = input.trim();
+  let trimmed = input.trim();
 
   if (trimmed.length > 1000) {
-    return trimmed.slice(0, 1000);
+    trimmed = trimmed.slice(0, 1000);
   }
 
-  return trimmed.replace(/[^a-zA-Z0-9@._+\- /]/g, '');
+  const stripDisallowed = (s: string) => s.replace(/[^a-zA-Z0-9@._+\- /]/g, '');
+  let prev = '';
+  while (prev !== trimmed) {
+    prev = trimmed;
+    trimmed = stripDisallowed(trimmed);
+  }
+
+  return trimmed;
 };
 
 /* BACKWARD COMPATIBILITY */

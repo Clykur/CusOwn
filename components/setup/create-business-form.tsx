@@ -286,10 +286,23 @@ export default function CreateBusinessForm({
   const lat = Number(formData.latitude);
   const lng = Number(formData.longitude);
 
-  const mapsUrl =
-    Number.isFinite(lat) && Number.isFinite(lng)
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`
-      : null;
+  const mapsUrl = useMemo(() => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    try {
+      const u = new URL('https://www.google.com/maps/search/');
+      u.searchParams.set('api', '1');
+      u.searchParams.set('query', `${lat},${lng}`);
+      return u.toString();
+    } catch {
+      return null;
+    }
+  }, [lat, lng]);
+
+  const existingBusinessPathFromError = useMemo(() => {
+    if (!error || !error.includes('/b/')) return null;
+    const m = error.match(/\/b\/[A-Za-z0-9_-]{1,128}/);
+    return m ? m[0] : null;
+  }, [error]);
   const formContent = (
     <>
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
@@ -662,9 +675,9 @@ export default function CreateBusinessForm({
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
             <p className="text-red-800 font-medium">{error}</p>
-            {error.includes('/b/') && (
+            {existingBusinessPathFromError && (
               <Link
-                href={error.match(/\/b\/[^\s]+/)?.[0] || ROUTES.OWNER_DASHBOARD_BASE}
+                href={existingBusinessPathFromError}
                 className="text-red-700 underline font-semibold mt-2 inline-block"
               >
                 Go to Your Existing Business →
