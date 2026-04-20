@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   API_ROUTES,
   ERROR_MESSAGES,
@@ -427,28 +426,6 @@ export default function OwnerBusinessPage() {
   });
 
   const memoizedSlots = useMemo(() => slots, [slots]);
-
-  const fetchDowntime = useCallback(async () => {
-    if (!salon) return;
-    if (typeof document !== 'undefined' && document.hidden) return;
-
-    try {
-      const [holidaysRes, closuresRes] = await Promise.all([
-        fetch(`/api/businesses/${salon.id}/downtime/holidays`, { credentials: 'include' }),
-        fetch(`/api/businesses/${salon.id}/downtime/closures`, { credentials: 'include' }),
-      ]);
-      if (typeof document !== 'undefined' && document.hidden) return;
-
-      const holidaysData = await holidaysRes.json();
-      const closuresData = await closuresRes.json();
-      if (holidaysData.success) setHolidays(holidaysData.data || []);
-      if (closuresData.success) setClosures(closuresData.data || []);
-    } catch (err) {
-      if (typeof document !== 'undefined' && !document.hidden) {
-        console.error('Failed to fetch downtime:', err);
-      }
-    }
-  }, [salon, setHolidays, setClosures]);
 
   const loadBusinessPhotos = useCallback(
     async (businessId: string) => {

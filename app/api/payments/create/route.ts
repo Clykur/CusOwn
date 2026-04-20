@@ -97,8 +97,7 @@ export async function POST(request: NextRequest) {
         booking.id,
         'cash',
         calculatedAmount,
-        idempotencyKey,
-        paymentType
+        idempotencyKey
       );
 
       await paymentService.updatePaymentStatus(payment.id, 'completed');
@@ -111,8 +110,7 @@ export async function POST(request: NextRequest) {
       booking.id,
       filteredBody.provider,
       calculatedAmount,
-      idempotencyKey,
-      paymentType
+      idempotencyKey
     );
 
     await paymentService.updatePaymentStatus(payment.id, 'processing', payment.id);

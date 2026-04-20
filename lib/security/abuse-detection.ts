@@ -2,7 +2,7 @@ import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { env } from '@/config/env';
 
 export class AbuseDetectionService {
-  async detectSlotHoarding(userId: string | null, ipAddress: string): Promise<boolean> {
+  async detectSlotHoarding(_userId: string | null, _ipAddress: string): Promise<boolean> {
     const supabaseAdmin = requireSupabaseAdmin();
     const windowStart = new Date();
     windowStart.setMinutes(windowStart.getMinutes() - 10);
@@ -55,7 +55,7 @@ export class AbuseDetectionService {
     return failedPayments.length >= env.payment.maxPaymentAttempts;
   }
 
-  async detectExcessiveBookings(userId: string | null, ipAddress: string): Promise<boolean> {
+  async detectExcessiveBookings(userId: string | null, _ipAddress: string): Promise<boolean> {
     const supabaseAdmin = requireSupabaseAdmin();
     const windowStart = new Date();
     windowStart.setHours(windowStart.getHours() - 1);

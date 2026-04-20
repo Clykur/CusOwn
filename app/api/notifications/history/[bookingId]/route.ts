@@ -6,7 +6,7 @@ import { setCacheHeaders } from '@/lib/cache/next-cache';
 import { ERROR_MESSAGES } from '@/config/constants';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ bookingId: string }> }
 ) {
   try {

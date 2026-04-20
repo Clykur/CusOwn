@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import generateWhatsAppLink from '@/lib/whatsapp';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
+  // request unused
   const { id } = await params;
   if (!id)
     return NextResponse.json({ success: false, error: 'Missing booking id' }, { status: 400 });

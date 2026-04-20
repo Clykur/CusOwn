@@ -16,11 +16,7 @@ import { generateUuidV7 } from '@/lib/uuid';
 import type { Slot } from '@/types';
 import { logError } from '@/lib/utils/error-handler';
 import { getCSRFToken } from '@/lib/utils/csrf-client';
-import {
-  BookingPageSkeleton,
-  CalendarGridLoadingSkeleton,
-  SlotGridSkeleton,
-} from '@/components/ui/skeleton';
+import { BookingPageSkeleton, CalendarGridLoadingSkeleton } from '@/components/ui/skeleton';
 import {
   getLocalTodayStr,
   isToday,
@@ -32,7 +28,7 @@ import {
   getInitialRebookData,
 } from './booking-utils';
 import { cn } from '@/lib/utils/cn';
-import { dedupFetch, cancelRequests, cancelDebounce } from '@/lib/utils/fetch-dedup';
+import { dedupFetch, cancelRequests } from '@/lib/utils/fetch-dedup';
 import { useBookingFlowStore } from '@/lib/store';
 
 import SlotSelectionGrid from './slot-selection-grid';
@@ -98,7 +94,6 @@ export default function PublicBookingPage({
   const addClosedDate = useBookingFlowStore((state) => state.addClosedDate);
   const addClosedDates = useBookingFlowStore((state) => state.addClosedDates);
   const removeClosedDate = useBookingFlowStore((state) => state.removeClosedDate);
-  const closedMessage = useBookingFlowStore((state) => state.closedMessage);
   const setClosedMessage = useBookingFlowStore((state) => state.setClosedMessage);
   const customerName = useBookingFlowStore((state) => state.customerName);
   const setCustomerName = useBookingFlowStore((state) => state.setCustomerName);
@@ -106,15 +101,12 @@ export default function PublicBookingPage({
   const setCustomerPhone = useBookingFlowStore((state) => state.setCustomerPhone);
   const isLoading = useBookingFlowStore((state) => state.isLoading);
   const setIsLoading = useBookingFlowStore((state) => state.setIsLoading);
-  const dateLoading = useBookingFlowStore((state) => state.dateLoading);
   const setDateLoading = useBookingFlowStore((state) => state.setDateLoading);
-  const validatingSlot = useBookingFlowStore((state) => state.validatingSlot);
   const setValidatingSlot = useBookingFlowStore((state) => state.setValidatingSlot);
   const submitting = useBookingFlowStore((state) => state.submitting);
   const setSubmitting = useBookingFlowStore((state) => state.setSubmitting);
   const error = useBookingFlowStore((state) => state.error);
   const setError = useBookingFlowStore((state) => state.setError);
-  const slotValidationError = useBookingFlowStore((state) => state.slotValidationError);
   const setSlotValidationError = useBookingFlowStore((state) => state.setSlotValidationError);
   const reset = useBookingFlowStore((state) => state.reset);
 

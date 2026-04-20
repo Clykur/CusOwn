@@ -105,11 +105,7 @@ export async function requireCustomer(
 /**
  * Log invalid signed URL and return 403. Use when validateResourceToken fails.
  */
-export function denyInvalidToken(
-  request: NextRequest,
-  route: string,
-  resource?: string
-): NextResponse {
+export function denyInvalidToken(route: string, resource?: string): NextResponse {
   logAuthDeny({
     route,
     reason: 'auth_invalid_token',

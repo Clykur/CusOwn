@@ -12,7 +12,6 @@ import {
   getRandomAvailableSlot,
   getOrCreateTestUser,
   cleanupTestData,
-  simulateUserAction,
   StateMachineTracker,
   WorkflowQueue,
   TestStateTracker,

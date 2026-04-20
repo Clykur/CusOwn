@@ -1,9 +1,9 @@
-import { NextRequest } from 'next/server';
-import { errorResponse, successResponse } from '@/lib/utils/response';
-import { getServerUser } from '@/lib/supabase/server-auth';
-import { supabaseAdmin } from '@/lib/supabase/server';
-import { ROLE_IDS, type RoleName } from '@/config/constants';
+import { type RoleName } from '@/config/constants';
 import { validateCSRFToken } from '@/lib/security/csrf';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import { getServerUser } from '@/lib/supabase/server-auth';
+import { errorResponse, successResponse } from '@/lib/utils/response';
+import { NextRequest } from 'next/server';
 
 type UpgradableRole = Extract<RoleName, 'owner' | 'customer'>;
 
@@ -13,15 +13,15 @@ function isUpgradableRole(value: unknown): value is UpgradableRole {
   return typeof value === 'string' && ALLOWED_ROLES.has(value);
 }
 
-function toUserType(roleNames: string[]): 'admin' | 'owner' | 'customer' | 'both' {
-  const hasAdmin = roleNames.includes('admin');
-  if (hasAdmin) return 'admin';
-  const hasOwner = roleNames.includes('owner');
-  const hasCustomer = roleNames.includes('customer');
-  if (hasOwner && hasCustomer) return 'both';
-  if (hasOwner) return 'owner';
-  return 'customer';
-}
+// function toUserType(roleNames: string[]): 'admin' | 'owner' | 'customer' | 'both' {
+//   const hasAdmin = roleNames.includes('admin');
+//   if (hasAdmin) return 'admin';
+//   const hasOwner = roleNames.includes('owner');
+//   const hasCustomer = roleNames.includes('customer');
+//   if (hasOwner && hasCustomer) return 'both';
+//   if (hasOwner) return 'owner';
+//   return 'customer';
+// }
 
 /**
  * POST /api/user/upgrade-role

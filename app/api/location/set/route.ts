@@ -56,18 +56,15 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await getServerUser(request);
-    const { setCookieHeader } = await setLocation(
-      request,
-      {
-        latitude: lat,
-        longitude: lon,
-        city,
-        region,
-        country_code,
-        source,
-      },
-      user?.id ?? null
-    );
+    const payload = {
+      latitude: lat,
+      longitude: lon,
+      city,
+      region,
+      country_code,
+      source: source as 'gps' | 'ip',
+    };
+    const { setCookieHeader } = await setLocation(payload, user?.id ?? null);
 
     const response = successResponse({
       location: {

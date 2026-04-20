@@ -11,7 +11,6 @@ import {
   STRESS_TEST_DEFAULT_REQUESTS_PER_SEC,
   STRESS_TEST_DEFAULT_MIN_BUSINESSES,
   STRESS_TEST_DEFAULT_MIN_SLOTS,
-  STRESS_TEST_LOG_INTERVAL_MS,
   STRESS_MONITOR_INTERVAL_MS,
   STRESS_EVENT_LOOP_LAG_THRESHOLD_MS,
   STRESS_CPU_LIMIT_PCT,
@@ -344,7 +343,8 @@ type VerificationResult = {
   invalidBookingStates: string[];
   invalidSlotStates: string[];
 };
-
+type BookingStatus = (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS];
+type SlotStatus = (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS];
 async function verifyAfterRun(): Promise<VerificationResult> {
   const result: VerificationResult = {
     doubleBookedSlots: [],
@@ -392,13 +392,13 @@ async function verifyAfterRun(): Promise<VerificationResult> {
 
   const { data: bookingsForState } = await supabase.from('bookings').select('id, status');
   for (const b of bookingsForState || []) {
-    if (!validBookingStatuses.includes(b.status as string)) {
+    if (!validBookingStatuses.includes(b.status as BookingStatus)) {
       result.invalidBookingStates.push(b.id as string);
     }
   }
 
   for (const s of allSlots || []) {
-    if (!validSlotStatuses.includes(s.status as string)) {
+    if (!validSlotStatuses.includes(s.status as SlotStatus)) {
       result.invalidSlotStates.push(s.id as string);
     }
   }

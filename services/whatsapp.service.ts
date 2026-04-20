@@ -1,4 +1,4 @@
-import { WHATSAPP_MESSAGE_TEMPLATES, ROUTES } from '@/config/constants';
+import { WHATSAPP_MESSAGE_TEMPLATES } from '@/config/constants';
 import { env } from '@/config/env';
 import { BookingWithDetails, Salon } from '@/types';
 import { getBookingUrl, getBaseUrl } from '@/lib/utils/url';
@@ -103,11 +103,7 @@ export class WhatsAppService {
     return WHATSAPP_MESSAGE_TEMPLATES.REJECTION(booking.customer_name, bookingUrl);
   }
 
-  getConfirmationWhatsAppUrl(
-    booking: BookingWithDetails,
-    salon: Salon,
-    request?: NextRequest
-  ): string {
+  getConfirmationWhatsAppUrl(booking: BookingWithDetails, salon: Salon): string {
     const message = this.generateConfirmationMessage(booking, salon);
     return this.getWhatsAppUrl(booking.customer_phone, message);
   }

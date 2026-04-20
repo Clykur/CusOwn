@@ -12,7 +12,6 @@ import BusinessesIcon from '@/src/icons/businesses.svg';
 import AnalyticsIcon from '@/src/icons/analytics.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
 import LogoutIcon from '@/src/icons/logout.svg';
-import ServiceIcon from '@/src/icons/service.svg';
 
 interface NavItem {
   name: string;
@@ -36,7 +35,7 @@ export default function OwnerSidebar({
   const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
   const { initialUser } = useOwnerSession();
-  const [navigating, setNavigating] = useState<string | null>(null);
+  const [, setNavigating] = useState<string | null>(null);
   const [hasBusinesses, setHasBusinesses] = useState<boolean | null>(null);
 
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);

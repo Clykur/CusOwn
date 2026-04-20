@@ -127,7 +127,7 @@ function parsePageParam(value: string | null): number {
   return Number.isFinite(n) && n >= 1 ? n : 1;
 }
 
-function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
+function AdminDashboardContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = normalizeTab(searchParams?.get('tab') ?? undefined);
@@ -904,11 +904,12 @@ function AdminDashboardContentInner({ initialTab }: { initialTab: TabValue }) {
   );
 }
 
-export default function AdminDashboardClient({ initialTab }: { initialTab: string | undefined }) {
-  const tab = normalizeTab(initialTab);
+export default function AdminDashboardClient() {
+  // initialTab no longer used
+  // tab computed from searchParams inside component
   return (
     <Suspense fallback={<AdminDashboardSkeleton />}>
-      <AdminDashboardContentInner initialTab={tab} />
+      <AdminDashboardContentInner />
     </Suspense>
   );
 }

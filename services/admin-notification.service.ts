@@ -1,15 +1,10 @@
 import { whatsappService } from './whatsapp.service';
 import { getBaseUrl } from '@/lib/utils/url';
-import { formatDate, formatTime } from '@/lib/utils/string';
 import { NextRequest } from 'next/server';
 import { ROUTES } from '@/lib/utils/navigation';
 
 export class AdminNotificationService {
-  async notifyBusinessOwner(
-    businessId: string,
-    message: string,
-    request?: NextRequest
-  ): Promise<string> {
+  async notifyBusinessOwner(businessId: string, message: string): Promise<string> {
     const { requireSupabaseAdmin } = await import('@/lib/supabase/server');
     const supabase = requireSupabaseAdmin();
 
@@ -27,7 +22,7 @@ export class AdminNotificationService {
     return whatsappUrl;
   }
 
-  async notifyCustomer(bookingId: string, message: string, request?: NextRequest): Promise<string> {
+  async notifyCustomer(bookingId: string, message: string): Promise<string> {
     const { requireSupabaseAdmin } = await import('@/lib/supabase/server');
     const supabase = requireSupabaseAdmin();
 

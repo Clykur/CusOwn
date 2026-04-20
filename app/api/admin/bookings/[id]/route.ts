@@ -164,7 +164,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       oldData: oldBooking,
       newData: updatedBooking,
       description: `Booking updated: ${changes.join(', ')}`,
-      request,
     });
 
     // Send notification to customer if status changed
@@ -188,7 +187,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           request
         );
 
-        const whatsappUrl = adminNotificationService.notifyCustomer(id, message, request);
+        const whatsappUrl = adminNotificationService.notifyCustomer(id, message);
         invalidateApiCacheByPrefix('GET|/api/admin/bookings');
         invalidateApiCacheByPrefix('GET|/api/admin/metrics');
         return successResponse(
@@ -240,13 +239,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       let whatsappUrl: string;
 
       if (booking.status === BOOKING_STATUS.CONFIRMED) {
-        whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
-          booking,
-          booking.business,
-          request
-        );
+        whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(booking, booking.business);
       } else if (booking.status === BOOKING_STATUS.REJECTED) {
-        whatsappUrl = whatsappService.getRejectionWhatsAppUrl(booking, booking.business, request);
+        whatsappUrl = whatsappService.getRejectionWhatsAppUrl(booking, booking.business);
       } else {
         return errorResponse('Cannot resend notification for this booking status', 400);
       }
@@ -255,7 +250,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await auditService.createAuditLog(auth.user.id, 'notification_sent', 'booking', {
         entityId: id,
         description: `Notification resent for booking ${id}`,
-        request,
       });
 
       return successResponse({ whatsapp_url: whatsappUrl }, 'Notification prepared');

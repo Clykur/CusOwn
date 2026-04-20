@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, memo, useCallback } from 'react';
+import { useRef, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { BookingWithDetails } from '@/types';
 

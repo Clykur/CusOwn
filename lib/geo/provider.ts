@@ -6,7 +6,7 @@
 import { GEO_BIGDATACLOUD_BASE } from '@/config/constants';
 import { validateCoordinates } from '@/lib/utils/geo';
 import { env } from '@/config/env';
-import { getIpCached, setIpCached, type CachedLocation } from './cache';
+import { getIpCached, setIpCached } from './cache';
 import { getCache, setCache } from '@/lib/cache/cache';
 import {
   GEO_PROVIDER_TIMEOUT_MS,
@@ -86,7 +86,6 @@ export async function reverseGeocode(
     }),
   });
 
-  let lastError: Error | null = null;
   for (let attempt = 0; attempt <= GEO_PROVIDER_MAX_RETRIES; attempt++) {
     try {
       const res = await fetchWithTimeout(url, GEO_PROVIDER_TIMEOUT_MS);
@@ -108,9 +107,7 @@ export async function reverseGeocode(
         latitude: data.latitude,
         longitude: data.longitude,
       };
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error('Unknown');
-    }
+    } catch (e) {}
   }
   return null;
 }

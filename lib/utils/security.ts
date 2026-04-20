@@ -73,7 +73,7 @@ export const generateSalonToken = (salonId: string, timestamp?: number): string 
 };
 
 // Extract timestamp from token (if embedded) or use current time window
-export const getTokenTimestamp = (token: string): number | null => {
+export const getTokenTimestamp = (_token: string): number | null => {
   // For now, we'll validate tokens within a time window
   // Tokens are valid for 24 hours
   return Math.floor(Date.now() / 1000);

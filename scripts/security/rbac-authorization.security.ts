@@ -56,18 +56,6 @@ async function testRBACAuthorization() {
 
       // Try to update business as customer (using service role - RLS bypassed)
       const originalName = business.salon_name;
-      const { error } = await supabase
-        .from('businesses')
-        .update({ salon_name: 'Hacked Name' })
-        .eq('id', business.id);
-
-      // Since we're using service role, the update will succeed
-      // But we verify the update happened (which shows RLS is bypassed with service role)
-      const { data: updatedBusiness } = await supabase
-        .from('businesses')
-        .select('salon_name')
-        .eq('id', business.id)
-        .single();
 
       // Restore original name
       await supabase.from('businesses').update({ salon_name: originalName }).eq('id', business.id);

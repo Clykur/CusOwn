@@ -16,17 +16,14 @@ export async function POST(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
-    const { setCookieHeader } = await setLocation(
-      request,
-      {
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        city,
-        country_code: country, // assuming country might be a code or string
-        source: source as 'gps' | 'ip',
-      },
-      user?.id
-    );
+    const payload = {
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      city,
+      country_code: country, // assuming country might be a code or string
+      source: source as 'gps' | 'ip',
+    };
+    const { setCookieHeader } = await setLocation(payload, user?.id);
 
     const response = successResponse({ success: true });
     if (setCookieHeader) {

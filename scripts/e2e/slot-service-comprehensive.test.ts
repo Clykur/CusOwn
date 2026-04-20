@@ -30,7 +30,6 @@ async function testSlotServiceComprehensive() {
     // TEST 1: Slot Generation
     // ============================================
     await runner.runTest('SLOT SERVICE 1: Generate slots for business', async () => {
-      const owner = await getOrCreateTestUser(`slot-test-owner-${Date.now()}@test.com`, 'owner');
       const business = await getRandomBusiness();
 
       await simulateUserAction('Generate slots for date');

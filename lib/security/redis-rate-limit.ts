@@ -163,7 +163,7 @@ export const redisRateLimit = (options: RedisRateLimitOptions) => {
     // Create composite key
     const rateLimitKey = `ratelimit:${prefix}:${keys.join(':')}`;
 
-    const { allowed, count, ttl } = await checkRedisRateLimit(
+    const { allowed, ttl } = await checkRedisRateLimit(
       rateLimitKey,
       windowSeconds,
       options.maxRequests

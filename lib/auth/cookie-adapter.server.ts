@@ -14,8 +14,11 @@ function isAuthCookieName(name: string): boolean {
 }
 
 export type NormalizedCookieOptions = {
+  // value unused
   path: string;
+
   maxAge: number;
+
   sameSite: 'lax' | 'strict' | 'none';
   secure: boolean;
   httpOnly: boolean;
@@ -28,7 +31,7 @@ export type NormalizedCookieOptions = {
  */
 export function normalizeCookieOptions(
   name: string,
-  value: string,
+  _value: string,
   options?: Record<string, unknown>
 ): NormalizedCookieOptions {
   const opts = (options || {}) as Record<string, unknown>;

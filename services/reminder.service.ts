@@ -1,6 +1,5 @@
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
 import { bookingService } from './booking.service';
-import { whatsappService } from './whatsapp.service';
 import { ERROR_MESSAGES } from '@/config/constants';
 import { env } from '@/config/env';
 import { BookingWithDetails } from '@/types';
@@ -132,7 +131,7 @@ export class ReminderService {
     try {
       if (reminder.channel === 'whatsapp') {
         await whatsappCircuitBreaker.execute(async () => {
-          return retry(() => this.sendWhatsAppReminder(booking, reminder.reminder_type), {
+          return retry(() => this.sendWhatsAppReminder(booking), {
             maxAttempts: 3,
             initialDelayMs: 1000,
           });
@@ -146,19 +145,10 @@ export class ReminderService {
     }
   }
 
-  private async sendWhatsAppReminder(
-    booking: BookingWithDetails,
-    reminderType: string
-  ): Promise<void> {
+  private async sendWhatsAppReminder(booking: BookingWithDetails): Promise<void> {
     if (!booking.slot || !booking.salon) {
       throw new Error('Booking details incomplete');
     }
-
-    const date = new Date(booking.slot.date).toLocaleDateString();
-    const time = `${booking.slot.start_time.substring(0, 5)}`;
-    const message = `🔔 *REMINDER*\n\nDear *${booking.customer_name}*,\n\nYour appointment is ${reminderType === '24h_before' ? 'tomorrow' : 'in 2 hours'}.\n\n📆 Date: *${date}*\n🕐 Time: *${time}*\n🏢 ${booking.salon.salon_name}\n\nWe look forward to seeing you!`;
-
-    const whatsappUrl = whatsappService.getWhatsAppUrl(booking.customer_phone, message);
     return;
   }
 

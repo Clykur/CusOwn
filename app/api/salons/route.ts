@@ -85,7 +85,6 @@ export async function POST(request: NextRequest) {
 
     // SECURITY: Verify user has owner access (or will be granted it)
     // This ensures only users who can be owners can create businesses
-    const { hasOwnerAccess } = await import('@/lib/utils/role-verification');
     const profile = await userService.getUserProfile(user.id);
 
     // If user has a profile, check if they can be an owner

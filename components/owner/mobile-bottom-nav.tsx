@@ -7,7 +7,6 @@ import DashboardIcon from '@/src/icons/dashboard.svg';
 import BusinessesIcon from '@/src/icons/businesses.svg';
 import AnalyticsIcon from '@/src/icons/analytics.svg';
 import ProfileIcon from '@/src/icons/profile.svg';
-import ServiceIcon from '@/src/icons/service.svg';
 
 interface NavItem {
   name: string;
@@ -21,14 +20,6 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   if (sidebarOpen) return null;
 
   const tabParam = searchParams?.get('tab') ?? null;
-
-  const isSetup = pathname === ROUTES.SETUP || pathname === ROUTES.OWNER_SETUP;
-  const isProfile =
-    pathname === ROUTES.OWNER_PROFILE ||
-    pathname === '/owner/profile' ||
-    pathname?.startsWith('/owner/profile');
-
-  const isAnalytics = pathname === '/owner/analytics' || pathname?.startsWith('/owner/analytics/');
 
   let activeTab: string | null = null;
 

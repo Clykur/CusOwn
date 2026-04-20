@@ -193,8 +193,6 @@ async function computeUserState(
               }
             } else {
               if (env.nodeEnv === 'development') {
-                const errorText = await response.text();
-                // console.warn(`[USER_STATE:${context}] API error:`, response.status, errorText);
               }
               businesses = response.status === 401 || response.status === 403 ? [] : [];
             }

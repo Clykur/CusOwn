@@ -150,7 +150,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           changes,
           request
         );
-        await adminNotificationService.notifyBusinessOwner(updatedBusiness.id, message, request);
+        await adminNotificationService.notifyBusinessOwner(updatedBusiness.id, message);
       } catch {
         // Ignore notification errors
       }

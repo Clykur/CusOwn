@@ -3,7 +3,7 @@
  * Used to compute accurate travel times based on road networks.
  */
 
-import { WeightedGraph, RoutePath, RouteSegment, GraphNode } from './graph-data-structures';
+import { WeightedGraph, RoutePath, RouteSegment } from './graph-data-structures';
 import { haversineDistance } from '../utils/geo';
 
 interface DijkstraState {
@@ -20,7 +20,6 @@ interface DijkstraState {
 export function dijkstra(
   graph: WeightedGraph,
   startNodeId: string,
-  endNodeId: string,
   mode: 'walking' | 'driving' = 'walking'
 ): { distances: Map<string, number>; previous: Map<string, string | null> } {
   const state: DijkstraState = {
@@ -237,7 +236,7 @@ export function computeRoute(
 ): RoutePath | null {
   const { distances, previous } = useAStar
     ? aStar(graph, startNodeId, endNodeId, mode)
-    : dijkstra(graph, startNodeId, endNodeId, mode);
+    : dijkstra(graph, startNodeId, mode);
 
   const distance = distances.get(endNodeId);
   if (distance === undefined || distance === Infinity) {

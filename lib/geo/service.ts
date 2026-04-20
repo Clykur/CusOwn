@@ -134,7 +134,6 @@ export async function getLocation(
  * Persist location from client (e.g. after navigator.geolocation or reverse-geocode). Writes to DB and returns Set-Cookie header.
  */
 export async function setLocation(
-  request: NextRequest,
   payload: {
     latitude: number;
     longitude: number;

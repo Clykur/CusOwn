@@ -14,8 +14,6 @@ import { isValidUUID } from '@/lib/utils/security';
 import { ERROR_MESSAGES, MEDIA_CACHE_CONTROL_HEADER } from '@/config/constants';
 import { env } from '@/config/env';
 
-const ROUTE = 'GET /api/media/signed-url';
-
 const signedUrlRateLimit = enhancedRateLimit({
   maxRequests: 100,
   windowMs: 60_000,

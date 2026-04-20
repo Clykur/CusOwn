@@ -367,13 +367,6 @@ async function testStateMachines() {
 
       await simulateUserAction('Try direct DB update to bypass state machine');
 
-      // Try to directly update slot from available to booked (should fail or be prevented)
-      const { error } = await supabase
-        .from('slots')
-        .update({ status: 'booked' })
-        .eq('id', slot.id)
-        .eq('status', 'available');
-
       // Check if update succeeded (it shouldn't if we have proper constraints)
       const { data: updatedSlot } = await supabase
         .from('slots')

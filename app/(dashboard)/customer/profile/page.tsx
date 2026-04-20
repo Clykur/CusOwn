@@ -7,5 +7,5 @@ import { ProfilePageContent } from '@/components/profile/profile-page-content';
  * Renders shared profile content in embedded mode (no duplicate wrapper).
  */
 export default function CustomerProfilePage() {
-  return <ProfilePageContent embedded fromOwner={false} />;
+  return <ProfilePageContent embedded />;
 }

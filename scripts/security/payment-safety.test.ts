@@ -89,7 +89,7 @@ async function testPaymentSafety() {
       cleanup.payments.push(payment1.id);
 
       // Try to create duplicate with same idempotency key
-      const { data: payment2, error: e2 } = await supabase
+      const { error: e2 } = await supabase
         .from('payments')
         .insert({
           booking_id: bookingResult.booking_id,

@@ -1,13 +1,7 @@
 import { supabaseAdmin, requireSupabaseAdmin } from '@/lib/supabase/server';
 import { generateUniqueId, formatPhoneNumber } from '@/lib/utils/string';
 import { CreateBookingInput, Booking, BookingWithDetails, Salon, Slot } from '@/types';
-import {
-  ERROR_MESSAGES,
-  BOOKING_STATUS,
-  SLOT_STATUS,
-  UNDO_ACCEPT_REJECT_WINDOW_MINUTES,
-  BOOKING_LIST_MAX_PAGE_SIZE,
-} from '@/config/constants';
+import { ERROR_MESSAGES, BOOKING_STATUS, BOOKING_LIST_MAX_PAGE_SIZE } from '@/config/constants';
 import { env } from '@/config/env';
 import { slotService } from './slot.service';
 import { salonService } from './salon.service';
@@ -42,12 +36,7 @@ import {
   QUERY_CACHE_TTL,
   QUERY_CACHE_PREFIX,
 } from '@/lib/cache/query-cache';
-import {
-  enqueueAnalyticsEvent,
-  enqueueScheduleReminders,
-  enqueueNotification,
-  isQueueAvailable,
-} from '@/lib/queue';
+import { enqueueAnalyticsEvent, isQueueAvailable } from '@/lib/queue';
 
 export type CreateBookingRpcParams = {
   p_business_id: string;

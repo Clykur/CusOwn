@@ -60,7 +60,6 @@ export default function CustomerDashboardPage() {
 
   const bookings = useCustomerBookingsStore((state) => state.bookings);
   const isInitialLoad = useCustomerBookingsStore((state) => state.isInitialLoad);
-  const isRefreshing = useCustomerBookingsStore((state) => state.isRefreshing);
   const shouldRefetch = useCustomerBookingsStore((state) => state.shouldRefetch);
   const setBookings = useCustomerBookingsStore((state) => state.setBookings);
   const setIsInitialLoad = useCustomerBookingsStore((state) => state.setIsInitialLoad);

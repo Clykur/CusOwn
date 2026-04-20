@@ -20,19 +20,6 @@ const isLocalhost = (url: string): boolean => {
   return url.includes('localhost') || url.includes('127.0.0.1') || url.includes('0.0.0.0');
 };
 
-/** Ensure the localhost-in-production warning is only emitted once per process, and never during `next build`. */
-let _localhostWarned = false;
-const warnLocalhostOnce = (): void => {
-  if (_localhostWarned) return;
-  // Suppress during build — NODE_ENV is 'production' but localhost is expected.
-  if (process.env.NEXT_PHASE === 'phase-production-build') return;
-  _localhostWarned = true;
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[WARNING] Running in production with a localhost base URL. Set NEXT_PUBLIC_APP_URL to your production domain.'
-  );
-};
-
 const isProduction = (): boolean => {
   if (getEnvValue('NODE_ENV') === 'production') return true;
   const appUrl = getEnvValue('NEXT_PUBLIC_APP_URL');

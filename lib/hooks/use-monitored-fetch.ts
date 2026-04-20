@@ -9,12 +9,7 @@ interface MonitoredFetchOptions extends RequestInit {
   skipMonitoring?: boolean;
 }
 
-interface FetchState<T> {
-  data: T | null;
-  error: Error | null;
-  loading: boolean;
-  latency: number | null;
-}
+// interface FetchState<T> removed (unused)
 
 export function useMonitoredFetch() {
   const abortControllerRef = useRef<AbortController | null>(null);

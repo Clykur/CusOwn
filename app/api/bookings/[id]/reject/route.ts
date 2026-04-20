@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { bookingService } from '@/services/booking.service';
 import { whatsappService } from '@/services/whatsapp.service';
 import { successResponse, errorResponse } from '@/lib/utils/response';
-import { getClientIp, isValidUUID } from '@/lib/utils/security';
+import { isValidUUID } from '@/lib/utils/security';
 import { setNoCacheHeaders } from '@/lib/cache/next-cache';
 import { invalidateBookingCache } from '@/lib/cache/api-response-cache';
 import {
@@ -34,8 +34,6 @@ const rejectRateLimit = enhancedRateLimit({
 const ROUTE = 'POST /api/bookings/[id]/reject';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const clientIP = getClientIp(request);
-
   try {
     await bookingService.runLazyExpireIfNeeded();
 

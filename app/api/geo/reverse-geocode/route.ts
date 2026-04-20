@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const latParam = url.searchParams.get('latitude');
   const lngParam = url.searchParams.get('longitude');
-  const localityLanguage = url.searchParams.get('localityLanguage') ?? undefined;
 
   if (latParam === null || lngParam === null) {
     return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);

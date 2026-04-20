@@ -4,11 +4,6 @@
  */
 
 import { requireSupabaseAdmin } from '@/lib/supabase/server';
-import {
-  AUTH_EVENT_LOGIN_SUCCESS,
-  AUTH_EVENT_LOGIN_FAILED,
-  AUTH_EVENT_LOGOUT,
-} from '@/config/constants';
 import { createHash } from 'crypto';
 
 export type AuthEventType = 'login_success' | 'login_failed' | 'logout';

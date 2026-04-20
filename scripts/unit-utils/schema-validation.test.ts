@@ -35,7 +35,7 @@ async function testSchemaValidation() {
     await runner.runTest('SCHEMA 1: Businesses - Required columns exist', async () => {
       await simulateUserAction('Verify businesses table schema');
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('businesses')
         .select(
           'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, created_at'

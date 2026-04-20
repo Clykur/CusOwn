@@ -29,7 +29,7 @@ interface SalonCardProps {
 function SalonCardComponent({ salon }: SalonCardProps) {
   const bookingLink = salon?.booking_link;
 
-  const [secureUrl, setSecureUrl] = useState<string>(
+  const [, setSecureUrl] = useState<string>(
     bookingLink ? `/salon/${bookingLink}` : '/salon/unknown'
   );
   // Use rating_avg from salon prop (comes from API) - more efficient than fetching separately
