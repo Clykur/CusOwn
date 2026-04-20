@@ -56,6 +56,7 @@ const ALLOWED_URL_HOSTS = new Set([
   'vercel.live',
   'api.razorpay.com',
   'accounts.google.com',
+  'www.google.com', // Google Maps search base (e.g. setup form map preview)
   'va.vercel-scripts.com',
   'vitals.vercel-insights.com',
   '*.supabase.co',

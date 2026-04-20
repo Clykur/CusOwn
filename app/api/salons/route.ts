@@ -87,16 +87,8 @@ export async function POST(request: NextRequest) {
     // This ensures only users who can be owners can create businesses
     const profile = await userService.getUserProfile(user.id);
 
-    // If user has a profile, check if they can be an owner
-    // If no profile, we'll create one as owner (allowed)
-    if (profile && profile.user_type === 'admin') {
-      // Admins can create businesses
-    } else if (profile && profile.user_type === 'customer') {
-      // Customer can create business (will be upgraded to 'both')
-    } else if (!profile) {
-      // No profile - will be created as owner (allowed)
-    }
-    // Owner and 'both' users are already allowed
+    // Admins, customers, owners, both, and users without a profile may create a salon
+    // (role upgrades are applied below via userService).
 
     let ownerUserId: string = user.id;
 

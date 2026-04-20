@@ -22,37 +22,36 @@ function isAllowedPath(to: string): boolean {
   );
 }
 
+/**
+ * Resolve ?to= for post-OAuth redirect. Rejects open redirects and non-http(s) schemes.
+ */
+function normalizeOAuthRedirectTarget(rawTo: string, requestOrigin: string): string | null {
+  const maxLen = 200;
+  let s = rawTo.trim();
+  if (!s || s.length > maxLen) return null;
+
+  if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(s)) {
+    try {
+      const abs = new URL(s);
+      if (abs.protocol !== 'http:' && abs.protocol !== 'https:') return null;
+      const allowedOrigin = new URL(requestOrigin).origin;
+      if (abs.origin !== allowedOrigin) return null;
+      s = `${abs.pathname}${abs.search}${abs.hash}`;
+    } catch {
+      return null;
+    }
+  }
+
+  if (!s.startsWith('/') || s.includes('//') || s.startsWith('/auth/')) return null;
+  return isAllowedPath(s) ? s : null;
+}
+
 export async function GET(request: NextRequest) {
   const rawTo = request.nextUrl.searchParams.get('to') ?? '';
   const baseUrl = `${request.nextUrl.origin}/`;
 
-  let safePath: string | null = null;
-
-  if (typeof rawTo === 'string' && rawTo.length <= 200) {
-    let normalized = rawTo.trim();
-
-    // Convert absolute URL → pathname only
-    if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
-      try {
-        normalized = new URL(normalized).pathname;
-      } catch {
-        normalized = '';
-      }
-    }
-
-    // Basic structural validation
-    if (
-      normalized &&
-      normalized.startsWith('/') &&
-      !normalized.includes('//') &&
-      !normalized.startsWith('/auth/')
-    ) {
-      // Whitelist validation
-      if (isAllowedPath(normalized)) {
-        safePath = normalized;
-      }
-    }
-  }
+  const safePath =
+    typeof rawTo === 'string' ? normalizeOAuthRedirectTarget(rawTo, request.nextUrl.origin) : null;
 
   const user = await getServerUser(request);
 

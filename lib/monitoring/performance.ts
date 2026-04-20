@@ -56,10 +56,16 @@ class PerformanceMonitor {
   }
 
   private generateSessionId(): string {
-    if (typeof window === 'undefined') return 'server';
-    const randomBytes = window.crypto.getRandomValues(new Uint8Array(8));
+    const cryptoApi =
+      typeof globalThis !== 'undefined' && 'crypto' in globalThis
+        ? (globalThis as typeof globalThis & { crypto?: Crypto }).crypto
+        : undefined;
+    if (!cryptoApi?.getRandomValues) {
+      return `sess-${Date.now()}`;
+    }
+    const buf = cryptoApi.getRandomValues(new Uint8Array(8));
     let randomPart = '';
-    for (const byte of randomBytes) {
+    for (const byte of buf) {
       randomPart += byte.toString(16).padStart(2, '0');
     }
     return `${Date.now()}-${randomPart}`;

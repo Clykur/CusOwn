@@ -22,7 +22,7 @@ These rules MUST be strictly followed for every prompt and all ongoing developme
 
 ## Checklist before considering work done
 
-1. **ESLint**: Run `npm run lint` (or `next lint`). Fix all reported errors and warnings in changed files.
+1. **ESLint**: Run `npm run lint:strict` (security + SonarJS bug rules). Fix all errors and warnings in changed files.
 2. **Hardcodes**: No magic numbers, raw user-facing strings, or `process.env` in business logic. Use `config/constants.ts`, `config/env.ts`, `ERROR_MESSAGES`, `SUCCESS_MESSAGES`, `UI_BOOKING_STATE`, etc.
 3. **Documentation**: Add only necessary, non-verbose comments (e.g. purpose of a function or non-obvious invariant). No essay-style comments.
 4. **Formatter**: Code must be formatted consistently. Use the project linter/formatter; do not leave trailing whitespace or inconsistent quotes/indent.

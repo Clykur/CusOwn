@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { UI_ERROR_CONTEXT } from '@/config/constants';
 
-export default function Error({
+export default function AppError({
   error,
   reset,
 }: {

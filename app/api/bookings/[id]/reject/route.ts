@@ -50,7 +50,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     let decodedToken: string | null = null;
     let tokenValid = false;
 
-    if (token) {
+    if (token !== null) {
       // Basic input validation (prevents abuse + satisfies CodeQL)
       if (typeof token !== 'string' || token.length === 0 || token.length > 500) {
         logAuthDeny({

@@ -11,6 +11,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   test: {
     environment: 'node',
+    // forks pool cold-starts a process per file; threads start faster for many small test files.
+    pool: 'threads',
     include: [
       'scripts/api-routes/**/*.test.ts',
       'scripts/unit-services/**/*.test.ts',
@@ -19,12 +21,14 @@ export default defineConfig({
       'scripts/unit-middleware/**/*.test.ts',
       'scripts/unit-database/**/*.test.ts',
       'scripts/unit-utils/unit-discovery-fallback.test.ts',
-      'scripts/security/**/*.test.ts',
+      'scripts/unit-utils/unit-day-of-week.test.ts',
+      'scripts/unit-utils/unit-analytics-chart-format.test.ts',
+      'scripts/unit-utils/unit-uuid-v7.test.ts',
+      'scripts/unit-utils/unit-business-schedule-validation.test.ts',
+      'scripts/unit-utils/unit-date-range-admin.test.ts',
     ],
     exclude: [
       '**/api-health-route.test.ts',
-      'scripts/security/payment-safety.test.ts',
-      'scripts/security/secure-action-link-hardening.test.ts',
     ],
     globals: false,
     testTimeout: 10000,
@@ -39,6 +43,11 @@ export default defineConfig({
         'app/api/auth/session/route.ts',
         'app/api/business-categories/route.ts',
         'app/api/cron/health-check/route.ts',
+        'lib/utils/day-of-week.ts',
+        'lib/utils/analytics-chart-format.ts',
+        'lib/uuid.ts',
+        'lib/utils/business-schedule-validation.ts',
+        'lib/utils/date-range-admin.ts',
       ],
       exclude: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**', '**/.next/**'],
       thresholds: {

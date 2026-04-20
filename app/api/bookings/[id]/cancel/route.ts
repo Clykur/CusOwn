@@ -51,7 +51,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const user = ctx?.user ?? null;
 
     let isAuthorized = false;
-    let cancelMethod: 'customer' | 'owner' = 'customer';
+    let cancelMethod: 'customer' | 'owner';
 
     if (cancelled_by === 'owner') {
       if (!user) {
@@ -72,30 +72,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
       isAuthorized = true;
       cancelMethod = 'owner';
-    } else {
-      if (user) {
-        const isCustomer = booking.customer_user_id === user.id;
-        if (isCustomer) {
-          isAuthorized = true;
-          cancelMethod = 'customer';
-        } else {
-          logAuthDeny({
-            user_id: user.id,
-            route: ROUTE,
-            reason: 'auth_denied',
-            resource: id,
-          });
-          return errorResponse('Access denied', 403);
-        }
-      } else {
-        if (!booking.customer_user_id) {
-          isAuthorized = true;
-          cancelMethod = 'customer';
-        } else {
-          logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
-          return errorResponse('Authentication required', 401);
-        }
+    } else if (user) {
+      const isCustomer = booking.customer_user_id === user.id;
+      if (!isCustomer) {
+        logAuthDeny({
+          user_id: user.id,
+          route: ROUTE,
+          reason: 'auth_denied',
+          resource: id,
+        });
+        return errorResponse('Access denied', 403);
       }
+      isAuthorized = true;
+      cancelMethod = 'customer';
+    } else if (!booking.customer_user_id) {
+      isAuthorized = true;
+      cancelMethod = 'customer';
+    } else {
+      logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
+      return errorResponse('Authentication required', 401);
     }
 
     if (!isAuthorized) {

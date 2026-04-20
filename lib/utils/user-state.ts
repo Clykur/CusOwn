@@ -10,7 +10,6 @@
 
 import { cache } from 'react';
 import { ROUTES } from './navigation';
-import { env } from '@/config/env';
 
 export type UserState =
   | 'S0' // Unauthenticated
@@ -192,9 +191,7 @@ async function computeUserState(
                 businesses = [];
               }
             } else {
-              if (env.nodeEnv === 'development') {
-              }
-              businesses = response.status === 401 || response.status === 403 ? [] : [];
+              businesses = [];
             }
           } catch {
             businesses = [];
