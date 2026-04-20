@@ -25,6 +25,7 @@ import { isAdminProfile } from '@/lib/utils/role-verification';
 import { logAuthDeny } from '@/lib/monitoring/auth-audit';
 import { logStructured } from '@/lib/observability/structured-log';
 import { enqueueScheduleReminders, isQueueAvailable } from '@/lib/queue';
+import { parseBookingActionQueryToken } from '@/lib/utils/booking-action-token-query.server';
 
 const acceptRateLimit = enhancedRateLimit({
   maxRequests: 10,
@@ -48,65 +49,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    const token = request.nextUrl.searchParams.get('token');
+    const tokenParse = parseBookingActionQueryToken(request);
 
     let decodedToken: string | null = null;
     let tokenValid = false;
 
-    if (token !== null) {
-      if (typeof token !== 'string' || token.length === 0 || token.length > 500) {
-        logAuthDeny({
-          route: ROUTE,
-          reason: 'auth_invalid_token',
-          resource: id,
-        });
+    if (tokenParse.kind === 'malformed') {
+      logAuthDeny({
+        route: ROUTE,
+        reason: 'auth_invalid_token',
+        resource: id,
+      });
 
-        return NextResponse.json(
-          {
-            success: false,
-            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
-            code: SECURE_LINK_RESPONSE_CODE,
-          },
-          { status: 400 }
-        );
-      }
+      return NextResponse.json(
+        {
+          success: false,
+          error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
+          code: SECURE_LINK_RESPONSE_CODE,
+        },
+        { status: 400 }
+      );
+    }
 
-      try {
-        decodedToken = decodeURIComponent(token);
-      } catch {
-        logAuthDeny({
-          route: ROUTE,
-          reason: 'auth_invalid_token',
-          resource: id,
-        });
-
-        return NextResponse.json(
-          {
-            success: false,
-            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
-            code: SECURE_LINK_RESPONSE_CODE,
-          },
-          { status: 400 }
-        );
-      }
-
-      if (!decodedToken) {
-        logAuthDeny({
-          route: ROUTE,
-          reason: 'auth_invalid_token',
-          resource: id,
-        });
-
-        return NextResponse.json(
-          {
-            success: false,
-            error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
-            code: SECURE_LINK_RESPONSE_CODE,
-          },
-          { status: 400 }
-        );
-      }
-
+    if (tokenParse.kind === 'present') {
+      decodedToken = tokenParse.decoded;
       const linkValidation = await validateOwnerActionLink('accept', id, decodedToken);
 
       if (!linkValidation.valid) {
