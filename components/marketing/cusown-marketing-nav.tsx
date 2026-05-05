@@ -188,7 +188,7 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
               onClick={() => go(ROUTES.SELECT_ROLE())}
               whileHover={reduceMotionNav ? undefined : { scale: 1.02 }}
               whileTap={reduceMotionNav ? undefined : { scale: 0.98 }}
-              className={`rounded-full bg-accent font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_28px_rgba(34,197,94,0.38)] ${
+              className={`rounded-lg bg-accent font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_28px_rgba(34,197,94,0.38)] ${
                 compactBar ? 'px-4 py-1.5 text-[13px]' : 'px-5 py-2 text-sm'
               }`}
             >
@@ -201,7 +201,7 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
               type="button"
               onClick={() => go(ROUTES.SELECT_ROLE())}
               whileTap={reduceMotionNav ? undefined : { scale: 0.97 }}
-              className={`rounded-full bg-accent font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
+              className={`rounded-lg bg-accent font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
                 compactBar ? 'px-3 py-1.5 text-[11px]' : 'px-3.5 py-2 text-xs'
               }`}
             >
@@ -210,7 +210,7 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
             <button
               type="button"
               onClick={() => setMobileOpen((o) => !o)}
-              className="rounded-full border border-white/12 bg-white/[0.03] p-2.5 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] transition-colors hover:border-white/20"
+              className="rounded-lg p-2.5 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] transition-colors hover:border-white/20"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
             >

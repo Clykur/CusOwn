@@ -344,7 +344,7 @@ function SelectRoleContent() {
               <button
                 type="button"
                 onClick={() => router.push(getOwnerDashboardUrl(businessResult.bookingLink))}
-                className="mt-2 flex w-full min-h-[3.25rem] items-center justify-center gap-2 rounded-full bg-accent py-3.5 text-[15px] font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_36px_rgba(34,197,94,0.4)] sm:mt-0 sm:py-4 sm:text-base"
+                className="mt-2 flex w-full min-h-[3.25rem] items-center justify-center gap-2 rounded-lg bg-accent py-3.5 text-[15px] font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_36px_rgba(34,197,94,0.4)] sm:mt-0 sm:py-4 sm:text-base"
               >
                 Go to dashboard
                 <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden />
@@ -564,11 +564,11 @@ function SelectRoleContent() {
               type="button"
               onClick={handleContinue}
               disabled={!selectedRole || processing}
-              className="flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-full bg-accent px-8 py-3.5 text-[15px] font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_36px_rgba(34,197,94,0.4)] disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto sm:text-base"
+              className="flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-lg bg-accent px-8 py-3.5 text-[15px] font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_36px_rgba(34,197,94,0.4)] disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto sm:text-base"
             >
               {processing ? (
                 <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-950 border-t-transparent" />
+                  <span className="h-4 w-4 animate-spin rounded-lg border-2 border-zinc-950 border-t-transparent" />
                   Processing...
                 </>
               ) : user ? (
@@ -587,7 +587,7 @@ function SelectRoleContent() {
               <button
                 type="button"
                 disabled={processing}
-                className="min-h-[3.25rem] w-full rounded-full border border-white/15 bg-white/[0.04] px-6 py-3.5 text-[15px] font-medium text-zinc-300 transition-colors hover:border-white/25 hover:bg-white/[0.07] hover:text-white disabled:opacity-45 sm:text-base"
+                className="min-h-[3.25rem] w-full rounded-lg border border-white/15 bg-white/[0.04] px-6 py-3.5 text-[15px] font-medium text-zinc-300 transition-colors hover:border-white/25 hover:bg-white/[0.07] hover:text-white disabled:opacity-45 sm:text-base"
               >
                 Cancel
               </button>
@@ -612,7 +612,7 @@ export default function SelectRolePage() {
           aria-busy="true"
           aria-label="Loading"
         >
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-lg border-2 border-accent border-t-transparent" />
         </div>
       }
     >
