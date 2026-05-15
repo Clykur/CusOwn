@@ -21,6 +21,12 @@
     "type-check": "turbo type-check",
     "test": "turbo test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+
+
+    "precommit:strict": "npm run lint && npm run type-check",
+    "prepush:strict": "npm run guard:all",
+
+
     "prepare": "node scripts/infrastructure/prepare-husky.js",
     "guard:all": "npm run lint && npm run type-check && npm run test && npm run build"
   },
