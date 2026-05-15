@@ -1,0 +1,37 @@
+{
+  "name": "@cusown/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./server": "./src/server.ts",
+    "./lib/auth/cookie-adapter.server": "./src/lib/auth/cookie-adapter.server.ts",
+    "./services/user.service": "./src/services/user.service.ts",
+    "./lib/auth/getOAuthRedirect": "./src/lib/auth/getOAuthRedirect.ts",
+    "./lib/supabase/server": "./src/lib/supabase/server.ts",
+    "./lib/cache/auth-cache": "./src/lib/cache/auth-cache.ts",
+    "./services/auth-events.service": "./src/services/auth-events.service.ts",
+    "./lib/security/client-ip.security": "./src/lib/security/client-ip.security.ts",
+    "./services/audit.service": "./src/services/audit.service.ts",
+    "./icons/*": "./src/icons/*"
+  },
+  "dependencies": {
+    "@supabase/postgrest-js": "^2.99.1",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "zod": "^3.22.0",
+    "zustand": "^5.0.11",
+    "lucide-react": "^0.577.0",
+    "uuidv7": "^1.1.0",
+    "ioredis": "^5.10.0",
+    "bullmq": "^5.71.0",
+    "@cusown/config": "*"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "next": "^16.2.1"
+  }
+}

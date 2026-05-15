@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Register Calegar font */
+@font-face {
+  font-family: 'Calegar';
+  src: url('/fonts/Calegar.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-black;
+  }
+}
+
+@layer utilities {
+  .grain-overlay {
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.045;
+  }
+
+  /* Company title font */
+  .font-calegar {
+    font-family: 'Calegar', serif;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /** Horizontal insets for notched phones; pairs with section horizontal padding. */
+  .marketing-safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.25s ease-in-out infinite;
+  }
+
+  /* Premium image placeholder: soft shine sweep */
+  .image-skeleton-shine {
+    background: linear-gradient(
+      110deg,
+      #f1f5f9 0%,
+      #f1f5f9 40%,
+      #e2e8f0 50%,
+      #f8fafc 60%,
+      #f1f5f9 100%
+    );
+    background-size: 200% 100%;
+    animation: image-skeleton-shine 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes image-skeleton-shine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes gallery-shine {
+  0% {
+    transform: translateX(-120%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(120%) rotate(25deg);
+  }
+}
+
+.gallery-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+.gallery-shine:hover::before {
+  animation: gallery-shine 0.8s ease forwards;
+}

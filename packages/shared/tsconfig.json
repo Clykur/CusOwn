@@ -1,0 +1,11 @@
+{
+  "extends": "@cusown/typescript-config/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "*": ["./*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

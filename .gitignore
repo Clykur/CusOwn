@@ -27,6 +27,8 @@
 # Additional Next build artifacts (some CI or custom scripts output a .next-build folder)
 .next-build/
 .next-build
+.next
+.turbo
 
 # production
 /build
@@ -87,3 +89,12 @@ node_modules/.cache
 .cache.venv/
 .venv/
 .code-workspace
+
+
+builder_output/
+builder_output.md
+build_error_report.md
+build_error_report/
+build_error_report
+
+build_error*
