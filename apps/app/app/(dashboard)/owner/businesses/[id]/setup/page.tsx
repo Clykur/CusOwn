@@ -1,4 +1,4 @@
-import BusinessSetupFlow from '@/components/owner/business-setup-flow';
+import BusinessSetupFlow from "@/components/owner/business-setup-flow";
 
 export default async function OwnerBusinessSetupPage({
   params,

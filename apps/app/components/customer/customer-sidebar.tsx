@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { ROUTES } from '@cusown/shared';
-import { useLogoNavigation } from '@cusown/shared/client';
+import { useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ROUTES } from "@cusown/shared";
+import { useLogoNavigation } from "@cusown/shared/client";
 
-import { UI_CONTEXT, UI_CUSTOMER } from '@cusown/config';
-import { useCustomerSession } from '@/components/customer/customer-session-context';
-import ActivityIcon from '@cusown/shared/icons/activity.svg';
-import ExploreIcon from '@cusown/shared/icons/explore.svg';
-import ProfileIcon from '@cusown/shared/icons/profile.svg';
-import LogoutIcon from '@cusown/shared/icons/logout.svg';
-import CloseIcon from '@cusown/shared/icons/close.svg';
+import { UI_CONTEXT, UI_CUSTOMER } from "@cusown/config";
+import { useCustomerSession } from "@/components/customer/customer-session-context";
+import ActivityIcon from "@cusown/shared/icons/activity.svg";
+import ExploreIcon from "@cusown/shared/icons/explore.svg";
+import ProfileIcon from "@cusown/shared/icons/profile.svg";
+import LogoutIcon from "@cusown/shared/icons/logout.svg";
+import CloseIcon from "@cusown/shared/icons/close.svg";
 
 interface NavItem {
   name: string;
@@ -44,21 +44,21 @@ export default function CustomerSidebar({
   const pathname = usePathname();
   const { handleLogoClick } = useLogoNavigation();
 
-
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
   const setSidebarOpen = propSetSidebarOpen ?? setInternalSidebarOpen;
 
   const { initialUser } = useCustomerSession();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
-  const canShowCustomerProfileImage = initialUser?.user_type === 'both';
+  const canShowCustomerProfileImage = initialUser?.user_type === "both";
   const fetchRef = useRef<{ mediaId: string | null; loaded: boolean }>({
     mediaId: null,
     loaded: false,
   });
 
-  const userEmail = initialUser?.email ?? '';
-  const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
+  const userEmail = initialUser?.email ?? "";
+  const userName =
+    initialUser?.full_name || initialUser?.email?.split("@")[0] || "User";
 
   useEffect(() => {
     if (!canShowCustomerProfileImage || !initialUser?.profile_media_id) {
@@ -82,8 +82,8 @@ export default function CustomerSidebar({
         const response = await fetch(
           `/api/media/signed-url?mediaId=${encodeURIComponent(mediaId)}`,
           {
-            credentials: 'include',
-          }
+            credentials: "include",
+          },
         );
 
         if (!response.ok) {
@@ -117,25 +117,26 @@ export default function CustomerSidebar({
     if (href === ROUTES.CUSTOMER_DASHBOARD) {
       return (
         pathname === ROUTES.CUSTOMER_DASHBOARD ||
-        pathname?.startsWith('/booking/') ||
-        pathname?.startsWith('/customer/bookings/')
+        pathname?.startsWith("/booking/") ||
+        pathname?.startsWith("/customer/bookings/")
       );
     }
     if (href === ROUTES.CUSTOMER_CATEGORIES)
       return (
         pathname === ROUTES.CUSTOMER_CATEGORIES ||
-        pathname?.startsWith('/customer/categories/') ||
+        pathname?.startsWith("/customer/categories/") ||
         pathname === ROUTES.CUSTOMER_SALON_LIST ||
-        pathname?.startsWith('/customer/book/') ||
-        (pathname?.startsWith('/customer/') &&
-          !pathname?.startsWith('/customer/dashboard') &&
-          !pathname?.startsWith('/customer/profile') &&
-          !pathname?.startsWith('/customer/bookings/')) ||
-        pathname?.startsWith('/salon/') ||
-        pathname?.startsWith('/b/') ||
-        pathname?.startsWith('/book/')
+        pathname?.startsWith("/customer/book/") ||
+        (pathname?.startsWith("/customer/") &&
+          !pathname?.startsWith("/customer/dashboard") &&
+          !pathname?.startsWith("/customer/profile") &&
+          !pathname?.startsWith("/customer/bookings/")) ||
+        pathname?.startsWith("/salon/") ||
+        pathname?.startsWith("/b/") ||
+        pathname?.startsWith("/book/")
       );
-    if (href === ROUTES.CUSTOMER_PROFILE) return pathname === ROUTES.CUSTOMER_PROFILE;
+    if (href === ROUTES.CUSTOMER_PROFILE)
+      return pathname === ROUTES.CUSTOMER_PROFILE;
     return false;
   };
 
@@ -150,7 +151,7 @@ export default function CustomerSidebar({
 
       <aside
         className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
         <div className="flex h-full flex-col">
@@ -161,7 +162,9 @@ export default function CustomerSidebar({
                   CusOwn
                 </h2>
               </button>
-              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_CUSTOMER}</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {UI_CONTEXT.VIEWING_AS_CUSTOMER}
+              </p>
             </div>
             <div className="lg:hidden">
               <button
@@ -169,7 +172,10 @@ export default function CustomerSidebar({
                 className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
                 aria-label="Close menu"
               >
-                <CloseIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
+                <CloseIcon
+                  className="w-5 h-5 text-gray-700"
+                  aria-hidden="true"
+                />
               </button>
             </div>
           </div>
@@ -187,17 +193,19 @@ export default function CustomerSidebar({
                   }}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150 ${
                     active
-                      ? 'border-l-2 border-gray-900 bg-gray-100 font-medium text-gray-900'
-                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
+                      ? "border-l-2 border-gray-900 bg-gray-100 font-medium text-gray-900"
+                      : "border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900"
                   }`}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                     <item.icon
                       aria-hidden="true"
-                      className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
+                      className={`h-5 w-5 ${active ? "text-gray-900" : "text-gray-500"}`}
                     />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}
@@ -221,24 +229,32 @@ export default function CustomerSidebar({
                       unoptimized
                     />
                   ) : (
-                    <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                    <ProfileIcon
+                      className="h-5 w-5 text-gray-500"
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="truncate text-sm font-medium text-slate-900">
-                    {userName || 'User'}
+                    {userName || "User"}
                   </span>
-                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
+                  <span className="truncate text-xs text-slate-500">
+                    {userEmail || ""}
+                  </span>
                 </div>
               </Link>
               <button
                 onClick={() => {
-                  window.location.href = '/api/auth/signout?redirect_to=%2F';
+                  window.location.href = "/api/auth/signout?redirect_to=%2F";
                 }}
                 className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign out"
               >
-                <LogoutIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <LogoutIcon
+                  className="h-5 w-5 text-gray-500"
+                  aria-hidden="true"
+                />
               </button>
             </div>
           </div>

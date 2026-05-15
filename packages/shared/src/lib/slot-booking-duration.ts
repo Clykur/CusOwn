@@ -6,7 +6,7 @@ import {
   DEFAULT_SERVICE_BOOKING_BUFFER_MINUTES,
   MAX_BOOKING_DURATION_MINUTES,
   MIN_BOOKING_DURATION_MINUTES,
-} from '@cusown/config';
+} from "@cusown/config";
 
 export type ServiceLike = { id: string; duration_minutes: number };
 
@@ -15,7 +15,7 @@ export type ServiceLike = { id: string; duration_minutes: number };
  */
 export function computeTotalBookingDurationMinutes(
   services: ServiceLike[],
-  bufferMinutesPerService: number = DEFAULT_SERVICE_BOOKING_BUFFER_MINUTES
+  bufferMinutesPerService: number = DEFAULT_SERVICE_BOOKING_BUFFER_MINUTES,
 ): number {
   if (!services.length) {
     return 0;
@@ -33,7 +33,10 @@ export function computeTotalBookingDurationMinutes(
     }
     total += d + bufferMinutesPerService;
   }
-  if (total < MIN_BOOKING_DURATION_MINUTES || total > MAX_BOOKING_DURATION_MINUTES) {
+  if (
+    total < MIN_BOOKING_DURATION_MINUTES ||
+    total > MAX_BOOKING_DURATION_MINUTES
+  ) {
     return 0;
   }
   return Math.floor(total);

@@ -25,5 +25,5 @@
  * [x] DB: partial unique index one confirmed booking per slot
  */
 
-export const PHASE1_PAYMENT_BOOKING_POLICY = 'optional' as const;
+export const PHASE1_PAYMENT_BOOKING_POLICY = "optional" as const;
 export const PHASE1_SCOPE_LOCKED = true;

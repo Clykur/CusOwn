@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { ROUTES } from '@cusown/shared';
-import { UI_CONTEXT } from '@cusown/config';
-import { useOwnerSession } from '@/components/owner/owner-session-context';
-import DashboardIcon from '@cusown/shared/icons/dashboard.svg';
-import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
-import AnalyticsIcon from '@cusown/shared/icons/analytics.svg';
-import ProfileIcon from '@cusown/shared/icons/profile.svg';
-import LogoutIcon from '@cusown/shared/icons/logout.svg';
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ROUTES } from "@cusown/shared";
+import { UI_CONTEXT } from "@cusown/config";
+import { useOwnerSession } from "@/components/owner/owner-session-context";
+import DashboardIcon from "@cusown/shared/icons/dashboard.svg";
+import BusinessesIcon from "@cusown/shared/icons/businesses.svg";
+import AnalyticsIcon from "@cusown/shared/icons/analytics.svg";
+import ProfileIcon from "@cusown/shared/icons/profile.svg";
+import LogoutIcon from "@cusown/shared/icons/logout.svg";
 
 interface NavItem {
   name: string;
@@ -28,8 +28,8 @@ export default function OwnerSidebar({
   setSidebarOpen?: (v: boolean) => void;
 }) {
   const pathname = usePathname();
-  const safePathname = pathname ?? '';
-  const cleanPath = safePathname.split('?')[0];
+  const safePathname = pathname ?? "";
+  const cleanPath = safePathname.split("?")[0];
 
   const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const sidebarOpen = propSidebarOpen ?? internalSidebarOpen;
@@ -40,8 +40,9 @@ export default function OwnerSidebar({
 
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
-  const userEmail = initialUser?.email ?? '';
-  const userName = initialUser?.full_name || initialUser?.email?.split('@')[0] || 'User';
+  const userEmail = initialUser?.email ?? "";
+  const userName =
+    initialUser?.full_name || initialUser?.email?.split("@")[0] || "User";
 
   useEffect(() => {
     setNavigating(null);
@@ -53,7 +54,7 @@ export default function OwnerSidebar({
       return;
     }
     let cancelled = false;
-    fetch('/api/owner/businesses', { credentials: 'include' })
+    fetch("/api/owner/businesses", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (cancelled) return;
@@ -79,9 +80,12 @@ export default function OwnerSidebar({
     let cancelled = false;
     (async () => {
       try {
-        const r2 = await fetch(`/api/media/signed-url?mediaId=${encodeURIComponent(mediaId)}`, {
-          credentials: 'include',
-        });
+        const r2 = await fetch(
+          `/api/media/signed-url?mediaId=${encodeURIComponent(mediaId)}`,
+          {
+            credentials: "include",
+          },
+        );
         if (!r2.ok) {
           if (!cancelled) setProfileImageUrl(null);
           return;
@@ -101,30 +105,32 @@ export default function OwnerSidebar({
 
   const navItems: NavItem[] = [
     {
-      name: 'Dashboard',
-      href: '/owner/dashboard',
+      name: "Dashboard",
+      href: "/owner/dashboard",
       requiresBusiness: true,
       icon: DashboardIcon,
     },
     {
-      name: 'My Businesses',
-      href: '/owner/businesses',
+      name: "My Businesses",
+      href: "/owner/businesses",
       requiresBusiness: true,
       icon: BusinessesIcon,
     },
     {
-      name: 'Analytics',
-      href: '/owner/analytics',
+      name: "Analytics",
+      href: "/owner/analytics",
       requiresBusiness: true,
       icon: AnalyticsIcon,
     },
   ];
 
   const navigation =
-    hasBusinesses === false ? navItems.filter((i) => !i.requiresBusiness) : navItems;
+    hasBusinesses === false
+      ? navItems.filter((i) => !i.requiresBusiness)
+      : navItems;
 
   const isActive = (href: string) => {
-    return cleanPath === href || cleanPath.startsWith(href + '/');
+    return cleanPath === href || cleanPath.startsWith(href + "/");
   };
 
   return (
@@ -138,7 +144,7 @@ export default function OwnerSidebar({
 
       <aside
         className={`hidden lg:block fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-gray-300 transition-transform ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
         <div className="flex h-full flex-col">
@@ -147,7 +153,9 @@ export default function OwnerSidebar({
               <h2 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
                 CusOwn
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {UI_CONTEXT.VIEWING_AS_OWNER}
+              </p>
             </div>
           </div>
 
@@ -168,17 +176,19 @@ export default function OwnerSidebar({
                   }}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
                     active
-                      ? 'border-l-2 border-gray-900 bg-gray-100 font-medium text-gray-900'
-                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
+                      ? "border-l-2 border-gray-900 bg-gray-100 font-medium text-gray-900"
+                      : "border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900"
                   }`}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                     <item.icon
                       aria-hidden="true"
-                      className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
+                      className={`h-5 w-5 ${active ? "text-gray-900" : "text-gray-500"}`}
                     />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}
@@ -202,24 +212,32 @@ export default function OwnerSidebar({
                       unoptimized
                     />
                   ) : (
-                    <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                    <ProfileIcon
+                      className="h-5 w-5 text-gray-500"
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
                   <span className="truncate text-sm font-medium text-slate-900">
-                    {userName || 'User'}
+                    {userName || "User"}
                   </span>
-                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
+                  <span className="truncate text-xs text-slate-500">
+                    {userEmail || ""}
+                  </span>
                 </div>
               </Link>
               <button
                 onClick={() => {
-                  window.location.href = '/api/auth/signout?redirect_to=%2F';
+                  window.location.href = "/api/auth/signout?redirect_to=%2F";
                 }}
                 className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
                 title="Sign out"
               >
-                <LogoutIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <LogoutIcon
+                  className="h-5 w-5 text-gray-500"
+                  aria-hidden="true"
+                />
               </button>
             </div>
           </div>

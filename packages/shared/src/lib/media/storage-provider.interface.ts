@@ -20,7 +20,7 @@ export interface StorageProvider {
     bucket: string,
     path: string,
     body: Buffer,
-    options: UploadOptions
+    options: UploadOptions,
   ): Promise<{ etag?: string }>;
 
   remove(bucket: string, paths: string[]): Promise<void>;
@@ -28,9 +28,12 @@ export interface StorageProvider {
   createSignedUrl(
     bucket: string,
     path: string,
-    options: SignedUrlOptions
+    options: SignedUrlOptions,
   ): Promise<{ url: string; expiresAt: string } | null>;
 
   /** Optional: get object metadata for ETag/cache. */
-  head?(bucket: string, path: string): Promise<{ etag?: string; contentLength?: number } | null>;
+  head?(
+    bucket: string,
+    path: string,
+  ): Promise<{ etag?: string; contentLength?: number } | null>;
 }

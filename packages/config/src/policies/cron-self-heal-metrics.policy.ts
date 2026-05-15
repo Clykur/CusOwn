@@ -14,6 +14,6 @@
  * - Cron failure does not corrupt system state.
  */
 
-export const PHASE3_LAZY_EXPIRE_SOURCE_CRON = 'cron' as const;
-export const PHASE3_LAZY_EXPIRE_SOURCE_LAZY_HEAL = 'lazy_heal' as const;
+export const PHASE3_LAZY_EXPIRE_SOURCE_CRON = "cron" as const;
+export const PHASE3_LAZY_EXPIRE_SOURCE_LAZY_HEAL = "lazy_heal" as const;
 export const PHASE3_SCOPE_LOCKED = true;

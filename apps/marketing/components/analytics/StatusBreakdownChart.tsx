@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
-const COLORS = ['#10b981', '#64748b', '#f59e0b'];
+const COLORS = ["#10b981", "#64748b", "#f59e0b"];
 
 export default function StatusBreakdownChart({
   analytics,
@@ -14,9 +14,9 @@ export default function StatusBreakdownChart({
   } | null;
 }) {
   const data = [
-    { name: 'Confirmed', value: analytics?.confirmedBookings ?? 0 },
-    { name: 'Rejected', value: analytics?.rejectedBookings ?? 0 },
-    { name: 'Cancelled', value: analytics?.cancelledBookings ?? 0 },
+    { name: "Confirmed", value: analytics?.confirmedBookings ?? 0 },
+    { name: "Rejected", value: analytics?.rejectedBookings ?? 0 },
+    { name: "Cancelled", value: analytics?.cancelledBookings ?? 0 },
   ];
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
@@ -25,7 +25,9 @@ export default function StatusBreakdownChart({
       <h3 className="mb-1 text-sm font-semibold text-slate-900 md:mb-4">
         Booking Status Breakdown
       </h3>
-      <p className="mb-4 text-xs text-slate-500 md:hidden">Share of bookings by outcome.</p>
+      <p className="mb-4 text-xs text-slate-500 md:hidden">
+        Share of bookings by outcome.
+      </p>
       <div className="flex flex-col items-stretch gap-5 sm:flex-row sm:items-start sm:gap-6">
         <div className="flex w-full justify-center sm:w-1/2 sm:justify-center">
           <div className="aspect-square w-full max-w-[200px] sm:max-w-[260px]">
@@ -46,7 +48,10 @@ export default function StatusBreakdownChart({
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value, name) => [`${value ?? 0}`, String(name ?? '')]}
+                  formatter={(value, name) => [
+                    `${value ?? 0}`,
+                    String(name ?? ""),
+                  ]}
                   contentStyle={{ borderRadius: 8, fontSize: 12 }}
                 />
               </PieChart>
@@ -58,11 +63,14 @@ export default function StatusBreakdownChart({
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Total
             </p>
-            <p className="text-2xl font-bold text-slate-900 md:text-3xl">{total}</p>
+            <p className="text-2xl font-bold text-slate-900 md:text-3xl">
+              {total}
+            </p>
           </div>
           <div className="mt-3 space-y-2.5 md:mt-4 md:space-y-3">
             {data.map((item, idx) => {
-              const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+              const pct =
+                total > 0 ? Math.round((item.value / total) * 100) : 0;
               return (
                 <div
                   key={item.name}
@@ -75,7 +83,9 @@ export default function StatusBreakdownChart({
                     />
                     <span className="truncate">{item.name}</span>
                   </div>
-                  <span className="shrink-0 font-semibold tabular-nums text-slate-900">{pct}%</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-slate-900">
+                    {pct}%
+                  </span>
                 </div>
               );
             })}

@@ -1,11 +1,11 @@
-import type { Slot } from '@cusown/shared';
+import type { Slot } from "@cusown/shared";
 
-const PENDING_BOOKING_KEY = 'pendingBooking';
+const PENDING_BOOKING_KEY = "pendingBooking";
 
 /** Get local today string YYYY-MM-DD without timezone offset issues. */
 export function getLocalTodayStr(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 /** Returns true if the selected date is today (local). */
@@ -26,11 +26,11 @@ export function filterSlotsByBusinessHours(
   slots: Slot[],
   selectedDate: string,
   openHour: number,
-  closeHour: number
+  closeHour: number,
 ): Slot[] {
   let filtered = slots.filter((slot) => {
-    const [startH] = slot.start_time.split(':').map(Number);
-    const [endH, endM] = slot.end_time.split(':').map(Number);
+    const [startH] = slot.start_time.split(":").map(Number);
+    const [endH, endM] = slot.end_time.split(":").map(Number);
     const endMinutes = endH * 60 + endM;
     return startH >= openHour && endMinutes <= closeHour * 60;
   });
@@ -41,7 +41,7 @@ export function filterSlotsByBusinessHours(
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     filtered = filtered.filter((slot) => {
-      const [h, m] = slot.start_time.split(':').map(Number);
+      const [h, m] = slot.start_time.split(":").map(Number);
       return h * 60 + m > currentMinutes;
     });
   }
@@ -56,12 +56,12 @@ export function filterSlotsByBusinessHours(
  */
 export function isShopClosedForSelectedDate(
   selectedDate: string,
-  closingTime: string | undefined
+  closingTime: string | undefined,
 ): boolean {
   if (!closingTime) return false;
 
   // Parse closing hour (HH:MM → hour)
-  const closeHour = parseInt(closingTime.split(':')[0], 10);
+  const closeHour = parseInt(closingTime.split(":")[0], 10);
   if (isNaN(closeHour)) return false;
 
   // Only check if selected date is today
@@ -111,26 +111,31 @@ export function clearPendingBooking(): void {
   }
 }
 
-const REBOOK_DATA_KEY = 'rebookData';
+const REBOOK_DATA_KEY = "rebookData";
 
-export function getInitialRebookData(): { name: string; phone: string; applied: boolean } {
-  if (typeof window === 'undefined') return { name: '', phone: '', applied: false };
+export function getInitialRebookData(): {
+  name: string;
+  phone: string;
+  applied: boolean;
+} {
+  if (typeof window === "undefined")
+    return { name: "", phone: "", applied: false };
   const raw = sessionStorage.getItem(REBOOK_DATA_KEY);
-  if (!raw) return { name: '', phone: '', applied: false };
+  if (!raw) return { name: "", phone: "", applied: false };
   try {
     const data = JSON.parse(raw);
     if (data.name || data.phone) {
-      return { name: data.name ?? '', phone: data.phone ?? '', applied: true };
+      return { name: data.name ?? "", phone: data.phone ?? "", applied: true };
     }
   } catch {
     sessionStorage.removeItem(REBOOK_DATA_KEY);
   }
-  return { name: '', phone: '', applied: false };
+  return { name: "", phone: "", applied: false };
 }
 
 /** Set customer name/phone for Rebook so the booking page can prefill the form. */
 export function setRebookData(name: string, phone: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     sessionStorage.setItem(REBOOK_DATA_KEY, JSON.stringify({ name, phone }));
   } catch {

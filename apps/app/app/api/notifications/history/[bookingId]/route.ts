@@ -1,13 +1,13 @@
-import { NextRequest } from 'next/server';
-import { notificationService } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { isValidUUID } from '@cusown/shared/server';
-import { setCacheHeaders } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import { notificationService } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { isValidUUID } from "@cusown/shared/server";
+import { setCacheHeaders } from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ bookingId: string }> }
+  { params }: { params: Promise<{ bookingId: string }> },
 ) {
   try {
     const { bookingId } = await params;
@@ -21,7 +21,8 @@ export async function GET(
     setCacheHeaders(response, 60, 120);
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

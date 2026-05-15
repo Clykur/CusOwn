@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 function LineChart({
   data,
-  color = '#111827',
+  color = "#111827",
 }: {
   data: { x: string; y: number }[];
   color?: string;
@@ -12,11 +12,15 @@ function LineChart({
   const w = 600;
   const h = 160;
   const safeData =
-    data && data.length > 0 ? data : Array.from({ length: 7 }).map((_, i) => ({ x: `${i}`, y: 0 }));
+    data && data.length > 0
+      ? data
+      : Array.from({ length: 7 }).map((_, i) => ({ x: `${i}`, y: 0 }));
   const values = safeData.map((d) => d.y);
   const max = Math.max(...values, 1);
   const step = w / Math.max(1, safeData.length - 1);
-  const points = safeData.map((d, i) => `${i * step},${h - (d.y / max) * (h - 12)}`).join(' ');
+  const points = safeData
+    .map((d, i) => `${i * step},${h - (d.y / max) * (h - 12)}`)
+    .join(" ");
   return (
     <div className="w-full min-w-0">
       <svg
@@ -27,7 +31,14 @@ function LineChart({
         preserveAspectRatio="xMidYMid meet"
       >
         {/* horizontal baseline */}
-        <line x1={0} y1={h - 12} x2={w} y2={h - 12} stroke="#e5e7eb" strokeWidth={1} />
+        <line
+          x1={0}
+          y1={h - 12}
+          x2={w}
+          y2={h - 12}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
         <polyline
           points={points}
           fill="none"
@@ -48,13 +59,17 @@ function AreaChart({ data }: { data: { x: string; y: number }[] }) {
   const w = 600;
   const h = 160;
   const safeData =
-    data && data.length > 0 ? data : Array.from({ length: 7 }).map((_, i) => ({ x: `${i}`, y: 0 }));
+    data && data.length > 0
+      ? data
+      : Array.from({ length: 7 }).map((_, i) => ({ x: `${i}`, y: 0 }));
   const values = safeData.map((d) => d.y);
   const max = Math.max(...values, 1);
   const step = w / Math.max(1, safeData.length - 1);
-  const coords = safeData.map((d, i) => `${i * step},${h - (d.y / max) * (h - 12)}`);
-  const polylinePoints = coords.join(' ');
-  const dAttr = `M0,${h} L ${coords.join(' L ')} L ${w},${h} Z`;
+  const coords = safeData.map(
+    (d, i) => `${i * step},${h - (d.y / max) * (h - 12)}`,
+  );
+  const polylinePoints = coords.join(" ");
+  const dAttr = `M0,${h} L ${coords.join(" L ")} L ${w},${h} Z`;
   return (
     <div className="w-full min-w-0">
       <svg
@@ -64,7 +79,14 @@ function AreaChart({ data }: { data: { x: string; y: number }[] }) {
         height={h}
         preserveAspectRatio="xMidYMid meet"
       >
-        <line x1={0} y1={h - 12} x2={w} y2={h - 12} stroke="#e5e7eb" strokeWidth={1} />
+        <line
+          x1={0}
+          y1={h - 12}
+          x2={w}
+          y2={h - 12}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+        />
         <path d={dAttr} fill="rgba(0,0,0,0.06)" />
         <polyline
           points={polylinePoints}
@@ -82,10 +104,17 @@ function AreaChart({ data }: { data: { x: string; y: number }[] }) {
   );
 }
 
-function Donut({ parts }: { parts: { label: string; value: number; color?: string }[] }) {
-  const total = parts && parts.length > 0 ? parts.reduce((s, p) => s + p.value, 0) : 0;
+function Donut({
+  parts,
+}: {
+  parts: { label: string; value: number; color?: string }[];
+}) {
+  const total =
+    parts && parts.length > 0 ? parts.reduce((s, p) => s + p.value, 0) : 0;
   const hasValues = total > 0;
-  const safeParts = hasValues ? parts : [{ label: 'No data', value: 1, color: '#d1d5db' }];
+  const safeParts = hasValues
+    ? parts
+    : [{ label: "No data", value: 1, color: "#d1d5db" }];
   let angle = 0;
   const cx = 50;
   const cy = 50;
@@ -105,7 +134,7 @@ function Donut({ parts }: { parts: { label: string; value: number; color?: strin
             cx={cx}
             cy={cy}
             fill="none"
-            stroke={p.color || '#111827'}
+            stroke={p.color || "#111827"}
             strokeWidth={10}
             strokeDasharray={`${dash} ${circumference - dash}`}
             transform={`rotate(${rotation} ${cx} ${cy})`}
@@ -114,7 +143,13 @@ function Donut({ parts }: { parts: { label: string; value: number; color?: strin
         );
       })}
       {!hasValues && (
-        <text x="50" y="55" textAnchor="middle" className="text-xs" fill="#6b7280">
+        <text
+          x="50"
+          y="55"
+          textAnchor="middle"
+          className="text-xs"
+          fill="#6b7280"
+        >
           0
         </text>
       )}
@@ -142,12 +177,14 @@ export default function TrendCharts({
       dailyData && dailyData.length
         ? dailyData.map((d) => ({ x: d.date, y: d.totalBookings }))
         : [],
-    [dailyData]
+    [dailyData],
   );
   const revenueSeries = useMemo(
     () =>
-      dailyData && dailyData.length ? dailyData.map((d) => ({ x: d.date, y: d.revenue ?? 0 })) : [],
-    [dailyData]
+      dailyData && dailyData.length
+        ? dailyData.map((d) => ({ x: d.date, y: d.revenue ?? 0 }))
+        : [],
+    [dailyData],
   );
   const peak = useMemo(
     () =>
@@ -157,30 +194,36 @@ export default function TrendCharts({
             value: p.bookingCount,
           }))
         : [],
-    [peakHours]
+    [peakHours],
   );
   const servicesSorted = useMemo(
     () => (services && services.length ? services.slice(0, 8) : []),
-    [services]
+    [services],
   );
   const statusParts = useMemo(() => analyticsParts(analytics), [analytics]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div className="col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-        <h3 className="text-sm font-semibold mb-2 text-slate-900">Bookings Over Time</h3>
+        <h3 className="text-sm font-semibold mb-2 text-slate-900">
+          Bookings Over Time
+        </h3>
         <div className="min-h-[250px] w-full min-w-0">
           <LineChart data={bookingsSeries} color="#111827" />
         </div>
 
-        <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">Revenue Over Time</h3>
+        <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">
+          Revenue Over Time
+        </h3>
         <div className="min-h-[250px] w-full min-w-0">
           <AreaChart data={revenueSeries} />
         </div>
       </div>
 
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-        <h3 className="text-sm font-semibold mb-3 text-slate-900">Booking Status</h3>
+        <h3 className="text-sm font-semibold mb-3 text-slate-900">
+          Booking Status
+        </h3>
         <div className="flex items-center justify-center">
           <Donut parts={statusParts} />
         </div>
@@ -193,7 +236,7 @@ export default function TrendCharts({
               <div className="flex items-center gap-2">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ background: p.color || '#111827' }}
+                  style={{ background: p.color || "#111827" }}
                 />
                 <span>{p.label}</span>
               </div>
@@ -202,7 +245,9 @@ export default function TrendCharts({
           ))}
         </div>
 
-        <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">Peak Hours</h3>
+        <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">
+          Peak Hours
+        </h3>
         <div className="space-y-2">
           {(peak.length ? peak : peakPlaceholder()).map((p, i) => (
             <div key={i} className="flex items-center gap-2 min-w-0">
@@ -223,31 +268,37 @@ export default function TrendCharts({
 
       <div className="col-span-1 lg:col-span-3">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-          <h3 className="text-sm font-semibold mb-3 text-slate-900">Service Popularity</h3>
+          <h3 className="text-sm font-semibold mb-3 text-slate-900">
+            Service Popularity
+          </h3>
           <div className="space-y-2">
-            {(servicesSorted.length ? servicesSorted : servicesPlaceholder()).map(
-              (s: any, i: number) => (
-                <div key={i} className="flex items-center gap-3 min-w-0">
-                  <div className="w-48 text-sm text-gray-700">{s.name}</div>
-                  <div className="flex-1 bg-gray-100 rounded h-3 min-w-0">
-                    <div
-                      className="bg-black h-3 rounded"
-                      style={{
-                        width: `${
-                          (s.count /
-                            Math.max(
-                              1,
-                              servicesSorted.reduce((a: any, b: any) => Math.max(a, b.count), 0)
-                            )) *
-                          100
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <div className="w-8 text-right text-sm">{s.count}</div>
+            {(servicesSorted.length
+              ? servicesSorted
+              : servicesPlaceholder()
+            ).map((s: any, i: number) => (
+              <div key={i} className="flex items-center gap-3 min-w-0">
+                <div className="w-48 text-sm text-gray-700">{s.name}</div>
+                <div className="flex-1 bg-gray-100 rounded h-3 min-w-0">
+                  <div
+                    className="bg-black h-3 rounded"
+                    style={{
+                      width: `${
+                        (s.count /
+                          Math.max(
+                            1,
+                            servicesSorted.reduce(
+                              (a: any, b: any) => Math.max(a, b.count),
+                              0,
+                            ),
+                          )) *
+                        100
+                      }%`,
+                    }}
+                  />
                 </div>
-              )
-            )}
+                <div className="w-8 text-right text-sm">{s.count}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -279,8 +330,8 @@ function analyticsParts(analytics?: {
   const rejected = analytics?.rejectedBookings ?? 0;
   const cancelled = analytics?.cancelledBookings ?? 0;
   return [
-    { label: 'Confirmed', value: confirmed, color: '#10b981' },
-    { label: 'Rejected', value: rejected, color: '#6b7280' },
-    { label: 'Cancelled', value: cancelled, color: '#f59e0b' },
+    { label: "Confirmed", value: confirmed, color: "#10b981" },
+    { label: "Rejected", value: rejected, color: "#6b7280" },
+    { label: "Cancelled", value: cancelled, color: "#f59e0b" },
   ];
 }

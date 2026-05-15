@@ -1,24 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 
 // Load .env.test first (CI/placeholders), then .env.local (local overrides).
-dotenv.config({ path: '.env.test' });
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: ".env.test" });
+dotenv.config({ path: ".env.local" });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /** Same rules as scripts/infrastructure/check-live-supabase-env.js */
 export function isLiveSupabaseConfigured(): boolean {
-  const url = (supabaseUrl || '').trim();
-  const key = (supabaseServiceKey || '').trim();
+  const url = (supabaseUrl || "").trim();
+  const key = (supabaseServiceKey || "").trim();
   if (!url || !key) return false;
   if (/placeholder/i.test(url) || /placeholder/i.test(key)) return false;
-  if (key === 'placeholder-service-role-key' || key === 'placeholder-anon-key') return false;
+  if (key === "placeholder-service-role-key" || key === "placeholder-anon-key")
+    return false;
   try {
     const { hostname } = new URL(url);
-    if (!hostname || hostname === 'placeholder.supabase.co') return false;
+    if (!hostname || hostname === "placeholder.supabase.co") return false;
   } catch {
     return false;
   }
@@ -29,7 +30,7 @@ function createStubSupabase(): SupabaseClient {
   const stub = new Proxy({} as SupabaseClient, {
     get() {
       throw new Error(
-        'Supabase is not configured for integration tests. Set real NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local (they override .env.test placeholders).'
+        "Supabase is not configured for integration tests. Set real NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local (they override .env.test placeholders).",
       );
     },
   });
@@ -39,12 +40,12 @@ function createStubSupabase(): SupabaseClient {
 const missingCred = !supabaseUrl || !supabaseServiceKey;
 
 export const supabase: SupabaseClient =
-  missingCred && process.env.CI === 'true'
+  missingCred && process.env.CI === "true"
     ? createStubSupabase()
     : missingCred
       ? (() => {
           throw new Error(
-            'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local or .env.test'
+            "Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local or .env.test",
           );
         })()
       : !isLiveSupabaseConfigured()
@@ -92,17 +93,18 @@ export class TestRunner {
       console.log(`   ⏱️  Duration: ${duration}ms`);
       if (testDetails.dataCreated) {
         console.log(
-          `   📝 Data Created: ${JSON.stringify(testDetails.dataCreated, null, 2).split('\n').slice(0, 5).join('\n      ')}`
+          `   📝 Data Created: ${JSON.stringify(testDetails.dataCreated, null, 2).split("\n").slice(0, 5).join("\n      ")}`,
         );
       }
       if (testDetails.dataAccessed) {
         console.log(
-          `   📊 Data Accessed: ${JSON.stringify(testDetails.dataAccessed, null, 2).split('\n').slice(0, 5).join('\n      ')}`
+          `   📊 Data Accessed: ${JSON.stringify(testDetails.dataAccessed, null, 2).split("\n").slice(0, 5).join("\n      ")}`,
         );
       }
     } catch (error) {
       const duration = Date.now() - testStart;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.results.push({
         name,
         passed: false,
@@ -123,7 +125,8 @@ export class TestRunner {
       this.results.push({ name, passed: true });
       console.log(`✅ PASSED: ${name}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.results.push({ name, passed: false, error: errorMessage });
       console.error(`❌ FAILED: ${name}`);
       console.error(`   Error: ${errorMessage}`);
@@ -136,25 +139,35 @@ export class TestRunner {
 
   printSummary(): void {
     const totalDuration = Date.now() - this.startTime;
-    console.log('\n' + '='.repeat(70));
-    console.log('📊 DETAILED TEST SUMMARY');
-    console.log('='.repeat(70));
+    console.log("\n" + "=".repeat(70));
+    console.log("📊 DETAILED TEST SUMMARY");
+    console.log("=".repeat(70));
 
     const passed = this.results.filter((r) => r.passed).length;
     const failed = this.results.filter((r) => !r.passed).length;
     const total = this.results.length;
-    const avgDuration = this.results.reduce((sum, r) => sum + (r.duration || 0), 0) / total;
-    const totalTestDuration = this.results.reduce((sum, r) => sum + (r.duration || 0), 0);
+    const avgDuration =
+      this.results.reduce((sum, r) => sum + (r.duration || 0), 0) / total;
+    const totalTestDuration = this.results.reduce(
+      (sum, r) => sum + (r.duration || 0),
+      0,
+    );
 
     console.log(`\n📈 Overall Statistics:`);
     console.log(`   Total Tests: ${total}`);
-    console.log(`   ✅ Passed: ${passed} (${((passed / total) * 100).toFixed(1)}%)`);
-    console.log(`   ❌ Failed: ${failed} (${((failed / total) * 100).toFixed(1)}%)`);
     console.log(
-      `   ⏱️  Total Duration: ${totalDuration}ms (${(totalDuration / 1000).toFixed(2)}s)`
+      `   ✅ Passed: ${passed} (${((passed / total) * 100).toFixed(1)}%)`,
+    );
+    console.log(
+      `   ❌ Failed: ${failed} (${((failed / total) * 100).toFixed(1)}%)`,
+    );
+    console.log(
+      `   ⏱️  Total Duration: ${totalDuration}ms (${(totalDuration / 1000).toFixed(2)}s)`,
     );
     console.log(`   ⏱️  Average Test Duration: ${avgDuration.toFixed(0)}ms`);
-    console.log(`   ⏱️  Test Execution Time: ${totalTestDuration.toFixed(0)}ms`);
+    console.log(
+      `   ⏱️  Test Execution Time: ${totalTestDuration.toFixed(0)}ms`,
+    );
 
     if (passed > 0) {
       console.log(`\n✅ Passed Tests:`);
@@ -167,9 +180,9 @@ export class TestRunner {
           }
           if (r.details?.dataCreated) {
             const created = r.details.dataCreated;
-            if (typeof created === 'object') {
+            if (typeof created === "object") {
               const keys = Object.keys(created);
-              console.log(`      📝 Created: ${keys.join(', ')}`);
+              console.log(`      📝 Created: ${keys.join(", ")}`);
             }
           }
         });
@@ -190,20 +203,20 @@ export class TestRunner {
         });
     }
 
-    console.log('\n' + '='.repeat(70) + '\n');
+    console.log("\n" + "=".repeat(70) + "\n");
   }
 }
 
 export async function getRandomBusiness(): Promise<any> {
   const { data, error } = await supabase
-    .from('businesses')
-    .select('*')
-    .eq('suspended', false)
+    .from("businesses")
+    .select("*")
+    .eq("suspended", false)
     .limit(1)
     .single();
 
   if (error || !data) {
-    throw new Error(`No active business found: ${error?.message || 'No data'}`);
+    throw new Error(`No active business found: ${error?.message || "No data"}`);
   }
 
   return data;
@@ -213,12 +226,15 @@ export async function getRandomBusiness(): Promise<any> {
  * Generate slots for a business if they don't exist
  * Uses DSA: Queue-based slot generation
  */
-async function ensureSlotsExist(businessId: string, date: string): Promise<void> {
+async function ensureSlotsExist(
+  businessId: string,
+  date: string,
+): Promise<void> {
   const { data: existing } = await supabase
-    .from('slots')
-    .select('id')
-    .eq('business_id', businessId)
-    .eq('date', date)
+    .from("slots")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("date", date)
     .limit(1);
 
   if (existing && existing.length > 0) {
@@ -227,13 +243,18 @@ async function ensureSlotsExist(businessId: string, date: string): Promise<void>
 
   // Get business config
   const { data: business } = await supabase
-    .from('businesses')
-    .select('opening_time, closing_time, slot_duration')
-    .eq('id', businessId)
+    .from("businesses")
+    .select("opening_time, closing_time, slot_duration")
+    .eq("id", businessId)
     .single();
 
-  if (!business || !business.opening_time || !business.closing_time || !business.slot_duration) {
-    throw new Error('Business missing time configuration');
+  if (
+    !business ||
+    !business.opening_time ||
+    !business.closing_time ||
+    !business.slot_duration
+  ) {
+    throw new Error("Business missing time configuration");
   }
 
   // Generate slots using queue-based approach
@@ -250,13 +271,13 @@ async function ensureSlotsExist(businessId: string, date: string): Promise<void>
       date,
       start_time: formatTime(current),
       end_time: formatTime(end),
-      status: 'available',
+      status: "available",
     });
     current = end;
   }
 
   if (slots.length > 0) {
-    const { error } = await supabase.from('slots').insert(slots);
+    const { error } = await supabase.from("slots").insert(slots);
     if (error) {
       throw new Error(`Failed to generate slots: ${error.message}`);
     }
@@ -264,14 +285,14 @@ async function ensureSlotsExist(businessId: string, date: string): Promise<void>
 }
 
 function parseTime(timeStr: string): number {
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  const [hours, minutes] = timeStr.split(":").map(Number);
   return hours * 60 + minutes;
 }
 
 function formatTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:00`;
 }
 
 export async function getRandomAvailableSlot(businessId: string): Promise<any> {
@@ -280,7 +301,7 @@ export async function getRandomAvailableSlot(businessId: string): Promise<any> {
   for (let i = 1; i <= 7; i++) {
     const date = new Date();
     date.setDate(date.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(date.toISOString().split("T")[0]);
   }
 
   // Try each date until we find available slots
@@ -293,11 +314,11 @@ export async function getRandomAvailableSlot(businessId: string): Promise<any> {
     }
 
     const { data, error } = await supabase
-      .from('slots')
-      .select('*')
-      .eq('business_id', businessId)
-      .eq('status', 'available')
-      .eq('date', dateStr)
+      .from("slots")
+      .select("*")
+      .eq("business_id", businessId)
+      .eq("status", "available")
+      .eq("date", dateStr)
       .limit(1)
       .maybeSingle();
 
@@ -307,46 +328,48 @@ export async function getRandomAvailableSlot(businessId: string): Promise<any> {
   }
 
   throw new Error(
-    `No available slots found for business ${businessId.substring(0, 8)}... after checking 7 days`
+    `No available slots found for business ${businessId.substring(0, 8)}... after checking 7 days`,
   );
 }
 
 export async function getOrCreateTestUser(
   email: string,
-  userType: 'customer' | 'owner' = 'customer'
+  userType: "customer" | "owner" = "customer",
 ): Promise<any> {
   // Create new user using admin API (always create with unique email)
   const { data: newUser, error } = await supabase.auth.admin.createUser({
     email,
-    password: 'TestPassword123!', // pragma: allowlist secret
+    password: "TestPassword123!", // pragma: allowlist secret
     email_confirm: true,
   });
 
   if (error) {
     // If user already exists, the error will indicate that
     // For testing, we'll throw and let the test handle it
-    throw new Error(`Failed to create test user: ${error.message}. Email may already exist.`);
+    throw new Error(
+      `Failed to create test user: ${error.message}. Email may already exist.`,
+    );
   }
 
   if (!newUser.user) {
-    throw new Error('Failed to create test user: No user returned');
+    throw new Error("Failed to create test user: No user returned");
   }
 
   const userId = newUser.user.id;
 
   // Check and create profile
   const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', userId)
+    .from("user_profiles")
+    .select("*")
+    .eq("id", userId)
     .single();
 
   if (!profile) {
-    const { error: insertError } = await supabase.from('user_profiles').insert({
+    const { error: insertError } = await supabase.from("user_profiles").insert({
       id: userId,
       user_type: userType,
       full_name: `Test ${userType}`,
-      phone_number: '+919876543210',
+      phone_number: "+919876543210",
     });
     if (insertError) {
       console.warn(`Failed to create profile: ${insertError.message}`);
@@ -354,32 +377,41 @@ export async function getOrCreateTestUser(
   } else {
     // Update user type if needed
     if (profile.user_type !== userType) {
-      await supabase.from('user_profiles').update({ user_type: userType }).eq('id', userId);
+      await supabase
+        .from("user_profiles")
+        .update({ user_type: userType })
+        .eq("id", userId);
     }
   }
 
   return { id: userId, email, userType };
 }
 
-export async function cleanupTestData(bookingIds: string[], slotIds: string[]): Promise<void> {
+export async function cleanupTestData(
+  bookingIds: string[],
+  slotIds: string[],
+): Promise<void> {
   if (bookingIds.length > 0) {
-    await supabase.from('bookings').delete().in('id', bookingIds);
+    await supabase.from("bookings").delete().in("id", bookingIds);
   }
   if (slotIds.length > 0) {
     await supabase
-      .from('slots')
-      .update({ status: 'available', reserved_until: null })
-      .in('id', slotIds);
+      .from("slots")
+      .update({ status: "available", reserved_until: null })
+      .in("id", slotIds);
   }
 }
 
-export async function simulateUserAction(action: string, details?: any): Promise<void> {
+export async function simulateUserAction(
+  action: string,
+  details?: any,
+): Promise<void> {
   console.log(`   👤 User Action: ${action}`);
   if (details) {
     const detailsStr = JSON.stringify(details, null, 2);
-    const lines = detailsStr.split('\n').slice(0, 3);
+    const lines = detailsStr.split("\n").slice(0, 3);
     if (lines.length > 0) {
-      console.log(`      Details: ${lines.join('\n      ')}`);
+      console.log(`      Details: ${lines.join("\n      ")}`);
     }
   }
   await new Promise((resolve) => setTimeout(resolve, 100));
@@ -390,8 +422,9 @@ export async function simulateUserAction(action: string, details?: any): Promise
  */
 export class StateMachineTracker {
   private stateGraph: Map<string, Set<string>> = new Map();
-  private transitions: Array<{ from: string; to: string; timestamp: number }> = [];
-  private currentState: string = 'initial';
+  private transitions: Array<{ from: string; to: string; timestamp: number }> =
+    [];
+  private currentState: string = "initial";
 
   constructor(validTransitions: Record<string, string[]>) {
     for (const [from, toStates] of Object.entries(validTransitions)) {
@@ -422,7 +455,7 @@ export class StateMachineTracker {
   }
 
   isValidPath(): boolean {
-    return this.transitions.length > 0 && this.currentState !== 'initial';
+    return this.transitions.length > 0 && this.currentState !== "initial";
   }
 }
 
@@ -431,7 +464,8 @@ export class StateMachineTracker {
  */
 export class WorkflowQueue {
   private queue: Array<{ action: string; priority: number; data?: any }> = [];
-  private completed: Array<{ action: string; result: any; timestamp: number }> = [];
+  private completed: Array<{ action: string; result: any; timestamp: number }> =
+    [];
 
   enqueue(action: string, priority: number = 0, data?: any): void {
     this.queue.push({ action, priority, data });

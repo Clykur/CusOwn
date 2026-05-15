@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import CustomerBookingShell from '@/components/customer/customer-booking-shell';
-import type { CustomerInitialUser } from '@/components/customer/customer-session-context';
+import { useEffect, useState } from "react";
+import CustomerBookingShell from "@/components/customer/customer-booking-shell";
+import type { CustomerInitialUser } from "@/components/customer/customer-session-context";
 
 type BookingLayoutFallbackProps = { children: React.ReactNode };
 
@@ -11,13 +11,17 @@ type BookingLayoutFallbackProps = { children: React.ReactNode };
  * on the client and show customer shell if user is a customer. Avoids sidebar
  * disappearing due to server/client cookie timing.
  */
-export default function BookingLayoutFallback({ children }: BookingLayoutFallbackProps) {
-  const [initialUser, setInitialUser] = useState<CustomerInitialUser | null>(null);
+export default function BookingLayoutFallback({
+  children,
+}: BookingLayoutFallbackProps) {
+  const [initialUser, setInitialUser] = useState<CustomerInitialUser | null>(
+    null,
+  );
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/auth/session', { credentials: 'include' })
+    fetch("/api/auth/session", { credentials: "include" })
       .then((res) => res.json())
       .then((json) => {
         if (cancelled) return;
@@ -25,15 +29,18 @@ export default function BookingLayoutFallback({ children }: BookingLayoutFallbac
         const user = data?.user ?? null;
         const profile = data?.profile ?? null;
         const userType = (profile as { user_type?: string } | null)?.user_type;
-        const isCustomer = userType === 'customer' || userType === 'both';
+        const isCustomer = userType === "customer" || userType === "both";
         if (user?.id && isCustomer) {
           setInitialUser({
             id: user.id,
             email: user.email ?? undefined,
-            full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
-            user_type: userType as 'owner' | 'customer' | 'both' | 'admin',
-            profile_media_id: (profile as { profile_media_id?: string | null } | null)
-              ?.profile_media_id,
+            full_name:
+              (profile as { full_name?: string } | null)?.full_name ??
+              undefined,
+            user_type: userType as "owner" | "customer" | "both" | "admin",
+            profile_media_id: (
+              profile as { profile_media_id?: string | null } | null
+            )?.profile_media_id,
           });
         }
       })
@@ -55,7 +62,11 @@ export default function BookingLayoutFallback({ children }: BookingLayoutFallbac
   }
 
   if (initialUser) {
-    return <CustomerBookingShell initialUser={initialUser}>{children}</CustomerBookingShell>;
+    return (
+      <CustomerBookingShell initialUser={initialUser}>
+        {children}
+      </CustomerBookingShell>
+    );
   }
 
   return (

@@ -1,21 +1,28 @@
-import { NextRequest } from 'next/server';
-import { requireAdmin, requireSupabaseAdmin, successResponse, errorResponse, isValidUUID, adminRateLimit, parseLimitOffset } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import {
+  requireAdmin,
+  requireSupabaseAdmin,
+  successResponse,
+  errorResponse,
+  isValidUUID,
+  adminRateLimit,
+  parseLimitOffset,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 import {
   ADMIN_ANALYTICS_MAX_DAYS,
   AUDIT_ENTITY_TYPES,
   AUDIT_SEVERITY,
   AUDIT_FILTER_NOTES,
-} from '@cusown/config';
+} from "@cusown/config";
 
-
-const ROUTE = 'GET /api/admin/audit-logs';
+const ROUTE = "GET /api/admin/audit-logs";
 
 const ENTITY_TYPES_SET = new Set(AUDIT_ENTITY_TYPES);
 const SEVERITY_VALUES = Object.values(AUDIT_SEVERITY);
 
 function parseDate(value: string | null): string | null {
-  if (!value || typeof value !== 'string') return null;
+  if (!value || typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
   const date = new Date(trimmed);
@@ -31,16 +38,19 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const searchParams = request.nextUrl.searchParams;
-    const entity_type = searchParams.get('entity_type')?.trim() ?? undefined;
-    const actor_id = searchParams.get('actor_id')?.trim() ?? undefined;
-    const severity = searchParams.get('severity')?.trim() ?? undefined;
-    const start_time = searchParams.get('start_time')?.trim() ?? undefined;
-    const end_time = searchParams.get('end_time')?.trim() ?? undefined;
+    const entity_type = searchParams.get("entity_type")?.trim() ?? undefined;
+    const actor_id = searchParams.get("actor_id")?.trim() ?? undefined;
+    const severity = searchParams.get("severity")?.trim() ?? undefined;
+    const start_time = searchParams.get("start_time")?.trim() ?? undefined;
+    const end_time = searchParams.get("end_time")?.trim() ?? undefined;
 
     const notes: string[] = [];
 
     let effectiveEntityType: string | undefined = entity_type;
-    if (entity_type !== undefined && !ENTITY_TYPES_SET.has(entity_type as any)) {
+    if (
+      entity_type !== undefined &&
+      !ENTITY_TYPES_SET.has(entity_type as any)
+    ) {
       notes.push(AUDIT_FILTER_NOTES.INVALID_ENTITY_TYPE);
       effectiveEntityType = undefined;
     }
@@ -82,18 +92,21 @@ export async function GET(request: NextRequest) {
 
     const supabase = requireSupabaseAdmin();
     let query = supabase
-      .from('audit_logs')
+      .from("audit_logs")
       .select(
-        'id, created_at, admin_user_id, action_type, entity_type, entity_id, severity, metadata, status',
-        { count: 'exact' }
+        "id, created_at, admin_user_id, action_type, entity_type, entity_id, severity, metadata, status",
+        { count: "exact" },
       )
-      .order('created_at', { ascending: false })
+      .order("created_at", { ascending: false })
       .range(offsetFromPage, offsetFromPage + limit - 1);
 
-    if (effectiveEntityType) query = query.eq('entity_type', effectiveEntityType);
-    if (effectiveActorId) query = query.eq('admin_user_id', effectiveActorId);
-    if (effectiveSeverity) query = query.eq('severity', effectiveSeverity);
-    query = query.gte('created_at', effectiveStart).lte('created_at', effectiveEnd);
+    if (effectiveEntityType)
+      query = query.eq("entity_type", effectiveEntityType);
+    if (effectiveActorId) query = query.eq("admin_user_id", effectiveActorId);
+    if (effectiveSeverity) query = query.eq("severity", effectiveSeverity);
+    query = query
+      .gte("created_at", effectiveStart)
+      .lte("created_at", effectiveEnd);
 
     const { data: rows, error, count } = await query;
 
@@ -122,7 +135,8 @@ export async function GET(request: NextRequest) {
       ...(notes.length > 0 && { notes }),
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      err instanceof Error ? err.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

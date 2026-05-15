@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { adminFetch } from '@cusown/shared';
-import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
-import FilterDropdown from '@/components/analytics/FilterDropdown';
-import DateFilter from '@/components/owner/date-filter';
-import { CRON_JOB_NAMES } from '@cusown/config';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { adminFetch } from "@cusown/shared";
+import { AdminSectionWrapper } from "@/components/admin/admin-section-wrapper";
+import FilterDropdown from "@/components/analytics/FilterDropdown";
+import DateFilter from "@/components/owner/date-filter";
+import { CRON_JOB_NAMES } from "@cusown/config";
 
 const FILTER_LABEL_CLASS =
-  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+  "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
 
 interface CronRun {
   id: string;
@@ -31,10 +31,10 @@ export function AdminCronMonitorTab() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [jobName, setJobName] = useState('');
-  const [status, setStatus] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [jobName, setJobName] = useState("");
+  const [status, setStatus] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
   const limit = 20;
 
@@ -42,26 +42,29 @@ export function AdminCronMonitorTab() {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
-    params.set('limit', String(limit));
-    params.set('offset', String((page - 1) * limit));
-    if (jobName) params.set('job_name', jobName);
-    if (status) params.set('status', status);
-    if (startDate) params.set('start_date', startDate);
-    if (endDate) params.set('end_date', endDate);
+    params.set("limit", String(limit));
+    params.set("offset", String((page - 1) * limit));
+    if (jobName) params.set("job_name", jobName);
+    if (status) params.set("status", status);
+    if (startDate) params.set("start_date", startDate);
+    if (endDate) params.set("end_date", endDate);
     try {
-      const res = await adminFetch(`/api/admin/cron-runs?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const res = await adminFetch(
+        `/api/admin/cron-runs?${params.toString()}`,
+        {
+          credentials: "include",
+        },
+      );
       const data = await res.json();
       if (!data.success) {
-        setError(data.error || 'Failed to load cron runs');
+        setError(data.error || "Failed to load cron runs");
         return;
       }
       const result = data.data as CronRunsResponse;
       setRuns(result.runs ?? []);
       setTotal(result.total ?? 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load');
+      setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -75,29 +78,40 @@ export function AdminCronMonitorTab() {
 
   const jobOptions = useMemo(
     () => [
-      { value: '', label: 'All jobs', checked: jobName === '' },
-      ...CRON_JOB_NAMES.map((name) => ({ value: name, label: name, checked: jobName === name })),
+      { value: "", label: "All jobs", checked: jobName === "" },
+      ...CRON_JOB_NAMES.map((name) => ({
+        value: name,
+        label: name,
+        checked: jobName === name,
+      })),
     ],
-    [jobName]
+    [jobName],
   );
 
   const statusOptions = useMemo(
     () => [
-      { value: '', label: 'All statuses', checked: status === '' },
-      { value: 'success', label: 'Success', checked: status === 'success' },
-      { value: 'failed', label: 'Failed', checked: status === 'failed' },
+      { value: "", label: "All statuses", checked: status === "" },
+      { value: "success", label: "Success", checked: status === "success" },
+      { value: "failed", label: "Failed", checked: status === "failed" },
     ],
-    [status]
+    [status],
   );
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Cron Monitor</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Scheduled job runs and status</p>
+        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+          Cron Monitor
+        </h1>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Scheduled job runs and status
+        </p>
       </div>
 
-      <AdminSectionWrapper title="Filters" subtitle="Filter by job, status, or date">
+      <AdminSectionWrapper
+        title="Filters"
+        subtitle="Filter by job, status, or date"
+      >
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-full min-w-[180px] sm:w-[200px]">
             <FilterDropdown
@@ -192,26 +206,30 @@ export function AdminCronMonitorTab() {
               <tbody className="divide-y divide-slate-100 bg-white">
                 {runs.map((run) => (
                   <tr key={run.id} className="hover:bg-slate-50/80">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">{run.job_name}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                      {run.job_name}
+                    </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {run.started_at ? new Date(run.started_at).toLocaleString() : '—'}
+                      {run.started_at
+                        ? new Date(run.started_at).toLocaleString()
+                        : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          run.status === 'success'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-red-100 text-red-800'
+                          run.status === "success"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-red-100 text-red-800"
                         }`}
                       >
                         {run.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {run.duration_ms != null ? run.duration_ms : '—'}
+                      {run.duration_ms != null ? run.duration_ms : "—"}
                     </td>
                     <td className="max-w-xs truncate px-4 py-3 text-sm text-slate-600">
-                      {run.error_message || '—'}
+                      {run.error_message || "—"}
                     </td>
                   </tr>
                 ))}

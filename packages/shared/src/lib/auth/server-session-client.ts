@@ -20,7 +20,7 @@ const CACHE_MS = 5000;
  * Fetch current user and profile from server. Uses cookies; no client-side auth.
  */
 export async function getServerSessionClient(): Promise<ServerSession> {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return { user: null, profile: null };
   }
   const now = Date.now();
@@ -28,7 +28,7 @@ export async function getServerSessionClient(): Promise<ServerSession> {
     return sessionCache.data;
   }
   try {
-    const res = await fetch('/api/auth/session', { credentials: 'include' });
+    const res = await fetch("/api/auth/session", { credentials: "include" });
     const json = await res.json();
     const data = json?.data ?? json;
     const session: ServerSession = {

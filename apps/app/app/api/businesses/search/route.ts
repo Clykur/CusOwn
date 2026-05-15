@@ -1,21 +1,21 @@
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { getClientIp, isValidUUID } from '@cusown/shared/server';
-import { requireSupabaseAdmin } from '@cusown/shared/server';
-import { enhancedRateLimit } from '@cusown/shared/server';
-import { checkNonce, storeNonce } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { getClientIp, isValidUUID } from "@cusown/shared/server";
+import { requireSupabaseAdmin } from "@cusown/shared/server";
+import { enhancedRateLimit } from "@cusown/shared/server";
+import { checkNonce, storeNonce } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
 import {
   parseAndValidateCoordinates,
   validateSearchRadius,
   isCoordinatePairConsistent,
-} from '@cusown/shared/server';
-import { ipLookupWithFallback } from '@cusown/shared/server';
-import { queryDiscoveryFallback } from '@cusown/shared/server';
-import { logStructured } from '@cusown/shared/server';
-import { safeMetrics } from '@cusown/shared/server';
-import { getCache, setCache } from '@cusown/shared/server';
-import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@cusown/config';
+} from "@cusown/shared/server";
+import { ipLookupWithFallback } from "@cusown/shared/server";
+import { queryDiscoveryFallback } from "@cusown/shared/server";
+import { logStructured } from "@cusown/shared/server";
+import { safeMetrics } from "@cusown/shared/server";
+import { getCache, setCache } from "@cusown/shared/server";
+import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from "@cusown/config";
 import {
   DISCOVERY_WEIGHT_DISTANCE,
   DISCOVERY_WEIGHT_RATING,
@@ -36,11 +36,11 @@ import {
   METRICS_DISCOVERY_FALLBACK_RPC,
   BUSINESS_SEARCH_REDIS_TTL_SECONDS,
   BUSINESS_SEARCH_REDIS_PREFIX,
-} from '@cusown/config';
+} from "@cusown/config";
 
-const DISCOVERY_ENDPOINT = 'POST /api/businesses/search';
+const DISCOVERY_ENDPOINT = "POST /api/businesses/search";
 
-export type DiscoveryFallbackReason = 'geo_provider' | 'rpc';
+export type DiscoveryFallbackReason = "geo_provider" | "rpc";
 
 export interface DiscoveryFallbackContext {
   usedFallback: boolean;
@@ -52,7 +52,7 @@ const searchRateLimit = enhancedRateLimit({
   windowMs: 60000,
   perIP: true,
   perUser: true,
-  keyPrefix: 'geo_search',
+  keyPrefix: "geo_search",
 });
 
 interface SearchCacheParams {
@@ -72,19 +72,19 @@ interface SearchCacheParams {
 function buildSearchCacheKey(params: SearchCacheParams): string {
   const parts = [
     BUSINESS_SEARCH_REDIS_PREFIX,
-    params.lat?.toFixed(4) ?? 'n',
-    params.lng?.toFixed(4) ?? 'n',
-    params.city ?? 'n',
-    params.area ?? 'n',
-    params.pincode ?? 'n',
-    params.category ?? 'all',
+    params.lat?.toFixed(4) ?? "n",
+    params.lng?.toFixed(4) ?? "n",
+    params.city ?? "n",
+    params.area ?? "n",
+    params.pincode ?? "n",
+    params.category ?? "all",
     params.radiusKm.toString(),
-    params.availableToday ? '1' : '0',
-    params.minRating?.toString() ?? 'n',
+    params.availableToday ? "1" : "0",
+    params.minRating?.toString() ?? "n",
     params.page.toString(),
     params.limit.toString(),
   ];
-  return parts.join(':');
+  return parts.join(":");
 }
 
 export async function POST(request: NextRequest) {
@@ -96,10 +96,10 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse;
     }
 
-    const requestId = request.headers.get('x-request-id');
+    const requestId = request.headers.get("x-request-id");
     if (requestId) {
       if (!isValidUUID(requestId)) {
-        return errorResponse('Invalid request ID', 400);
+        return errorResponse("Invalid request ID", 400);
       }
 
       // Parallel: check user and nonce simultaneously
@@ -109,68 +109,68 @@ export async function POST(request: NextRequest) {
       ]);
 
       if (nonceExists) {
-        return errorResponse('Duplicate request', 409);
+        return errorResponse("Duplicate request", 409);
       }
 
       await storeNonce(requestId, user?.id, clientIP);
     }
 
     const body = await request.json();
-    const { filterFields } = await import('@cusown/shared/server');
+    const { filterFields } = await import("@cusown/shared/server");
 
     const allowedFields = [
-      'latitude',
-      'longitude',
-      'city',
-      'area',
-      'pincode',
-      'category',
-      'radius_km',
-      'available_today',
-      'min_rating',
-      'page',
-      'limit',
-      'sort_by',
-      'sort_order',
-      'explain',
+      "latitude",
+      "longitude",
+      "city",
+      "area",
+      "pincode",
+      "category",
+      "radius_km",
+      "available_today",
+      "min_rating",
+      "page",
+      "limit",
+      "sort_by",
+      "sort_order",
+      "explain",
     ] as const;
 
     const filteredBody = filterFields(body, allowedFields);
 
     if (filteredBody.latitude !== undefined) {
       const latNum =
-        typeof filteredBody.latitude === 'string'
+        typeof filteredBody.latitude === "string"
           ? parseFloat(filteredBody.latitude)
           : Number(filteredBody.latitude);
       if (!Number.isFinite(latNum) || latNum < -90 || latNum > 90) {
-        logStructured('warn', 'Discovery validation: invalid latitude', {
+        logStructured("warn", "Discovery validation: invalid latitude", {
           endpoint: DISCOVERY_ENDPOINT,
           request_id: requestId ?? undefined,
-          validation_failure: 'latitude',
+          validation_failure: "latitude",
         });
         return errorResponse(
           ERROR_MESSAGES.GEO_INVALID_LATITUDE,
           400,
-          ERROR_MESSAGES.VALIDATION_ERROR_CODE
+          ERROR_MESSAGES.VALIDATION_ERROR_CODE,
         );
       }
     }
 
     if (filteredBody.longitude !== undefined) {
       const lngNum =
-        typeof filteredBody.longitude === 'string'
+        typeof filteredBody.longitude === "string"
           ? parseFloat(filteredBody.longitude)
           : Number(filteredBody.longitude);
       if (!Number.isFinite(lngNum) || lngNum < -180 || lngNum > 180) {
-        logStructured('warn', 'Discovery validation: invalid longitude', {
+        logStructured("warn", "Discovery validation: invalid longitude", {
           endpoint: DISCOVERY_ENDPOINT,
           request_id: requestId ?? undefined,
-          validation_failure: 'longitude',
+          validation_failure: "longitude",
         });
         return errorResponse(
           ERROR_MESSAGES.GEO_INVALID_LONGITUDE,
           400,
-          ERROR_MESSAGES.VALIDATION_ERROR_CODE
+          ERROR_MESSAGES.VALIDATION_ERROR_CODE,
         );
       }
     }
@@ -178,37 +178,41 @@ export async function POST(request: NextRequest) {
     if (
       !isCoordinatePairConsistent(
         filteredBody.latitude !== undefined,
-        filteredBody.longitude !== undefined
+        filteredBody.longitude !== undefined,
       )
     ) {
-      logStructured('warn', 'Discovery validation: coordinate pair inconsistent', {
-        endpoint: DISCOVERY_ENDPOINT,
-        request_id: requestId ?? undefined,
-        validation_failure: 'coordinates_pair',
-      });
+      logStructured(
+        "warn",
+        "Discovery validation: coordinate pair inconsistent",
+        {
+          endpoint: DISCOVERY_ENDPOINT,
+          request_id: requestId ?? undefined,
+          validation_failure: "coordinates_pair",
+        },
+      );
       return errorResponse(
         ERROR_MESSAGES.GEO_COORDINATES_PAIR_REQUIRED,
         400,
-        ERROR_MESSAGES.VALIDATION_ERROR_CODE
+        ERROR_MESSAGES.VALIDATION_ERROR_CODE,
       );
     }
 
     const radiusKm =
       filteredBody.radius_km !== undefined
-        ? typeof filteredBody.radius_km === 'string'
+        ? typeof filteredBody.radius_km === "string"
           ? parseFloat(filteredBody.radius_km)
           : Number(filteredBody.radius_km)
         : DISCOVERY_DEFAULT_RADIUS_KM;
     if (!validateSearchRadius(radiusKm, MAX_SEARCH_RADIUS_KM)) {
-      logStructured('warn', 'Discovery validation: invalid radius', {
+      logStructured("warn", "Discovery validation: invalid radius", {
         endpoint: DISCOVERY_ENDPOINT,
         request_id: requestId ?? undefined,
-        validation_failure: 'radius_km',
+        validation_failure: "radius_km",
       });
       return errorResponse(
         ERROR_MESSAGES.GEO_INVALID_RADIUS,
         400,
-        ERROR_MESSAGES.VALIDATION_ERROR_CODE
+        ERROR_MESSAGES.VALIDATION_ERROR_CODE,
       );
     }
 
@@ -224,11 +228,14 @@ export async function POST(request: NextRequest) {
     // Pagination mandatory: clamp to configured bounds
     const page = Math.max(
       DISCOVERY_PAGE_MIN,
-      Math.min(DISCOVERY_PAGE_MAX, filteredBody.page ?? DISCOVERY_PAGE_MIN)
+      Math.min(DISCOVERY_PAGE_MAX, filteredBody.page ?? DISCOVERY_PAGE_MIN),
     );
     const limit = Math.max(
       DISCOVERY_LIMIT_MIN,
-      Math.min(DISCOVERY_LIMIT_MAX, filteredBody.limit ?? DISCOVERY_DEFAULT_LIMIT)
+      Math.min(
+        DISCOVERY_LIMIT_MAX,
+        filteredBody.limit ?? DISCOVERY_DEFAULT_LIMIT,
+      ),
     );
     const offset = (page - 1) * limit;
 
@@ -246,14 +253,17 @@ export async function POST(request: NextRequest) {
     let bodyLng: number | null = null;
     if (hasGeoFromBody) {
       try {
-        const coords = parseAndValidateCoordinates(filteredBody.latitude, filteredBody.longitude);
+        const coords = parseAndValidateCoordinates(
+          filteredBody.latitude,
+          filteredBody.longitude,
+        );
         bodyLat = coords.lat;
         bodyLng = coords.lng;
       } catch {
         return errorResponse(
           ERROR_MESSAGES.GEO_INVALID_COORDINATES,
           400,
-          ERROR_MESSAGES.VALIDATION_ERROR_CODE
+          ERROR_MESSAGES.VALIDATION_ERROR_CODE,
         );
       }
     }
@@ -279,7 +289,12 @@ export async function POST(request: NextRequest) {
       try {
         const { hit, data: cachedResponse } = await getCache<{
           businesses: unknown[];
-          pagination: { page: number; limit: number; total: number; has_more: boolean };
+          pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            has_more: boolean;
+          };
         }>(cacheKey);
         if (hit && cachedResponse) {
           return successResponse(cachedResponse);
@@ -291,7 +306,7 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      return errorResponse('Service unavailable', 503);
+      return errorResponse("Service unavailable", 503);
     }
 
     const fallbackContext: DiscoveryFallbackContext = { usedFallback: false };
@@ -309,15 +324,15 @@ export async function POST(request: NextRequest) {
         lng = geoOutcome.data.longitude;
       } else {
         fallbackContext.usedFallback = true;
-        fallbackContext.reason = 'geo_provider';
-        logStructured('warn', 'Discovery fallback: geo provider unavailable', {
-          service: 'geo_service',
-          failure_reason: 'geo_provider',
+        fallbackContext.reason = "geo_provider";
+        logStructured("warn", "Discovery fallback: geo provider unavailable", {
+          service: "geo_service",
+          failure_reason: "geo_provider",
           timestamp: new Date().toISOString(),
           request_id: requestId ?? undefined,
           endpoint: DISCOVERY_ENDPOINT,
           fallback_used: true,
-          fallback_reason: 'geo_provider',
+          fallback_reason: "geo_provider",
         });
       }
     }
@@ -326,7 +341,7 @@ export async function POST(request: NextRequest) {
 
     let ranked: unknown[] | null = null;
     let rpcError: unknown = null;
-    const rpcResult = await supabaseAdmin.rpc('search_businesses_ranked', {
+    const rpcResult = await supabaseAdmin.rpc("search_businesses_ranked", {
       p_lat: lat,
       p_lng: lng,
       p_radius_km: radiusKm,
@@ -350,7 +365,7 @@ export async function POST(request: NextRequest) {
     if (rpcResult.error) {
       rpcError = rpcResult.error;
       fallbackContext.usedFallback = true;
-      fallbackContext.reason = 'rpc';
+      fallbackContext.reason = "rpc";
       const fallbackRows = await queryDiscoveryFallback(supabaseAdmin, {
         p_city: filteredBody.city ?? null,
         p_area: filteredBody.area ?? null,
@@ -360,21 +375,21 @@ export async function POST(request: NextRequest) {
         offset,
       });
       ranked = fallbackRows as unknown[];
-      logStructured('warn', 'Discovery fallback: RPC failed', {
-        service: 'geo_service',
-        failure_reason: 'rpc_error',
+      logStructured("warn", "Discovery fallback: RPC failed", {
+        service: "geo_service",
+        failure_reason: "rpc_error",
         timestamp: new Date().toISOString(),
         request_id: requestId ?? undefined,
         endpoint: DISCOVERY_ENDPOINT,
         fallback_used: true,
-        fallback_reason: 'rpc',
+        fallback_reason: "rpc",
       });
     } else {
       ranked = rpcResult.data ?? [];
     }
 
     if (rpcError !== null && ranked === null) {
-      console.error('[GEO_SEARCH] RPC error:', rpcError);
+      console.error("[GEO_SEARCH] RPC error:", rpcError);
       return errorResponse(ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
@@ -401,15 +416,15 @@ export async function POST(request: NextRequest) {
     let toReturn = results.map((r) => ({
       id: r.business_id,
       salon_name: r.salon_name,
-      location: r.location || r.area || '',
+      location: r.location || r.area || "",
       distance_km: r.distance_km ?? undefined,
-      category: r.category || 'salon',
+      category: r.category || "salon",
       latitude: r.latitude,
       longitude: r.longitude,
     }));
 
     if (hasGeo && lat !== null && lng !== null && toReturn.length > 0) {
-      const { getRoute } = await import('@cusown/shared/server');
+      const { getRoute } = await import("@cusown/shared/server");
       const toEnrich = toReturn.slice(0, ROUTING_ENRICH_MAX_BUSINESSES);
       const enriched = await Promise.all(
         toEnrich.map(async (biz) => {
@@ -422,7 +437,7 @@ export async function POST(request: NextRequest) {
               startLng: lng,
               endLat: latNum,
               endLng: lngNum,
-              mode: 'walking',
+              mode: "walking",
             });
             return {
               ...biz,
@@ -434,7 +449,7 @@ export async function POST(request: NextRequest) {
           } catch {
             return biz;
           }
-        })
+        }),
       );
       const rest = toReturn.slice(ROUTING_ENRICH_MAX_BUSINESSES);
       toReturn = [...enriched, ...rest];
@@ -452,7 +467,12 @@ export async function POST(request: NextRequest) {
     };
     const response: {
       businesses: BusinessResponseItem[];
-      pagination: { page: number; limit: number; total: number; has_more: boolean };
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        has_more: boolean;
+      };
       explain_plan?: string[];
     } = {
       businesses: toReturn.map((b): BusinessResponseItem => {
@@ -471,7 +491,8 @@ export async function POST(request: NextRequest) {
         if (ext.estimated_time_minutes !== undefined)
           item.estimated_time_minutes = ext.estimated_time_minutes;
         if (ext.is_routed !== undefined) item.is_routed = ext.is_routed;
-        if (ext.route_source !== undefined) item.route_source = ext.route_source;
+        if (ext.route_source !== undefined)
+          item.route_source = ext.route_source;
         return item;
       }),
       pagination: {
@@ -483,7 +504,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (fallbackContext.usedFallback && fallbackContext.reason) {
-      if (fallbackContext.reason === 'geo_provider') {
+      if (fallbackContext.reason === "geo_provider") {
         safeMetrics.increment(METRICS_DISCOVERY_FALLBACK_GEO);
       } else {
         safeMetrics.increment(METRICS_DISCOVERY_FALLBACK_RPC);
@@ -492,7 +513,7 @@ export async function POST(request: NextRequest) {
 
     if (filteredBody.explain === true && rpcError === null) {
       const { data: explainRows } = await supabaseAdmin.rpc(
-        'get_search_businesses_ranked_explain',
+        "get_search_businesses_ranked_explain",
         {
           p_lat: lat,
           p_lng: lng,
@@ -501,10 +522,12 @@ export async function POST(request: NextRequest) {
           p_category: filteredBody.category ?? null,
           p_limit: limit,
           p_offset: offset,
-        }
+        },
       );
       response.explain_plan = Array.isArray(explainRows)
-        ? (explainRows as Record<string, string>[]).map((r) => r.plan_line ?? r['Query Plan'] ?? '')
+        ? (explainRows as Record<string, string>[]).map(
+            (r) => r.plan_line ?? r["Query Plan"] ?? "",
+          )
         : [];
     }
 
@@ -514,12 +537,14 @@ export async function POST(request: NextRequest) {
         businesses: response.businesses,
         pagination: response.pagination,
       };
-      setCache(cacheKey, cacheData, BUSINESS_SEARCH_REDIS_TTL_SECONDS).catch(() => {});
+      setCache(cacheKey, cacheData, BUSINESS_SEARCH_REDIS_TTL_SECONDS).catch(
+        () => {},
+      );
     }
 
     return successResponse(response);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Search failed';
+    const message = error instanceof Error ? error.message : "Search failed";
     return errorResponse(message, 500);
   }
 }

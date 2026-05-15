@@ -8,8 +8,8 @@
  *   await notificationQueue.add('send-notification', { bookingId, type });
  */
 
-import { Queue, Job } from 'bullmq';
-import { getQueueConnection, isQueueAvailable } from './connection';
+import { Queue, Job } from "bullmq";
+import { getQueueConnection, isQueueAvailable } from "./connection";
 
 let bullMqConnectionNullLogged = false;
 
@@ -17,59 +17,63 @@ function logBullMqConnectionNullOnce(): void {
   if (bullMqConnectionNullLogged) return;
   bullMqConnectionNullLogged = true;
   console.error(
-    '[Queue] BullMQ connection is null despite REDIS_URL being set; check URL format (e.g. redis://:password@host:6379).'
+    "[Queue] BullMQ connection is null despite REDIS_URL being set; check URL format (e.g. redis://:password@host:6379).",
   );
 }
 
 function logSkippedEnqueue(
   queueName: string,
   jobName: string,
-  details: Record<string, string>
+  details: Record<string, string>,
 ): void {
   const detailStr = Object.entries(details)
     .map(([k, v]) => `${k}=${v}`)
-    .join(' ');
+    .join(" ");
   console.warn(
-    `[Queue] Skipped enqueue job=${jobName} queue=${queueName} reason=unavailable ${detailStr}`
+    `[Queue] Skipped enqueue job=${jobName} queue=${queueName} reason=unavailable ${detailStr}`,
   );
 }
 
 /** Queue names */
 export const QUEUE_NAMES = {
-  BOOKING_REMINDERS: 'booking-reminders',
-  ANALYTICS_EVENTS: 'analytics-events',
-  NOTIFICATION_SENDING: 'notification-sending',
+  BOOKING_REMINDERS: "booking-reminders",
+  ANALYTICS_EVENTS: "analytics-events",
+  NOTIFICATION_SENDING: "notification-sending",
 } as const;
 
 /** Job types for booking reminders queue */
 export type ReminderJobData = {
   bookingId: string;
   reminderId?: string;
-  type: 'schedule-reminders' | 'send-reminder' | 'cancel-reminders';
+  type: "schedule-reminders" | "send-reminder" | "cancel-reminders";
 };
 
 /** Job types for analytics events queue */
 export type AnalyticsJobData = {
   bookingId: string;
-  eventType: 'created' | 'cancelled' | 'rescheduled';
-  actorType: 'customer' | 'owner' | 'system';
+  eventType: "created" | "cancelled" | "rescheduled";
+  actorType: "customer" | "owner" | "system";
   actorId?: string | null;
-  source?: 'api' | 'cron' | 'lazy_heal';
+  source?: "api" | "cron" | "lazy_heal";
 };
 
 /** Job types for notification sending queue */
 export type NotificationJobData = {
   bookingId: string;
-  type: 'booking-created' | 'booking-confirmed' | 'booking-rejected' | 'booking-cancelled';
+  type:
+    | "booking-created"
+    | "booking-confirmed"
+    | "booking-rejected"
+    | "booking-cancelled";
   recipientPhone?: string;
-  recipientType: 'customer' | 'owner';
+  recipientType: "customer" | "owner";
 };
 
 /** Default job options */
 const DEFAULT_JOB_OPTIONS = {
   attempts: 3,
   backoff: {
-    type: 'exponential' as const,
+    type: "exponential" as const,
     delay: 1000,
   },
   removeOnComplete: {
@@ -152,10 +156,13 @@ export function getNotificationQueue(): Queue<NotificationJobData> | null {
       return null;
     }
 
-    notificationQueue = new Queue<NotificationJobData>(QUEUE_NAMES.NOTIFICATION_SENDING, {
-      connection,
-      defaultJobOptions: DEFAULT_JOB_OPTIONS,
-    });
+    notificationQueue = new Queue<NotificationJobData>(
+      QUEUE_NAMES.NOTIFICATION_SENDING,
+      {
+        connection,
+        defaultJobOptions: DEFAULT_JOB_OPTIONS,
+      },
+    );
   }
 
   return notificationQueue;
@@ -166,27 +173,32 @@ export function getNotificationQueue(): Queue<NotificationJobData> | null {
  * Falls back to synchronous execution if queue unavailable.
  */
 export async function enqueueScheduleReminders(
-  bookingId: string
+  bookingId: string,
 ): Promise<Job<ReminderJobData> | null> {
   const queue = getReminderQueue();
   if (!queue) {
-    logSkippedEnqueue(QUEUE_NAMES.BOOKING_REMINDERS, 'schedule-reminders', { bookingId });
+    logSkippedEnqueue(QUEUE_NAMES.BOOKING_REMINDERS, "schedule-reminders", {
+      bookingId,
+    });
     return null;
   }
 
   try {
     const job = await queue.add(
-      'schedule-reminders',
-      { bookingId, type: 'schedule-reminders' },
-      { jobId: `schedule-reminders:${bookingId}` }
+      "schedule-reminders",
+      { bookingId, type: "schedule-reminders" },
+      { jobId: `schedule-reminders:${bookingId}` },
     );
     // console.warn: survives Next.js production removeConsole (excludes warn/error)
     console.warn(
-      `[Queue] Enqueued schedule-reminders booking_id=${bookingId} bullmq_job_id=${String(job.id)}`
+      `[Queue] Enqueued schedule-reminders booking_id=${bookingId} bullmq_job_id=${String(job.id)}`,
     );
     return job;
   } catch (err) {
-    console.error(`[Queue] enqueue schedule-reminders failed booking_id=${bookingId}`, err);
+    console.error(
+      `[Queue] enqueue schedule-reminders failed booking_id=${bookingId}`,
+      err,
+    );
     return null;
   }
 }
@@ -196,28 +208,31 @@ export async function enqueueScheduleReminders(
  */
 export async function enqueueSendReminder(
   bookingId: string,
-  reminderId: string
+  reminderId: string,
 ): Promise<Job<ReminderJobData> | null> {
   const queue = getReminderQueue();
   if (!queue) {
-    logSkippedEnqueue(QUEUE_NAMES.BOOKING_REMINDERS, 'send-reminder', { bookingId, reminderId });
+    logSkippedEnqueue(QUEUE_NAMES.BOOKING_REMINDERS, "send-reminder", {
+      bookingId,
+      reminderId,
+    });
     return null;
   }
 
   try {
     const job = await queue.add(
-      'send-reminder',
-      { bookingId, reminderId, type: 'send-reminder' },
-      { jobId: `send-reminder:${reminderId}` }
+      "send-reminder",
+      { bookingId, reminderId, type: "send-reminder" },
+      { jobId: `send-reminder:${reminderId}` },
     );
     console.warn(
-      `[Queue] Enqueued send-reminder booking_id=${bookingId} reminder_id=${reminderId} bullmq_job_id=${String(job.id)}`
+      `[Queue] Enqueued send-reminder booking_id=${bookingId} reminder_id=${reminderId} bullmq_job_id=${String(job.id)}`,
     );
     return job;
   } catch (err) {
     console.error(
       `[Queue] enqueue send-reminder failed booking_id=${bookingId} reminder_id=${reminderId}`,
-      err
+      err,
     );
     return null;
   }
@@ -227,26 +242,31 @@ export async function enqueueSendReminder(
  * Add a job to cancel reminders for a booking.
  */
 export async function enqueueCancelReminders(
-  bookingId: string
+  bookingId: string,
 ): Promise<Job<ReminderJobData> | null> {
   const queue = getReminderQueue();
   if (!queue) {
-    logSkippedEnqueue(QUEUE_NAMES.BOOKING_REMINDERS, 'cancel-reminders', { bookingId });
+    logSkippedEnqueue(QUEUE_NAMES.BOOKING_REMINDERS, "cancel-reminders", {
+      bookingId,
+    });
     return null;
   }
 
   try {
     const job = await queue.add(
-      'cancel-reminders',
-      { bookingId, type: 'cancel-reminders' },
-      { jobId: `cancel-reminders:${bookingId}:${Date.now()}` }
+      "cancel-reminders",
+      { bookingId, type: "cancel-reminders" },
+      { jobId: `cancel-reminders:${bookingId}:${Date.now()}` },
     );
     console.warn(
-      `[Queue] Enqueued cancel-reminders booking_id=${bookingId} bullmq_job_id=${String(job.id)}`
+      `[Queue] Enqueued cancel-reminders booking_id=${bookingId} bullmq_job_id=${String(job.id)}`,
     );
     return job;
   } catch (err) {
-    console.error(`[Queue] enqueue cancel-reminders failed booking_id=${bookingId}`, err);
+    console.error(
+      `[Queue] enqueue cancel-reminders failed booking_id=${bookingId}`,
+      err,
+    );
     return null;
   }
 }
@@ -256,11 +276,11 @@ export async function enqueueCancelReminders(
  * Falls back silently if queue unavailable.
  */
 export async function enqueueAnalyticsEvent(
-  data: AnalyticsJobData
+  data: AnalyticsJobData,
 ): Promise<Job<AnalyticsJobData> | null> {
   const queue = getAnalyticsQueue();
   if (!queue) {
-    logSkippedEnqueue(QUEUE_NAMES.ANALYTICS_EVENTS, 'record-event', {
+    logSkippedEnqueue(QUEUE_NAMES.ANALYTICS_EVENTS, "record-event", {
       bookingId: data.bookingId,
       eventType: data.eventType,
     });
@@ -268,14 +288,14 @@ export async function enqueueAnalyticsEvent(
   }
 
   try {
-    const job = await queue.add('record-event', data, {
+    const job = await queue.add("record-event", data, {
       jobId: `analytics:${data.bookingId}:${data.eventType}:${Date.now()}`,
     });
     return job;
   } catch (err) {
     console.error(
       `[Queue] enqueue analytics record-event failed booking_id=${data.bookingId} eventType=${data.eventType}`,
-      err
+      err,
     );
     return null;
   }
@@ -285,11 +305,11 @@ export async function enqueueAnalyticsEvent(
  * Add a job to send a notification.
  */
 export async function enqueueNotification(
-  data: NotificationJobData
+  data: NotificationJobData,
 ): Promise<Job<NotificationJobData> | null> {
   const queue = getNotificationQueue();
   if (!queue) {
-    logSkippedEnqueue(QUEUE_NAMES.NOTIFICATION_SENDING, 'send-notification', {
+    logSkippedEnqueue(QUEUE_NAMES.NOTIFICATION_SENDING, "send-notification", {
       bookingId: data.bookingId,
       type: data.type,
     });
@@ -297,17 +317,17 @@ export async function enqueueNotification(
   }
 
   try {
-    const job = await queue.add('send-notification', data, {
+    const job = await queue.add("send-notification", data, {
       jobId: `notification:${data.bookingId}:${data.type}:${Date.now()}`,
     });
     console.warn(
-      `[Queue] Enqueued notification booking_id=${data.bookingId} type=${data.type} bullmq_job_id=${String(job.id)}`
+      `[Queue] Enqueued notification booking_id=${data.bookingId} type=${data.type} bullmq_job_id=${String(job.id)}`,
     );
     return job;
   } catch (err) {
     console.error(
       `[Queue] enqueue notification failed booking_id=${data.bookingId} type=${data.type}`,
-      err
+      err,
     );
     return null;
   }

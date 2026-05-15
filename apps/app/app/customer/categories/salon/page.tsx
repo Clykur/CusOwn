@@ -1,48 +1,51 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import Link from 'next/link';
-import { ListFilter, Search, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import Pagination from '@/components/ui/pagination';
-import FilterDropdown from '@/components/analytics/FilterDropdown';
-import { Salon } from '@cusown/shared';
-import { logError } from '@cusown/shared';
-import SalonCard from '@/components/salon/salon-card';
-import { SalonCardSkeleton } from '@/components/ui/skeleton';
-import { ROUTES } from '@cusown/shared';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import { ListFilter, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Pagination from "@/components/ui/pagination";
+import FilterDropdown from "@/components/analytics/FilterDropdown";
+import { Salon } from "@cusown/shared";
+import { logError } from "@cusown/shared";
+import SalonCard from "@/components/salon/salon-card";
+import { SalonCardSkeleton } from "@/components/ui/skeleton";
+import { ROUTES } from "@cusown/shared";
 import {
   CUSTOMER_EXPLORE_SALONS_PER_PAGE,
   CUSTOMER_SCREEN_TITLE_CLASSNAME,
   UI_CUSTOMER,
-} from '@cusown/config';
-import ExploreIcon from '@cusown/shared/icons/explore.svg';
-import MapPinIcon from '@cusown/shared/icons/map-pin.svg';
-import Breadcrumb from '@/components/ui/breadcrumb';
-import { useMounted } from '@cusown/shared/client';
-import { cn } from '@cusown/shared';
+} from "@cusown/config";
+import ExploreIcon from "@cusown/shared/icons/explore.svg";
+import MapPinIcon from "@cusown/shared/icons/map-pin.svg";
+import Breadcrumb from "@/components/ui/breadcrumb";
+import { useMounted } from "@cusown/shared/client";
+import { cn } from "@cusown/shared";
 
 export default function CustomerSalonListPage() {
   const mounted = useMounted();
   const [allSalons, setAllSalons] = useState<Salon[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [locationsLoading, setLocationsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [mobileFilterSheetOpen, setMobileFilterSheetOpen] = useState(false);
 
   const locationFilterOptions = useMemo(
     () => [
       {
-        value: '',
+        value: "",
         label: UI_CUSTOMER.EXPLORE_ALL_LOCATIONS,
-        checked: selectedLocation === '',
+        checked: selectedLocation === "",
       },
       ...locations.map((location) => ({
         value: location,
@@ -50,33 +53,38 @@ export default function CustomerSalonListPage() {
         checked: selectedLocation === location,
       })),
     ],
-    [locations, selectedLocation]
+    [locations, selectedLocation],
   );
 
-  const handleLocationToggle = useCallback((value: string, checked: boolean) => {
-    if (checked) setSelectedLocation(value);
-  }, []);
+  const handleLocationToggle = useCallback(
+    (value: string, checked: boolean) => {
+      if (checked) setSelectedLocation(value);
+    },
+    [],
+  );
 
-  const hasActiveFilters = Boolean(searchTerm.trim() || selectedLocation || userLocation !== null);
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() || selectedLocation || userLocation !== null,
+  );
 
   const clearFilters = useCallback(() => {
-    setSearchTerm('');
-    setSelectedLocation('');
+    setSearchTerm("");
+    setSelectedLocation("");
     setUserLocation(null);
   }, []);
 
   useEffect(() => {
     if (!mobileFilterSheetOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileFilterSheetOpen(false);
+      if (e.key === "Escape") setMobileFilterSheetOpen(false);
     };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [mobileFilterSheetOpen]);
 
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      alert("Geolocation is not supported by your browser");
       return;
     }
 
@@ -84,22 +92,22 @@ export default function CustomerSalonListPage() {
 
     const fallbackToIp = async () => {
       try {
-        const res = await fetch('/api/geo/ip');
-        if (!res.ok) throw new Error('IP lookup failed');
+        const res = await fetch("/api/geo/ip");
+        if (!res.ok) throw new Error("IP lookup failed");
         const result = await res.json();
 
         if (result.success && result.data) {
           const { latitude, longitude, city } = result.data;
 
           if (
-            typeof latitude === 'number' &&
-            typeof longitude === 'number' &&
+            typeof latitude === "number" &&
+            typeof longitude === "number" &&
             (latitude !== 0 || longitude !== 0)
           ) {
             setUserLocation({ lat: latitude, lng: longitude });
 
-            await fetch('/api/user/location', {
-              method: 'POST',
+            await fetch("/api/user/location", {
+              method: "POST",
               body: JSON.stringify({
                 latitude,
                 longitude,
@@ -117,9 +125,9 @@ export default function CustomerSalonListPage() {
           }
         }
 
-        throw new Error('Could not pinpoint location from IP');
+        throw new Error("Could not pinpoint location from IP");
       } catch (e) {
-        console.error('IP fallback failed:', e);
+        console.error("IP fallback failed:", e);
         setLoading(false);
       }
     };
@@ -131,16 +139,16 @@ export default function CustomerSalonListPage() {
         setLoading(false);
 
         try {
-          await fetch('/api/user/location', {
-            method: 'POST',
+          await fetch("/api/user/location", {
+            method: "POST",
             body: JSON.stringify({ latitude, longitude }),
           });
         } catch (e) {
-          console.warn('Failed to persist user location:', e);
+          console.warn("Failed to persist user location:", e);
         }
       },
       async (err) => {
-        console.warn('Geolocation error:', err);
+        console.warn("Geolocation error:", err);
 
         if (err.code === 3 || err.code === 2) {
           await fallbackToIp();
@@ -149,11 +157,13 @@ export default function CustomerSalonListPage() {
           switch (err.code) {
             case 1:
               alert(
-                'Geolocation permission denied. Please enable location access in your browser settings to use this feature.'
+                "Geolocation permission denied. Please enable location access in your browser settings to use this feature.",
               );
               break;
             default:
-              alert('Could not get your location. Please try again or enter it manually.');
+              alert(
+                "Could not get your location. Please try again or enter it manually.",
+              );
           }
         }
       },
@@ -161,7 +171,7 @@ export default function CustomerSalonListPage() {
         timeout: 6000,
         maximumAge: 300000,
         enableHighAccuracy: false,
-      }
+      },
     );
   };
 
@@ -173,7 +183,7 @@ export default function CustomerSalonListPage() {
         (salon: Salon) =>
           salon.salon_name?.toLowerCase().includes(term) ||
           salon.location?.toLowerCase().includes(term) ||
-          salon.address?.toLowerCase().includes(term)
+          salon.address?.toLowerCase().includes(term),
       );
     }
     return filtered;
@@ -185,7 +195,9 @@ export default function CustomerSalonListPage() {
     return filteredSalons.slice(startIndex, endIndex);
   }, [filteredSalons, currentPage]);
 
-  const totalPages = Math.ceil(filteredSalons.length / CUSTOMER_EXPLORE_SALONS_PER_PAGE);
+  const totalPages = Math.ceil(
+    filteredSalons.length / CUSTOMER_EXPLORE_SALONS_PER_PAGE,
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -197,11 +209,11 @@ export default function CustomerSalonListPage() {
     const loadData = async () => {
       try {
         const [locationsRes, salonsRes] = await Promise.all([
-          fetch('/api/salons/locations'),
+          fetch("/api/salons/locations"),
           fetch(
             selectedLocation
               ? `/api/salons/list?location=${encodeURIComponent(selectedLocation)}`
-              : '/api/salons/list'
+              : "/api/salons/list",
           ),
         ]);
 
@@ -224,13 +236,13 @@ export default function CustomerSalonListPage() {
           const salonsResult = await salonsRes.json();
           if (salonsResult.success && salonsResult.data) {
             const fetchedSalons = (salonsResult.data || []).filter(
-              (salon: Salon) => !salon.suspended
+              (salon: Salon) => !salon.suspended,
             );
             setAllSalons(fetchedSalons);
           } else {
             setAllSalons([]);
             if (salonsResult.error) {
-              logError(salonsResult.error, 'Salons Fetch Error');
+              logError(salonsResult.error, "Salons Fetch Error");
             }
           }
         } else {
@@ -240,7 +252,7 @@ export default function CustomerSalonListPage() {
         setLoading(false);
       } catch (error) {
         if (isMounted) {
-          logError(error, 'Data Fetch');
+          logError(error, "Data Fetch");
           setLocations([]);
           setAllSalons([]);
           setLocationsLoading(false);
@@ -265,7 +277,7 @@ export default function CustomerSalonListPage() {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/business/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=20`
+          `/api/business/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=20`,
         );
 
         if (!isMounted) return;
@@ -273,7 +285,9 @@ export default function CustomerSalonListPage() {
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.data) {
-            const fetchedSalons = (result.data || []).filter((salon: Salon) => !salon.suspended);
+            const fetchedSalons = (result.data || []).filter(
+              (salon: Salon) => !salon.suspended,
+            );
             setAllSalons(fetchedSalons);
           } else {
             setAllSalons([]);
@@ -283,7 +297,7 @@ export default function CustomerSalonListPage() {
         }
       } catch (error) {
         if (isMounted) {
-          logError(error, 'Nearby Salons Fetch');
+          logError(error, "Nearby Salons Fetch");
           setAllSalons([]);
         }
       } finally {
@@ -305,9 +319,9 @@ export default function CustomerSalonListPage() {
       <div className="hidden md:block">
         <Breadcrumb
           items={[
-            { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: '/customer/dashboard' },
-            { label: 'Explore', href: '/customer/categories' },
-            { label: 'Salons', href: '/customer/categories/salon' },
+            { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: "/customer/dashboard" },
+            { label: "Explore", href: "/customer/categories" },
+            { label: "Salons", href: "/customer/categories/salon" },
           ]}
         />
       </div>
@@ -318,7 +332,10 @@ export default function CustomerSalonListPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
             <div className="relative min-w-0 flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <ExploreIcon className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                <ExploreIcon
+                  className="h-5 w-5 text-slate-400"
+                  aria-hidden="true"
+                />
               </div>
               <Input
                 type="text"
@@ -334,7 +351,9 @@ export default function CustomerSalonListPage() {
                 options={locationFilterOptions}
                 onToggle={handleLocationToggle}
                 multi={false}
-                className={locationsLoading ? 'pointer-events-none opacity-60' : ''}
+                className={
+                  locationsLoading ? "pointer-events-none opacity-60" : ""
+                }
               />
             </div>
           </div>
@@ -367,7 +386,9 @@ export default function CustomerSalonListPage() {
       {/* Mobile: Explore Services title + search/filter (layout header hidden on this route) */}
       <div className="md:hidden">
         <div className="flex min-w-0 items-center justify-between gap-3">
-          <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'min-w-0 truncate')}>
+          <h1
+            className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, "min-w-0 truncate")}
+          >
             {UI_CUSTOMER.NAV_EXPLORE_SERVICES}
           </h1>
           <div className="flex shrink-0 items-center gap-2">
@@ -375,8 +396,8 @@ export default function CustomerSalonListPage() {
               type="button"
               onClick={() => setMobileSearchExpanded((o) => !o)}
               className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-800 transition-colors hover:bg-slate-100',
-                mobileSearchExpanded && 'bg-slate-100 text-slate-900'
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-800 transition-colors hover:bg-slate-100",
+                mobileSearchExpanded && "bg-slate-100 text-slate-900",
               )}
               aria-expanded={mobileSearchExpanded}
               aria-label={UI_CUSTOMER.EXPLORE_MOBILE_OPEN_SEARCH}
@@ -387,8 +408,8 @@ export default function CustomerSalonListPage() {
               type="button"
               onClick={() => setMobileFilterSheetOpen(true)}
               className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-800 transition-colors hover:bg-slate-100',
-                hasActiveFilters && 'bg-slate-100'
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-800 transition-colors hover:bg-slate-100",
+                hasActiveFilters && "bg-slate-100",
               )}
               aria-label={UI_CUSTOMER.EXPLORE_MOBILE_OPEN_FILTERS}
             >
@@ -400,7 +421,10 @@ export default function CustomerSalonListPage() {
         {mobileSearchExpanded ? (
           <div className="relative mt-3">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <ExploreIcon className="h-5 w-5 text-slate-400" aria-hidden="true" />
+              <ExploreIcon
+                className="h-5 w-5 text-slate-400"
+                aria-hidden="true"
+              />
             </div>
             <Input
               type="search"
@@ -443,7 +467,10 @@ export default function CustomerSalonListPage() {
             />
             <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[88vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-xl">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 id="customer-explore-filters-title" className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
+                <h2
+                  id="customer-explore-filters-title"
+                  className={CUSTOMER_SCREEN_TITLE_CLASSNAME}
+                >
                   {UI_CUSTOMER.EXPLORE_FILTERS_SHEET_TITLE}
                 </h2>
                 <button
@@ -459,7 +486,11 @@ export default function CustomerSalonListPage() {
                 {UI_CUSTOMER.EXPLORE_FILTERS_SHEET_HINT}
               </p>
 
-              <div className={locationsLoading ? 'pointer-events-none opacity-60' : ''}>
+              <div
+                className={
+                  locationsLoading ? "pointer-events-none opacity-60" : ""
+                }
+              >
                 <FilterDropdown
                   label={UI_CUSTOMER.EXPLORE_FILTER_LOCATION_LABEL}
                   options={locationFilterOptions}
@@ -504,11 +535,14 @@ export default function CustomerSalonListPage() {
               </button>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+        <div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-busy="true"
+        >
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <SalonCardSkeleton key={i} />
           ))}
@@ -516,7 +550,10 @@ export default function CustomerSalonListPage() {
       ) : filteredSalons.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm sm:p-16">
           <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
-            <ExploreIcon className="h-12 w-12 text-slate-400" aria-hidden="true" />
+            <ExploreIcon
+              className="h-12 w-12 text-slate-400"
+              aria-hidden="true"
+            />
           </div>
           <h3 className="mb-2 text-xl font-semibold text-slate-900">
             {UI_CUSTOMER.EMPTY_NO_MATCH}
@@ -529,8 +566,8 @@ export default function CustomerSalonListPage() {
               <Button
                 type="button"
                 onClick={() => {
-                  setSearchTerm('');
-                  setSelectedLocation('');
+                  setSearchTerm("");
+                  setSelectedLocation("");
                 }}
                 className="rounded-xl bg-slate-900 text-white hover:bg-slate-800"
               >
@@ -549,7 +586,10 @@ export default function CustomerSalonListPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedSalons.map((salon, index) => (
-              <SalonCard key={salon.booking_link || `salon-${index}`} salon={salon} />
+              <SalonCard
+                key={salon.booking_link || `salon-${index}`}
+                salon={salon}
+              />
             ))}
           </div>
 

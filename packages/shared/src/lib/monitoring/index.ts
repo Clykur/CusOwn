@@ -10,11 +10,16 @@ export {
   runWithTiming,
   type PerformanceMetric,
   type MetricType,
-} from './performance';
+} from "./performance";
 
-export { initWebVitals, reportWebVitalsToAnalytics } from './web-vitals';
+export { initWebVitals, reportWebVitalsToAnalytics } from "./web-vitals";
 
-export { recordApiMetric, getApiStats, monitoredFetch, clearApiMetrics } from './api-metrics';
+export {
+  recordApiMetric,
+  getApiStats,
+  monitoredFetch,
+  clearApiMetrics,
+} from "./api-metrics";
 
 export {
   markHydrationStart,
@@ -25,7 +30,7 @@ export {
   getNavigationTimings,
   recordNavigationTimings,
   getHydrationStats,
-} from './hydration';
+} from "./hydration";
 
 export {
   startRouteTransition,
@@ -35,7 +40,7 @@ export {
   getTransitionStats,
   subscribeToTransitions,
   clearTransitionHistory,
-} from './route-transitions';
+} from "./route-transitions";
 
 export {
   startInteractionTracking,
@@ -44,7 +49,7 @@ export {
   getInteractionStats,
   clearInteractionHistory,
   measureInteraction,
-} from './interaction-tracker';
+} from "./interaction-tracker";
 
 export {
   loadBaselines,
@@ -56,4 +61,4 @@ export {
   getPerformanceSummary,
   reportToServer,
   subscribeToRegressions,
-} from './regression-detector';
+} from "./regression-detector";

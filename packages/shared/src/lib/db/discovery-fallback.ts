@@ -1,5 +1,5 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { applyActiveBusinessFilters } from './business-query-filters';
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { applyActiveBusinessFilters } from "./business-query-filters";
 
 export interface DiscoveryFallbackRow {
   business_id: string;
@@ -28,27 +28,32 @@ export interface DiscoveryFallbackParams {
 
 export async function queryDiscoveryFallback(
   supabase: SupabaseClient,
-  params: DiscoveryFallbackParams
+  params: DiscoveryFallbackParams,
 ): Promise<DiscoveryFallbackRow[]> {
   let query = supabase
-    .from('businesses')
-    .select('id, salon_name, location, category, latitude, longitude, area, created_at')
-    .order('created_at', { ascending: false });
+    .from("businesses")
+    .select(
+      "id, salon_name, location, category, latitude, longitude, area, created_at",
+    )
+    .order("created_at", { ascending: false });
   query = applyActiveBusinessFilters(query);
 
   if (params.p_category) {
-    query = query.eq('category', params.p_category);
+    query = query.eq("category", params.p_category);
   }
   if (params.p_pincode) {
-    query = query.eq('pincode', params.p_pincode);
+    query = query.eq("pincode", params.p_pincode);
   } else if (params.p_city) {
-    query = query.eq('city', params.p_city);
+    query = query.eq("city", params.p_city);
     if (params.p_area) {
-      query = query.eq('area', params.p_area);
+      query = query.eq("area", params.p_area);
     }
   }
 
-  const { data: rows, error } = await query.range(params.offset, params.offset + params.limit - 1);
+  const { data: rows, error } = await query.range(
+    params.offset,
+    params.offset + params.limit - 1,
+  );
   if (error) return [];
 
   return (rows ?? []).map((r: Record<string, unknown>) => ({

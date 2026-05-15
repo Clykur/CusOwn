@@ -1,7 +1,7 @@
 // /services/business-hours.service.ts
 
-import { requireSupabaseAdmin } from '../lib/supabase/server';
-import { getISTDateString, getISTNowMinutes, toMinutes } from '../lib/time/ist';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { getISTDateString, getISTNowMinutes, toMinutes } from "../lib/time/ist";
 
 export class BusinessHoursService {
   private supabase = requireSupabaseAdmin();
@@ -9,10 +9,10 @@ export class BusinessHoursService {
   async getEffectiveHours(businessId: string, date: string) {
     // 1️⃣ Check holiday override
     const { data: holiday } = await this.supabase
-      .from('business_holidays')
-      .select('*')
-      .eq('business_id', businessId)
-      .eq('holiday_date', date)
+      .from("business_holidays")
+      .select("*")
+      .eq("business_id", businessId)
+      .eq("holiday_date", date)
       .maybeSingle();
 
     if (holiday) {
@@ -41,13 +41,13 @@ export class BusinessHoursService {
     }
 
     // 2️⃣ Weekly hours
-    const dayOfWeek = new Date(date + 'T00:00:00').getDay();
+    const dayOfWeek = new Date(date + "T00:00:00").getDay();
 
     const { data: weekly } = await this.supabase
-      .from('business_special_hours')
-      .select('*')
-      .eq('business_id', businessId)
-      .eq('day_of_week', dayOfWeek)
+      .from("business_special_hours")
+      .select("*")
+      .eq("business_id", businessId)
+      .eq("day_of_week", dayOfWeek)
       .maybeSingle();
 
     if (weekly) {
@@ -68,9 +68,9 @@ export class BusinessHoursService {
 
     // Backward compatibility: no per-day row yet → use businesses.opening_time / closing_time
     const { data: biz } = await this.supabase
-      .from('businesses')
-      .select('opening_time, closing_time')
-      .eq('id', businessId)
+      .from("businesses")
+      .select("opening_time, closing_time")
+      .eq("id", businessId)
       .maybeSingle();
 
     if (!biz?.opening_time || !biz?.closing_time) {
@@ -90,20 +90,22 @@ export class BusinessHoursService {
     businessId: string,
     slotDate: string,
     startTime: string,
-    endTime: string
+    endTime: string,
   ): Promise<{ valid: boolean; reason?: string }> {
     const todayStr = getISTDateString();
 
     if (slotDate < todayStr) {
-      return { valid: false, reason: 'Cannot book past date' };
+      return { valid: false, reason: "Cannot book past date" };
     }
 
     const hours = await this.getEffectiveHours(businessId, slotDate);
-    if (!hours) return { valid: false, reason: 'Business hours not configured' };
-    if (hours.isClosed) return { valid: false, reason: 'Business closed on this day' };
+    if (!hours)
+      return { valid: false, reason: "Business hours not configured" };
+    if (hours.isClosed)
+      return { valid: false, reason: "Business closed on this day" };
 
     if (!hours.opening_time || !hours.closing_time) {
-      return { valid: false, reason: 'Business hours not fully configured' };
+      return { valid: false, reason: "Business hours not fully configured" };
     }
 
     const slotStart = toMinutes(startTime);
@@ -112,7 +114,7 @@ export class BusinessHoursService {
     const close = toMinutes(hours.closing_time);
 
     if (slotStart < open || slotEnd > close) {
-      return { valid: false, reason: 'Outside business hours' };
+      return { valid: false, reason: "Outside business hours" };
     }
 
     // Break validation
@@ -123,7 +125,7 @@ export class BusinessHoursService {
       const overlapsBreak = slotStart < breakEnd && slotEnd > breakStart;
 
       if (overlapsBreak) {
-        return { valid: false, reason: 'Overlaps break time' };
+        return { valid: false, reason: "Overlaps break time" };
       }
     }
 
@@ -132,11 +134,11 @@ export class BusinessHoursService {
       const currentMinutes = getISTNowMinutes();
 
       if (currentMinutes >= close) {
-        return { valid: false, reason: 'Shop closed for today' };
+        return { valid: false, reason: "Shop closed for today" };
       }
 
       if (slotStart <= currentMinutes) {
-        return { valid: false, reason: 'Slot already passed' };
+        return { valid: false, reason: "Slot already passed" };
       }
     }
 

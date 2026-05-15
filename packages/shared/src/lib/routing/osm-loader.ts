@@ -17,9 +17,9 @@
  * reader as needed.
  */
 
-import fs from 'fs';
-import { WeightedGraph, GraphEdge } from './graph-data-structures';
-import { haversineDistance } from '../utils/geo';
+import fs from "fs";
+import { WeightedGraph, GraphEdge } from "./graph-data-structures";
+import { haversineDistance } from "../utils/geo";
 
 // optional dependency; add to package.json if you plan on using it
 // import { Parser } from 'osm-pbf-parser';
@@ -35,7 +35,9 @@ interface OsmNode {
  * This operation reads the entire file into memory so it may take a few
  * seconds for large extracts.  You can optimize by filtering beforehand.
  */
-export async function loadGraphFromOsmPbf(path: string): Promise<WeightedGraph> {
+export async function loadGraphFromOsmPbf(
+  path: string,
+): Promise<WeightedGraph> {
   const graph = new WeightedGraph();
 
   // maps for quick lookup
@@ -51,14 +53,14 @@ export async function loadGraphFromOsmPbf(path: string): Promise<WeightedGraph> 
   try {
     // Optional dependency; not in package.json. webpackIgnore prevents build-time resolution.
     // @ts-expect-error optional dependency
-    const mod = await import(/* webpackIgnore: true */ 'osm-pbf-parser');
+    const mod = await import(/* webpackIgnore: true */ "osm-pbf-parser");
     Parser = (mod.Parser ?? mod.default ?? mod) as ParserConstructor;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(
-      'Unable to load OSM PBF parser.\n' +
-        'Please install a compatible package (e.g. `npm install osm-pbf-parser`).\n' +
-        `Original error: ${msg}`
+      "Unable to load OSM PBF parser.\n" +
+        "Please install a compatible package (e.g. `npm install osm-pbf-parser`).\n" +
+        `Original error: ${msg}`,
     );
   }
 
@@ -67,13 +69,13 @@ export async function loadGraphFromOsmPbf(path: string): Promise<WeightedGraph> 
     const stream = fs.createReadStream(path);
     stream.pipe(parser as NodeJS.WritableStream);
 
-    parser.on('data', (item: any) => {
-      if (!item || typeof item !== 'object') return;
+    parser.on("data", (item: any) => {
+      if (!item || typeof item !== "object") return;
       switch (item.type) {
-        case 'node':
+        case "node":
           nodesMap.set(item.id, { id: item.id, lat: item.lat, lon: item.lon });
           break;
-        case 'way': {
+        case "way": {
           const tags: Record<string, string> = item.tags || {};
           if (tags.highway || tags.footway || tags.pedestrian) {
             processWay(item.id, item.nodes, tags, nodesMap, graph);
@@ -86,8 +88,8 @@ export async function loadGraphFromOsmPbf(path: string): Promise<WeightedGraph> 
       }
     });
 
-    parser.on('end', () => resolve(graph));
-    parser.on('error', (err: any) => reject(err));
+    parser.on("end", () => resolve(graph));
+    parser.on("error", (err: any) => reject(err));
   });
 }
 
@@ -100,13 +102,13 @@ function processWay(
   nodeIds: number[],
   tags: Record<string, string>,
   nodesMap: Map<number, OsmNode>,
-  graph: WeightedGraph
+  graph: WeightedGraph,
 ) {
   // determine road type and directional/oneway
-  const roadType = tags.highway || tags.footway || tags.pedestrian || 'unknown';
-  const oneway = tags.oneway === 'yes' || tags.oneway === 'true';
-  const walkable = roadType !== 'motorway' && roadType !== 'trunk';
-  const drivable = roadType !== 'footway' && roadType !== 'pedestrian';
+  const roadType = tags.highway || tags.footway || tags.pedestrian || "unknown";
+  const oneway = tags.oneway === "yes" || tags.oneway === "true";
+  const walkable = roadType !== "motorway" && roadType !== "trunk";
+  const drivable = roadType !== "footway" && roadType !== "pedestrian";
 
   for (let i = 0; i < nodeIds.length - 1; i++) {
     const a = nodesMap.get(nodeIds[i]);

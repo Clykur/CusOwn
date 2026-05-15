@@ -41,7 +41,7 @@ function cmpTime(a: string, b: string): number {
  */
 export function subtractOccupiedFromFullDay(
   fullDay: TimeInterval[],
-  occupied: TimeInterval[]
+  occupied: TimeInterval[],
 ): TimeInterval[] {
   if (occupied.length === 0) return fullDay;
   const sorted = [...occupied].sort((a, b) => cmpTime(a.start, b.start));

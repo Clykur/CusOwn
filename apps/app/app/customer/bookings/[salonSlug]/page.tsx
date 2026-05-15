@@ -1,43 +1,43 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { setRebookData } from '@/components/booking/booking-utils';
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@cusown/config';
-import { formatDate, formatTime } from '@cusown/shared';
-import { BookingWithDetails } from '@cusown/shared';
-import Breadcrumb from '@/components/ui/breadcrumb';
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { setRebookData } from "@/components/booking/booking-utils";
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from "@cusown/config";
+import { formatDate, formatTime } from "@cusown/shared";
+import { BookingWithDetails } from "@cusown/shared";
+import Breadcrumb from "@/components/ui/breadcrumb";
 
 type Params = { salonSlug?: string };
 
 function getStatusLabel(booking: BookingWithDetails) {
   switch (booking.status) {
-    case 'confirmed':
-      return 'Confirmed';
-    case 'pending':
-      return 'Pending';
-    case 'rejected':
-      return 'Rejected';
-    case 'cancelled':
-      return 'Cancelled';
+    case "confirmed":
+      return "Confirmed";
+    case "pending":
+      return "Pending";
+    case "rejected":
+      return "Rejected";
+    case "cancelled":
+      return "Cancelled";
     default:
       // Enforce allowed statuses only in UI
-      return 'Pending';
+      return "Pending";
   }
 }
 
 function getStatusBadgeClass(booking: BookingWithDetails) {
   switch (booking.status) {
-    case 'confirmed':
-      return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-    case 'pending':
-      return 'bg-amber-100 text-amber-800 border-amber-200';
-    case 'rejected':
-      return 'bg-rose-100 text-rose-900 border-rose-200';
-    case 'cancelled':
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+    case "confirmed":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    case "pending":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    case "rejected":
+      return "bg-rose-100 text-rose-900 border-rose-200";
+    case "cancelled":
+      return "bg-slate-100 text-slate-700 border-slate-200";
     default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+      return "bg-slate-100 text-slate-700 border-slate-200";
   }
 }
 
@@ -60,7 +60,7 @@ function BookingDetailModal({
   const slotStart = useMemo(() => {
     if (!booking.slot?.date || !booking.slot?.start_time) return null;
     const startTimeRaw = String(booking.slot.start_time);
-    const d = startTimeRaw.includes('T')
+    const d = startTimeRaw.includes("T")
       ? new Date(startTimeRaw)
       : new Date(`${booking.slot.date}T${startTimeRaw}`);
     return Number.isFinite(d.getTime()) ? d : null;
@@ -72,7 +72,7 @@ function BookingDetailModal({
   }, [slotStart]);
 
   // Disable WhatsApp if slot passed OR booking is not pending.
-  const canOpenWhatsApp = booking.status === 'pending' && !hasSlotPassed;
+  const canOpenWhatsApp = booking.status === "pending" && !hasSlotPassed;
 
   useEffect(() => {
     let cancelled = false;
@@ -85,9 +85,12 @@ function BookingDetailModal({
     (async () => {
       try {
         setWhatsappLoading(true);
-        const res = await fetch(`/api/bookings/${booking.booking_id}/whatsapp`, {
-          credentials: 'include',
-        });
+        const res = await fetch(
+          `/api/bookings/${booking.booking_id}/whatsapp`,
+          {
+            credentials: "include",
+          },
+        );
         const json = await res.json();
         if (!cancelled && res.ok && json?.success && json?.data?.whatsapp_url) {
           setWhatsappUrl(json.data.whatsapp_url);
@@ -118,7 +121,10 @@ function BookingDetailModal({
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 id="booking-detail-title" className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
+            <h2
+              id="booking-detail-title"
+              className={CUSTOMER_SCREEN_TITLE_CLASSNAME}
+            >
               {UI_CUSTOMER.VIEW_DETAILS}
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">Booking details</p>
@@ -134,14 +140,15 @@ function BookingDetailModal({
         </div>
 
         <div
-          className={`mb-5 rounded-xl border-2 px-5 py-4 ${booking.status === 'confirmed'
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : booking.status === 'pending'
-              ? 'bg-amber-50 border-amber-200 text-amber-800'
-              : booking.status === 'rejected'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : 'bg-slate-50 border-slate-200 text-slate-800'
-            }`}
+          className={`mb-5 rounded-xl border-2 px-5 py-4 ${
+            booking.status === "confirmed"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : booking.status === "pending"
+                ? "bg-amber-50 border-amber-200 text-amber-800"
+                : booking.status === "rejected"
+                  ? "bg-red-50 border-red-200 text-red-800"
+                  : "bg-slate-50 border-slate-200 text-slate-800"
+          }`}
         >
           <p className="font-bold text-base">{getStatusLabel(booking)}</p>
           {slotDate && slotTime && (
@@ -164,7 +171,9 @@ function BookingDetailModal({
                 <p className="text-slate-700">{booking.salon.owner_name}</p>
               )}
               {booking.salon?.whatsapp_number && (
-                <p className="text-slate-700">{booking.salon.whatsapp_number}</p>
+                <p className="text-slate-700">
+                  {booking.salon.whatsapp_number}
+                </p>
               )}
             </div>
           </div>
@@ -175,16 +184,18 @@ function BookingDetailModal({
             </p>
             <div className="space-y-1 text-sm">
               <p className="text-slate-700">
-                <span className="font-medium text-slate-500">Booking ID:</span>{' '}
-                <span className="font-mono text-slate-900 break-all">{booking.booking_id}</span>
+                <span className="font-medium text-slate-500">Booking ID:</span>{" "}
+                <span className="font-mono text-slate-900 break-all">
+                  {booking.booking_id}
+                </span>
               </p>
               <p className="text-slate-700">
-                <span className="font-medium text-slate-500">Time:</span>{' '}
-                {slotDate && slotTime ? `${slotDate} · ${slotTime}` : ' '}
+                <span className="font-medium text-slate-500">Time:</span>{" "}
+                {slotDate && slotTime ? `${slotDate} · ${slotTime}` : " "}
               </p>
               <p className="text-slate-700">
-                <span className="font-medium text-slate-500">Service:</span>{' '}
-                {booking.service_name || '—'}
+                <span className="font-medium text-slate-500">Service:</span>{" "}
+                {booking.service_name || "—"}
               </p>
             </div>
           </div>
@@ -195,7 +206,7 @@ function BookingDetailModal({
             type="button"
             onClick={() => {
               if (!whatsappUrl) return;
-              window.open(whatsappUrl, '_blank');
+              window.open(whatsappUrl, "_blank");
             }}
             disabled={!canOpenWhatsApp || whatsappLoading || !whatsappUrl}
             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
@@ -205,8 +216,8 @@ function BookingDetailModal({
           </button>
           {!canOpenWhatsApp && (
             <p className="text-xs text-slate-500">
-              WhatsApp is disabled after the slot time passes or once the booking is no longer
-              pending.
+              WhatsApp is disabled after the slot time passes or once the
+              booking is no longer pending.
             </p>
           )}
         </div>
@@ -217,13 +228,14 @@ function BookingDetailModal({
 
 export default function CustomerSalonBookingsPage() {
   const params = useParams<Params>();
-  const salonSlug = params?.salonSlug ?? '';
+  const salonSlug = params?.salonSlug ?? "";
   const router = useRouter();
 
   const [history, setHistory] = useState<BookingWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
+  const [selectedBooking, setSelectedBooking] =
+    useState<BookingWithDetails | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -236,12 +248,12 @@ export default function CustomerSalonBookingsPage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch('/api/customer/bookings', {
-          credentials: 'include',
+        const res = await fetch("/api/customer/bookings", {
+          credentials: "include",
         });
         const json = await res.json();
         if (!res.ok || !json.success) {
-          if (!cancelled) setError(json.error || 'Failed to load bookings');
+          if (!cancelled) setError(json.error || "Failed to load bookings");
           return;
         }
         const all: BookingWithDetails[] = json.data || [];
@@ -256,7 +268,7 @@ export default function CustomerSalonBookingsPage() {
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load bookings');
+          setError(e instanceof Error ? e.message : "Failed to load bookings");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -271,27 +283,27 @@ export default function CustomerSalonBookingsPage() {
   useEffect(() => {
     if (!selectedBooking) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedBooking(null);
+      if (e.key === "Escape") setSelectedBooking(null);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [selectedBooking]);
 
   const hasHistory = history.length > 0;
 
   const heading = useMemo(
-    () => (hasHistory ? 'Your bookings at this salon' : 'Bookings'),
-    [hasHistory]
+    () => (hasHistory ? "Your bookings at this salon" : "Bookings"),
+    [hasHistory],
   );
 
-  const salonName = history?.[0]?.salon?.salon_name || 'Salon';
+  const salonName = history?.[0]?.salon?.salon_name || "Salon";
 
   const breadcrumbItems = useMemo(
     () => [
-      { label: 'My Activity', href: '/customer/dashboard' },
+      { label: "My Activity", href: "/customer/dashboard" },
       { label: salonName, href: `/customer/bookings/${salonSlug}` },
     ],
-    [salonName, salonSlug]
+    [salonName, salonSlug],
   );
 
   return (
@@ -309,9 +321,14 @@ export default function CustomerSalonBookingsPage() {
                   const booking = history?.[0];
                   const businessId = booking?.business_id || salonSlug;
                   if (booking?.customer_name || booking?.customer_phone) {
-                    setRebookData(booking.customer_name ?? '', booking.customer_phone ?? '');
+                    setRebookData(
+                      booking.customer_name ?? "",
+                      booking.customer_phone ?? "",
+                    );
                   }
-                  router.push(`/customer/book/${encodeURIComponent(businessId)}?rebook=true`);
+                  router.push(
+                    `/customer/book/${encodeURIComponent(businessId)}?rebook=true`,
+                  );
                 }}
                 className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1"
               >
@@ -321,13 +338,15 @@ export default function CustomerSalonBookingsPage() {
           </div>
           {hasHistory && (
             <span className="text-xs text-slate-500">
-              {history.length} past booking{history.length === 1 ? '' : 's'}
+              {history.length} past booking{history.length === 1 ? "" : "s"}
             </span>
           )}
         </div>
 
         {loading ? (
-          <div className="py-10 text-center text-sm text-slate-500">Loading booking history…</div>
+          <div className="py-10 text-center text-sm text-slate-500">
+            Loading booking history…
+          </div>
         ) : error ? (
           <div className="py-10 text-center text-sm text-red-600">{error}</div>
         ) : !hasHistory ? (
@@ -358,7 +377,10 @@ export default function CustomerSalonBookingsPage() {
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
                 {history.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr
+                    key={booking.id}
+                    className="hover:bg-slate-50/70 transition-colors"
+                  >
                     <td className="px-4 py-2.5 text-slate-800">
                       {booking.slot?.date
                         ? formatDate(booking.slot.date)
@@ -370,7 +392,7 @@ export default function CustomerSalonBookingsPage() {
                     <td className="px-4 py-2.5 text-slate-700">
                       {booking.slot
                         ? `${formatTime(booking.slot.start_time)} – ${formatTime(booking.slot.end_time)}`
-                        : ' '}
+                        : " "}
                     </td>
                     <td className="px-4 py-2.5">
                       <span
@@ -397,7 +419,10 @@ export default function CustomerSalonBookingsPage() {
       </div>
 
       {selectedBooking && (
-        <BookingDetailModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+        <BookingDetailModal
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+        />
       )}
     </div>
   );

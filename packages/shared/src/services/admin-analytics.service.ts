@@ -3,18 +3,18 @@
  * Uses DB RPCs for heavy aggregations (index-friendly, no N+1).
  */
 
-import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
 import type {
   AdminRevenueMetrics,
   AdminBookingFunnel,
   AdminBusinessHealthItem,
   AdminSystemMetrics,
-} from '../types';
-import type { AdminDateRange } from '../lib/utils/date-range-admin';
+} from "../types";
+import type { AdminDateRange } from "../lib/utils/date-range-admin";
 import {
   ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT,
   METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN,
-} from '@cusown/config';
+} from "@cusown/config";
 
 const CRON_STALE_MINUTES = 60;
 
@@ -24,12 +24,12 @@ export class AdminAnalyticsService {
    */
   async getRevenueMetrics(range: AdminDateRange): Promise<AdminRevenueMetrics> {
     const supabase = requireSupabaseAdmin();
-    const { data, error } = await supabase.rpc('get_admin_revenue_metrics', {
+    const { data, error } = await supabase.rpc("get_admin_revenue_metrics", {
       p_start: range.startDate.toISOString(),
       p_end: range.endDate.toISOString(),
     });
     if (error) {
-      throw new Error(error.message || 'Failed to fetch revenue metrics');
+      throw new Error(error.message || "Failed to fetch revenue metrics");
     }
     const raw = data as Record<string, unknown> | null;
     if (!raw) {
@@ -45,13 +45,17 @@ export class AdminAnalyticsService {
       failedPayments: Number(raw.failedPayments) ?? 0,
       failedPaymentsPct: Number(raw.failedPaymentsPct) ?? 0,
       revenueTrend: Array.isArray(raw.revenueTrend)
-        ? (raw.revenueTrend as { date: string; revenue: number }[]).map((t) => ({
-            date: String(t.date),
-            revenue: Number(t.revenue) ?? 0,
-          }))
+        ? (raw.revenueTrend as { date: string; revenue: number }[]).map(
+            (t) => ({
+              date: String(t.date),
+              revenue: Number(t.revenue) ?? 0,
+            }),
+          )
         : [],
       paymentStatusDistribution: Array.isArray(raw.paymentStatusDistribution)
-        ? (raw.paymentStatusDistribution as { status: string; count: number }[]).map((s) => ({
+        ? (
+            raw.paymentStatusDistribution as { status: string; count: number }[]
+          ).map((s) => ({
             status: String(s.status),
             count: Number(s.count) ?? 0,
           }))
@@ -65,7 +69,7 @@ export class AdminAnalyticsService {
             }[]
           ).map((b) => ({
             business_id: String(b.business_id),
-            name: String(b.name ?? ''),
+            name: String(b.name ?? ""),
             revenue: Number(b.revenue) ?? 0,
           }))
         : [],
@@ -93,12 +97,12 @@ export class AdminAnalyticsService {
    */
   async getBookingFunnel(range: AdminDateRange): Promise<AdminBookingFunnel> {
     const supabase = requireSupabaseAdmin();
-    const { data, error } = await supabase.rpc('get_admin_booking_funnel', {
+    const { data, error } = await supabase.rpc("get_admin_booking_funnel", {
       p_start: range.startDate.toISOString(),
       p_end: range.endDate.toISOString(),
     });
     if (error) {
-      throw new Error(error.message || 'Failed to fetch booking funnel');
+      throw new Error(error.message || "Failed to fetch booking funnel");
     }
     const raw = data as Record<string, unknown> | null;
     if (!raw) {
@@ -130,22 +134,22 @@ export class AdminAnalyticsService {
    */
   async getBusinessHealth(
     range: AdminDateRange,
-    limit: number = ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT
+    limit: number = ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT,
   ): Promise<AdminBusinessHealthItem[]> {
     const supabase = requireSupabaseAdmin();
     const cappedLimit = Math.min(Math.max(1, limit), 100);
-    const { data, error } = await supabase.rpc('get_admin_business_health', {
+    const { data, error } = await supabase.rpc("get_admin_business_health", {
       p_limit: cappedLimit,
       p_start: range.startDate.toISOString(),
       p_end: range.endDate.toISOString(),
     });
     if (error) {
-      throw new Error(error.message || 'Failed to fetch business health');
+      throw new Error(error.message || "Failed to fetch business health");
     }
     const arr = Array.isArray(data) ? data : [];
     return arr.map((row: Record<string, unknown>) => ({
-      business_id: String(row.business_id ?? ''),
-      name: String(row.name ?? ''),
+      business_id: String(row.business_id ?? ""),
+      name: String(row.name ?? ""),
       healthScore: Number(row.healthScore) ?? 0,
       acceptanceRate: Number(row.acceptanceRate) ?? 0,
       cancellationRate: Number(row.cancellationRate) ?? 0,
@@ -161,35 +165,47 @@ export class AdminAnalyticsService {
   async getSystemMetrics(): Promise<AdminSystemMetrics> {
     const supabase = requireSupabaseAdmin();
 
-    const [timingsRes, cronGaugeRes, rateLimitRes, errors5xxRes] = await Promise.all([
-      supabase
-        .from('metric_timings')
-        .select('duration_ms')
-        .like('metric', 'api.%')
-        .order('recorded_at', { ascending: false })
-        .limit(500),
-      supabase
-        .from('metrics')
-        .select('value, updated_at')
-        .eq('metric', METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN)
-        .single(),
-      supabase.from('metrics').select('value').eq('metric', 'api.429').single(),
-      supabase.from('metrics').select('value').eq('metric', 'api.5xx').single(),
-    ]);
+    const [timingsRes, cronGaugeRes, rateLimitRes, errors5xxRes] =
+      await Promise.all([
+        supabase
+          .from("metric_timings")
+          .select("duration_ms")
+          .like("metric", "api.%")
+          .order("recorded_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("metrics")
+          .select("value, updated_at")
+          .eq("metric", METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN)
+          .single(),
+        supabase
+          .from("metrics")
+          .select("value")
+          .eq("metric", "api.429")
+          .single(),
+        supabase
+          .from("metrics")
+          .select("value")
+          .eq("metric", "api.5xx")
+          .single(),
+      ]);
 
     const durations = (timingsRes.data || [])
       .map((r) => r.duration_ms)
-      .filter((n) => typeof n === 'number');
+      .filter((n) => typeof n === "number");
     durations.sort((a, b) => a - b);
     const len = durations.length;
     const avgMs = len > 0 ? durations.reduce((s, d) => s + d, 0) / len : 0;
     const p95Index = Math.floor(len * 0.95);
-    const p95Ms = len > 0 ? (durations[p95Index] ?? durations[durations.length - 1]) : 0;
+    const p95Ms =
+      len > 0 ? (durations[p95Index] ?? durations[durations.length - 1]) : 0;
 
     const cronValue = cronGaugeRes.data?.value;
     const cronTs = cronValue != null ? Number(cronValue) * 1000 : null;
     const cronLastRun =
-      cronTs != null && !Number.isNaN(cronTs) ? new Date(cronTs).toISOString() : null;
+      cronTs != null && !Number.isNaN(cronTs)
+        ? new Date(cronTs).toISOString()
+        : null;
     const cronStaleThreshold = Date.now() - CRON_STALE_MINUTES * 60 * 1000;
     const cronOk = cronTs != null && cronTs >= cronStaleThreshold;
 

@@ -1,8 +1,15 @@
-import { NextRequest } from 'next/server';
-import { authEventsService, type AuthEventType, requireAdmin, successResponse, errorResponse, parseLimitOffset } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import {
+  authEventsService,
+  type AuthEventType,
+  requireAdmin,
+  successResponse,
+  errorResponse,
+  parseLimitOffset,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 
-const ROUTE = 'GET /api/admin/auth-events';
+const ROUTE = "GET /api/admin/auth-events";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,10 +18,12 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const { limit, offset } = parseLimitOffset(searchParams);
-    const event_type = searchParams.get('event_type') as AuthEventType | undefined;
-    const user_id = searchParams.get('user_id') ?? undefined;
-    const start_date = searchParams.get('start_date') ?? undefined;
-    const end_date = searchParams.get('end_date') ?? undefined;
+    const event_type = searchParams.get("event_type") as
+      | AuthEventType
+      | undefined;
+    const user_id = searchParams.get("user_id") ?? undefined;
+    const start_date = searchParams.get("start_date") ?? undefined;
+    const end_date = searchParams.get("end_date") ?? undefined;
 
     const result = await authEventsService.getAuthEvents({
       event_type,
@@ -27,7 +36,8 @@ export async function GET(request: NextRequest) {
 
     return successResponse(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

@@ -1,24 +1,24 @@
-import { NextRequest } from 'next/server';
-import { 
-  requireAuth, 
-  validateCSRFToken, 
-  requireSupabaseAdmin, 
-  successResponse, 
+import { NextRequest } from "next/server";
+import {
+  requireAuth,
+  validateCSRFToken,
+  requireSupabaseAdmin,
+  successResponse,
   errorResponse,
   userService,
   invalidateProfileCache,
-  auditService
-} from '@cusown/shared/server';
-import { type RoleName } from '@cusown/config';
+  auditService,
+} from "@cusown/shared/server";
+import { type RoleName } from "@cusown/config";
 
-const ROUTE = 'POST /api/user/upgrade-role';
+const ROUTE = "POST /api/user/upgrade-role";
 
-type UpgradableRole = Extract<RoleName, 'owner' | 'customer'>;
+type UpgradableRole = Extract<RoleName, "owner" | "customer">;
 
-const ALLOWED_ROLES: ReadonlySet<string> = new Set(['owner', 'customer']);
+const ALLOWED_ROLES: ReadonlySet<string> = new Set(["owner", "customer"]);
 
 function isUpgradableRole(value: unknown): value is UpgradableRole {
-  return typeof value === 'string' && ALLOWED_ROLES.has(value);
+  return typeof value === "string" && ALLOWED_ROLES.has(value);
 }
 
 /**
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
 
     const csrfValid = await validateCSRFToken(request);
     if (!csrfValid) {
-      return errorResponse('Invalid CSRF token', 403);
+      return errorResponse("Invalid CSRF token", 403);
     }
 
     const supabase = requireSupabaseAdmin();
     if (!supabase) {
-      return errorResponse('Database not configured', 500);
+      return errorResponse("Database not configured", 500);
     }
 
     const body = await request.json().catch(() => null);
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
 
     const profile = await userService.getUserProfile(auth.user.id);
     const currentRoles =
-      profile?.user_type === 'both'
-        ? ['customer', 'owner']
-        : profile?.user_type === 'admin'
-          ? ['admin']
+      profile?.user_type === "both"
+        ? ["customer", "owner"]
+        : profile?.user_type === "admin"
+          ? ["admin"]
           : profile?.user_type
             ? [profile.user_type]
             : [];
@@ -60,12 +60,12 @@ export async function POST(request: NextRequest) {
     await userService.setUserRoles(auth.user.id, newRoles);
 
     const updatedProfile = await userService.getUserProfile(auth.user.id);
-    const nextUserType = updatedProfile?.user_type || 'customer';
+    const nextUserType = updatedProfile?.user_type || "customer";
 
     invalidateProfileCache(auth.user.id);
 
     // Audit Log
-    await auditService.createAuditLog(auth.user.id, 'role_upgraded', 'user', {
+    await auditService.createAuditLog(auth.user.id, "role_upgraded", "user", {
       entityId: auth.user.id,
       oldData: { roles: currentRoles },
       newData: { roles: newRoles, user_type: nextUserType },
@@ -78,7 +78,8 @@ export async function POST(request: NextRequest) {
       roles: newRoles,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to upgrade role';
+    const message =
+      error instanceof Error ? error.message : "Failed to upgrade role";
     return errorResponse(message, 500);
   }
 }

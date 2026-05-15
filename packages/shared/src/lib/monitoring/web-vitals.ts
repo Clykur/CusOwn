@@ -3,24 +3,24 @@
  * Tracks LCP, FID/INP, CLS, FCP, TTFB automatically.
  */
 
-import type { Metric } from 'web-vitals';
-import { recordMetric } from './performance';
+import type { Metric } from "web-vitals";
+import { recordMetric } from "./performance";
 
 let initialized = false;
 
 export async function initWebVitals(): Promise<void> {
-  if (typeof window === 'undefined' || initialized) return;
+  if (typeof window === "undefined" || initialized) return;
   initialized = true;
 
   try {
-    const { onCLS, onFCP, onLCP, onTTFB, onINP } = await import('web-vitals');
+    const { onCLS, onFCP, onLCP, onTTFB, onINP } = await import("web-vitals");
 
     const handleMetric = (metric: Metric) => {
       recordMetric({
         name: metric.name,
-        type: 'web-vital',
+        type: "web-vital",
         value: metric.value,
-        unit: metric.name === 'CLS' ? 'score' : 'ms',
+        unit: metric.name === "CLS" ? "score" : "ms",
         metadata: {
           id: metric.id,
           navigationType: metric.navigationType,
@@ -51,13 +51,13 @@ export function reportWebVitalsToAnalytics(metric: Metric): void {
   };
 
   if (navigator.sendBeacon) {
-    navigator.sendBeacon('/api/analytics/vitals', JSON.stringify(body));
+    navigator.sendBeacon("/api/analytics/vitals", JSON.stringify(body));
   } else {
-    fetch('/api/analytics/vitals', {
+    fetch("/api/analytics/vitals", {
       body: JSON.stringify(body),
-      method: 'POST',
+      method: "POST",
       keepalive: true,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     }).catch(() => {});
   }
 }

@@ -223,7 +223,7 @@ router.push(getAdminDashboardUrl('businesses'));
 ### In API Routes
 
 ```typescript
-import { getBookingUrl, getBookingStatusUrl } from '@/lib/utils/url';
+import { getBookingUrl, getBookingStatusUrl } from "@/lib/utils/url";
 
 const bookingUrl = getBookingUrl(bookingLink, request);
 const statusUrl = getBookingStatusUrl(bookingId, request);

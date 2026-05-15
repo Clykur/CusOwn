@@ -3,7 +3,7 @@
  * Not shared across serverless instances; each instance has its own cache. Safe for high traffic per instance.
  */
 
-import { GEO_IP_CACHE_TTL_MS, GEO_IP_CACHE_MAX_ENTRIES } from '@cusown/config';
+import { GEO_IP_CACHE_TTL_MS, GEO_IP_CACHE_MAX_ENTRIES } from "@cusown/config";
 
 export interface CachedLocation {
   city?: string;
@@ -58,7 +58,10 @@ export function getIpCached(ip: string): CachedLocation | null {
   return entry.value;
 }
 
-export function setIpCached(ip: string, value: Omit<CachedLocation, 'cachedAt'>): void {
+export function setIpCached(
+  ip: string,
+  value: Omit<CachedLocation, "cachedAt">,
+): void {
   prune();
   const now = Date.now();
   const existing = accessOrder.indexOf(ip);

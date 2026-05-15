@@ -4,9 +4,9 @@
  * See: https://www.bigdatacloud.com
  */
 
-import { GEO_BIGDATACLOUD_BASE } from '@cusown/config';
-import { validateCoordinates } from '../utils/geo';
-import { env } from '@cusown/config';
+import { GEO_BIGDATACLOUD_BASE } from "@cusown/config";
+import { validateCoordinates } from "../utils/geo";
+import { env } from "@cusown/config";
 
 export interface ReverseGeocodeResult {
   city?: string;
@@ -33,25 +33,29 @@ export interface IpGeolocationResult {
     longitude?: number;
   };
   locality?: string;
-  localityInfo?: ReverseGeocodeResult['localityInfo'];
+  localityInfo?: ReverseGeocodeResult["localityInfo"];
 }
 
-const REVERSE_GEOCODE_PATH = '/reverse-geocode-client';
-const IP_GEOLOCATION_PATH = '/ip-geolocation';
+const REVERSE_GEOCODE_PATH = "/reverse-geocode-client";
+const IP_GEOLOCATION_PATH = "/ip-geolocation";
 
-function buildUrl(path: string, params: Record<string, string>, apiKey?: string): string {
+function buildUrl(
+  path: string,
+  params: Record<string, string>,
+  apiKey?: string,
+): string {
   const url = new URL(path, GEO_BIGDATACLOUD_BASE);
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== '') url.searchParams.set(k, v);
+    if (v !== undefined && v !== "") url.searchParams.set(k, v);
   });
-  if (apiKey && apiKey.trim() !== '') {
-    url.searchParams.set('key', apiKey.trim());
+  if (apiKey && apiKey.trim() !== "") {
+    url.searchParams.set("key", apiKey.trim());
   }
   return url.toString();
 }
 
 function getApiKey(): string {
-  return env.geo.bigDataCloudApiKey ?? '';
+  return env.geo.bigDataCloudApiKey ?? "";
 }
 
 /**
@@ -61,7 +65,7 @@ function getApiKey(): string {
 export async function reverseGeocode(
   latitude: number,
   longitude: number,
-  options?: { localityLanguage?: string }
+  options?: { localityLanguage?: string },
 ): Promise<ReverseGeocodeResult | null> {
   if (!validateCoordinates(latitude, longitude)) {
     return null;
@@ -76,7 +80,7 @@ export async function reverseGeocode(
         localityLanguage: options.localityLanguage,
       }),
     },
-    getApiKey()
+    getApiKey(),
   );
 
   const controller = new AbortController();
@@ -85,7 +89,7 @@ export async function reverseGeocode(
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      headers: { Accept: "application/json" },
       next: { revalidate: 86400 },
     });
     clearTimeout(timeout);
@@ -102,7 +106,9 @@ export async function reverseGeocode(
  * Get geolocation for an IP address.
  * Free, no API key. Uses BigDataCloud ip-geolocation endpoint. Pass ip to look up (e.g. client IP when proxying from server).
  */
-export async function ipGeolocation(ip: string): Promise<IpGeolocationResult | null> {
+export async function ipGeolocation(
+  ip: string,
+): Promise<IpGeolocationResult | null> {
   const url = buildUrl(IP_GEOLOCATION_PATH, { ip }, getApiKey());
 
   const controller = new AbortController();
@@ -111,7 +117,7 @@ export async function ipGeolocation(ip: string): Promise<IpGeolocationResult | n
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      headers: { Accept: "application/json" },
       next: { revalidate: 3600 },
     });
     clearTimeout(timeout);

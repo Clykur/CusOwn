@@ -48,7 +48,7 @@ export interface RoutePath {
   /** Total estimated time in minutes for the travel mode */
   totalTimeMinutes: number;
   segments: RouteSegment[];
-  mode: 'walking' | 'driving';
+  mode: "walking" | "driving";
 }
 
 /**
@@ -81,7 +81,9 @@ export class WeightedGraph {
   addEdge(edge: GraphEdge): void {
     // Validate nodes exist
     if (!this.nodes.has(edge.from) || !this.nodes.has(edge.to)) {
-      throw new Error(`Edge references non-existent node: ${edge.from} -> ${edge.to}`);
+      throw new Error(
+        `Edge references non-existent node: ${edge.from} -> ${edge.to}`,
+      );
     }
 
     // Store edge by id for lookup
@@ -159,10 +161,13 @@ export class WeightedGraph {
   /**
    * Filter neighbors by travel mode (walking/driving).
    */
-  getNeighborsByMode(nodeId: string, mode: 'walking' | 'driving'): AdjacencyListEntry[] {
+  getNeighborsByMode(
+    nodeId: string,
+    mode: "walking" | "driving",
+  ): AdjacencyListEntry[] {
     const neighbors = this.getNeighbors(nodeId);
     return neighbors.filter((entry) =>
-      mode === 'walking' ? entry.edge.walkable : entry.edge.drivable
+      mode === "walking" ? entry.edge.walkable : entry.edge.drivable,
     );
   }
 }

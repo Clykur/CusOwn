@@ -1,43 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-const CSRF_TOKEN_HEADER = 'x-csrf-token';
-const CSRF_COOKIE_NAME = 'csrf-token';
+const CSRF_TOKEN_HEADER = "x-csrf-token";
+const CSRF_COOKIE_NAME = "csrf-token";
 
 export const generateCSRFToken = (): string => {
   // next/server runtime may not provide global `crypto` depending on configuration.
   // Use WebCrypto if available, otherwise fall back to Node crypto.
   const hasWebCrypto =
-    typeof globalThis !== 'undefined' &&
+    typeof globalThis !== "undefined" &&
     (globalThis as any).crypto &&
-    typeof (globalThis as any).crypto.getRandomValues === 'function';
+    typeof (globalThis as any).crypto.getRandomValues === "function";
 
   if (hasWebCrypto) {
     return Array.from(
-      (globalThis as any).crypto.getRandomValues(new Uint8Array(32)) as Uint8Array
+      (globalThis as any).crypto.getRandomValues(
+        new Uint8Array(32),
+      ) as Uint8Array,
     )
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   // eslint-disable-next-line
-  const nodeCrypto: typeof import('crypto') = require('crypto');
-  return nodeCrypto.randomBytes(32).toString('hex');
+  const nodeCrypto: typeof import("crypto") = require("crypto");
+  return nodeCrypto.randomBytes(32).toString("hex");
 };
-
 
 export const setCSRFToken = (response: NextResponse, token: string): void => {
   response.cookies.set(CSRF_COOKIE_NAME, token, {
     httpOnly: false, // Allow client-side access for CSRF token
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
     maxAge: 3600,
-    path: '/',
+    path: "/",
   });
 };
 
-export const validateCSRFToken = async (request: NextRequest): Promise<boolean> => {
-  if (request.method === 'GET' || request.method === 'HEAD') {
+export const validateCSRFToken = async (
+  request: NextRequest,
+): Promise<boolean> => {
+  if (request.method === "GET" || request.method === "HEAD") {
     return true;
   }
 
@@ -51,10 +53,12 @@ export const validateCSRFToken = async (request: NextRequest): Promise<boolean> 
   return cookieToken === headerToken;
 };
 
-const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-export const csrfProtection = async (request: NextRequest): Promise<NextResponse | null> => {
-  if (request.method === 'GET' || request.method === 'HEAD') {
+export const csrfProtection = async (
+  request: NextRequest,
+): Promise<NextResponse | null> => {
+  if (request.method === "GET" || request.method === "HEAD") {
     const response = NextResponse.next();
     const existingToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
     if (!existingToken) {
@@ -68,19 +72,22 @@ export const csrfProtection = async (request: NextRequest): Promise<NextResponse
     return null;
   }
 
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
   const requestUrl = new URL(request.url);
-  const isSameOrigin = origin && new URL(origin).hostname === requestUrl.hostname;
-  const isSameOriginReferer = referer && new URL(referer).hostname === requestUrl.hostname;
+  const isSameOrigin =
+    origin && new URL(origin).hostname === requestUrl.hostname;
+  const isSameOriginReferer =
+    referer && new URL(referer).hostname === requestUrl.hostname;
 
   // Cross-origin state-changing requests: reject (no token validation = no trust)
   if (!isSameOrigin && !isSameOriginReferer) {
     return NextResponse.json(
       {
-        error: 'Forbidden: cross-origin state-changing requests are not allowed',
+        error:
+          "Forbidden: cross-origin state-changing requests are not allowed",
       },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -95,7 +102,7 @@ export const csrfProtection = async (request: NextRequest): Promise<NextResponse
       setCSRFToken(response, token);
       return response;
     }
-    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
   }
 
   return null;

@@ -7,7 +7,7 @@
  * Admin queries should NOT use these filters (they need full visibility).
  */
 
-import type { PostgrestFilterBuilder } from '@supabase/postgrest-js';
+import type { PostgrestFilterBuilder } from "@supabase/postgrest-js";
 
 /**
  * Apply standard "active business" filters to a Supabase query on the `businesses` table.
@@ -21,8 +21,8 @@ import type { PostgrestFilterBuilder } from '@supabase/postgrest-js';
  *   query = applyActiveBusinessFilters(query);
  *   const { data } = await query;
  */
-export function applyActiveBusinessFilters<T extends PostgrestFilterBuilder<any, any, any, any>>(
-  query: T
-): T {
-  return query.eq('suspended', false).is('deleted_at', null) as T;
+export function applyActiveBusinessFilters<
+  T extends PostgrestFilterBuilder<any, any, any, any>,
+>(query: T): T {
+  return query.eq("suspended", false).is("deleted_at", null) as T;
 }

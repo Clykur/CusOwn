@@ -1,5 +1,5 @@
-import { logStructured } from '../observability/structured-log';
-import { METRICS_SERVICE_NAME } from '@cusown/config';
+import { logStructured } from "../observability/structured-log";
+import { METRICS_SERVICE_NAME } from "@cusown/config";
 
 export interface MetricsLike {
   increment(metric: string, value?: number): Promise<void>;
@@ -10,14 +10,18 @@ export interface MetricsLike {
 }
 
 function getErrorType(reason: unknown): string {
-  if (reason instanceof Error) return reason.name || 'Error';
-  if (typeof reason === 'object' && reason !== null && 'name' in reason)
+  if (reason instanceof Error) return reason.name || "Error";
+  if (typeof reason === "object" && reason !== null && "name" in reason)
     return String((reason as { name?: string }).name);
   return typeof reason;
 }
 
-function logMetricsFailure(metric: string, reason: unknown, requestId?: string | null): void {
-  logStructured('warn', 'Metrics operation failed', {
+function logMetricsFailure(
+  metric: string,
+  reason: unknown,
+  requestId?: string | null,
+): void {
+  logStructured("warn", "Metrics operation failed", {
     service: METRICS_SERVICE_NAME,
     metric_name: metric,
     error_type: getErrorType(reason),
@@ -25,7 +29,11 @@ function logMetricsFailure(metric: string, reason: unknown, requestId?: string |
   });
 }
 
-function runSafe<T>(fn: () => Promise<T>, metric: string, requestId?: string | null): void {
+function runSafe<T>(
+  fn: () => Promise<T>,
+  metric: string,
+  requestId?: string | null,
+): void {
   queueMicrotask(() => {
     fn().catch((err) => {
       logMetricsFailure(metric, err, requestId);
@@ -34,15 +42,27 @@ function runSafe<T>(fn: () => Promise<T>, metric: string, requestId?: string | n
 }
 
 export function createSafeMetrics(impl: MetricsLike) {
-  function safeIncrement(metric: string, value: number = 1, requestId?: string | null): void {
+  function safeIncrement(
+    metric: string,
+    value: number = 1,
+    requestId?: string | null,
+  ): void {
     runSafe(() => impl.increment(metric, value), metric, requestId);
   }
 
-  function safeRecordTiming(metric: string, durationMs: number, requestId?: string | null): void {
+  function safeRecordTiming(
+    metric: string,
+    durationMs: number,
+    requestId?: string | null,
+  ): void {
     runSafe(() => impl.recordTiming(metric, durationMs), metric, requestId);
   }
 
-  function safeSetGauge(metric: string, value: number, requestId?: string | null): void {
+  function safeSetGauge(
+    metric: string,
+    value: number,
+    requestId?: string | null,
+  ): void {
     runSafe(() => impl.setGauge(metric, value), metric, requestId);
   }
 

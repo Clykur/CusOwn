@@ -1,13 +1,13 @@
-import { NextRequest } from 'next/server';
-import { successResponse } from '@cusown/shared/server';
-import { generateCSRFToken, setCSRFToken } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { successResponse } from "@cusown/shared/server";
+import { generateCSRFToken, setCSRFToken } from "@cusown/shared/server";
 
 /**
  * GET /api/csrf-token
  * Returns CSRF token for client-side use
  */
 export async function GET(request: NextRequest) {
-  const existingToken = request.cookies.get('csrf-token')?.value;
+  const existingToken = request.cookies.get("csrf-token")?.value;
 
   if (existingToken) {
     const response = successResponse({ token: existingToken });

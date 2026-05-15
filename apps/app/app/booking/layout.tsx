@@ -1,18 +1,23 @@
-import { getServerUser, getServerUserProfile } from '@cusown/shared';
-import CustomerBookingShell from '@/components/customer/customer-booking-shell';
-import BookingLayoutFallback from '@/components/customer/booking-layout-fallback';
-import type { CustomerInitialUser } from '@/components/customer/customer-session-context';
+import { getServerUser, getServerUserProfile } from "@cusown/shared";
+import CustomerBookingShell from "@/components/customer/customer-booking-shell";
+import BookingLayoutFallback from "@/components/customer/booking-layout-fallback";
+import type { CustomerInitialUser } from "@/components/customer/customer-session-context";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export default async function BookingLayout({ children }: { children: React.ReactNode }) {
+export default async function BookingLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const user = await getServerUser();
   if (!user) {
     return <BookingLayoutFallback>{children}</BookingLayoutFallback>;
   }
 
   const profile = await getServerUserProfile(user.id);
-  const isCustomer = profile?.user_type === 'customer' || profile?.user_type === 'both';
+  const isCustomer =
+    profile?.user_type === "customer" || profile?.user_type === "both";
   if (!isCustomer) {
     return <BookingLayoutFallback>{children}</BookingLayoutFallback>;
   }
@@ -21,9 +26,13 @@ export default async function BookingLayout({ children }: { children: React.Reac
     id: user.id,
     email: user.email ?? undefined,
     full_name: profile.full_name ?? undefined,
-    user_type: profile.user_type as 'owner' | 'customer' | 'both' | 'admin',
+    user_type: profile.user_type as "owner" | "customer" | "both" | "admin",
     profile_media_id: profile.profile_media_id ?? null,
   };
 
-  return <CustomerBookingShell initialUser={initialUser}>{children}</CustomerBookingShell>;
+  return (
+    <CustomerBookingShell initialUser={initialUser}>
+      {children}
+    </CustomerBookingShell>
+  );
 }

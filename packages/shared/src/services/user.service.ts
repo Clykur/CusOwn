@@ -1,7 +1,7 @@
-import { requireSupabaseAdmin } from '../lib/supabase/server';
-import { ROLES, type RoleName } from '@cusown/config';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { ROLES, type RoleName } from "@cusown/config";
 
-export type UserType = 'owner' | 'customer' | 'both' | 'admin';
+export type UserType = "owner" | "customer" | "both" | "admin";
 
 export interface UserProfile {
   id: string;
@@ -20,24 +20,24 @@ export class UserService {
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      console.error('[USER_SERVICE] Supabase admin not configured');
-      throw new Error('Database not configured');
+      console.error("[USER_SERVICE] Supabase admin not configured");
+      throw new Error("Database not configured");
     }
 
     const { data, error } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("user_profiles")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
-      console.error('[USER_SERVICE] Error fetching profile:', {
+      if (error.code === "PGRST116") return null;
+      console.error("[USER_SERVICE] Error fetching profile:", {
         error: error.message,
         code: error.code,
         details: error.details,
       });
-      throw new Error(error.message || 'Failed to fetch user profile');
+      throw new Error(error.message || "Failed to fetch user profile");
     }
     return data;
   }
@@ -51,14 +51,14 @@ export class UserService {
       user_type?: UserType;
       full_name?: string;
       phone_number?: string;
-    }
+    },
   ): Promise<UserProfile> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
     const { data: profile, error } = await supabaseAdmin
-      .from('user_profiles')
+      .from("user_profiles")
       .upsert(
         {
           id: userId,
@@ -66,14 +66,14 @@ export class UserService {
           updated_at: new Date().toISOString(),
         },
         {
-          onConflict: 'id',
-        }
+          onConflict: "id",
+        },
       )
       .select()
       .single();
 
     if (error) {
-      throw new Error(error.message || 'Failed to update user profile');
+      throw new Error(error.message || "Failed to update user profile");
     }
 
     return profile;
@@ -82,18 +82,21 @@ export class UserService {
   /**
    * Update user type (e.g., upgrade customer to owner). Kept for backward compat; syncs to user_roles.
    */
-  async updateUserType(userId: string, userType: UserType): Promise<UserProfile> {
+  async updateUserType(
+    userId: string,
+    userType: UserType,
+  ): Promise<UserProfile> {
     const roleNames: string[] =
-      userType === 'admin'
-        ? ['admin']
-        : userType === 'both'
-          ? ['customer', 'owner']
-          : userType === 'owner'
-            ? ['owner']
-            : ['customer'];
+      userType === "admin"
+        ? ["admin"]
+        : userType === "both"
+          ? ["customer", "owner"]
+          : userType === "owner"
+            ? ["owner"]
+            : ["customer"];
     await this.setUserRoles(userId, roleNames);
     const profile = await this.getUserProfile(userId);
-    if (!profile) throw new Error('Profile not found after setUserRoles');
+    if (!profile) throw new Error("Profile not found after setUserRoles");
     return profile;
   }
 
@@ -106,29 +109,29 @@ export class UserService {
 
     const valid = roleNames.filter((r) => ROLES.includes(r as RoleName));
     const { data: roleRows } = await supabaseAdmin
-      .from('roles')
-      .select('id, name')
-      .in('name', valid);
+      .from("roles")
+      .select("id, name")
+      .in("name", valid);
     if (!roleRows?.length) {
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-      await this.upsertUserProfile(userId, { user_type: 'customer' });
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+      await this.upsertUserProfile(userId, { user_type: "customer" });
       return;
     }
 
-    await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
     const inserts = roleRows.map((r) => ({ user_id: userId, role_id: r.id }));
-    await supabaseAdmin.from('user_roles').insert(inserts);
+    await supabaseAdmin.from("user_roles").insert(inserts);
 
     const names = roleRows.map((r) => r.name);
     let userType: UserType;
-    if (names.includes('admin')) {
-      userType = 'admin';
-    } else if (names.includes('owner') && names.includes('customer')) {
-      userType = 'both';
-    } else if (names.includes('owner')) {
-      userType = 'owner';
+    if (names.includes("admin")) {
+      userType = "admin";
+    } else if (names.includes("owner") && names.includes("customer")) {
+      userType = "both";
+    } else if (names.includes("owner")) {
+      userType = "owner";
     } else {
-      userType = 'customer';
+      userType = "customer";
     }
     await this.upsertUserProfile(userId, { user_type: userType });
   }
@@ -142,9 +145,9 @@ export class UserService {
       return false;
     }
     const { data, error } = await supabaseAdmin
-      .from('businesses')
-      .select('id')
-      .eq('owner_user_id', userId)
+      .from("businesses")
+      .select("id")
+      .eq("owner_user_id", userId)
       .limit(1);
 
     if (error) {
@@ -157,35 +160,44 @@ export class UserService {
   /**
    * Get all businesses owned by user (excludes soft-deleted businesses)
    */
-  async getUserBusinesses(userId: string, includeSuspended = false, includeDeleted = false) {
+  async getUserBusinesses(
+    userId: string,
+    includeSuspended = false,
+    includeDeleted = false,
+  ) {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      console.warn('[USER_SERVICE] Supabase admin not configured, returning empty array');
+      console.warn(
+        "[USER_SERVICE] Supabase admin not configured, returning empty array",
+      );
       return [];
     }
 
-    let query = supabaseAdmin.from('businesses').select('*').eq('owner_user_id', userId);
+    let query = supabaseAdmin
+      .from("businesses")
+      .select("*")
+      .eq("owner_user_id", userId);
 
     if (!includeSuspended) {
-      query = query.eq('suspended', false);
+      query = query.eq("suspended", false);
     }
 
     // Filter out soft-deleted businesses unless explicitly requested
     if (!includeDeleted) {
-      query = query.is('deleted_at', null);
+      query = query.is("deleted_at", null);
     }
 
-    const { data, error } = await query.order('created_at', {
+    const { data, error } = await query.order("created_at", {
       ascending: false,
     });
 
     if (error) {
-      console.error('[USER_SERVICE] Error fetching businesses:', {
+      console.error("[USER_SERVICE] Error fetching businesses:", {
         error: error.message,
         code: error.code,
         details: error.details,
       });
-      throw new Error(error.message || 'Failed to fetch user businesses');
+      throw new Error(error.message || "Failed to fetch user businesses");
     }
 
     return data || [];
@@ -201,7 +213,7 @@ export class UserService {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('bookings')
+      .from("bookings")
       .select(
         `
         *,
@@ -219,13 +231,13 @@ export class UserService {
           end_time,
           status
         )
-      `
+      `,
       )
-      .eq('customer_user_id', userId)
-      .order('created_at', { ascending: false });
+      .eq("customer_user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      throw new Error(error.message || 'Failed to fetch user bookings');
+      throw new Error(error.message || "Failed to fetch user bookings");
     }
 
     return data || [];
@@ -237,8 +249,12 @@ export class UserService {
    */
   async softDeleteAccount(
     userId: string,
-    reason: string = 'User requested account deletion',
-    options?: { actorId?: string; ip?: string | null; overrideLegalHold?: boolean }
+    reason: string = "User requested account deletion",
+    options?: {
+      actorId?: string;
+      ip?: string | null;
+      overrideLegalHold?: boolean;
+    },
   ): Promise<{
     user_id: string;
     deleted_at: string;
@@ -247,7 +263,7 @@ export class UserService {
   }> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
 
     const hasAudit = options?.actorId != null;
@@ -261,10 +277,13 @@ export class UserService {
         }
       : { p_user_id: userId, p_reason: reason };
 
-    const { data, error } = await supabaseAdmin.rpc('soft_delete_user_account', params);
+    const { data, error } = await supabaseAdmin.rpc(
+      "soft_delete_user_account",
+      params,
+    );
 
     if (error) {
-      throw new Error(error.message || 'Failed to delete account');
+      throw new Error(error.message || "Failed to delete account");
     }
 
     return data;
@@ -280,18 +299,18 @@ export class UserService {
   }> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
 
     const { data, error } = await supabaseAdmin
-      .from('user_profiles')
-      .select('deleted_at, permanent_deletion_at')
-      .eq('id', userId)
+      .from("user_profiles")
+      .select("deleted_at, permanent_deletion_at")
+      .eq("id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return { deleted: false };
-      throw new Error(error.message || 'Failed to check account status');
+      if (error.code === "PGRST116") return { deleted: false };
+      throw new Error(error.message || "Failed to check account status");
     }
 
     return {

@@ -1,9 +1,9 @@
-import { NextRequest } from 'next/server';
-import { getClientIp } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { paymentService } from '@cusown/shared/server';
-import { verifyRazorpayWebhook, getWebhookSecret } from '@cusown/shared/server';
-import { createHash } from 'crypto';
+import { NextRequest } from "next/server";
+import { getClientIp } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { paymentService } from "@cusown/shared/server";
+import { verifyRazorpayWebhook, getWebhookSecret } from "@cusown/shared/server";
+import { createHash } from "crypto";
 
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
 
@@ -11,80 +11,89 @@ export async function POST(request: NextRequest) {
   const clientIP = getClientIp(request);
 
   try {
-    const signature = request.headers.get('x-razorpay-signature');
+    const signature = request.headers.get("x-razorpay-signature");
     if (!signature) {
-      return errorResponse('Missing signature', 401);
+      return errorResponse("Missing signature", 401);
     }
 
     const body = await request.text();
-    const secret = getWebhookSecret('razorpay');
+    const secret = getWebhookSecret("razorpay");
 
     if (!secret) {
-      console.error('[WEBHOOK] Razorpay webhook secret not configured');
-      return errorResponse('Webhook not configured', 500);
+      console.error("[WEBHOOK] Razorpay webhook secret not configured");
+      return errorResponse("Webhook not configured", 500);
     }
 
     if (!verifyRazorpayWebhook(body, signature, secret)) {
-      console.warn(`[SECURITY] Invalid Razorpay webhook signature from IP: ${clientIP}`);
-      return errorResponse('Invalid signature', 401);
+      console.warn(
+        `[SECURITY] Invalid Razorpay webhook signature from IP: ${clientIP}`,
+      );
+      return errorResponse("Invalid signature", 401);
     }
 
     const payload = JSON.parse(body);
-    const providerPaymentId = payload.payload?.payment?.entity?.id || payload.id;
+    const providerPaymentId =
+      payload.payload?.payment?.entity?.id || payload.id;
 
     if (!providerPaymentId) {
-      return errorResponse('Invalid webhook payload', 400);
+      return errorResponse("Invalid webhook payload", 400);
     }
 
-    const payloadHash = createHash('sha256').update(body).digest('hex');
+    const payloadHash = createHash("sha256").update(body).digest("hex");
 
-    const { requireSupabaseAdmin } = await import('@cusown/shared/server');
+    const { requireSupabaseAdmin } = await import("@cusown/shared/server");
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data: existingPayment } = await supabaseAdmin
-      .from('payments')
-      .select('*')
-      .eq('webhook_payload_hash', payloadHash)
+      .from("payments")
+      .select("*")
+      .eq("webhook_payload_hash", payloadHash)
       .single();
 
     if (existingPayment) {
-      return successResponse({ success: true, message: 'Already processed' });
+      return successResponse({ success: true, message: "Already processed" });
     }
 
     const { data: payment } = await supabaseAdmin
-      .from('payments')
-      .select('*')
-      .eq('provider', 'razorpay')
-      .eq('provider_payment_id', providerPaymentId)
+      .from("payments")
+      .select("*")
+      .eq("provider", "razorpay")
+      .eq("provider_payment_id", providerPaymentId)
       .single();
 
     if (!payment) {
       console.warn(`[WEBHOOK] Payment not found: ${providerPaymentId}`);
-      return errorResponse('Payment not found', 404);
+      return errorResponse("Payment not found", 404);
     }
 
     const razorpayPayment = payload.payload?.payment?.entity || payload;
     const paymentStatus =
-      razorpayPayment.status === 'captured'
-        ? 'completed'
-        : razorpayPayment.status === 'failed'
-          ? 'failed'
-          : 'processing';
+      razorpayPayment.status === "captured"
+        ? "completed"
+        : razorpayPayment.status === "failed"
+          ? "failed"
+          : "processing";
 
     if (razorpayPayment.amount !== payment.amount_cents) {
       console.error(`[SECURITY] Amount mismatch for payment ${payment.id}`);
-      return errorResponse('Amount verification failed', 400);
+      return errorResponse("Amount verification failed", 400);
     }
 
-    await paymentService.updatePaymentStatus(payment.id, paymentStatus, providerPaymentId, {
-      signature,
-      payloadHash,
-    });
+    await paymentService.updatePaymentStatus(
+      payment.id,
+      paymentStatus,
+      providerPaymentId,
+      {
+        signature,
+        payloadHash,
+      },
+    );
 
     return successResponse({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Webhook processing failed';
-    console.error('[WEBHOOK] Error:', error);
+    const message =
+      error instanceof Error ? error.message : "Webhook processing failed";
+    console.error("[WEBHOOK] Error:", error);
     return errorResponse(message, 500);
   }
 }

@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { 
+import { NextRequest } from "next/server";
+import {
   userService,
   successResponse,
   errorResponse,
@@ -8,10 +8,10 @@ import {
   requireOwner,
   hasPermission,
   PERMISSIONS,
-  getUserFriendlyError
-} from '@cusown/shared/server';
+  getUserFriendlyError,
+} from "@cusown/shared/server";
 
-const ROUTE = 'GET /api/owner/businesses';
+const ROUTE = "GET /api/owner/businesses";
 
 /**
  * GET /api/owner/businesses
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     const isAdmin = await hasPermission(auth.user.id, PERMISSIONS.ADMIN_ACCESS);
     if (isAdmin) {
       const { data: adminBusinesses, error: adminError } = await supabaseAdmin
-        .from('businesses')
+        .from("businesses")
         .select(
-          'id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at'
+          "id, salon_name, owner_name, whatsapp_number, opening_time, closing_time, slot_duration, booking_link, address, location, category, qr_code, owner_user_id, created_at, updated_at",
         )
-        .order('created_at', { ascending: false });
+        .order("created_at", { ascending: false });
       if (!adminError && adminBusinesses) {
         const response = successResponse(adminBusinesses);
         setCacheHeaders(response, 60, 120);

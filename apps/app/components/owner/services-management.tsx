@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { OWNER_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
-import AddIcon from '@cusown/shared/icons/create-business.svg';
+import { useEffect, useState, useCallback } from "react";
+import { OWNER_SCREEN_TITLE_CLASSNAME } from "@cusown/config";
+import AddIcon from "@cusown/shared/icons/create-business.svg";
 
 export type Service = {
   id: string;
@@ -16,22 +16,25 @@ type ServicesProps = {
   className?: string;
 };
 
-const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
+const ServicesSection = ({ businessId, className = "" }: ServicesProps) => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [form, setForm] = useState({
-    name: '',
-    duration: '',
-    price: '',
+    name: "",
+    duration: "",
+    price: "",
   });
   const [toast, setToast] = useState<{
     message: string;
-    type: 'success' | 'error' | 'warning';
+    type: "success" | "error" | "warning";
   } | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "warning",
+  ) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 2000);
   };
@@ -39,11 +42,11 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
   const fetchServices = useCallback(async () => {
     try {
       const res = await fetch(`/api/owner/services?businessId=${businessId}`, {
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!res.ok) {
-        console.error('Failed to fetch services');
+        console.error("Failed to fetch services");
         setServices([]);
         return;
       }
@@ -63,7 +66,7 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', duration: '', price: '' });
+    setForm({ name: "", duration: "", price: "" });
     setShowModal(true);
   };
 
@@ -90,23 +93,23 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
     try {
       if (editing) {
         await fetch(`/api/owner/services`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             serviceId: editing.id,
             ...payload,
           }),
         });
-        showToast('Service updated', 'warning');
+        showToast("Service updated", "warning");
       } else {
         await fetch(`/api/owner/services`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(payload),
         });
-        showToast('Service added', 'success');
+        showToast("Service added", "success");
       }
 
       setShowModal(false);
@@ -117,15 +120,15 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this service?')) return;
+    if (!confirm("Delete this service?")) return;
 
     await fetch(`/api/owner/services?serviceId=${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
+      method: "DELETE",
+      credentials: "include",
     });
 
     setServices((prev) => prev.filter((s) => s.id !== id));
-    showToast('Deleted', 'error');
+    showToast("Deleted", "error");
   };
 
   return (
@@ -138,11 +141,11 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
       px-4 sm:px-5 py-2.5 rounded-lg text-sm md:text-base font-medium shadow-lg 
       text-center transition-all
       ${
-        toast.type === 'success'
-          ? 'bg-green-600 text-white'
-          : toast.type === 'error'
-            ? 'bg-red-600 text-white'
-            : 'bg-yellow-400 text-black'
+        toast.type === "success"
+          ? "bg-green-600 text-white"
+          : toast.type === "error"
+            ? "bg-red-600 text-white"
+            : "bg-yellow-400 text-black"
       }`}
             >
               {toast.message}
@@ -171,7 +174,9 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
         {loading ? (
           <p className="text-gray-500">Loading...</p>
         ) : services.length === 0 ? (
-          <div className="text-gray-500 text-sm">No services yet. Add your first service.</div>
+          <div className="text-gray-500 text-sm">
+            No services yet. Add your first service.
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
             {services.map((s) => (
@@ -181,11 +186,17 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <h3 className="text-base font-semibold text-gray-900">{s.name}</h3>
-                    <span className="text-xs text-gray-500 mt-1">{s.duration_minutes} mins</span>
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {s.name}
+                    </h3>
+                    <span className="text-xs text-gray-500 mt-1">
+                      {s.duration_minutes} mins
+                    </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-base font-semibold text-gray-900">₹{s.price_cents / 100}</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      ₹{s.price_cents / 100}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-5 mt-3 border-t pt-3">
@@ -210,7 +221,9 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
         {showModal && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
             <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-4">
-              <h3 className="text-lg font-semibold">{editing ? 'Edit Service' : 'Add Service'}</h3>
+              <h3 className="text-lg font-semibold">
+                {editing ? "Edit Service" : "Add Service"}
+              </h3>
               <input
                 placeholder="Service Name"
                 value={form.name}
@@ -221,7 +234,9 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
                 <input
                   placeholder="Duration (mins)"
                   value={form.duration}
-                  onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, duration: e.target.value })
+                  }
                   className="w-full min-w-0 border px-3 py-2 rounded"
                 />
                 <input

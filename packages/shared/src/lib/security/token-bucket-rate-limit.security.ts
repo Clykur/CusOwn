@@ -4,8 +4,8 @@
  * to avoid Auth 429 (over_request_rate_limit). Per-route overrides for admin and export.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getClientIp } from './client-ip.security';
+import { NextRequest, NextResponse } from "next/server";
+import { getClientIp } from "./client-ip.security";
 import {
   TOKEN_BUCKET_CAPACITY,
   TOKEN_BUCKET_REFILL_PER_SEC,
@@ -15,8 +15,8 @@ import {
   TOKEN_BUCKET_EXPORT_REFILL_PER_SEC,
   TOKEN_BUCKET_AUTH_CAPACITY,
   TOKEN_BUCKET_AUTH_REFILL_PER_SEC,
-} from '@cusown/config';
-import { ERROR_MESSAGES } from '@cusown/config';
+} from "@cusown/config";
+import { ERROR_MESSAGES } from "@cusown/config";
 
 interface BucketState {
   tokens: number;
@@ -26,29 +26,32 @@ interface BucketState {
 const buckets = new Map<string, BucketState>();
 const BUCKET_CLEANUP_MAX = 20_000;
 
-function getRouteTier(pathname: string): 'admin' | 'export' | 'auth' | 'default' {
-  if (pathname.startsWith('/api/admin/')) return 'admin';
-  if (/\/api\/[^/]+\/export\/?/.test(pathname) || pathname.includes('/export')) return 'export';
-  if (pathname === '/api/auth/login') return 'auth';
-  return 'default';
+function getRouteTier(
+  pathname: string,
+): "admin" | "export" | "auth" | "default" {
+  if (pathname.startsWith("/api/admin/")) return "admin";
+  if (/\/api\/[^/]+\/export\/?/.test(pathname) || pathname.includes("/export"))
+    return "export";
+  if (pathname === "/api/auth/login") return "auth";
+  return "default";
 }
 
-function getCapacityRefill(tier: 'admin' | 'export' | 'auth' | 'default'): {
+function getCapacityRefill(tier: "admin" | "export" | "auth" | "default"): {
   capacity: number;
   refillPerSec: number;
 } {
   switch (tier) {
-    case 'admin':
+    case "admin":
       return {
         capacity: TOKEN_BUCKET_ADMIN_CAPACITY,
         refillPerSec: TOKEN_BUCKET_ADMIN_REFILL_PER_SEC,
       };
-    case 'export':
+    case "export":
       return {
         capacity: TOKEN_BUCKET_EXPORT_CAPACITY,
         refillPerSec: TOKEN_BUCKET_EXPORT_REFILL_PER_SEC,
       };
-    case 'auth':
+    case "auth":
       return {
         capacity: TOKEN_BUCKET_AUTH_CAPACITY,
         refillPerSec: TOKEN_BUCKET_AUTH_REFILL_PER_SEC,
@@ -65,7 +68,7 @@ function refill(
   state: BucketState,
   capacity: number,
   refillPerSec: number,
-  nowMs: number
+  nowMs: number,
 ): BucketState {
   const elapsedSec = (nowMs - state.lastRefillMs) / 1000;
   const added = elapsedSec * refillPerSec;
@@ -80,7 +83,7 @@ function recordRateLimitBlock(): void {
 /** Lightweight identifier for rate limit without calling Supabase (avoids Auth 429). */
 function getRateLimitIdentifier(request: NextRequest): string {
   const ip = getClientIp(request);
-  const cookieHeader = request.headers.get('cookie');
+  const cookieHeader = request.headers.get("cookie");
   if (!cookieHeader) return `ip:${ip}`;
   let hash = 0;
   for (let i = 0; i < Math.min(cookieHeader.length, 200); i++) {
@@ -89,7 +92,9 @@ function getRateLimitIdentifier(request: NextRequest): string {
   return `ip:${ip}:${hash}`;
 }
 
-export async function tokenBucketRateLimit(request: NextRequest): Promise<NextResponse | null> {
+export async function tokenBucketRateLimit(
+  request: NextRequest,
+): Promise<NextResponse | null> {
   const pathname = request.nextUrl.pathname;
   const tier = getRouteTier(pathname);
   const { capacity, refillPerSec } = getCapacityRefill(tier);
@@ -115,7 +120,10 @@ export async function tokenBucketRateLimit(request: NextRequest): Promise<NextRe
   state = refill(state, capacity, refillPerSec, nowMs);
   if (state.tokens < 1) {
     recordRateLimitBlock();
-    return NextResponse.json({ error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED }, { status: 429 });
+    return NextResponse.json(
+      { error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED },
+      { status: 429 },
+    );
   }
   state.tokens -= 1;
   state.lastRefillMs = nowMs;

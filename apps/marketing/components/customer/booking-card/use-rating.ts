@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface UseRatingProps {
   bookingId: string;
@@ -6,7 +6,11 @@ interface UseRatingProps {
   onRated?: () => void;
 }
 
-export function useRating({ bookingId, existingRating, onRated }: UseRatingProps) {
+export function useRating({
+  bookingId,
+  existingRating,
+  onRated,
+}: UseRatingProps) {
   const [submittingRating, setSubmittingRating] = useState(false);
   const [pendingRating, setPendingRating] = useState(0);
   const [optimisticRating, setOptimisticRating] = useState<number | null>(null);
@@ -20,9 +24,9 @@ export function useRating({ bookingId, existingRating, onRated }: UseRatingProps
       setRatingSuccess(false);
 
       try {
-        const res = await fetch('/api/reviews', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ booking_id: bookingId, rating }),
         });
 
@@ -40,7 +44,7 @@ export function useRating({ bookingId, existingRating, onRated }: UseRatingProps
         setSubmittingRating(false);
       }
     },
-    [bookingId, onRated]
+    [bookingId, onRated],
   );
 
   const displayedRating = existingRating ?? optimisticRating ?? pendingRating;

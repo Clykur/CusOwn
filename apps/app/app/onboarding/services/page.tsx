@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import AddIcon from '@cusown/shared/icons/create-business.svg';
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import AddIcon from "@cusown/shared/icons/create-business.svg";
 
 type ServiceInput = {
   name: string;
-  duration_minutes: number | '';
-  price_rupees: number | '';
+  duration_minutes: number | "";
+  price_rupees: number | "";
 };
 
 export default function ServicesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const businessId = searchParams?.get('businessId');
-  const bookingLink = searchParams?.get('bookingLink');
-  const bookingUrl = searchParams?.get('bookingUrl');
-  const qrCode = searchParams?.get('qrCode');
+  const businessId = searchParams?.get("businessId");
+  const bookingLink = searchParams?.get("bookingLink");
+  const bookingUrl = searchParams?.get("bookingUrl");
+  const qrCode = searchParams?.get("qrCode");
 
   const [services, setServices] = useState<ServiceInput[]>([
-    { name: 'Haircut', duration_minutes: 30, price_rupees: 200 },
-    { name: 'Beard Trim', duration_minutes: 15, price_rupees: 100 },
+    { name: "Haircut", duration_minutes: 30, price_rupees: 200 },
+    { name: "Beard Trim", duration_minutes: 15, price_rupees: 100 },
   ]);
 
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,10 @@ export default function ServicesPage() {
   }
 
   const addService = () => {
-    setServices([...services, { name: '', duration_minutes: '', price_rupees: '' }]);
+    setServices([
+      ...services,
+      { name: "", duration_minutes: "", price_rupees: "" },
+    ]);
   };
 
   const updateService = (i: number, field: keyof ServiceInput, value: any) => {
@@ -41,9 +44,9 @@ export default function ServicesPage() {
     updated[i] = {
       ...updated[i],
       [field]:
-        field === 'duration_minutes' || field === 'price_rupees'
-          ? value === ''
-            ? ''
+        field === "duration_minutes" || field === "price_rupees"
+          ? value === ""
+            ? ""
             : Number(value)
           : value,
     };
@@ -61,19 +64,21 @@ export default function ServicesPage() {
 
     try {
       if (!services.length) {
-        throw new Error('Add at least one service');
+        throw new Error("Add at least one service");
       }
 
       if (services.some((s) => !s.name.trim())) {
-        throw new Error('Service name is required');
+        throw new Error("Service name is required");
       }
 
-      if (services.some((s) => !s.duration_minutes || s.duration_minutes <= 0)) {
-        throw new Error('Duration must be greater than 0');
+      if (
+        services.some((s) => !s.duration_minutes || s.duration_minutes <= 0)
+      ) {
+        throw new Error("Duration must be greater than 0");
       }
 
       if (services.some((s) => !s.price_rupees || s.price_rupees <= 0)) {
-        throw new Error('Price must be greater than 0');
+        throw new Error("Price must be greater than 0");
       }
 
       const payload = services.map((s) => ({
@@ -84,30 +89,30 @@ export default function ServicesPage() {
 
       const response = await Promise.all(
         payload.map((service) =>
-          fetch('/api/owner/services', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+          fetch("/api/owner/services", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify({
               businessId,
               ...service,
             }),
-          })
-        )
+          }),
+        ),
       );
       const hasError = response.some((res) => !res.ok);
 
       if (hasError) {
-        throw new Error('Failed to save some services');
+        throw new Error("Failed to save some services");
       }
 
       router.push(
         `/onboarding/success?bookingLink=${bookingLink}&bookingUrl=${encodeURIComponent(
-          bookingUrl
-        )}&qrCode=${encodeURIComponent(qrCode || '')}`
+          bookingUrl,
+        )}&qrCode=${encodeURIComponent(qrCode || "")}`,
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : "Failed");
     } finally {
       setLoading(false);
     }
@@ -120,26 +125,32 @@ export default function ServicesPage() {
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
             {/* Header */}
             <div className="flex justify-center items-center py-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Set Up Your Services</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Set Up Your Services
+              </h1>
             </div>
             <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
               <p className="text-xs md:text-sm text-blue-800">
-                <strong className="font-semibold">Tip:</strong> Start with your most popular
-                services. You can always add or edit services later.
+                <strong className="font-semibold">Tip:</strong> Start with your
+                most popular services. You can always add or edit services
+                later.
               </p>
             </div>
 
             {/* Services */}
             <div className="space-y-4">
               {services.map((s, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+                <div
+                  key={i}
+                  className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200"
+                >
                   {/* Name */}
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Service Name
                   </label>
                   <input
                     value={s.name}
-                    onChange={(e) => updateService(i, 'name', e.target.value)}
+                    onChange={(e) => updateService(i, "name", e.target.value)}
                     className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
                     placeholder="e.g. Haircut"
                   />
@@ -155,8 +166,8 @@ export default function ServicesPage() {
                         inputMode="numeric"
                         value={s.duration_minutes}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          updateService(i, 'duration_minutes', val);
+                          const val = e.target.value.replace(/\D/g, "");
+                          updateService(i, "duration_minutes", val);
                         }}
                         className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
                       />
@@ -171,8 +182,8 @@ export default function ServicesPage() {
                         inputMode="numeric"
                         value={s.price_rupees}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          updateService(i, 'price_rupees', val);
+                          const val = e.target.value.replace(/\D/g, "");
+                          updateService(i, "price_rupees", val);
                         }}
                         className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
                       />
@@ -222,7 +233,7 @@ export default function ServicesPage() {
                     Saving...
                   </>
                 ) : (
-                  'Continue'
+                  "Continue"
                 )}
               </button>
             </div>

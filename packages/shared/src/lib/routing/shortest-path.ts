@@ -3,8 +3,12 @@
  * Used to compute accurate travel times based on road networks.
  */
 
-import { WeightedGraph, RoutePath, RouteSegment } from './graph-data-structures';
-import { haversineDistance } from '../utils/geo';
+import {
+  WeightedGraph,
+  RoutePath,
+  RouteSegment,
+} from "./graph-data-structures";
+import { haversineDistance } from "../utils/geo";
 
 interface DijkstraState {
   distance: Map<string, number>;
@@ -20,7 +24,7 @@ interface DijkstraState {
 export function dijkstra(
   graph: WeightedGraph,
   startNodeId: string,
-  mode: 'walking' | 'driving' = 'walking'
+  mode: "walking" | "driving" = "walking",
 ): { distances: Map<string, number>; previous: Map<string, string | null> } {
   const state: DijkstraState = {
     distance: new Map(),
@@ -74,7 +78,10 @@ export function dijkstra(
 /**
  * Reconstruct path from Dijkstra result.
  */
-export function reconstructPath(previous: Map<string, string | null>, endNodeId: string): string[] {
+export function reconstructPath(
+  previous: Map<string, string | null>,
+  endNodeId: string,
+): string[] {
   const path: string[] = [];
   let current: string | null = endNodeId;
 
@@ -94,7 +101,7 @@ export function aStar(
   graph: WeightedGraph,
   startNodeId: string,
   endNodeId: string,
-  mode: 'walking' | 'driving' = 'walking'
+  mode: "walking" | "driving" = "walking",
 ): { distances: Map<string, number>; previous: Map<string, string | null> } {
   const endNode = graph.getNode(endNodeId);
   if (!endNode) {
@@ -121,7 +128,7 @@ export function aStar(
     startNode.latitude,
     startNode.longitude,
     endNode.latitude,
-    endNode.longitude
+    endNode.longitude,
   );
   fScore.set(startNodeId, heuristic);
   openSet.add(startNodeId);
@@ -153,7 +160,8 @@ export function aStar(
     for (const { nodeId: neighbor, edge } of neighbors) {
       if (visited.has(neighbor)) continue;
 
-      const tentativeGScore = (gScore.get(current) ?? Infinity) + edge.distanceKm;
+      const tentativeGScore =
+        (gScore.get(current) ?? Infinity) + edge.distanceKm;
       const currentG = gScore.get(neighbor) ?? Infinity;
 
       if (tentativeGScore < currentG) {
@@ -166,7 +174,7 @@ export function aStar(
             neighborNode.latitude,
             neighborNode.longitude,
             endNode.latitude,
-            endNode.longitude
+            endNode.longitude,
           );
           fScore.set(neighbor, tentativeGScore + h);
         }
@@ -188,9 +196,9 @@ export function aStar(
  */
 export function computeTravelTime(
   distanceKm: number,
-  mode: 'walking' | 'driving',
+  mode: "walking" | "driving",
   roadType?: string,
-  speedOverrideKmH?: number
+  speedOverrideKmH?: number,
 ): number {
   // Speeds by road type (km/h)
   const speeds: Record<string, { walking: number; driving: number }> = {
@@ -231,8 +239,8 @@ export function computeRoute(
   graph: WeightedGraph,
   startNodeId: string,
   endNodeId: string,
-  mode: 'walking' | 'driving' = 'walking',
-  useAStar: boolean = true
+  mode: "walking" | "driving" = "walking",
+  useAStar: boolean = true,
 ): RoutePath | null {
   const { distances, previous } = useAStar
     ? aStar(graph, startNodeId, endNodeId, mode)
@@ -265,15 +273,15 @@ export function computeRoute(
       fromNode.latitude,
       fromNode.longitude,
       toNode.latitude,
-      toNode.longitude
+      toNode.longitude,
     );
 
     const neighbors = graph.getNeighborsByMode(fromNodeId, mode);
-    let roadType = 'unknown';
+    let roadType = "unknown";
     for (const { edge } of neighbors) {
       if (edge.to === toNodeId) {
         edgeDistance = edge.distanceKm;
-        roadType = edge.roadType || 'unknown';
+        roadType = edge.roadType || "unknown";
         break;
       }
     }

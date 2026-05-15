@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   motion,
   useInView,
@@ -10,7 +10,7 @@ import {
   useScroll,
   useTransform,
   type Variants,
-} from 'framer-motion';
+} from "framer-motion";
 import {
   ArrowRight,
   Briefcase,
@@ -33,7 +33,7 @@ import {
   Stethoscope,
   TrendingUp,
   type LucideIcon,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   CUSOWN_LANDING_PEXELS_VIDEO_URL,
   CUSOWN_LANDING_SECTION_IDS,
@@ -41,19 +41,19 @@ import {
   CUSOWN_PRODUCT_PREVIEW_IMAGES,
   cusownAnnualBilledInr,
   formatCusownInr,
-} from '@cusown/config';
-import { ROUTES } from '@cusown/shared';
-import { CusownMarketingNav } from '@/components/marketing/cusown-marketing-nav';
+} from "@cusown/config";
+import { ROUTES } from "@cusown/shared";
+import { CusownMarketingNav } from "@/components/marketing/cusown-marketing-nav";
 
 /** Tailwind `lg` — desktop motion/parallax; below this keep mobile-tuned values. */
 function useMinWidthLg(): boolean {
   const [matches, setMatches] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
+    const mq = window.matchMedia("(min-width: 1024px)");
     const apply = () => setMatches(mq.matches);
     apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   }, []);
   return matches;
 }
@@ -102,30 +102,30 @@ const capabilitiesIntroChild: Variants = {
 };
 
 const capabilitiesRunwayItemMobile: Variants = {
-  hidden: { opacity: 0, x: 36, filter: 'blur(8px)' },
+  hidden: { opacity: 0, x: 36, filter: "blur(8px)" },
   show: {
     opacity: 1,
     x: 0,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
 const capabilitiesRunwayItemLg: Variants = {
-  hidden: { opacity: 0, x: 52, filter: 'blur(12px)' },
+  hidden: { opacity: 0, x: 52, filter: "blur(12px)" },
   show: {
     opacity: 1,
     x: 0,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.82, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
 const builtForIntroReveal: Variants = {
-  hidden: { opacity: 0, filter: 'blur(10px)' },
+  hidden: { opacity: 0, filter: "blur(10px)" },
   show: {
     opacity: 1,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.78, ease: [0.16, 1, 0.3, 1] },
   },
 };
@@ -151,23 +151,23 @@ const landingScrollPairStagger: Variants = {
 };
 
 const landingScrollRevealItemMobile: Variants = {
-  hidden: { opacity: 0, y: 48, scale: 0.94, filter: 'blur(14px)' },
+  hidden: { opacity: 0, y: 48, scale: 0.94, filter: "blur(14px)" },
   show: {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.88, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
 const landingScrollRevealItemLg: Variants = {
-  hidden: { opacity: 0, y: 64, scale: 0.92, filter: 'blur(18px)' },
+  hidden: { opacity: 0, y: 64, scale: 0.92, filter: "blur(18px)" },
   show: {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.95, ease: [0.16, 1, 0.3, 1] },
   },
 };
@@ -178,10 +178,10 @@ const landingScrollRevealReduced: Variants = {
 };
 
 const builtForFootReveal: Variants = {
-  hidden: { opacity: 0, filter: 'blur(6px)' },
+  hidden: { opacity: 0, filter: "blur(6px)" },
   show: {
     opacity: 1,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
   },
 };
@@ -193,21 +193,28 @@ const builtForFootRevealReduced: Variants = {
 
 const PLATFORM_LANES = [
   {
-    n: '01',
-    title: 'For business owners',
-    blurb: 'Launch a branded booking page, control availability, and stay close to customers.',
+    n: "01",
+    title: "For business owners",
+    blurb:
+      "Launch a branded booking page, control availability, and stay close to customers.",
     items: [
-      'Branded booking page',
-      'WhatsApp confirmations',
-      'Availability management',
-      'Customer insights',
+      "Branded booking page",
+      "WhatsApp confirmations",
+      "Availability management",
+      "Customer insights",
     ],
   },
   {
-    n: '02',
-    title: 'For customers',
-    blurb: 'Book in seconds, get clear updates, and manage visits without friction.',
-    items: ['Real-time slots', 'No account booking', 'Instant WhatsApp alerts', 'Manage bookings'],
+    n: "02",
+    title: "For customers",
+    blurb:
+      "Book in seconds, get clear updates, and manage visits without friction.",
+    items: [
+      "Real-time slots",
+      "No account booking",
+      "Instant WhatsApp alerts",
+      "Manage bookings",
+    ],
   },
 ] as const;
 
@@ -217,11 +224,11 @@ const ROADMAP_ITEMS: readonly {
   live: boolean;
   Icon: LucideIcon;
 }[] = [
-  { name: 'Salons', status: 'Live', live: true, Icon: Scissors },
-  { name: 'Clinics', status: 'Coming soon', live: false, Icon: Stethoscope },
-  { name: 'Fitness', status: 'Coming soon', live: false, Icon: Dumbbell },
-  { name: 'Consultants', status: 'Coming soon', live: false, Icon: Briefcase },
-  { name: 'Home Services', status: 'Coming soon', live: false, Icon: Home },
+  { name: "Salons", status: "Live", live: true, Icon: Scissors },
+  { name: "Clinics", status: "Coming soon", live: false, Icon: Stethoscope },
+  { name: "Fitness", status: "Coming soon", live: false, Icon: Dumbbell },
+  { name: "Consultants", status: "Coming soon", live: false, Icon: Briefcase },
+  { name: "Home Services", status: "Coming soon", live: false, Icon: Home },
 ];
 
 const CAPABILITY_GROUPS: readonly {
@@ -230,117 +237,130 @@ const CAPABILITY_GROUPS: readonly {
   items: readonly { title: string; desc: string; Icon: LucideIcon }[];
 }[] = [
   {
-    label: 'Booking & reach',
-    blurb: 'How people discover you and reserve time.',
+    label: "Booking & reach",
+    blurb: "How people discover you and reserve time.",
     items: [
       {
-        title: 'Online Booking',
-        desc: 'Real-time slots customers can trust, no phone tag.',
+        title: "Online Booking",
+        desc: "Real-time slots customers can trust, no phone tag.",
         Icon: CalendarCheck2,
       },
       {
-        title: 'WhatsApp Notifications',
-        desc: 'Confirmations and nudges where people already live.',
+        title: "WhatsApp Notifications",
+        desc: "Confirmations and nudges where people already live.",
         Icon: MessageCircle,
       },
       {
-        title: 'QR Code Links',
-        desc: 'Print-ready entry points to your booking page.',
+        title: "QR Code Links",
+        desc: "Print-ready entry points to your booking page.",
         Icon: QrCode,
       },
     ],
   },
   {
-    label: 'Control & trust',
-    blurb: 'How you operate day-to-day with confidence.',
+    label: "Control & trust",
+    blurb: "How you operate day-to-day with confidence.",
     items: [
       {
-        title: 'Dashboard',
-        desc: 'See the day at a glance and move with clarity.',
+        title: "Dashboard",
+        desc: "See the day at a glance and move with clarity.",
         Icon: LayoutDashboard,
       },
       {
-        title: 'Mobile Ready',
-        desc: 'Owners and customers, on any screen.',
+        title: "Mobile Ready",
+        desc: "Owners and customers, on any screen.",
         Icon: Smartphone,
       },
       {
-        title: 'Secure Access',
-        desc: 'Thoughtful permissions for serious operations.',
+        title: "Secure Access",
+        desc: "Thoughtful permissions for serious operations.",
         Icon: ShieldCheck,
       },
     ],
   },
 ];
 
-const CAPABILITY_TOTAL_COUNT = CAPABILITY_GROUPS.reduce((n, g) => n + g.items.length, 0);
+const CAPABILITY_TOTAL_COUNT = CAPABILITY_GROUPS.reduce(
+  (n, g) => n + g.items.length,
+  0,
+);
 
-const BUILT_FOR_CONTEXTS: readonly { title: string; description: string; Icon: LucideIcon }[] = [
+const BUILT_FOR_CONTEXTS: readonly {
+  title: string;
+  description: string;
+  Icon: LucideIcon;
+}[] = [
   {
-    title: 'Salons & beauty',
+    title: "Salons & beauty",
     description:
-      'Treatments, staff, and time blocks stay legible so clients pick the right service without a long back-and-forth.',
+      "Treatments, staff, and time blocks stay legible so clients pick the right service without a long back-and-forth.",
     Icon: Scissors,
   },
   {
-    title: 'Fitness & coaching',
+    title: "Fitness & coaching",
     description:
-      'Sessions and recurring slots stay structured instead of living in scattered chats and spreadsheets.',
+      "Sessions and recurring slots stay structured instead of living in scattered chats and spreadsheets.",
     Icon: Dumbbell,
   },
   {
-    title: 'Clinics & consults',
+    title: "Clinics & consults",
     description:
-      'A clear daily view of who is coming in helps the front desk stay composed when the schedule shifts.',
+      "A clear daily view of who is coming in helps the front desk stay composed when the schedule shifts.",
     Icon: Stethoscope,
   },
   {
-    title: 'Local & home services',
+    title: "Local & home services",
     description:
-      'One branded link and tidy confirmations replace “what time works?” loops when you are already on the move.',
+      "One branded link and tidy confirmations replace “what time works?” loops when you are already on the move.",
     Icon: Home,
   },
 ];
 
-const PRODUCT_PREVIEW_POINTS: readonly { title: string; description: string }[] = [
+const PRODUCT_PREVIEW_POINTS: readonly {
+  title: string;
+  description: string;
+}[] = [
   {
-    title: 'Branded booking page',
-    description: 'Your logo, story, and services in one calm page customers recognize.',
+    title: "Branded booking page",
+    description:
+      "Your logo, story, and services in one calm page customers recognize.",
   },
   {
-    title: 'Live availability',
-    description: 'Honest slots that stay in sync so double bookings rarely happen.',
+    title: "Live availability",
+    description:
+      "Honest slots that stay in sync so double bookings rarely happen.",
   },
   {
-    title: 'WhatsApp confirmations',
-    description: 'Short, clear messages when something is booked or needs attention.',
+    title: "WhatsApp confirmations",
+    description:
+      "Short, clear messages when something is booked or needs attention.",
   },
 ];
 
 const FAQ_ITEMS: readonly { q: string; a: string }[] = [
   {
-    q: 'Do customers need an account to book?',
-    a: 'No. They choose a slot, get a clear confirmation often on WhatsApp, and they are done.',
+    q: "Do customers need an account to book?",
+    a: "No. They choose a slot, get a clear confirmation often on WhatsApp, and they are done.",
   },
   {
-    q: 'Can I use my own branding?',
-    a: 'Yes. Your booking page reflects your business, and the whole flow still feels like you.',
+    q: "Can I use my own branding?",
+    a: "Yes. Your booking page reflects your business, and the whole flow still feels like you.",
   },
   {
-    q: 'How do WhatsApp confirmations work?',
-    a: 'Customers receive concise updates when something is confirmed or changes, so nobody is left guessing.',
+    q: "How do WhatsApp confirmations work?",
+    a: "Customers receive concise updates when something is confirmed or changes, so nobody is left guessing.",
   },
   {
-    q: 'Can I control booking approvals?',
-    a: 'You decide what is instant versus what needs a quick yes or no from you first.',
+    q: "Can I control booking approvals?",
+    a: "You decide what is instant versus what needs a quick yes or no from you first.",
   },
   {
-    q: 'Is there a free trial?',
+    q: "Is there a free trial?",
     a: `Only the first ${CUSOWN_PRICING.trialDays} days are complimentary, with full product access. After that it is ${formatCusownInr(CUSOWN_PRICING.monthlyInr)} per month, or ${formatCusownInr(cusownAnnualBilledInr())} per year if you choose annual billing (${CUSOWN_PRICING.annualDiscountPercent}% off the ${formatCusownInr(CUSOWN_PRICING.annualListInr)} list year).`,
   },
   {
-    q: 'Does it work on mobile?',
-    a: 'Owners and customers both use it comfortably on phones, so no app required.',
+    q: "Does it work on mobile?",
+    a: "Owners and customers both use it comfortably on phones, so no app required.",
   },
 ];
 
@@ -352,46 +372,46 @@ type ProcessArchStep = {
 
 const PROCESS_OWNER_ARCH: readonly ProcessArchStep[] = [
   {
-    code: 'Set up',
-    detail: 'Add your business, hours, and what you offer.',
+    code: "Set up",
+    detail: "Add your business, hours, and what you offer.",
     Icon: Building2,
   },
   {
-    code: 'Share',
-    detail: 'Give customers a link or QR code to your page.',
+    code: "Share",
+    detail: "Give customers a link or QR code to your page.",
     Icon: QrCode,
   },
   {
-    code: 'Decide',
-    detail: 'Approve or decline each booking request.',
+    code: "Decide",
+    detail: "Approve or decline each booking request.",
     Icon: ListChecks,
   },
   {
-    code: 'Grow',
-    detail: 'Fill your calendar with steady demand.',
+    code: "Grow",
+    detail: "Fill your calendar with steady demand.",
     Icon: TrendingUp,
   },
 ];
 
 const PROCESS_CUSTOMER_ARCH: readonly ProcessArchStep[] = [
   {
-    code: 'Find',
-    detail: 'See businesses and services near you.',
+    code: "Find",
+    detail: "See businesses and services near you.",
     Icon: MapPin,
   },
   {
-    code: 'Choose',
-    detail: 'Pick the exact service before you book.',
+    code: "Choose",
+    detail: "Pick the exact service before you book.",
     Icon: ClipboardList,
   },
   {
-    code: 'Book',
-    detail: 'Select an open time that works for you.',
+    code: "Book",
+    detail: "Select an open time that works for you.",
     Icon: CalendarCheck2,
   },
   {
-    code: 'Visit',
-    detail: 'Arrive and get the service you booked.',
+    code: "Visit",
+    detail: "Arrive and get the service you booked.",
     Icon: Heart,
   },
 ];
@@ -403,7 +423,10 @@ function BookingFlowsDiagram() {
   const listVariants: Variants = {
     hidden: {},
     show: {
-      transition: { staggerChildren: rm ? 0 : 0.08, delayChildren: rm ? 0 : 0.05 },
+      transition: {
+        staggerChildren: rm ? 0 : 0.08,
+        delayChildren: rm ? 0 : 0.05,
+      },
     },
   };
 
@@ -419,14 +442,16 @@ function BookingFlowsDiagram() {
   return (
     <figure className="relative mx-auto max-w-6xl">
       <figcaption className="sr-only">
-        Flow A owner supply: {PROCESS_OWNER_ARCH.map((s) => `${s.code}, ${s.detail}`).join('. ')}.
-        Flow B customer demand:{' '}
-        {PROCESS_CUSTOMER_ARCH.map((s) => `${s.code}, ${s.detail}`).join('. ')}.
+        Flow A owner supply:{" "}
+        {PROCESS_OWNER_ARCH.map((s) => `${s.code}, ${s.detail}`).join(". ")}.
+        Flow B customer demand:{" "}
+        {PROCESS_CUSTOMER_ARCH.map((s) => `${s.code}, ${s.detail}`).join(". ")}.
       </figcaption>
 
       <p className="mb-8 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:mb-10 sm:text-[15px]">
-        Owners build and run availability on the left. Customers discover and book on the right.
-        Both run on the same live core in the middle, so no extra layers.
+        Owners build and run availability on the left. Customers discover and
+        book on the right. Both run on the same live core in the middle, so no
+        extra layers.
       </p>
 
       <div className="flex flex-col lg:flex-row lg:items-stretch lg:gap-8 xl:gap-12">
@@ -488,14 +513,16 @@ function BookingFlowColumn({
       className="min-w-0 flex-1"
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: '-50px' }}
+      viewport={{ once: true, margin: "-50px" }}
       variants={listVariants}
     >
       <header>
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-accent sm:text-[11px] sm:tracking-[0.26em]">
           {flowLabel}
         </p>
-        <p className="mt-2 text-[13px] leading-relaxed text-zinc-500 sm:text-sm">{flowSummary}</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-zinc-500 sm:text-sm">
+          {flowSummary}
+        </p>
       </header>
 
       <ol className="relative mt-7 list-none space-y-0 sm:mt-8">
@@ -520,10 +547,10 @@ function BookingFlowColumn({
                     ? undefined
                     : {
                         scale: 1.06,
-                        filter: 'drop-shadow(0 0 14px rgba(34,197,94,0.45))',
+                        filter: "drop-shadow(0 0 14px rgba(34,197,94,0.45))",
                       }
                 }
-                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
               >
                 <Icon
                   className="h-8 w-8 text-accent sm:h-9 sm:w-9"
@@ -553,15 +580,15 @@ function BookingFlowColumn({
             className="h-full rounded-full bg-gradient-to-r from-emerald-800 via-accent to-[#86efac]"
             initial={{ scaleX: rm ? 1 : 0 }}
             whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: '-30px' }}
+            viewport={{ once: true, margin: "-30px" }}
             transition={{
               duration: rm ? 0 : 0.9,
               delay: rm ? 0 : 0.12,
               ease: [0.22, 1, 0.36, 1],
             }}
             style={{
-              transformOrigin: '0% 50%',
-              boxShadow: '0 0 16px rgba(34,197,94,0.35)',
+              transformOrigin: "0% 50%",
+              boxShadow: "0 0 16px rgba(34,197,94,0.35)",
             }}
           />
         </div>
@@ -573,13 +600,17 @@ function BookingFlowColumn({
 function BuiltForSection() {
   const reduceMotion = useReducedMotion();
   const isLg = useMinWidthLg();
-  const introVariants = reduceMotion ? builtForIntroRevealReduced : builtForIntroReveal;
+  const introVariants = reduceMotion
+    ? builtForIntroRevealReduced
+    : builtForIntroReveal;
   const rowVariants = reduceMotion
     ? landingScrollRevealReduced
     : isLg
       ? landingScrollRevealItemLg
       : landingScrollRevealItemMobile;
-  const footVariants = reduceMotion ? builtForFootRevealReduced : builtForFootReveal;
+  const footVariants = reduceMotion
+    ? builtForFootRevealReduced
+    : builtForFootReveal;
 
   return (
     <section
@@ -596,21 +627,21 @@ function BuiltForSection() {
             <motion.div
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, amount: 0.22, margin: '-56px 0px' }}
+              viewport={{ once: true, amount: 0.22, margin: "-56px 0px" }}
               variants={introVariants}
             >
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-600 sm:text-[11px]">
                 Where it fits
               </p>
               <h2 className="mt-5 font-display text-[1.75rem] font-semibold leading-[1.1] tracking-[-0.03em] text-white sm:text-3xl sm:leading-[1.08] lg:text-[2.125rem]">
-                Built for businesses that run on{' '}
+                Built for businesses that run on{" "}
                 <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                   appointments
                 </span>
               </h2>
               <p className="mt-6 max-w-md text-[15px] leading-[1.75] text-zinc-500 sm:text-base">
-                CusOwn is shaped around service workflows: clear slots, calm confirmations, and one
-                place to read the day.
+                CusOwn is shaped around service workflows: clear slots, calm
+                confirmations, and one place to read the day.
               </p>
               <div
                 className="mt-8 hidden h-px max-w-xs bg-gradient-to-r from-accent/35 via-white/15 to-transparent lg:block"
@@ -624,7 +655,7 @@ function BuiltForSection() {
               className="space-y-0"
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, amount: 0.15, margin: '-72px 0px' }}
+              viewport={{ once: true, amount: 0.15, margin: "-72px 0px" }}
               variants={landingScrollStagger}
             >
               {BUILT_FOR_CONTEXTS.map((ctx, i) => (
@@ -635,7 +666,7 @@ function BuiltForSection() {
                 >
                   <div className="flex gap-5 sm:gap-6">
                     <span className="w-9 shrink-0 pt-0.5 text-right font-mono text-[11px] font-semibold tabular-nums text-zinc-600 sm:w-10 sm:text-xs">
-                      {String(i + 1).padStart(2, '0')}
+                      {String(i + 1).padStart(2, "0")}
                     </span>
                     <div className="min-w-0 flex-1 border-l border-white/[0.08] pl-5 sm:pl-6">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -660,12 +691,13 @@ function BuiltForSection() {
             <motion.p
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, amount: 0.18, margin: '-48px 0px' }}
+              viewport={{ once: true, amount: 0.18, margin: "-48px 0px" }}
               variants={footVariants}
               className="mt-12 text-[13px] leading-relaxed text-zinc-600 sm:mt-14 sm:text-[14px]"
             >
-              Running a different shape of business? The same booking core still applies. Tune
-              services, hours, and messaging to match how you work.
+              Running a different shape of business? The same booking core still
+              applies. Tune services, hours, and messaging to match how you
+              work.
             </motion.p>
           </div>
         </div>
@@ -684,12 +716,20 @@ function ProductPreviewSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ['start end', 'end start'],
+    offset: ["start end", "end start"],
   });
   const desktopParallaxYLg = useTransform(scrollYProgress, [0, 1], [56, -56]);
-  const desktopParallaxYMobile = useTransform(scrollYProgress, [0, 1], [44, -44]);
+  const desktopParallaxYMobile = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [44, -44],
+  );
   const mobileParallaxYLg = useTransform(scrollYProgress, [0, 1], [-40, 44]);
-  const mobileParallaxYMobile = useTransform(scrollYProgress, [0, 1], [-32, 36]);
+  const mobileParallaxYMobile = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [-32, 36],
+  );
   const ownerParallaxYLg = useTransform(scrollYProgress, [0, 1], [48, -52]);
   const ownerParallaxYMobile = useTransform(scrollYProgress, [0, 1], [36, -40]);
   const mediaItemVariants = reduceMotion
@@ -717,7 +757,7 @@ function ProductPreviewSection() {
         <motion.div
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={fadeUp}
           className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-3xl lg:text-left"
         >
@@ -725,13 +765,14 @@ function ProductPreviewSection() {
             Product
           </p>
           <h2 className="font-display text-[2rem] font-semibold leading-[1.08] tracking-[-0.03em] text-white sm:text-4xl sm:leading-[1.06] lg:text-[2.75rem]">
-            A surface worthy of{' '}
+            A surface worthy of{" "}
             <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
               how you work
             </span>
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-[15px] leading-[1.7] text-zinc-500 sm:text-lg lg:mx-0">
-            The same calm experience in the browser, on the phone, and behind the scenes.
+            The same calm experience in the browser, on the phone, and behind
+            the scenes.
           </p>
           <div
             className="mx-auto mt-8 h-px max-w-xs bg-gradient-to-r from-transparent via-white/20 to-transparent lg:mx-0"
@@ -743,7 +784,7 @@ function ProductPreviewSection() {
           <motion.div
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, margin: '-40px' }}
+            viewport={{ once: true, margin: "-40px" }}
             variants={fadeUp}
             className="lg:sticky lg:top-28 lg:pt-2"
           >
@@ -758,7 +799,7 @@ function ProductPreviewSection() {
                 >
                   <div className="flex gap-4">
                     <span className="font-display text-2xl tabular-nums leading-none text-white/[0.14] sm:text-3xl">
-                      {String(i + 1).padStart(2, '0')}
+                      {String(i + 1).padStart(2, "0")}
                     </span>
                     <div className="min-w-0 pt-0.5">
                       <p className="flex items-start gap-2 font-display text-base font-semibold tracking-tight text-white sm:text-lg">
@@ -785,8 +826,8 @@ function ProductPreviewSection() {
             whileInView="show"
             viewport={
               isLg
-                ? { once: true, margin: '-100px' }
-                : { once: true, amount: 0.2, margin: '-64px 0px' }
+                ? { once: true, margin: "-100px" }
+                : { once: true, amount: 0.2, margin: "-64px 0px" }
             }
             variants={landingScrollStagger}
           >
@@ -794,7 +835,9 @@ function ProductPreviewSection() {
               variants={mediaItemVariants}
               className="group min-w-0 will-change-transform"
               style={
-                !mounted || reduceMotion ? undefined : { y: isLg ? desktopParallaxYLg : desktopParallaxYMobile }
+                !mounted || reduceMotion
+                  ? undefined
+                  : { y: isLg ? desktopParallaxYLg : desktopParallaxYMobile }
               }
             >
               <div className="overflow-hidden rounded-2xl border border-white/[0.09] bg-zinc-900/40 ring-1 ring-white/[0.04]">
@@ -832,7 +875,9 @@ function ProductPreviewSection() {
                 variants={mediaItemVariants}
                 className="group min-w-0 will-change-transform"
                 style={
-                  !mounted || reduceMotion ? undefined : { y: isLg ? mobileParallaxYLg : mobileParallaxYMobile }
+                  !mounted || reduceMotion
+                    ? undefined
+                    : { y: isLg ? mobileParallaxYLg : mobileParallaxYMobile }
                 }
               >
                 <div className="overflow-hidden rounded-2xl border border-white/[0.09] bg-zinc-900/30 ring-1 ring-white/[0.04]">
@@ -855,7 +900,9 @@ function ProductPreviewSection() {
                 variants={mediaItemVariants}
                 className="group min-w-0 will-change-transform"
                 style={
-                  !mounted || reduceMotion ? undefined : { y: isLg ? ownerParallaxYLg : ownerParallaxYMobile }
+                  !mounted || reduceMotion
+                    ? undefined
+                    : { y: isLg ? ownerParallaxYLg : ownerParallaxYMobile }
                 }
               >
                 <div className="overflow-hidden rounded-2xl border border-white/[0.09] bg-zinc-900/30 ring-1 ring-white/[0.04]">
@@ -885,11 +932,11 @@ function PricingSection() {
   const annualBilled = cusownAnnualBilledInr();
   const annualSavings = CUSOWN_PRICING.annualListInr - annualBilled;
   const planFeatures = [
-    'Unlimited bookings',
-    'WhatsApp confirmations',
-    'Branded booking page',
-    'Dashboard and operations',
-    'Advanced insights',
+    "Unlimited bookings",
+    "WhatsApp confirmations",
+    "Branded booking page",
+    "Dashboard and operations",
+    "Advanced insights",
   ] as const;
 
   const planFeatureList = (keyPrefix: string) => (
@@ -902,7 +949,9 @@ function PricingSection() {
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/12 text-accent shadow-[0_0_22px_-8px_rgba(34,197,94,0.45)]">
             <Check className="h-3.5 w-3.5" strokeWidth={2.75} aria-hidden />
           </span>
-          <span className="pt-1 text-[15px] leading-snug text-zinc-200 sm:text-base">{line}</span>
+          <span className="pt-1 text-[15px] leading-snug text-zinc-200 sm:text-base">
+            {line}
+          </span>
         </li>
       ))}
     </ul>
@@ -924,13 +973,18 @@ function PricingSection() {
         aria-hidden
         className="pointer-events-none absolute -left-[20%] top-[25%] h-[420px] w-[420px] rounded-full bg-accent/16 blur-[120px]"
         animate={{ opacity: [0.35, 0.55, 0.35], scale: [1, 1.05, 1] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -right-[15%] bottom-[10%] h-[380px] w-[380px] rounded-full bg-emerald-400/10 blur-[110px]"
         animate={{ opacity: [0.28, 0.48, 0.28] }}
-        transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+        transition={{
+          duration: 16,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 3,
+        }}
       />
 
       <div
@@ -942,7 +996,7 @@ function PricingSection() {
         <motion.div
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={fadeUp}
           className="mx-auto max-w-3xl text-center"
         >
@@ -952,14 +1006,14 @@ function PricingSection() {
             <span className="h-px w-8 bg-gradient-to-l from-transparent to-accent/70 sm:w-10" />
           </p>
           <h2 className="font-display text-[2rem] font-semibold leading-[1.08] tracking-[-0.035em] text-white sm:text-4xl sm:leading-[1.06] lg:text-[2.75rem]">
-            Simple pricing,{' '}
+            Simple pricing,{" "}
             <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
               no surprises
             </span>
           </h2>
           <p className="mx-auto mt-6 max-w-lg text-[15px] leading-[1.7] text-zinc-500 sm:mt-7 sm:text-lg">
-            Your first {CUSOWN_PRICING.trialDays} days are free with full access. After that, pay
-            monthly or save on an annual bill.
+            Your first {CUSOWN_PRICING.trialDays} days are free with full
+            access. After that, pay monthly or save on an annual bill.
           </p>
         </motion.div>
 
@@ -978,7 +1032,7 @@ function PricingSection() {
             <motion.div
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, margin: '-40px' }}
+              viewport={{ once: true, margin: "-40px" }}
               variants={fadeUp}
               className="relative lg:pr-12 xl:pr-16"
             >
@@ -1002,17 +1056,17 @@ function PricingSection() {
                   {CUSOWN_PRICING.trialDays} day trial · then billed monthly
                 </p>
                 <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-zinc-500 sm:text-[15px]">
-                  Full product during the trial. When it ends, this is your month to month rate
-                  unless you switch to annual.
+                  Full product during the trial. When it ends, this is your
+                  month to month rate unless you switch to annual.
                 </p>
-                {planFeatureList('monthly')}
+                {planFeatureList("monthly")}
               </div>
             </motion.div>
 
             <motion.div
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, margin: '-40px' }}
+              viewport={{ once: true, margin: "-40px" }}
               variants={fadeUp}
               className="relative mt-14 border-t border-white/[0.07] pt-14 lg:mt-0 lg:border-t-0 lg:pl-12 lg:pt-0 xl:pl-16"
             >
@@ -1036,16 +1090,19 @@ function PricingSection() {
                   <span className="line-through decoration-white/25">
                     {formatCusownInr(CUSOWN_PRICING.annualListInr)} list year
                   </span>
-                  <span className="text-accent/90">save {formatCusownInr(annualSavings)}</span>
+                  <span className="text-accent/90">
+                    save {formatCusownInr(annualSavings)}
+                  </span>
                 </p>
                 <p className="mt-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600 sm:text-[11px]">
-                  {CUSOWN_PRICING.trialDays} day trial · same features · pay yearly after
+                  {CUSOWN_PRICING.trialDays} day trial · same features · pay
+                  yearly after
                 </p>
                 <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-zinc-500 sm:text-[15px]">
-                  One invoice for twelve months at the discounted rate. Same capabilities as
-                  monthly, less total outlay.
+                  One invoice for twelve months at the discounted rate. Same
+                  capabilities as monthly, less total outlay.
                 </p>
-                {planFeatureList('annual')}
+                {planFeatureList("annual")}
               </div>
             </motion.div>
           </div>
@@ -1054,7 +1111,7 @@ function PricingSection() {
         <motion.div
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: '-40px' }}
+          viewport={{ once: true, margin: "-40px" }}
           variants={fadeUp}
           className="mx-auto mt-16 max-w-xl sm:mt-20"
         >
@@ -1063,14 +1120,15 @@ function PricingSection() {
             aria-hidden
           />
           <p className="mt-8 text-center font-display text-base font-medium text-zinc-300 sm:mt-9 sm:text-lg">
-            {CUSOWN_PRICING.trialDays} days free, then {formatCusownInr(CUSOWN_PRICING.monthlyInr)}{' '}
-            per month or {formatCusownInr(annualBilled)} per year (
-            {CUSOWN_PRICING.annualDiscountPercent}% off{' '}
+            {CUSOWN_PRICING.trialDays} days free, then{" "}
+            {formatCusownInr(CUSOWN_PRICING.monthlyInr)} per month or{" "}
+            {formatCusownInr(annualBilled)} per year (
+            {CUSOWN_PRICING.annualDiscountPercent}% off{" "}
             {formatCusownInr(CUSOWN_PRICING.annualListInr)} list year).
           </p>
           <p className="mx-auto mt-3 max-w-md text-center text-[13px] leading-relaxed text-zinc-600 sm:text-sm">
-            No permanent free plan. The trial is the only complimentary period. Pick monthly or
-            annual billing when it ends.
+            No permanent free plan. The trial is the only complimentary period.
+            Pick monthly or annual billing when it ends.
           </p>
         </motion.div>
       </div>
@@ -1097,13 +1155,18 @@ function LandingFaqSection() {
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-[20%] h-[320px] w-[320px] -translate-x-1/2 rounded-full bg-accent/12 blur-[100px]"
         animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.06, 1] }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         aria-hidden
         className="pointer-events-none absolute -right-[15%] bottom-[15%] h-[280px] w-[280px] rounded-full bg-emerald-400/10 blur-[95px]"
         animate={{ opacity: [0.25, 0.42, 0.25] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        transition={{
+          duration: 14,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2,
+        }}
       />
 
       <div
@@ -1115,7 +1178,7 @@ function LandingFaqSection() {
         <motion.div
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={fadeUp}
           className="text-center"
         >
@@ -1125,7 +1188,7 @@ function LandingFaqSection() {
             <span className="h-px w-8 bg-gradient-to-l from-transparent to-accent/70 sm:w-10" />
           </p>
           <h2 className="font-display text-[2rem] font-semibold leading-[1.08] tracking-[-0.035em] text-white sm:text-4xl sm:leading-[1.06] lg:text-[2.75rem]">
-            Questions,{' '}
+            Questions,{" "}
             <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
               answered
             </span>
@@ -1147,16 +1210,20 @@ function LandingFaqSection() {
                 key={item.q}
                 initial="hidden"
                 whileInView="show"
-                viewport={{ once: true, margin: '-24px' }}
+                viewport={{ once: true, margin: "-24px" }}
                 variants={fadeUp}
                 className={`border-b border-white/[0.07] transition-[background-color,box-shadow] duration-300 ${
-                  open ? 'bg-white/[0.02] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]' : ''
+                  open
+                    ? "bg-white/[0.02] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+                    : ""
                 }`}
               >
                 <div className="flex gap-0 sm:gap-1">
                   <div
                     className={`w-0.5 shrink-0 rounded-full transition-colors duration-300 ${
-                      open ? 'bg-accent shadow-[0_0_14px_rgba(34,197,94,0.35)]' : 'bg-transparent'
+                      open
+                        ? "bg-accent shadow-[0_0_14px_rgba(34,197,94,0.35)]"
+                        : "bg-transparent"
                     }`}
                     aria-hidden
                   />
@@ -1169,11 +1236,13 @@ function LandingFaqSection() {
                     >
                       <span className="flex min-w-0 items-start gap-3 sm:gap-4">
                         <span className="mt-0.5 font-mono text-[10px] font-semibold tabular-nums text-zinc-600 transition-colors group-hover:text-zinc-500 sm:text-[11px]">
-                          {String(idx + 1).padStart(2, '0')}
+                          {String(idx + 1).padStart(2, "0")}
                         </span>
                         <span
                           className={`text-[15px] font-medium leading-snug transition-colors sm:text-base ${
-                            open ? 'text-white' : 'text-zinc-200 group-hover:text-white'
+                            open
+                              ? "text-white"
+                              : "text-zinc-200 group-hover:text-white"
                           }`}
                         >
                           {item.q}
@@ -1182,8 +1251,8 @@ function LandingFaqSection() {
                       <ChevronDown
                         className={`mt-1 h-5 w-5 shrink-0 transition-all duration-300 ${
                           open
-                            ? 'rotate-180 text-accent'
-                            : 'text-zinc-500 group-hover:text-zinc-400'
+                            ? "rotate-180 text-accent"
+                            : "text-zinc-500 group-hover:text-zinc-400"
                         }`}
                         strokeWidth={2}
                         aria-hidden
@@ -1193,7 +1262,10 @@ function LandingFaqSection() {
                       <motion.div
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                        transition={{
+                          duration: 0.35,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
                       >
                         <p className="pb-5 pl-[2.35rem] pr-3 text-[14px] leading-[1.75] text-zinc-500 sm:pb-6 sm:pl-[2.75rem] sm:pr-4 sm:text-[15px]">
                           {item.a}
@@ -1281,32 +1353,37 @@ export function CusownPremiumLanding() {
   const capabilitiesSectionRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress: capabilitiesScrollProgress } = useScroll({
     target: capabilitiesSectionRef,
-    offset: ['start 0.82', 'end 0.18'],
+    offset: ["start 0.82", "end 0.18"],
   });
   const capabilitiesProgressGlow = useTransform(
     capabilitiesScrollProgress,
     [0, 0.5, 1],
-    ['rgba(34,197,94,0.15)', 'rgba(34,197,94,0.35)', 'rgba(34,197,94,0.2)']
+    ["rgba(34,197,94,0.15)", "rgba(34,197,94,0.35)", "rgba(34,197,94,0.2)"],
   );
   const capabilitiesProgressShadow = useTransform(
     capabilitiesScrollProgress,
     [0, 1],
-    ['0 0 0 0 transparent', '0 0 28px 2px rgba(34,197,94,0.4)']
+    ["0 0 0 0 transparent", "0 0 28px 2px rgba(34,197,94,0.4)"],
   );
 
   const go = useCallback(
     (path: string) => {
       router.push(path);
     },
-    [router]
+    [router],
   );
 
   useEffect(() => {
-    const raw = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
+    const raw =
+      typeof window !== "undefined"
+        ? window.location.hash.replace(/^#/, "")
+        : "";
     if (!raw) return;
     const id = decodeURIComponent(raw);
     const t = window.setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .getElementById(id)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     return () => window.clearTimeout(t);
   }, []);
@@ -1350,13 +1427,18 @@ export function CusownPremiumLanding() {
           aria-hidden
           className="pointer-events-none absolute -left-[45%] top-[8%] h-[min(120vw,720px)] w-[min(120vw,720px)] rounded-full bg-accent/30 blur-[100px] sm:-left-[35%] sm:top-[12%]"
           animate={{ opacity: [0.45, 0.72, 0.45], scale: [1, 1.06, 1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
           aria-hidden
           className="pointer-events-none absolute -right-[40%] bottom-[-10%] h-[min(100vw,600px)] w-[min(100vw,600px)] rounded-full bg-emerald-400/15 blur-[110px]"
           animate={{ opacity: [0.35, 0.55, 0.35] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1,
+          }}
         />
         <div
           className="pointer-events-none absolute left-[12%] top-[38%] h-64 w-64 rounded-full bg-white/[0.03] blur-3xl"
@@ -1383,7 +1465,7 @@ export function CusownPremiumLanding() {
             >
               <span className="block text-zinc-400">The smarter way to</span>
               <span className="mt-2 block sm:mt-2.5">
-                manage your{' '}
+                manage your{" "}
                 <span className="relative inline-block">
                   <span
                     className="absolute -inset-x-2 -inset-y-1 -z-10 rounded-lg bg-accent/15 blur-xl"
@@ -1400,8 +1482,9 @@ export function CusownPremiumLanding() {
               variants={fadeUp}
               className="mt-7 max-w-xl text-[1.0625rem] leading-[1.72] text-zinc-400 sm:mt-9 sm:text-lg sm:leading-[1.65]"
             >
-              Your brand, your availability, your confirmations one quiet system that makes booking
-              feel inevitable for customers and invisible work for you.
+              Your brand, your availability, your confirmations one quiet system
+              that makes booking feel inevitable for customers and invisible
+              work for you.
             </motion.p>
 
             <motion.div
@@ -1423,7 +1506,7 @@ export function CusownPremiumLanding() {
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => go(ROUTES.SELECT_ROLE('customer'))}
+                onClick={() => go(ROUTES.SELECT_ROLE("customer"))}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex h-[3.25rem] min-h-[3.25rem] w-full items-center justify-center rounded-lg border border-white/20 bg-transparent px-8 text-[15px] font-semibold text-white transition-colors hover:border-white/35 hover:bg-white/[0.06] sm:w-auto sm:text-base"
@@ -1439,16 +1522,25 @@ export function CusownPremiumLanding() {
               {[
                 `${CUSOWN_PRICING.trialDays}-day trial`,
                 `Then ${formatCusownInr(CUSOWN_PRICING.monthlyInr)}/mo or save yearly`,
-                'Setup in minutes',
+                "Setup in minutes",
               ].map((t, i) => (
-                <span key={t} className="inline-flex items-center gap-1 sm:gap-0">
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1 sm:gap-0"
+                >
                   {i > 0 ? (
-                    <span className="hidden px-3 text-zinc-700 sm:inline" aria-hidden>
+                    <span
+                      className="hidden px-3 text-zinc-700 sm:inline"
+                      aria-hidden
+                    >
                       ·
                     </span>
                   ) : null}
                   <span className="inline-flex items-center gap-2 text-zinc-400">
-                    <Check className="h-3.5 w-3.5 shrink-0 text-accent" strokeWidth={2.5} />
+                    <Check
+                      className="h-3.5 w-3.5 shrink-0 text-accent"
+                      strokeWidth={2.5}
+                    />
                     {t}
                   </span>
                 </span>
@@ -1480,20 +1572,25 @@ export function CusownPremiumLanding() {
           aria-hidden
           className="pointer-events-none absolute -left-[32%] top-[18%] h-[460px] w-[460px] rounded-full bg-accent/18 blur-[108px]"
           animate={{ opacity: [0.42, 0.62, 0.42], scale: [1, 1.04, 1] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
           aria-hidden
           className="pointer-events-none absolute -right-[32%] top-[18%] h-[460px] w-[460px] rounded-full bg-accent/18 blur-[108px]"
           animate={{ opacity: [0.42, 0.62, 0.42], scale: [1, 1.04, 1] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 6 }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 6,
+          }}
         />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
+            viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
             className="max-w-4xl"
           >
@@ -1501,13 +1598,14 @@ export function CusownPremiumLanding() {
               Platform
             </p>
             <h2 className="font-display text-[2.125rem] font-semibold leading-[1.07] tracking-[-0.035em] text-white [text-shadow:0_2px_60px_rgba(0,0,0,0.35)] sm:text-4xl sm:leading-[1.05] lg:text-5xl lg:leading-[1.04]">
-              One platform,{' '}
+              One platform,{" "}
               <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                 two experiences
               </span>
             </h2>
             <p className="mt-7 max-w-2xl text-[1.0625rem] leading-[1.75] text-zinc-400 sm:text-lg">
-              Built for owners who run the day and customers who just need a time that works.
+              Built for owners who run the day and customers who just need a
+              time that works.
             </p>
             <div
               className="mt-10 h-px max-w-2xl bg-gradient-to-r from-transparent via-white/18 to-transparent"
@@ -1522,7 +1620,7 @@ export function CusownPremiumLanding() {
                   key={lane.n}
                   initial="hidden"
                   whileInView="show"
-                  viewport={{ once: true, margin: '-60px' }}
+                  viewport={{ once: true, margin: "-60px" }}
                   variants={fadeUp}
                   className="relative"
                 >
@@ -1548,7 +1646,7 @@ export function CusownPremiumLanding() {
                       variants={platformListContainer}
                       initial="hidden"
                       whileInView="show"
-                      viewport={{ once: true, margin: '-20px' }}
+                      viewport={{ once: true, margin: "-20px" }}
                     >
                       {lane.items.map((item) => (
                         <motion.li
@@ -1595,7 +1693,7 @@ export function CusownPremiumLanding() {
           <motion.div
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
+            viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
             className="max-w-3xl"
           >
@@ -1607,11 +1705,11 @@ export function CusownPremiumLanding() {
               Roadmap
             </p>
             <h2 className="font-display text-[2.125rem] font-semibold leading-[1.12] tracking-[-0.035em] text-white sm:text-4xl sm:leading-[1.08] lg:text-[2.75rem] lg:leading-[1.06]">
-              Starting with{' '}
+              Starting with{" "}
               <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                 salons
               </span>
-              , then wider{' '}
+              , then wider{" "}
               <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                 verticals
               </span>
@@ -1629,26 +1727,30 @@ export function CusownPremiumLanding() {
                 key={c.name}
                 initial="hidden"
                 whileInView="show"
-                viewport={{ once: true, margin: '-20px' }}
+                viewport={{ once: true, margin: "-20px" }}
                 variants={fadeUp}
                 className="flex items-center gap-4 py-5 sm:gap-5 sm:py-6"
               >
                 <span
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border ${
-                    c.live ? 'border-accent/35 bg-accent/10' : 'border-white/10 bg-zinc-900/50'
+                    c.live
+                      ? "border-accent/35 bg-accent/10"
+                      : "border-white/10 bg-zinc-900/50"
                   }`}
                   aria-hidden
                 >
                   <c.Icon
-                    className={`h-5 w-5 ${c.live ? 'text-accent' : 'text-zinc-500'}`}
+                    className={`h-5 w-5 ${c.live ? "text-accent" : "text-zinc-500"}`}
                     strokeWidth={1.75}
                   />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-base font-semibold text-white">{c.name}</p>
+                  <p className="font-display text-base font-semibold text-white">
+                    {c.name}
+                  </p>
                   <p
                     className={`mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                      c.live ? 'text-accent' : 'text-zinc-500'
+                      c.live ? "text-accent" : "text-zinc-500"
                     }`}
                   >
                     {c.status}
@@ -1676,18 +1778,22 @@ export function CusownPremiumLanding() {
                   key={c.name}
                   initial="hidden"
                   whileInView="show"
-                  viewport={{ once: true, margin: '-24px' }}
+                  viewport={{ once: true, margin: "-24px" }}
                   variants={fadeUp}
                   className="relative flex flex-col items-center text-center"
                 >
                   <div
                     className={`relative z-10 flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full border-2 shadow-[0_0_0_6px_#08080a] ${
                       c.live
-                        ? 'border-accent/60 bg-zinc-950 text-accent'
-                        : 'border-white/12 bg-zinc-950 text-zinc-500'
+                        ? "border-accent/60 bg-zinc-950 text-accent"
+                        : "border-white/12 bg-zinc-950 text-zinc-500"
                     }`}
                   >
-                    <c.Icon className="h-7 w-7" strokeWidth={1.35} aria-hidden />
+                    <c.Icon
+                      className="h-7 w-7"
+                      strokeWidth={1.35}
+                      aria-hidden
+                    />
                   </div>
                   <h3 className="mt-8 font-display text-base font-semibold tracking-tight text-white xl:text-lg">
                     {c.name}
@@ -1701,7 +1807,7 @@ export function CusownPremiumLanding() {
                     ) : null}
                     <span
                       className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${
-                        c.live ? 'text-accent' : 'text-zinc-500'
+                        c.live ? "text-accent" : "text-zinc-500"
                       }`}
                     >
                       {c.status}
@@ -1719,19 +1825,27 @@ export function CusownPremiumLanding() {
         id={CUSOWN_LANDING_SECTION_IDS.capabilities}
         className="relative scroll-mt-[calc(5.75rem+env(safe-area-inset-top,0px))] md:scroll-mt-28 border-t border-white/5 bg-zinc-950 py-28 sm:py-36"
       >
-        <div className="pointer-events-none absolute inset-0 overflow-x-hidden" aria-hidden>
+        <div
+          className="pointer-events-none absolute inset-0 overflow-x-hidden"
+          aria-hidden
+        >
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_65%_at_25%_35%,rgba(34,197,94,0.1),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_65%_at_75%_55%,rgba(34,197,94,0.09),transparent_58%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,9,11,0)_0%,rgba(9,9,11,0.4)_100%)]" />
           <motion.div
             className="absolute -left-[30%] top-[22%] h-[440px] w-[440px] rounded-full bg-accent/16 blur-[104px]"
             animate={{ opacity: [0.42, 0.62, 0.42], scale: [1, 1.04, 1] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
             className="absolute -right-[30%] bottom-[8%] h-[420px] w-[420px] rounded-full bg-accent/14 blur-[100px]"
             animate={{ opacity: [0.4, 0.58, 0.4], scale: [1, 1.04, 1] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 6 }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 6,
+            }}
           />
         </div>
 
@@ -1740,7 +1854,7 @@ export function CusownPremiumLanding() {
             <motion.aside
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, margin: '-80px' }}
+              viewport={{ once: true, margin: "-80px" }}
               variants={capabilitiesIntroStagger}
               className="relative z-30 max-w-xl sticky top-[calc(4.75rem+env(safe-area-inset-top,0px))] self-start border-b border-white/10 bg-zinc-950/90 py-2 pb-6 backdrop-blur-xl sm:top-28 lg:border-b-0 lg:bg-transparent lg:py-0 lg:pb-0 lg:backdrop-blur-none xl:max-w-none"
             >
@@ -1754,11 +1868,11 @@ export function CusownPremiumLanding() {
                 variants={capabilitiesIntroChild}
                 className="font-display text-[2.125rem] font-semibold leading-[1.12] tracking-[-0.035em] text-white [text-shadow:0_2px_60px_rgba(0,0,0,0.35)] sm:text-4xl sm:leading-[1.08] lg:text-[2.75rem] lg:leading-[1.06]"
               >
-                Everything you{' '}
+                Everything you{" "}
                 <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                   expect
                 </span>
-                , nothing you{' '}
+                , nothing you{" "}
                 <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                   don&apos;t
                 </span>
@@ -1773,13 +1887,15 @@ export function CusownPremiumLanding() {
                 variants={capabilitiesIntroChild}
                 className="mt-8 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-600"
               >
-                Product surface · {String(CAPABILITY_TOTAL_COUNT).padStart(2, '0')} modules
+                Product surface ·{" "}
+                {String(CAPABILITY_TOTAL_COUNT).padStart(2, "0")} modules
               </motion.p>
               <motion.p
                 variants={capabilitiesIntroChild}
                 className="mt-4 text-sm leading-relaxed text-zinc-500"
               >
-                Scroll the runway, groups unpack how booking, reach, and operations layer together.
+                Scroll the runway, groups unpack how booking, reach, and
+                operations layer together.
               </motion.p>
             </motion.aside>
 
@@ -1790,15 +1906,23 @@ export function CusownPremiumLanding() {
               >
                 <motion.div
                   className="w-full origin-top rounded-full bg-gradient-to-b from-accent via-emerald-400 to-accent/60"
-                  style={mounted ? {
-                    scaleY: capabilitiesScrollProgress,
-                    boxShadow: capabilitiesProgressShadow,
-                  } : undefined}
+                  style={
+                    mounted
+                      ? {
+                          scaleY: capabilitiesScrollProgress,
+                          boxShadow: capabilitiesProgressShadow,
+                        }
+                      : undefined
+                  }
                 />
               </div>
               <motion.div
                 className="pointer-events-none absolute -right-2 top-24 hidden h-32 w-32 rounded-full blur-3xl lg:block"
-                style={mounted ? { backgroundColor: capabilitiesProgressGlow } : undefined}
+                style={
+                  mounted
+                    ? { backgroundColor: capabilitiesProgressGlow }
+                    : undefined
+                }
                 aria-hidden
               />
 
@@ -1811,8 +1935,12 @@ export function CusownPremiumLanding() {
                       whileInView="show"
                       viewport={
                         isLgViewport
-                          ? { once: true, margin: '-100px 0px -72px 0px' }
-                          : { once: true, margin: '-12% 0px -8% 0px', amount: 0.2 }
+                          ? { once: true, margin: "-100px 0px -72px 0px" }
+                          : {
+                              once: true,
+                              margin: "-12% 0px -8% 0px",
+                              amount: 0.2,
+                            }
                       }
                       variants={capabilitiesRunwayVariants}
                       className="border-b border-white/[0.07]"
@@ -1842,10 +1970,10 @@ export function CusownPremiumLanding() {
                         whileInView="show"
                         viewport={
                           isLgViewport
-                            ? { once: true, margin: '-120px 0px -96px 0px' }
+                            ? { once: true, margin: "-120px 0px -96px 0px" }
                             : {
                                 once: true,
-                                margin: '-12% 0px -10% 0px',
+                                margin: "-12% 0px -10% 0px",
                                 amount: 0.35,
                               }
                         }
@@ -1857,12 +1985,16 @@ export function CusownPremiumLanding() {
                           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8 lg:gap-10">
                             <div className="flex items-center gap-4 sm:w-[7.5rem] sm:shrink-0 sm:flex-col sm:items-start sm:gap-3 lg:w-[8.5rem]">
                               <span className="font-display text-3xl tabular-nums leading-none tracking-tighter text-white/[0.12] transition-colors duration-300 group-hover:text-white/[0.22] sm:text-4xl">
-                                {String(idx).padStart(2, '0')}
+                                {String(idx).padStart(2, "0")}
                               </span>
                               <motion.div
                                 className="flex h-10 w-10 items-center justify-center sm:h-11 sm:w-11 lg:h-12 lg:w-12"
                                 whileHover={{ scale: 1.08, rotate: -4 }}
-                                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 420,
+                                  damping: 24,
+                                }}
                               >
                                 <f.Icon
                                   className="h-full w-full text-accent drop-shadow-[0_0_18px_rgba(34,197,94,0.4)] transition-[filter] duration-300 group-hover:drop-shadow-[0_0_28px_rgba(34,197,94,0.6)]"
@@ -1903,7 +2035,10 @@ export function CusownPremiumLanding() {
         id={CUSOWN_LANDING_SECTION_IDS.process}
         className="relative scroll-mt-[calc(5.75rem+env(safe-area-inset-top,0px))] md:scroll-mt-28 border-t border-white/5 bg-zinc-950 py-28 sm:py-36"
       >
-        <div className="pointer-events-none absolute inset-0 overflow-x-hidden" aria-hidden>
+        <div
+          className="pointer-events-none absolute inset-0 overflow-x-hidden"
+          aria-hidden
+        >
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_55%_at_50%_0%,rgba(34,197,94,0.08),transparent_55%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,9,11,0)_0%,rgba(9,9,11,0.35)_100%)]" />
         </div>
@@ -1912,7 +2047,7 @@ export function CusownPremiumLanding() {
           <motion.div
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
+            viewport={{ once: true, margin: "-80px" }}
             variants={fadeUp}
             className="mx-auto max-w-3xl text-center lg:mx-0 lg:max-w-none lg:text-left"
           >
@@ -1920,14 +2055,15 @@ export function CusownPremiumLanding() {
               Booking flows
             </p>
             <h2 className="font-display text-[2rem] font-semibold leading-[1.1] tracking-[-0.03em] text-white sm:text-4xl sm:leading-[1.08] lg:text-[2.75rem]">
-              One system,{' '}
+              One system,{" "}
               <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                 two parallel journeys
               </span>
             </h2>
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg lg:mx-0">
-              Owners run supply from the left; customers follow demand on the right. Both connect
-              through the same live core, so openings, messages, and confirmations stay in sync.
+              Owners run supply from the left; customers follow demand on the
+              right. Both connect through the same live core, so openings,
+              messages, and confirmations stay in sync.
             </p>
           </motion.div>
 
@@ -1935,7 +2071,7 @@ export function CusownPremiumLanding() {
             className="relative mt-14 sm:mt-16 lg:mt-20"
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, margin: '-60px' }}
+            viewport={{ once: true, margin: "-60px" }}
             variants={fadeUp}
           >
             <BookingFlowsDiagram />
@@ -1959,7 +2095,7 @@ export function CusownPremiumLanding() {
         <motion.div
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={fadeUp}
           className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8"
         >
@@ -1976,7 +2112,7 @@ export function CusownPremiumLanding() {
           </p>
 
           <h2 className="font-display text-[clamp(1.875rem,4.8vw,3.5rem)] font-semibold leading-[1.06] tracking-[-0.038em] text-white">
-            Start taking bookings the{' '}
+            Start taking bookings the{" "}
             <span className="bg-gradient-to-r from-emerald-50 via-white to-accent bg-clip-text text-transparent">
               simpler way
             </span>
@@ -1989,7 +2125,7 @@ export function CusownPremiumLanding() {
           <div className="mt-12 flex flex-col items-stretch justify-center gap-5 sm:mt-14 sm:flex-row sm:items-center sm:gap-6">
             <motion.button
               type="button"
-              onClick={() => go(ROUTES.SELECT_ROLE('owner'))}
+              onClick={() => go(ROUTES.SELECT_ROLE("owner"))}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="relative w-full overflow-hidden rounded-lg bg-accent px-10 py-4 text-[15px] font-semibold text-zinc-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_4px_32px_-6px_rgba(34,197,94,0.55)] transition-[box-shadow,transform] duration-300 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_48px_-8px_rgba(34,197,94,0.65)] sm:w-auto"
@@ -1998,7 +2134,7 @@ export function CusownPremiumLanding() {
             </motion.button>
             <motion.button
               type="button"
-              onClick={() => go(ROUTES.SELECT_ROLE('customer'))}
+              onClick={() => go(ROUTES.SELECT_ROLE("customer"))}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="group inline-flex w-full items-center justify-center gap-2 px-4 py-3 text-[15px] font-semibold text-zinc-200 transition-colors hover:text-white sm:w-auto"
@@ -2025,11 +2161,19 @@ export function CusownPremiumLanding() {
             />
             <p className="mt-8 flex flex-col items-center gap-3 font-mono text-[10px] font-medium uppercase leading-relaxed tracking-[0.2em] text-zinc-600 sm:mt-9 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-0 sm:gap-y-2 sm:text-[11px] sm:tracking-[0.24em]">
               <span className="sm:px-4">No credit card required</span>
-              <span className="hidden text-zinc-700 sm:inline sm:px-1" aria-hidden>
+              <span
+                className="hidden text-zinc-700 sm:inline sm:px-1"
+                aria-hidden
+              >
                 ·
               </span>
-              <span className="sm:px-4">{CUSOWN_PRICING.trialDays}-day trial, then paid plans</span>
-              <span className="hidden text-zinc-700 sm:inline sm:px-1" aria-hidden>
+              <span className="sm:px-4">
+                {CUSOWN_PRICING.trialDays}-day trial, then paid plans
+              </span>
+              <span
+                className="hidden text-zinc-700 sm:inline sm:px-1"
+                aria-hidden
+              >
                 ·
               </span>
               <span className="sm:px-4">Works on any device</span>

@@ -1,34 +1,34 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useMemo } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { createContext, useContext, useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export type AdminTabValue =
-  | 'overview'
-  | 'businesses'
-  | 'users'
-  | 'bookings'
-  | 'audit'
-  | 'cron-monitor'
-  | 'auth-management'
-  | 'storage'
-  | 'success-metrics'
-  | 'analytics';
+  | "overview"
+  | "businesses"
+  | "users"
+  | "bookings"
+  | "audit"
+  | "cron-monitor"
+  | "auth-management"
+  | "storage"
+  | "success-metrics"
+  | "analytics";
 
 const VALID_TABS: AdminTabValue[] = [
-  'overview',
-  'businesses',
-  'users',
-  'bookings',
-  'audit',
-  'cron-monitor',
-  'auth-management',
-  'storage',
-  'success-metrics',
-  'analytics',
+  "overview",
+  "businesses",
+  "users",
+  "bookings",
+  "audit",
+  "cron-monitor",
+  "auth-management",
+  "storage",
+  "success-metrics",
+  "analytics",
 ];
 
-const AdminTabContext = createContext<AdminTabValue>('overview');
+const AdminTabContext = createContext<AdminTabValue>("overview");
 
 /**
  * Single consumer of useSearchParams for admin tab. Used by sidebar and dashboard
@@ -37,16 +37,22 @@ const AdminTabContext = createContext<AdminTabValue>('overview');
 export function AdminTabProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tabParam = searchParams?.get('tab') ?? '';
+  const tabParam = searchParams?.get("tab") ?? "";
   const value = useMemo<AdminTabValue>(() => {
-    if (pathname !== '/admin/dashboard') return 'overview';
-    return (VALID_TABS as string[]).includes(tabParam) ? (tabParam as AdminTabValue) : 'overview';
+    if (pathname !== "/admin/dashboard") return "overview";
+    return (VALID_TABS as string[]).includes(tabParam)
+      ? (tabParam as AdminTabValue)
+      : "overview";
   }, [pathname, tabParam]);
 
-  return <AdminTabContext.Provider value={value}>{children}</AdminTabContext.Provider>;
+  return (
+    <AdminTabContext.Provider value={value}>
+      {children}
+    </AdminTabContext.Provider>
+  );
 }
 
 export function useAdminTab(): AdminTabValue {
   const ctx = useContext(AdminTabContext);
-  return ctx ?? 'overview';
+  return ctx ?? "overview";
 }

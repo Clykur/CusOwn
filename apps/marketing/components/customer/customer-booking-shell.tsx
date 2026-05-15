@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import CustomerSidebar from '@/components/customer/customer-sidebar';
-import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import CustomerSidebar from "@/components/customer/customer-sidebar";
+import CustomerMobileBottomNav from "@/components/customer/mobile-bottom-nav";
 import {
   CustomerSessionProvider,
   type CustomerInitialUser,
-} from '@/components/customer/customer-session-context';
-import { ROUTES } from '@cusown/shared';
-import { UI_CUSTOMER } from '@cusown/config';
+} from "@/components/customer/customer-session-context";
+import { ROUTES } from "@cusown/shared";
+import { UI_CUSTOMER } from "@cusown/config";
 
 type CustomerBookingShellProps = {
   children: React.ReactNode;
@@ -21,11 +21,16 @@ type CustomerBookingShellProps = {
  * Wraps public booking page (/b/[bookingLink]) for logged-in customers:
  * customer sidebar, breadcrumb back to Explore Services, same layout as customer area.
  */
-export default function CustomerBookingShell({ children, initialUser }: CustomerBookingShellProps) {
+export default function CustomerBookingShell({
+  children,
+  initialUser,
+}: CustomerBookingShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const isBookingStatus = pathname?.startsWith('/booking/');
-  const breadcrumbHref = isBookingStatus ? ROUTES.CUSTOMER_DASHBOARD : ROUTES.CUSTOMER_SALON_LIST;
+  const isBookingStatus = pathname?.startsWith("/booking/");
+  const breadcrumbHref = isBookingStatus
+    ? ROUTES.CUSTOMER_DASHBOARD
+    : ROUTES.CUSTOMER_SALON_LIST;
   const breadcrumbLabel = isBookingStatus
     ? UI_CUSTOMER.NAV_MY_ACTIVITY
     : UI_CUSTOMER.BREADCRUMB_BACK_EXPLORE;
@@ -33,9 +38,18 @@ export default function CustomerBookingShell({ children, initialUser }: Customer
   return (
     <CustomerSessionProvider initialUser={initialUser ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
-        <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 lg:ml-64 w-full min-w-0" suppressHydrationWarning>
-          <div className="w-full py-8 px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
+        <CustomerSidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
+        <main
+          className="flex-1 lg:ml-64 w-full min-w-0"
+          suppressHydrationWarning
+        >
+          <div
+            className="w-full py-8 px-4 sm:px-6 lg:px-8"
+            suppressHydrationWarning
+          >
             <div className="flex flex-col gap-8">
               <nav aria-label="Breadcrumb">
                 <Link

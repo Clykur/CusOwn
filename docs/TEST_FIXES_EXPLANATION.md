@@ -22,13 +22,13 @@
 
 ```typescript
 // Instead of:
-if (typeof window !== 'undefined' && window.location) {
+if (typeof window !== "undefined" && window.location) {
   return window.location.origin;
 }
 
 // Use:
 try {
-  if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
+  if (typeof globalThis !== "undefined" && "window" in globalThis) {
     const win = globalThis as any;
     if (win.window?.location?.origin) {
       return win.window.location.origin;
@@ -73,21 +73,23 @@ try {
 ```typescript
 // Build update query conditionally based on current status
 let updateQuery = supabaseAdmin
-  .from('slots')
+  .from("slots")
   .update({
     status: SLOT_STATUS.RESERVED,
     reserved_until: reservedUntil.toISOString(),
   })
-  .eq('id', slotId);
+  .eq("id", slotId);
 
 // Add condition based on current status
 if (slot.status === SLOT_STATUS.AVAILABLE) {
   // Only update if still available (atomic check)
-  updateQuery = updateQuery.eq('status', SLOT_STATUS.AVAILABLE);
+  updateQuery = updateQuery.eq("status", SLOT_STATUS.AVAILABLE);
 } else if (slot.status === SLOT_STATUS.RESERVED && slot.reserved_until) {
   // Only update if reservation has expired
   const now = new Date().toISOString();
-  updateQuery = updateQuery.eq('status', SLOT_STATUS.RESERVED).lt('reserved_until', now);
+  updateQuery = updateQuery
+    .eq("status", SLOT_STATUS.RESERVED)
+    .lt("reserved_until", now);
 } else {
   // Invalid state, cannot reserve
   return false;

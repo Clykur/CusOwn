@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import type { Slot } from '@cusown/shared';
-import { useMounted } from '@cusown/shared/client';
-import { IST_IANA_TIME_ZONE } from '@cusown/shared';
-import { CalendarGridLoadingSkeleton } from '@/components/ui/skeletons/booking/booking-skeletons';
+import { useEffect, useRef, useMemo, useCallback, memo } from "react";
+import type { Slot } from "@cusown/shared";
+import { useMounted } from "@cusown/shared/client";
+import { IST_IANA_TIME_ZONE } from "@cusown/shared";
+import { CalendarGridLoadingSkeleton } from "@/components/ui/skeletons/booking/booking-skeletons";
 
 type CalendarGridProps = {
   selectedDate: string;
@@ -20,31 +20,31 @@ type CalendarGridProps = {
 
 function getLocalDateStr(date: Date): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
 /** Calendar YYYY-MM-DD in IST (matches server slot keys and `getISTDateString`). */
 function getISTCalendarYmd(d: Date): string {
-  return d.toLocaleDateString('en-CA', { timeZone: IST_IANA_TIME_ZONE });
+  return d.toLocaleDateString("en-CA", { timeZone: IST_IANA_TIME_ZONE });
 }
 
 function parseLocalYmdToDate(ymd: string): Date {
-  const [y, m, d] = ymd.split('-').map(Number);
+  const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
 function formatMonthShort(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', { month: 'short' });
+  return date.toLocaleDateString("en-US", { month: "short" });
 }
 
 function formatWeekdayShort(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', { weekday: 'short' });
+  return date.toLocaleDateString("en-US", { weekday: "short" });
 }
 
 function CalendarGridComponent({
@@ -95,9 +95,9 @@ function CalendarGridComponent({
     const timer = setTimeout(() => {
       if (selectedDateRef.current) {
         selectedDateRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center',
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
         });
       }
     }, 100);
@@ -106,21 +106,23 @@ function CalendarGridComponent({
   }, [selectedDate]);
 
   const monthYearLabel = useMemo(() => {
-    if (days.length === 0) return '';
-    const first = new Date(days[0].dateStr + 'T00:00:00');
-    const last = new Date(days[days.length - 1].dateStr + 'T00:00:00');
+    if (days.length === 0) return "";
+    const first = new Date(days[0].dateStr + "T00:00:00");
+    const last = new Date(days[days.length - 1].dateStr + "T00:00:00");
 
-    const firstLabel = first.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
+    const firstLabel = first.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
 
-    const lastLabel = last.toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
+    const lastLabel = last.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
 
-    return firstLabel === lastLabel ? firstLabel : `${firstLabel} - ${lastLabel}`;
+    return firstLabel === lastLabel
+      ? firstLabel
+      : `${firstLabel} - ${lastLabel}`;
   }, [days]);
 
   if (!anchorYmd || days.length === 0) {
@@ -203,7 +205,10 @@ const DayCard = memo(function DayCard({
     }
   }, [isDisabled, onSelectDate, dateStr]);
 
-  const dayNumber = useMemo(() => parseInt(dateStr.split('-')[2], 10), [dateStr]);
+  const dayNumber = useMemo(
+    () => parseInt(dateStr.split("-")[2], 10),
+    [dateStr],
+  );
   const monthShort = useMemo(() => formatMonthShort(dateStr), [dateStr]);
   const weekdayShort = useMemo(() => formatWeekdayShort(dateStr), [dateStr]);
 
@@ -219,45 +224,55 @@ const DayCard = memo(function DayCard({
         flex flex-col items-center justify-center text-center transition-all
         ${
           isSelected
-            ? 'border-slate-900 bg-slate-100 text-slate-900 shadow-sm border-2'
+            ? "border-slate-900 bg-slate-100 text-slate-900 shadow-sm border-2"
             : isPast
-              ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+              ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
               : isClosed
-                ? 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed'
+                ? "bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed"
                 : !hasSlots
-                  ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+                  ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
+                  : "border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
         }
-        ${isToday && !isSelected ? 'ring-2 ring-slate-400 ring-offset-1' : ''}
+        ${isToday && !isSelected ? "ring-2 ring-slate-400 ring-offset-1" : ""}
       `}
       title={
         isPast
-          ? 'Past date'
+          ? "Past date"
           : isClosed
-            ? 'Shop is closed on this day'
+            ? "Shop is closed on this day"
             : !hasSlots
-              ? 'No slots available'
-              : ''
+              ? "No slots available"
+              : ""
       }
     >
       <span className="text-[10px] sm:text-xs font-medium text-slate-500 leading-none">
         {weekdayShort}
       </span>
 
-      <span className="mt-1 text-lg sm:text-xl font-bold leading-none">{dayNumber}</span>
+      <span className="mt-1 text-lg sm:text-xl font-bold leading-none">
+        {dayNumber}
+      </span>
 
-      <span className="mt-1 text-[11px] sm:text-xs leading-none">{monthShort}</span>
+      <span className="mt-1 text-[11px] sm:text-xs leading-none">
+        {monthShort}
+      </span>
 
       {isToday && !isPast && !isClosed && hasSlots && (
-        <span className="mt-1 text-[9px] sm:text-[10px] text-slate-500 leading-none">Today</span>
+        <span className="mt-1 text-[9px] sm:text-[10px] text-slate-500 leading-none">
+          Today
+        </span>
       )}
 
       {isClosed && (
-        <span className="mt-1 text-[9px] sm:text-[10px] text-amber-600 leading-none">Closed</span>
+        <span className="mt-1 text-[9px] sm:text-[10px] text-amber-600 leading-none">
+          Closed
+        </span>
       )}
 
       {!hasSlots && !isClosed && (
-        <span className="mt-1 text-[9px] sm:text-[10px] text-slate-400 leading-none">Full</span>
+        <span className="mt-1 text-[9px] sm:text-[10px] text-slate-400 leading-none">
+          Full
+        </span>
       )}
     </button>
   );

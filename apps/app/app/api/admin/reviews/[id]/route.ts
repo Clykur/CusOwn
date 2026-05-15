@@ -1,10 +1,19 @@
-import { NextRequest } from 'next/server';
-import { requireAdmin, successResponse, errorResponse, setReviewHidden, isValidUUID } from '@cusown/shared/server';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import {
+  requireAdmin,
+  successResponse,
+  errorResponse,
+  setReviewHidden,
+  isValidUUID,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
 
-const ROUTE = 'PATCH /api/admin/reviews/[id]';
+const ROUTE = "PATCH /api/admin/reviews/[id]";
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const auth = await requireAdmin(request, ROUTE);
     if (auth instanceof Response) return auth;
@@ -16,7 +25,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const body = await request.json().catch(() => ({}));
     const isHidden = body.is_hidden;
-    if (typeof isHidden !== 'boolean') {
+    if (typeof isHidden !== "boolean") {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
@@ -25,9 +34,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return errorResponse(result.error, 404);
     }
 
-    return successResponse({ is_hidden: isHidden }, SUCCESS_MESSAGES.REVIEW_VISIBILITY_UPDATED);
+    return successResponse(
+      { is_hidden: isHidden },
+      SUCCESS_MESSAGES.REVIEW_VISIBILITY_UPDATED,
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

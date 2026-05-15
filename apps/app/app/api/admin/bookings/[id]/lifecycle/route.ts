@@ -2,13 +2,22 @@
  * Phase 4: Admin support — why was booking cancelled, who triggered it, when.
  * Returns audit logs for this booking (entity_type=booking, entity_id=id).
  */
-import { NextRequest } from 'next/server';
-import { requireAdmin, auditService, successResponse, errorResponse, isValidUUID } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import {
+  requireAdmin,
+  auditService,
+  successResponse,
+  errorResponse,
+  isValidUUID,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 
-const ROUTE = 'GET /api/admin/bookings/[id]/lifecycle';
+const ROUTE = "GET /api/admin/bookings/[id]/lifecycle";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const auth = await requireAdmin(request, ROUTE);
     if (auth instanceof Response) return auth;
@@ -19,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const logs = await auditService.getAuditLogs({
-      entityType: 'booking',
+      entityType: "booking",
       entityId: id,
       limit: 100,
       offset: 0,
@@ -37,7 +46,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       })),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

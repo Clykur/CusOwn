@@ -6,16 +6,20 @@ import {
   RECOMMENDATION_WEIGHT_PREVIOUSLY_BOOKED,
   RECOMMENDATION_WEIGHT_FREQUENT_SERVICE,
   RECOMMENDATION_WEIGHT_NEARBY_POPULAR,
-} from '@cusown/config';
+} from "@cusown/config";
 
 /** Combine weighted scores and return sorted business ids with score. */
 export function mergeRecommendationScores(
   prev: Map<string, number>,
   frequent: Map<string, number>,
-  nearby: Map<string, number>
+  nearby: Map<string, number>,
 ): { businessId: string; score: number }[] {
   const combined = new Map<string, number>();
-  const allIds = new Set([...prev.keys(), ...frequent.keys(), ...nearby.keys()]);
+  const allIds = new Set([
+    ...prev.keys(),
+    ...frequent.keys(),
+    ...nearby.keys(),
+  ]);
   allIds.forEach((id) => {
     const s =
       RECOMMENDATION_WEIGHT_PREVIOUSLY_BOOKED * (prev.get(id) ?? 0) +

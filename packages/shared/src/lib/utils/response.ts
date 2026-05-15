@@ -1,16 +1,21 @@
-import { ApiResponse } from '../../types';
-import { NextResponse } from 'next/server';
-import { getCorrelationId } from '../monitoring/request-context';
+import { ApiResponse } from "../../types";
+import { NextResponse } from "next/server";
+import { getCorrelationId } from "../monitoring/request-context";
 
-function attachCorrelation<T>(res: NextResponse<ApiResponse<T>>): NextResponse<ApiResponse<T>> {
+function attachCorrelation<T>(
+  res: NextResponse<ApiResponse<T>>,
+): NextResponse<ApiResponse<T>> {
   const correlationId = getCorrelationId();
   if (correlationId) {
-    res.headers.set('x-correlation-id', correlationId);
+    res.headers.set("x-correlation-id", correlationId);
   }
   return res;
 }
 
-export const successResponse = <T>(data: T, message?: string): NextResponse<ApiResponse<T>> => {
+export const successResponse = <T>(
+  data: T,
+  message?: string,
+): NextResponse<ApiResponse<T>> => {
   const correlationId = getCorrelationId();
   const body: ApiResponse<T> = {
     success: true,
@@ -25,7 +30,7 @@ export const successResponse = <T>(data: T, message?: string): NextResponse<ApiR
 export const errorResponse = (
   error: string,
   status: number = 400,
-  code?: string
+  code?: string,
 ): NextResponse<ApiResponse> => {
   const body: ApiResponse = { success: false, error };
   if (code !== undefined) body.code = code;

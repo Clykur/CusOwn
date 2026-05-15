@@ -4,22 +4,22 @@
  * Never calls BigDataCloud on every request.
  */
 
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { enhancedRateLimit } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
-import { getLocation } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { enhancedRateLimit } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
+import { getLocation } from "@cusown/shared/server";
 import {
   ERROR_MESSAGES,
   GEO_RATE_LIMIT_WINDOW_MS,
   GEO_RATE_LIMIT_MAX_PER_WINDOW,
-} from '@cusown/config';
+} from "@cusown/config";
 
 const locationRateLimit = enhancedRateLimit({
   maxRequests: GEO_RATE_LIMIT_MAX_PER_WINDOW,
   windowMs: GEO_RATE_LIMIT_WINDOW_MS,
   perIP: true,
-  keyPrefix: 'location_get',
+  keyPrefix: "location_get",
 });
 
 export async function GET(request: NextRequest) {
@@ -28,18 +28,24 @@ export async function GET(request: NextRequest) {
 
   try {
     const user = await getServerUser(request);
-    const { location, setCookieHeader } = await getLocation(request, user?.id ?? null);
+    const { location, setCookieHeader } = await getLocation(
+      request,
+      user?.id ?? null,
+    );
 
     const response = location
       ? successResponse({ location })
       : successResponse({ location: null }, undefined);
 
     if (setCookieHeader) {
-      response.headers.set('Set-Cookie', setCookieHeader);
+      response.headers.set("Set-Cookie", setCookieHeader);
     }
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.GEO_SERVICE_UNAVAILABLE;
+    const message =
+      error instanceof Error
+        ? error.message
+        : ERROR_MESSAGES.GEO_SERVICE_UNAVAILABLE;
     return errorResponse(message, 503);
   }
 }

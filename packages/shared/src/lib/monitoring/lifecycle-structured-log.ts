@@ -4,14 +4,14 @@
  */
 
 export type BookingLifecycleAction =
-  | 'booking_created'
-  | 'booking_confirmed'
-  | 'booking_rejected'
-  | 'booking_undo_accept'
-  | 'booking_undo_reject'
-  | 'booking_cancelled';
+  | "booking_created"
+  | "booking_confirmed"
+  | "booking_rejected"
+  | "booking_undo_accept"
+  | "booking_undo_reject"
+  | "booking_cancelled";
 
-export type BookingLifecycleSource = 'api' | 'cron' | 'lazy_heal';
+export type BookingLifecycleSource = "api" | "cron" | "lazy_heal";
 
 export interface BookingLifecyclePayload {
   booking_id: string;
@@ -24,7 +24,10 @@ export interface BookingLifecyclePayload {
   timestamp: string;
 }
 
-export type PaymentLifecycleAction = 'payment_created' | 'payment_succeeded' | 'payment_failed';
+export type PaymentLifecycleAction =
+  | "payment_created"
+  | "payment_succeeded"
+  | "payment_failed";
 
 export interface PaymentLifecyclePayload {
   payment_id: string;
@@ -35,10 +38,12 @@ export interface PaymentLifecyclePayload {
   timestamp: string;
 }
 
-const PREFIX_BOOKING = '[LIFECYCLE_BOOKING]';
-const PREFIX_PAYMENT = '[LIFECYCLE_PAYMENT]';
+const PREFIX_BOOKING = "[LIFECYCLE_BOOKING]";
+const PREFIX_PAYMENT = "[LIFECYCLE_PAYMENT]";
 
-export function logBookingLifecycle(payload: Omit<BookingLifecyclePayload, 'timestamp'>): void {
+export function logBookingLifecycle(
+  payload: Omit<BookingLifecyclePayload, "timestamp">,
+): void {
   const line = JSON.stringify({
     ...payload,
     timestamp: new Date().toISOString(),
@@ -46,7 +51,9 @@ export function logBookingLifecycle(payload: Omit<BookingLifecyclePayload, 'time
   console.log(`${PREFIX_BOOKING} ${line}`);
 }
 
-export function logPaymentLifecycle(payload: Omit<PaymentLifecyclePayload, 'timestamp'>): void {
+export function logPaymentLifecycle(
+  payload: Omit<PaymentLifecyclePayload, "timestamp">,
+): void {
   const line = JSON.stringify({
     ...payload,
     timestamp: new Date().toISOString(),

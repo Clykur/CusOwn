@@ -6,18 +6,18 @@
  * - No valid auth / no token on mutation → expect 401.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const API_BASE = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 async function get(
   url: string,
-  headers: Record<string, string> = {}
+  headers: Record<string, string> = {},
 ): Promise<{ status: number; ok: boolean }> {
-  const res = await fetch(url, { method: 'GET', headers });
+  const res = await fetch(url, { method: "GET", headers });
   return { status: res.status, ok: res.ok };
 }
 
 async function main() {
-  const bookingId = '00000000-0000-0000-0000-000000000001'; // placeholder UUID
+  const bookingId = "00000000-0000-0000-0000-000000000001"; // placeholder UUID
   let passed = 0;
   let failed = 0;
 
@@ -28,7 +28,9 @@ async function main() {
     console.log(`  ✅ Accept with invalid/wrong token: ${r1.status}`);
     passed++;
   } else {
-    console.log(`  ❌ Accept with wrong token: expected 401/403/404, got ${r1.status}`);
+    console.log(
+      `  ❌ Accept with wrong token: expected 401/403/404, got ${r1.status}`,
+    );
     failed++;
   }
 
@@ -38,7 +40,9 @@ async function main() {
     console.log(`  ✅ Admin bookings without auth: 401`);
     passed++;
   } else {
-    console.log(`  ❌ Admin bookings without auth: expected 401, got ${r2.status}`);
+    console.log(
+      `  ❌ Admin bookings without auth: expected 401, got ${r2.status}`,
+    );
     failed++;
   }
 
@@ -48,7 +52,9 @@ async function main() {
     console.log(`  ✅ Admin audit-logs without auth: 401`);
     passed++;
   } else {
-    console.log(`  ❌ Admin audit-logs without auth: expected 401, got ${r3.status}`);
+    console.log(
+      `  ❌ Admin audit-logs without auth: expected 401, got ${r3.status}`,
+    );
     failed++;
   }
 
@@ -58,23 +64,29 @@ async function main() {
     console.log(`  ✅ Admin lifecycle without auth: 401`);
     passed++;
   } else {
-    console.log(`  ❌ Admin lifecycle without auth: expected 401, got ${r4.status}`);
+    console.log(
+      `  ❌ Admin lifecycle without auth: expected 401, got ${r4.status}`,
+    );
     failed++;
   }
 
   // 5. POST accept without auth and without token (unauthenticated state mutation)
   const r5 = await fetch(`${API_BASE}/api/bookings/${bookingId}/accept`, {
-    method: 'POST',
+    method: "POST",
   });
   if (r5.status === 401) {
     console.log(`  ✅ POST accept without auth: 401`);
     passed++;
   } else {
-    console.log(`  ❌ POST accept without auth: expected 401, got ${r5.status}`);
+    console.log(
+      `  ❌ POST accept without auth: expected 401, got ${r5.status}`,
+    );
     failed++;
   }
 
-  console.log(`\nPhase 5 Privilege escalation: ${passed} passed, ${failed} failed`);
+  console.log(
+    `\nPhase 5 Privilege escalation: ${passed} passed, ${failed} failed`,
+  );
   process.exit(failed > 0 ? 1 : 0);
 }
 

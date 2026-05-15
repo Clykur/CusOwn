@@ -1,20 +1,20 @@
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { isValidUUID } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
-import { bookingService } from '@cusown/shared/server';
-import { slotService } from '@cusown/shared/server';
-import { paymentService } from '@cusown/shared/server';
-import { enhancedRateLimit } from '@cusown/shared/server';
-import { checkNonce, storeNonce } from '@cusown/shared/server';
-import { env } from '@cusown/config';
-import { ERROR_MESSAGES, SLOT_STATUS, BOOKING_STATUS } from '@cusown/config';
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { isValidUUID } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
+import { bookingService } from "@cusown/shared/server";
+import { slotService } from "@cusown/shared/server";
+import { paymentService } from "@cusown/shared/server";
+import { enhancedRateLimit } from "@cusown/shared/server";
+import { checkNonce, storeNonce } from "@cusown/shared/server";
+import { env } from "@cusown/config";
+import { ERROR_MESSAGES, SLOT_STATUS, BOOKING_STATUS } from "@cusown/config";
 
 const initiateRateLimit = enhancedRateLimit({
   maxRequests: 10,
   windowMs: 60000,
   perIP: true,
-  keyPrefix: 'payment_initiate',
+  keyPrefix: "payment_initiate",
 });
 
 export async function POST(request: NextRequest) {
@@ -26,35 +26,36 @@ export async function POST(request: NextRequest) {
 
     const user = await getServerUser(request);
     if (!user) {
-      return errorResponse('Authentication required', 401);
+      return errorResponse("Authentication required", 401);
     }
 
     const body = await request.json();
     const { booking_id, nonce } = body;
 
     if (!isValidUUID(booking_id)) {
-      return errorResponse('Invalid booking ID', 400);
+      return errorResponse("Invalid booking ID", 400);
     }
 
-    if (!nonce || typeof nonce !== 'string') {
-      return errorResponse('Nonce required', 400);
+    if (!nonce || typeof nonce !== "string") {
+      return errorResponse("Nonce required", 400);
     }
 
     if (!(await checkNonce(nonce))) {
-      return errorResponse('Invalid or expired nonce', 400);
+      return errorResponse("Invalid or expired nonce", 400);
     }
 
-    const booking = await bookingService.getBookingByUuidWithDetails(booking_id);
+    const booking =
+      await bookingService.getBookingByUuidWithDetails(booking_id);
     if (!booking) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
     if (booking.customer_user_id && booking.customer_user_id !== user.id) {
-      return errorResponse('Unauthorized', 403);
+      return errorResponse("Unauthorized", 403);
     }
 
     if (booking.status !== BOOKING_STATUS.PENDING) {
-      return errorResponse('Booking is not in pending state', 400);
+      return errorResponse("Booking is not in pending state", 400);
     }
 
     const slot = await slotService.getSlotById(booking.slot_id);
@@ -72,10 +73,12 @@ export async function POST(request: NextRequest) {
       if (reservedUntil > now) {
         const slotExpiryMinutes = env.payment.slotExpiryMinutes;
         const slotExpiryTime = new Date(booking.created_at);
-        slotExpiryTime.setMinutes(slotExpiryTime.getMinutes() + slotExpiryMinutes);
+        slotExpiryTime.setMinutes(
+          slotExpiryTime.getMinutes() + slotExpiryMinutes,
+        );
 
         if (now > slotExpiryTime) {
-          return errorResponse('Slot reservation expired', 409);
+          return errorResponse("Slot reservation expired", 409);
         }
       } else {
         return errorResponse(ERROR_MESSAGES.SLOT_NOT_AVAILABLE, 409);
@@ -83,15 +86,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (!booking.total_price_cents || booking.total_price_cents <= 0) {
-      return errorResponse('Invalid booking amount', 400);
+      return errorResponse("Invalid booking amount", 400);
     }
 
-    const existingPayment = await paymentService.getPaymentByBooking(booking_id);
+    const existingPayment =
+      await paymentService.getPaymentByBooking(booking_id);
     if (existingPayment) {
-      if (existingPayment.status === 'completed') {
-        return errorResponse('Payment already completed', 400);
+      if (existingPayment.status === "completed") {
+        return errorResponse("Payment already completed", 400);
       }
-      if (existingPayment.status === 'initiated' && existingPayment.expires_at) {
+      if (
+        existingPayment.status === "initiated" &&
+        existingPayment.expires_at
+      ) {
         const expiresAt = new Date(existingPayment.expires_at);
         if (expiresAt > new Date()) {
           return successResponse({
@@ -112,19 +119,19 @@ export async function POST(request: NextRequest) {
       booking_id,
       amountCents,
       booking.customer_name,
-      idempotencyKey
+      idempotencyKey,
     );
 
-    const supabaseAdmin = await import('@cusown/shared/server').then((m) =>
-      m.requireSupabaseAdmin()
+    const supabaseAdmin = await import("@cusown/shared/server").then((m) =>
+      m.requireSupabaseAdmin(),
     );
     await supabaseAdmin
-      .from('bookings')
+      .from("bookings")
       .update({
         payment_required: true,
-        payment_type: 'full',
+        payment_type: "full",
       })
-      .eq('id', booking_id);
+      .eq("id", booking_id);
 
     await storeNonce(nonce);
 
@@ -136,8 +143,9 @@ export async function POST(request: NextRequest) {
       transaction_id: payment.transaction_id,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Payment initiation failed';
-    console.error('[PAYMENT_INITIATE] Error:', error);
+    const message =
+      error instanceof Error ? error.message : "Payment initiation failed";
+    console.error("[PAYMENT_INITIATE] Error:", error);
     return errorResponse(message, 500);
   }
 }

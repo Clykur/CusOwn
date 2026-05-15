@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 const DEFAULT_DEBOUNCE_MS = 300;
 
@@ -21,8 +21,8 @@ export function useDebouncedSearch<T>({
   searchFields,
   debounceMs = DEFAULT_DEBOUNCE_MS,
 }: UseDebouncedSearchOptions<T>): UseDebouncedSearchResult<T> {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -53,9 +53,9 @@ export function useDebouncedSearch<T>({
 
     return items.filter((item) =>
       searchFields.some((field) => {
-        const value = typeof field === 'function' ? field(item) : item[field];
-        return typeof value === 'string' && value.toLowerCase().includes(q);
-      })
+        const value = typeof field === "function" ? field(item) : item[field];
+        return typeof value === "string" && value.toLowerCase().includes(q);
+      }),
     );
   }, [items, debouncedQuery, searchFields]);
 
@@ -91,18 +91,19 @@ export function usePagination<T>({
   onPageChange,
 }: UsePaginationOptions): UsePaginationResult<T> {
   const [internalPage, setInternalPage] = useState(initialPage);
-  const page = initialPage !== internalPage && onPageChange ? initialPage : internalPage;
+  const page =
+    initialPage !== internalPage && onPageChange ? initialPage : internalPage;
 
   const setPage = useCallback(
     (p: number | ((prev: number) => number)) => {
-      const newPage = typeof p === 'function' ? p(page) : p;
+      const newPage = typeof p === "function" ? p(page) : p;
       if (onPageChange) {
         onPageChange(newPage);
       } else {
         setInternalPage(newPage);
       }
     },
-    [page, onPageChange]
+    [page, onPageChange],
   );
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -111,7 +112,7 @@ export function usePagination<T>({
 
   const paginateItems = useCallback(
     (items: T[]): T[] => items.slice(start, start + pageSize),
-    [start, pageSize]
+    [start, pageSize],
   );
 
   return {

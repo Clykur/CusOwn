@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from "react";
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -8,7 +8,11 @@ interface PullToRefreshProps {
   threshold?: number;
 }
 
-export default function PullToRefresh({ onRefresh, children, threshold = 80 }: PullToRefreshProps) {
+export default function PullToRefresh({
+  onRefresh,
+  children,
+  threshold = 80,
+}: PullToRefreshProps) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -61,18 +65,18 @@ export default function PullToRefresh({ onRefresh, children, threshold = 80 }: P
       }
     };
 
-    container.addEventListener('touchstart', handleTouchStart, {
+    container.addEventListener("touchstart", handleTouchStart, {
       passive: false,
     });
-    container.addEventListener('touchmove', handleTouchMove, {
+    container.addEventListener("touchmove", handleTouchMove, {
       passive: false,
     });
-    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener("touchend", handleTouchEnd);
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
     };
   }, [isPulling, pullDistance, threshold, onRefresh, isRefreshing]);
 
@@ -112,7 +116,9 @@ export default function PullToRefresh({ onRefresh, children, threshold = 80 }: P
                 />
               </svg>
               <span className="text-sm font-medium">
-                {pullDistance >= threshold ? 'Release to refresh' : 'Pull to refresh'}
+                {pullDistance >= threshold
+                  ? "Release to refresh"
+                  : "Pull to refresh"}
               </span>
             </div>
           )}

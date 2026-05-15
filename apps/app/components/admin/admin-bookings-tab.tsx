@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAdminSession } from './admin-session-context';
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useRouter } from "next/navigation";
+import { useAdminSession } from "./admin-session-context";
 import {
   getAdminCached,
   getAdminCachedStale,
   setAdminCache,
   ADMIN_CACHE_KEYS,
-} from './admin-cache';
-import { adminFetch } from '@cusown/shared';
-import { ROUTES } from '@cusown/shared';
+} from "./admin-cache";
+import { adminFetch } from "@cusown/shared";
+import { ROUTES } from "@cusown/shared";
 
 const TABLE_PAGE_SIZE = 10;
 const LIST_LIMIT = 25;
@@ -31,13 +31,13 @@ const BookingRow = memo(function BookingRow({
   return (
     <tr className="hover:bg-slate-50/80 transition-colors">
       <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-        {booking.customer_name || '—'}
+        {booking.customer_name || "—"}
       </td>
       <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
-        {booking.business?.salon_name || booking.business?.name || 'N/A'}
+        {booking.business?.salon_name || booking.business?.name || "N/A"}
       </td>
       <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
-        {booking.customer_phone || '—'}
+        {booking.customer_phone || "—"}
       </td>
       <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
         {booking.slot ? (
@@ -49,19 +49,19 @@ const BookingRow = memo(function BookingRow({
             </span>
           </>
         ) : (
-          'N/A'
+          "N/A"
         )}
       </td>
       <td className="px-5 py-4 whitespace-nowrap">
         <span
           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-            booking.status === 'confirmed'
-              ? 'bg-emerald-100 text-emerald-800'
-              : booking.status === 'rejected'
-                ? 'bg-red-100 text-red-800'
-                : booking.status === 'pending'
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-slate-100 text-slate-800'
+            booking.status === "confirmed"
+              ? "bg-emerald-100 text-emerald-800"
+              : booking.status === "rejected"
+                ? "bg-red-100 text-red-800"
+                : booking.status === "pending"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-slate-100 text-slate-800"
           }`}
         >
           {booking.status}
@@ -79,17 +79,20 @@ const BookingRow = memo(function BookingRow({
   );
 });
 
-export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
+export function AdminBookingsTab({
+  page: controlledPage,
+  onPageChange,
+}: ListTabPageProps = {}) {
   const router = useRouter();
   const { session, ready } = useAdminSession();
   const [bookings, setBookings] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [internalPage, setInternalPage] = useState(1);
   const page = controlledPage ?? internalPage;
   const setPage = onPageChange
     ? (p: number | ((prev: number) => number)) =>
-        onPageChange(typeof p === 'function' ? p(page) : p)
+        onPageChange(typeof p === "function" ? p(page) : p)
     : setInternalPage;
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,7 +115,7 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
 
   const handleManage = useCallback(
     (bookingId: string) => router.push(ROUTES.ADMIN_BOOKING(bookingId)),
-    [router]
+    [router],
   );
 
   useEffect(() => {
@@ -128,7 +131,9 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
       setBookings(stale.data);
       setLoading(false);
       if (!ready || !session) return;
-      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, { credentials: 'include' })
+      adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
+        credentials: "include",
+      })
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
@@ -141,14 +146,14 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
       return;
     }
     if (!ready || !session) {
-      setError('Session expired. Please log in again.');
+      setError("Session expired. Please log in again.");
       setLoading(false);
       return;
     }
     setLoading(true);
     const ac = new AbortController();
     adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, {
-      credentials: 'include',
+      credentials: "include",
       signal: ac.signal,
     })
       .then((r) => r.json())
@@ -159,12 +164,14 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
           setBookings(list);
           setAdminCache(ADMIN_CACHE_KEYS.BOOKINGS, list);
         } else {
-          setError(data.error || 'Failed to load bookings');
+          setError(data.error || "Failed to load bookings");
         }
       })
       .catch((err) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to load bookings');
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load bookings",
+        );
       })
       .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
@@ -177,13 +184,15 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
     if (!q) return bookings;
     return bookings.filter(
       (b) =>
-        (b.customer_name || '').toLowerCase().includes(q) ||
-        (b.business?.salon_name || b.business?.name || '').toLowerCase().includes(q) ||
-        (b.customer_phone || '').toLowerCase().includes(q) ||
-        (b.status || '').toLowerCase().includes(q) ||
+        (b.customer_name || "").toLowerCase().includes(q) ||
+        (b.business?.salon_name || b.business?.name || "")
+          .toLowerCase()
+          .includes(q) ||
+        (b.customer_phone || "").toLowerCase().includes(q) ||
+        (b.status || "").toLowerCase().includes(q) ||
         (b.slot?.date
           ? new Date(b.slot.date).toLocaleDateString().toLowerCase().includes(q)
-          : false)
+          : false),
     );
   }, [bookings, debouncedQuery]);
 
@@ -192,7 +201,7 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
   const start = (page - 1) * TABLE_PAGE_SIZE;
   const paginated = useMemo(
     () => filtered.slice(start, start + TABLE_PAGE_SIZE),
-    [filtered, start]
+    [filtered, start],
   );
   const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
   const isSearching = searchQuery !== debouncedQuery;
@@ -201,8 +210,12 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
     return (
       <div className="space-y-8">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Bookings</h2>
-          <p className="mt-0.5 text-sm text-slate-500">All platform bookings — view and manage</p>
+          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+            Bookings
+          </h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            All platform bookings — view and manage
+          </p>
         </div>
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
@@ -216,13 +229,19 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Bookings</h2>
-        <p className="mt-0.5 text-sm text-slate-500">All platform bookings — view and manage</p>
+        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+          Bookings
+        </h2>
+        <p className="mt-0.5 text-sm text-slate-500">
+          All platform bookings — view and manage
+        </p>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-slate-50/60">
-          <h3 className="text-base font-semibold text-slate-800">Booking list</h3>
+          <h3 className="text-base font-semibold text-slate-800">
+            Booking list
+          </h3>
           <div className="relative">
             <input
               type="search"
@@ -268,13 +287,20 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {loading && bookings.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
+                      <td
+                        colSpan={6}
+                        className="px-5 py-12 text-center text-sm text-slate-500"
+                      >
                         Loading bookings...
                       </td>
                     </tr>
                   ) : (
                     paginated.map((booking) => (
-                      <BookingRow key={booking.id} booking={booking} onManage={handleManage} />
+                      <BookingRow
+                        key={booking.id}
+                        booking={booking}
+                        onManage={handleManage}
+                      />
                     ))
                   )}
                 </tbody>
@@ -311,8 +337,12 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
           </>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center mx-6 mb-6">
-            <p className="text-sm font-medium text-slate-500">No bookings found</p>
-            <p className="mt-1 text-xs text-slate-400">Bookings will appear here when they exist</p>
+            <p className="text-sm font-medium text-slate-500">
+              No bookings found
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Bookings will appear here when they exist
+            </p>
           </div>
         )}
       </section>

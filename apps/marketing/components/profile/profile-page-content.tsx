@@ -1,22 +1,27 @@
-'use client';
+"use client";
 
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
-import { ROUTES } from '@cusown/shared';
-import { useMounted } from '@cusown/shared/client';
-import { ProfileLoadingPlaceholder } from '@/components/profile/profile-loading-placeholder';
-import { OwnerProfileSkeleton, ProfileSkeleton } from '@/components/ui/skeleton';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME } from "@cusown/config";
+import { ROUTES } from "@cusown/shared";
+import { useMounted } from "@cusown/shared/client";
+import { ProfileLoadingPlaceholder } from "@/components/profile/profile-loading-placeholder";
+import {
+  OwnerProfileSkeleton,
+  ProfileSkeleton,
+} from "@/components/ui/skeleton";
 import {
   useProfileData,
   AccountInfoSection,
   DeleteAccountSection,
   ProfileError,
-} from './profile-page';
+} from "./profile-page";
 
 export interface ProfilePageContentProps {
   embedded?: boolean;
 }
 
-export function ProfilePageContent({ embedded = false }: ProfilePageContentProps) {
+export function ProfilePageContent({
+  embedded = false,
+}: ProfilePageContentProps) {
   const mounted = useMounted();
   const {
     loading,

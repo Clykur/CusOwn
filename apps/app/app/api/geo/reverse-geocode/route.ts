@@ -4,30 +4,30 @@
  * Rate-limited per IP; cached.
  */
 
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { enhancedRateLimit } from '@cusown/shared/server';
-import { setCacheHeaders } from '@cusown/shared/server';
-import { geolocationService } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { enhancedRateLimit } from "@cusown/shared/server";
+import { setCacheHeaders } from "@cusown/shared/server";
+import { geolocationService } from "@cusown/shared/server";
 import {
   ERROR_MESSAGES,
   GEO_RATE_LIMIT_WINDOW_MS,
   GEO_RATE_LIMIT_MAX_PER_WINDOW,
   GEO_CACHE_MAX_AGE_SECONDS,
-} from '@cusown/config';
-import { validateCoordinates } from '@cusown/shared/server';
+} from "@cusown/config";
+import { validateCoordinates } from "@cusown/shared/server";
 import {
   buildApiRedisKeyFromPath,
   getApiRedisCache,
   setApiRedisCache,
   API_REDIS_TTL,
-} from '@cusown/shared/server';
+} from "@cusown/shared/server";
 
 const geoRateLimit = enhancedRateLimit({
   maxRequests: GEO_RATE_LIMIT_MAX_PER_WINDOW,
   windowMs: GEO_RATE_LIMIT_WINDOW_MS,
   perIP: true,
-  keyPrefix: 'geo_reverse',
+  keyPrefix: "geo_reverse",
 });
 
 export async function GET(request: NextRequest) {
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   const url = new URL(request.url);
-  const latParam = url.searchParams.get('latitude');
-  const lngParam = url.searchParams.get('longitude');
+  const latParam = url.searchParams.get("latitude");
+  const lngParam = url.searchParams.get("longitude");
 
   if (latParam === null || lngParam === null) {
     return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Check Redis cache first (reverse geocode results are highly cacheable)
-  const redisKey = buildApiRedisKeyFromPath('/api/geo/reverse-geocode', {
+  const redisKey = buildApiRedisKeyFromPath("/api/geo/reverse-geocode", {
     latitude: latitude.toFixed(6),
     longitude: longitude.toFixed(6),
   });
@@ -70,7 +70,11 @@ export async function GET(request: NextRequest) {
   }>(redisKey);
   if (redisCached) {
     const response = successResponse(redisCached);
-    setCacheHeaders(response, GEO_CACHE_MAX_AGE_SECONDS, GEO_CACHE_MAX_AGE_SECONDS * 2);
+    setCacheHeaders(
+      response,
+      GEO_CACHE_MAX_AGE_SECONDS,
+      GEO_CACHE_MAX_AGE_SECONDS * 2,
+    );
     return response;
   }
 
@@ -94,6 +98,10 @@ export async function GET(request: NextRequest) {
   await setApiRedisCache(redisKey, responseData, API_REDIS_TTL.GEO);
 
   const response = successResponse(responseData);
-  setCacheHeaders(response, GEO_CACHE_MAX_AGE_SECONDS, GEO_CACHE_MAX_AGE_SECONDS * 2);
+  setCacheHeaders(
+    response,
+    GEO_CACHE_MAX_AGE_SECONDS,
+    GEO_CACHE_MAX_AGE_SECONDS * 2,
+  );
   return response;
 }

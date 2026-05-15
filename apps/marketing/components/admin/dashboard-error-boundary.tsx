@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 
 interface State {
   hasError: boolean;
@@ -11,7 +11,10 @@ export class DashboardErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback?: React.ReactNode },
   State
 > {
-  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+  constructor(props: {
+    children: React.ReactNode;
+    fallback?: React.ReactNode;
+  }) {
     super(props);
     this.state = { hasError: false, error: null };
   }

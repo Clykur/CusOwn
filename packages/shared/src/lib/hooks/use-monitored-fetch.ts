@@ -2,8 +2,8 @@
  * React hook for monitored fetch calls with automatic performance tracking.
  */
 
-import { useCallback, useRef } from 'react';
-import { recordApiMetric } from '../monitoring/api-metrics';
+import { useCallback, useRef } from "react";
+import { recordApiMetric } from "../monitoring/api-metrics";
 
 interface MonitoredFetchOptions extends RequestInit {
   skipMonitoring?: boolean;
@@ -17,7 +17,7 @@ export function useMonitoredFetch() {
   const monitoredFetch = useCallback(
     async <T = unknown>(
       url: string,
-      options?: MonitoredFetchOptions
+      options?: MonitoredFetchOptions,
     ): Promise<{ data: T | null; error: Error | null; latency: number }> => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -36,7 +36,7 @@ export function useMonitoredFetch() {
         // Keep original URL
       }
 
-      const method = options?.method || 'GET';
+      const method = options?.method || "GET";
 
       try {
         const response = await fetch(url, {
@@ -47,21 +47,21 @@ export function useMonitoredFetch() {
         const latency = performance.now() - start;
 
         if (!options?.skipMonitoring) {
-          const cacheControl = response.headers.get('cache-control');
-          const xCache = response.headers.get('x-cache');
+          const cacheControl = response.headers.get("cache-control");
+          const xCache = response.headers.get("x-cache");
 
           recordApiMetric({
             endpoint,
             method,
             latency,
             status: response.status,
-            cached: cacheControl?.includes('max-age') || false,
-            cacheHit: xCache?.toLowerCase().includes('hit') || undefined,
+            cached: cacheControl?.includes("max-age") || false,
+            cacheHit: xCache?.toLowerCase().includes("hit") || undefined,
           });
         }
 
         if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
+          const errorText = await response.text().catch(() => "Unknown error");
           return {
             data: null,
             error: new Error(`HTTP ${response.status}: ${errorText}`),
@@ -74,7 +74,7 @@ export function useMonitoredFetch() {
       } catch (error) {
         const latency = performance.now() - start;
 
-        if ((error as Error).name === 'AbortError') {
+        if ((error as Error).name === "AbortError") {
           return { data: null, error: null, latency };
         }
 
@@ -85,18 +85,18 @@ export function useMonitoredFetch() {
             latency,
             status: 0,
             cached: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: error instanceof Error ? error.message : "Unknown error",
           });
         }
 
         return {
           data: null,
-          error: error instanceof Error ? error : new Error('Unknown error'),
+          error: error instanceof Error ? error : new Error("Unknown error"),
           latency,
         };
       }
     },
-    []
+    [],
   );
 
   const cancel = useCallback(() => {
@@ -112,11 +112,11 @@ export function useMonitoredFetch() {
 export function createMonitoredFetcher(baseUrl?: string) {
   return async function fetcher<T = unknown>(
     endpoint: string,
-    options?: MonitoredFetchOptions
+    options?: MonitoredFetchOptions,
   ): Promise<T> {
     const url = baseUrl ? `${baseUrl}${endpoint}` : endpoint;
     const start = performance.now();
-    const method = options?.method || 'GET';
+    const method = options?.method || "GET";
 
     let parsedEndpoint = endpoint;
     try {
@@ -131,16 +131,16 @@ export function createMonitoredFetcher(baseUrl?: string) {
       const latency = performance.now() - start;
 
       if (!options?.skipMonitoring) {
-        const cacheControl = response.headers.get('cache-control');
-        const xCache = response.headers.get('x-cache');
+        const cacheControl = response.headers.get("cache-control");
+        const xCache = response.headers.get("x-cache");
 
         recordApiMetric({
           endpoint: parsedEndpoint,
           method,
           latency,
           status: response.status,
-          cached: cacheControl?.includes('max-age') || false,
-          cacheHit: xCache?.toLowerCase().includes('hit') || undefined,
+          cached: cacheControl?.includes("max-age") || false,
+          cacheHit: xCache?.toLowerCase().includes("hit") || undefined,
         });
       }
 
@@ -159,7 +159,7 @@ export function createMonitoredFetcher(baseUrl?: string) {
           latency,
           status: 0,
           cached: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
 

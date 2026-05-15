@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export function useOptimisticUpdate<T>(
   initialData: T,
-  updateFn: (data: T, optimisticData: Partial<T>) => T
+  updateFn: (data: T, optimisticData: Partial<T>) => T,
 ) {
   const [data, setData] = useState<T>(initialData);
   const [isOptimistic, setIsOptimistic] = useState(false);
@@ -14,7 +14,7 @@ export function useOptimisticUpdate<T>(
       setIsOptimistic(true);
       return newData;
     },
-    [data, updateFn]
+    [data, updateFn],
   );
 
   const confirmUpdate = useCallback((confirmedData: T) => {

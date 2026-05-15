@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import OwnerHeader from '@/components/owner/owner-header';
-import AnalyticsDashboard from '@/components/analytics/analytics-dashboard';
-import AnalyticsSkeleton from '@/components/analytics/AnalyticsSkeleton';
-import { Skeleton } from '@/components/ui/skeleton';
-import { UI_CONTEXT } from '@cusown/config';
-import { useAnalyticsStore } from '@cusown/shared/client';
+import { useEffect, useState } from "react";
+import OwnerHeader from "@/components/owner/owner-header";
+import AnalyticsDashboard from "@/components/analytics/analytics-dashboard";
+import AnalyticsSkeleton from "@/components/analytics/AnalyticsSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UI_CONTEXT } from "@cusown/config";
+import { useAnalyticsStore } from "@cusown/shared/client";
 
 export default function OwnerAnalyticsPage() {
   const [businesses, setBusinesses] = useState<any[]>([]);
@@ -14,14 +14,18 @@ export default function OwnerAnalyticsPage() {
   /** Avoid SSR/client mismatch from persisted Zustand before rehydration. */
   const [clientReady, setClientReady] = useState(false);
 
-  const selectedBusinessId = useAnalyticsStore((state) => state.selectedBusinessId);
-  const setSelectedBusinessId = useAnalyticsStore((state) => state.setSelectedBusinessId);
+  const selectedBusinessId = useAnalyticsStore(
+    (state) => state.selectedBusinessId,
+  );
+  const setSelectedBusinessId = useAnalyticsStore(
+    (state) => state.setSelectedBusinessId,
+  );
 
   useEffect(() => {
     setClientReady(true);
   }, []);
 
-  const effectiveBusinessId = clientReady ? selectedBusinessId : '';
+  const effectiveBusinessId = clientReady ? selectedBusinessId : "";
   const showOwnerHeader = !clientReady || loading || !effectiveBusinessId;
   const showDashboard = clientReady && !loading && Boolean(effectiveBusinessId);
 
@@ -29,8 +33,8 @@ export default function OwnerAnalyticsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/owner/businesses', {
-          credentials: 'include',
+        const res = await fetch("/api/owner/businesses", {
+          credentials: "include",
         });
         if (!res.ok) return;
         const json = await res.json();
@@ -41,12 +45,12 @@ export default function OwnerAnalyticsPage() {
             if (json.data.length === 1) {
               setSelectedBusinessId(json.data[0].id);
             } else if (json.data.length > 0) {
-              setSelectedBusinessId('all');
+              setSelectedBusinessId("all");
             }
           }
         }
       } catch (err) {
-        console.error('Failed to load businesses for analytics', err);
+        console.error("Failed to load businesses for analytics", err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -78,7 +82,9 @@ export default function OwnerAnalyticsPage() {
         {loading ? <AnalyticsSkeleton /> : null}
         {clientReady && !loading && !effectiveBusinessId ? (
           <div className="rounded-xl border border-dashed border-gray-300 bg-slate-50 p-8 text-center">
-            <p className="text-sm font-medium text-slate-700">No businesses found</p>
+            <p className="text-sm font-medium text-slate-700">
+              No businesses found
+            </p>
             <p className="mt-1 text-sm text-slate-500">
               Create a business to start seeing analytics.
             </p>

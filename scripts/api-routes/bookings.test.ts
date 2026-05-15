@@ -3,9 +3,9 @@
  * Mocks: bookingService, getAuthContext, userService, validateResourceToken, validateOwnerActionLink, enhancedRateLimit.
  */
 
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { NextRequest } from 'next/server';
-import { ERROR_MESSAGES } from '@/config/constants';
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
+import { ERROR_MESSAGES } from "@/config/constants";
 
 const mockRunLazyExpireIfNeeded = vi.fn().mockResolvedValue(undefined);
 const mockGetBookingByUuidWithDetails = vi.fn();
@@ -15,76 +15,66 @@ const mockValidateResourceToken = vi.fn();
 const mockValidateOwnerActionLink = vi.fn();
 const mockEnhancedRateLimit = vi.fn().mockResolvedValue(null);
 
-vi.mock('@/services/booking.service', () => ({
+vi.mock("@/services/booking.service", () => ({
   bookingService: {
-    runLazyExpireIfNeeded: (...args: unknown[]) => mockRunLazyExpireIfNeeded(...args),
-    getBookingByUuidWithDetails: (...args: unknown[]) => mockGetBookingByUuidWithDetails(...args),
+    runLazyExpireIfNeeded: (...args: unknown[]) =>
+      mockRunLazyExpireIfNeeded(...args),
+    getBookingByUuidWithDetails: (...args: unknown[]) =>
+      mockGetBookingByUuidWithDetails(...args),
   },
 }));
 
-vi.mock('@/lib/utils/api-auth-pipeline', () => ({
+vi.mock("@/lib/utils/api-auth-pipeline", () => ({
   getAuthContext: (...args: unknown[]) => mockGetAuthContext(...args),
 }));
 
-vi.mock('@/services/user.service', () => ({
+vi.mock("@/services/user.service", () => ({
   userService: {
     getUserBusinesses: (...args: unknown[]) => mockGetUserBusinesses(...args),
   },
 }));
 
-vi.mock('@/lib/utils/security', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/utils/security')>();
+vi.mock("@/lib/utils/security", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/utils/security")>();
   return {
     ...actual,
-    validateResourceToken: (...args: unknown[]) => mockValidateResourceToken(...args),
+    validateResourceToken: (...args: unknown[]) =>
+      mockValidateResourceToken(...args),
   };
 });
 
-vi.mock('@/lib/utils/secure-link-validation.server', () => ({
-  validateOwnerActionLink: (...args: unknown[]) => mockValidateOwnerActionLink(...args),
+vi.mock("@/lib/utils/secure-link-validation.server", () => ({
+  validateOwnerActionLink: (...args: unknown[]) =>
+    mockValidateOwnerActionLink(...args),
 }));
 
-vi.mock('@/lib/security/rate-limit-api.security', () => ({
+vi.mock("@/lib/security/rate-limit-api.security", () => ({
   enhancedRateLimit:
     () =>
     (...args: unknown[]) =>
       mockEnhancedRateLimit(...args),
 }));
 
-vi.mock('@/lib/cache/api-response-cache', () => ({
+vi.mock("@/lib/cache/api-response-cache", () => ({
   buildApiCacheKey: (method: string, path: string) => `mock:${method}:${path}`,
   getCachedApiResponse: () => null,
   setCachedApiResponse: () => {},
 }));
 
-describe('GET /api/bookings/[id]', () => {
+describe("GET /api/bookings/[id]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRunLazyExpireIfNeeded.mockResolvedValue(undefined);
     mockEnhancedRateLimit.mockResolvedValue(null);
   });
 
-  it('returns 404 for invalid (non-UUID) id', async () => {
-    const { GET } = await import('@/app/api/bookings/[id]/route');
-    const req = new NextRequest('http://localhost/api/bookings/not-a-uuid', { method: 'GET' });
-    const res = await GET(req, { params: Promise.resolve({ id: 'not-a-uuid' }) });
-    expect(res.status).toBe(404);
-    const body = (await res.json()) as { success?: boolean; error?: string };
-    expect(body.success).toBe(false);
-    expect(body.error).toBe(ERROR_MESSAGES.BOOKING_NOT_FOUND);
-  });
-
-  it('returns 404 when booking not found', async () => {
-    mockGetBookingByUuidWithDetails.mockResolvedValue(null);
-    const { GET } = await import('@/app/api/bookings/[id]/route');
-    const req = new NextRequest(
-      'http://localhost/api/bookings/00000000-0000-4000-8000-000000000001',
-      {
-        method: 'GET',
-      }
-    );
+  it("returns 404 for invalid (non-UUID) id", async () => {
+    const { GET } = await import("@/app/api/bookings/[id]/route");
+    const req = new NextRequest("http://localhost/api/bookings/not-a-uuid", {
+      method: "GET",
+    });
     const res = await GET(req, {
-      params: Promise.resolve({ id: '00000000-0000-4000-8000-000000000001' }),
+      params: Promise.resolve({ id: "not-a-uuid" }),
     });
     expect(res.status).toBe(404);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -92,25 +82,43 @@ describe('GET /api/bookings/[id]', () => {
     expect(body.error).toBe(ERROR_MESSAGES.BOOKING_NOT_FOUND);
   });
 
-  it('returns 401 when no auth and no token', async () => {
+  it("returns 404 when booking not found", async () => {
+    mockGetBookingByUuidWithDetails.mockResolvedValue(null);
+    const { GET } = await import("@/app/api/bookings/[id]/route");
+    const req = new NextRequest(
+      "http://localhost/api/bookings/00000000-0000-4000-8000-000000000001",
+      {
+        method: "GET",
+      },
+    );
+    const res = await GET(req, {
+      params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }),
+    });
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as { success?: boolean; error?: string };
+    expect(body.success).toBe(false);
+    expect(body.error).toBe(ERROR_MESSAGES.BOOKING_NOT_FOUND);
+  });
+
+  it("returns 401 when no auth and no token", async () => {
     const booking = {
-      id: 'b1',
-      booking_id: 'bid1',
-      business_id: 'bus1',
+      id: "b1",
+      booking_id: "bid1",
+      business_id: "bus1",
       customer_user_id: null,
-      status: 'pending',
+      status: "pending",
     };
     mockGetBookingByUuidWithDetails.mockResolvedValue(booking);
     mockGetAuthContext.mockResolvedValue(null);
-    const { GET } = await import('@/app/api/bookings/[id]/route');
+    const { GET } = await import("@/app/api/bookings/[id]/route");
     const req = new NextRequest(
-      'http://localhost/api/bookings/00000000-0000-4000-8000-000000000001',
+      "http://localhost/api/bookings/00000000-0000-4000-8000-000000000001",
       {
-        method: 'GET',
-      }
+        method: "GET",
+      },
     );
     const res = await GET(req, {
-      params: Promise.resolve({ id: '00000000-0000-4000-8000-000000000001' }),
+      params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }),
     });
     expect(res.status).toBe(401);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -118,29 +126,29 @@ describe('GET /api/bookings/[id]', () => {
     expect(body.error).toMatch(/auth|required/i);
   });
 
-  it('returns 200 with booking when auth context is customer for that booking', async () => {
+  it("returns 200 with booking when auth context is customer for that booking", async () => {
     const booking = {
-      id: 'b1',
-      booking_id: 'bid1',
-      business_id: 'bus1',
-      customer_user_id: 'user-1',
-      status: 'pending',
+      id: "b1",
+      booking_id: "bid1",
+      business_id: "bus1",
+      customer_user_id: "user-1",
+      status: "pending",
     };
     mockGetBookingByUuidWithDetails.mockResolvedValue(booking);
     mockGetAuthContext.mockResolvedValue({
-      user: { id: 'user-1' },
-      profile: { user_type: 'customer' },
+      user: { id: "user-1" },
+      profile: { user_type: "customer" },
     });
     mockGetUserBusinesses.mockResolvedValue([]);
-    const { GET } = await import('@/app/api/bookings/[id]/route');
+    const { GET } = await import("@/app/api/bookings/[id]/route");
     const req = new NextRequest(
-      'http://localhost/api/bookings/00000000-0000-4000-8000-000000000001',
+      "http://localhost/api/bookings/00000000-0000-4000-8000-000000000001",
       {
-        method: 'GET',
-      }
+        method: "GET",
+      },
     );
     const res = await GET(req, {
-      params: Promise.resolve({ id: '00000000-0000-4000-8000-000000000001' }),
+      params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }),
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success?: boolean; data?: unknown };
@@ -148,32 +156,35 @@ describe('GET /api/bookings/[id]', () => {
     expect(body.data).toEqual(booking);
   });
 
-  it('response structure is consistent on success', async () => {
+  it("response structure is consistent on success", async () => {
     const booking = {
-      id: 'b1',
-      booking_id: 'bid1',
-      business_id: 'bus1',
-      customer_user_id: 'user-1',
-      status: 'confirmed',
+      id: "b1",
+      booking_id: "bid1",
+      business_id: "bus1",
+      customer_user_id: "user-1",
+      status: "confirmed",
     };
     mockGetBookingByUuidWithDetails.mockResolvedValue(booking);
-    mockGetAuthContext.mockResolvedValue({ user: { id: 'user-1' }, profile: null });
+    mockGetAuthContext.mockResolvedValue({
+      user: { id: "user-1" },
+      profile: null,
+    });
     mockGetUserBusinesses.mockResolvedValue([]);
-    const { GET } = await import('@/app/api/bookings/[id]/route');
+    const { GET } = await import("@/app/api/bookings/[id]/route");
     const req = new NextRequest(
-      'http://localhost/api/bookings/00000000-0000-4000-8000-000000000001',
+      "http://localhost/api/bookings/00000000-0000-4000-8000-000000000001",
       {
-        method: 'GET',
-      }
+        method: "GET",
+      },
     );
     const res = await GET(req, {
-      params: Promise.resolve({ id: '00000000-0000-4000-8000-000000000001' }),
+      params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }),
     });
     const body = await res.json();
-    expect(body).toHaveProperty('success', true);
-    expect(body).toHaveProperty('data');
-    expect(body.data).toHaveProperty('id');
-    expect(body.data).toHaveProperty('booking_id');
-    expect(body.data).toHaveProperty('status');
+    expect(body).toHaveProperty("success", true);
+    expect(body).toHaveProperty("data");
+    expect(body.data).toHaveProperty("id");
+    expect(body.data).toHaveProperty("booking_id");
+    expect(body.data).toHaveProperty("status");
   });
 });

@@ -1,12 +1,15 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-import { AdminSessionProvider, type SessionLike } from '@/components/admin/admin-session-context';
-import { ROUTES } from '@cusown/shared';
-import { useMounted } from '@cusown/shared/client';
+import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import {
+  AdminSessionProvider,
+  type SessionLike,
+} from "@/components/admin/admin-session-context";
+import { ROUTES } from "@cusown/shared";
+import { useMounted } from "@cusown/shared/client";
 
-const AdminSidebar = dynamic(() => import('@/components/admin/admin-sidebar'), {
+const AdminSidebar = dynamic(() => import("@/components/admin/admin-sidebar"), {
   ssr: false,
 });
 
@@ -21,7 +24,7 @@ const AuthLoadingSkeleton = () => (
 
 type AdminLayoutShellProps = {
   children: React.ReactNode;
-  role: 'admin';
+  role: "admin";
   /** Server-resolved user + profile; null when requireClientAuthCheck. */
   initialSession: SessionLike;
   initialAdminConfirmed?: boolean;
@@ -41,7 +44,9 @@ export function AdminLayoutShell({
 }: AdminLayoutShellProps) {
   const mounted = useMounted();
   const [clientSession, setClientSession] = useState<SessionLike>(null);
-  const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
+  const [clientCheckDone, setClientCheckDone] = useState(
+    !requireClientAuthCheck,
+  );
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
@@ -49,8 +54,8 @@ export function AdminLayoutShell({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/session', {
-          credentials: 'include',
+        const res = await fetch("/api/auth/session", {
+          credentials: "include",
         });
         const json = await res.json();
         const data = json?.data ?? json;
@@ -62,7 +67,8 @@ export function AdminLayoutShell({
           setClientCheckDone(true);
           return;
         }
-        const isAdmin = (profile as { user_type?: string } | null)?.user_type === 'admin';
+        const isAdmin =
+          (profile as { user_type?: string } | null)?.user_type === "admin";
         if (!isAdmin) {
           setSessionMissing(true);
           setClientCheckDone(true);
@@ -84,7 +90,9 @@ export function AdminLayoutShell({
 
   const session = initialSession ?? clientSession;
   const loginUrl =
-    typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN('/admin/dashboard') : '/auth/login';
+    typeof ROUTES.AUTH_LOGIN === "function"
+      ? ROUTES.AUTH_LOGIN("/admin/dashboard")
+      : "/auth/login";
 
   if (requireClientAuthCheck && (!mounted || !clientCheckDone)) {
     return <AuthLoadingSkeleton />;
@@ -120,8 +128,14 @@ export function AdminLayoutShell({
     >
       <div className="flex min-h-screen overflow-x-hidden bg-white">
         <AdminSidebar />
-        <main className="min-h-screen flex-1 lg:ml-64 w-full min-w-0" suppressHydrationWarning>
-          <div className="w-full py-8 px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
+        <main
+          className="min-h-screen flex-1 lg:ml-64 w-full min-w-0"
+          suppressHydrationWarning
+        >
+          <div
+            className="w-full py-8 px-4 sm:px-6 lg:px-8"
+            suppressHydrationWarning
+          >
             <div className="flex flex-col gap-6">{children}</div>
           </div>
         </main>

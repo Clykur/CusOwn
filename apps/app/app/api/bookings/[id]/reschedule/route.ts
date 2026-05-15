@@ -1,19 +1,22 @@
-import { NextRequest } from 'next/server';
-import { rescheduleService } from '@cusown/shared/server';
-import { bookingService } from '@cusown/shared/server';
-import { notificationService } from '@cusown/shared/server';
-import { userService } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { isValidUUID } from '@cusown/shared/server';
-import { setNoCacheHeaders } from '@cusown/shared/server';
-import { invalidateBookingCache } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
-import { auditService } from '@cusown/shared/server';
-import { slotService } from '@cusown/shared/server';
-import { businessHoursService } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { rescheduleService } from "@cusown/shared/server";
+import { bookingService } from "@cusown/shared/server";
+import { notificationService } from "@cusown/shared/server";
+import { userService } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { isValidUUID } from "@cusown/shared/server";
+import { setNoCacheHeaders } from "@cusown/shared/server";
+import { invalidateBookingCache } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
+import { auditService } from "@cusown/shared/server";
+import { slotService } from "@cusown/shared/server";
+import { businessHoursService } from "@cusown/shared/server";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -26,24 +29,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // SECURITY: Filter input to prevent mass assignment
     const { filterFields, validateStringLength, validateEnum } =
-      await import('@cusown/shared/server');
-    const allowedFields: (keyof typeof body)[] = ['new_slot_id', 'reason', 'rescheduled_by'];
+      await import("@cusown/shared/server");
+    const allowedFields: (keyof typeof body)[] = [
+      "new_slot_id",
+      "reason",
+      "rescheduled_by",
+    ];
     const filteredBody = filterFields(body, allowedFields);
 
     const { new_slot_id, reason, rescheduled_by } = filteredBody;
 
     if (!new_slot_id || !isValidUUID(new_slot_id)) {
-      return errorResponse('Valid new slot ID is required', 400);
+      return errorResponse("Valid new slot ID is required", 400);
     }
 
     // SECURITY: Validate enum
-    if (!rescheduled_by || !validateEnum(rescheduled_by, ['customer', 'owner'] as const)) {
-      return errorResponse('rescheduled_by must be customer or owner', 400);
+    if (
+      !rescheduled_by ||
+      !validateEnum(rescheduled_by, ["customer", "owner"] as const)
+    ) {
+      return errorResponse("rescheduled_by must be customer or owner", 400);
     }
 
     // SECURITY: Validate reason length
     if (reason !== undefined && !validateStringLength(reason, 500)) {
-      return errorResponse('Reschedule reason is too long', 400);
+      return errorResponse("Reschedule reason is too long", 400);
     }
 
     const user = await getServerUser(request);
@@ -53,22 +63,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
 
-    if (rescheduled_by === 'customer') {
+    if (rescheduled_by === "customer") {
       if (!user) {
-        return errorResponse('Access denied', 403);
+        return errorResponse("Access denied", 403);
       }
 
       // Allow if booking belongs to user OR booking has no linked user
       if (booking.customer_user_id && booking.customer_user_id !== user.id) {
-        return errorResponse('Access denied', 403);
+        return errorResponse("Access denied", 403);
       }
     }
 
-    if (rescheduled_by === 'owner' && user) {
+    if (rescheduled_by === "owner" && user) {
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some((b) => b.id === booking.business_id);
+      const hasAccess = userBusinesses.some(
+        (b) => b.id === booking.business_id,
+      );
       if (!hasAccess) {
-        return errorResponse('Access denied', 403);
+        return errorResponse("Access denied", 403);
       }
     }
 
@@ -78,17 +90,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(ERROR_MESSAGES.SLOT_NOT_FOUND, 404);
     }
     if (targetSlot.business_id !== booking.business_id) {
-      return errorResponse('Slot does not belong to this salon', 400);
+      return errorResponse("Slot does not belong to this salon", 400);
     }
 
     const hoursValidation = await businessHoursService.validateSlot(
       booking.business_id,
       targetSlot.date,
       targetSlot.start_time,
-      targetSlot.end_time
+      targetSlot.end_time,
     );
     if (!hoursValidation.valid) {
-      return errorResponse(hoursValidation.reason || 'Invalid slot', 400);
+      return errorResponse(hoursValidation.reason || "Invalid slot", 400);
     }
 
     const rescheduledBooking = await rescheduleService.rescheduleBooking({
@@ -101,26 +113,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // SECURITY: Log mutation for audit
     if (user) {
       try {
-        await auditService.createAuditLog(user.id, 'booking_rescheduled', 'booking', {
-          entityId: id,
-          description: `Booking rescheduled by ${rescheduled_by}${reason ? `: ${reason}` : ''}`,
-          request,
-        });
+        await auditService.createAuditLog(
+          user.id,
+          "booking_rescheduled",
+          "booking",
+          {
+            entityId: id,
+            description: `Booking rescheduled by ${rescheduled_by}${reason ? `: ${reason}` : ""}`,
+            request,
+          },
+        );
       } catch (auditError) {
-        console.error('[SECURITY] Failed to create audit log:', auditError);
+        console.error("[SECURITY] Failed to create audit log:", auditError);
       }
     }
 
-    const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
+    const bookingWithDetails =
+      await bookingService.getBookingByUuidWithDetails(id);
 
     if (bookingWithDetails && bookingWithDetails.salon) {
       const message = `Your booking has been rescheduled. New date: ${bookingWithDetails.slot?.date}, Time: ${bookingWithDetails.slot?.start_time}`;
       try {
         await notificationService.sendBookingNotification(
           id,
-          'whatsapp',
+          "whatsapp",
           message,
-          booking.customer_phone
+          booking.customer_phone,
         );
       } catch {}
     }
@@ -130,7 +148,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     setNoCacheHeaders(response);
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
 
     if (
       message === ERROR_MESSAGES.SLOT_ALREADY_BOOKED ||
@@ -140,7 +159,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return errorResponse(message, 409);
     }
 
-    if (message === ERROR_MESSAGES.BOOKING_NOT_FOUND || message === ERROR_MESSAGES.SLOT_NOT_FOUND) {
+    if (
+      message === ERROR_MESSAGES.BOOKING_NOT_FOUND ||
+      message === ERROR_MESSAGES.SLOT_NOT_FOUND
+    ) {
       return errorResponse(message, 404);
     }
 
@@ -148,7 +170,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 }
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     if (!id || !isValidUUID(id)) {
@@ -159,7 +184,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return successResponse(history);
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

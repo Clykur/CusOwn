@@ -3,10 +3,13 @@
  * Provides functions to start and stop all workers.
  */
 
-import { startReminderWorker, stopReminderWorker } from './reminder.worker';
-import { startAnalyticsWorker, stopAnalyticsWorker } from './analytics.worker';
-import { startNotificationWorker, stopNotificationWorker } from './notification.worker';
-import { isQueueAvailable } from '../connection';
+import { startReminderWorker, stopReminderWorker } from "./reminder.worker";
+import { startAnalyticsWorker, stopAnalyticsWorker } from "./analytics.worker";
+import {
+  startNotificationWorker,
+  stopNotificationWorker,
+} from "./notification.worker";
+import { isQueueAvailable } from "../connection";
 
 /**
  * Start all workers.
@@ -18,7 +21,7 @@ export function startAllWorkers(): void {
   }
 
   console.warn(
-    '[Queue] Starting in-process BullMQ workers (booking-reminders, analytics-events, notification-sending).'
+    "[Queue] Starting in-process BullMQ workers (booking-reminders, analytics-events, notification-sending).",
   );
   startReminderWorker();
   startAnalyticsWorker();
@@ -30,9 +33,16 @@ export function startAllWorkers(): void {
  * Call this when the application shuts down.
  */
 export async function stopAllWorkers(): Promise<void> {
-  await Promise.all([stopReminderWorker(), stopAnalyticsWorker(), stopNotificationWorker()]);
+  await Promise.all([
+    stopReminderWorker(),
+    stopAnalyticsWorker(),
+    stopNotificationWorker(),
+  ]);
 }
 
-export { startReminderWorker, stopReminderWorker } from './reminder.worker';
-export { startAnalyticsWorker, stopAnalyticsWorker } from './analytics.worker';
-export { startNotificationWorker, stopNotificationWorker } from './notification.worker';
+export { startReminderWorker, stopReminderWorker } from "./reminder.worker";
+export { startAnalyticsWorker, stopAnalyticsWorker } from "./analytics.worker";
+export {
+  startNotificationWorker,
+  stopNotificationWorker,
+} from "./notification.worker";

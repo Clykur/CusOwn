@@ -1,10 +1,10 @@
-import { requireSupabaseAdmin } from '../lib/supabase/server';
-import { cronRunService } from './cron-run.service';
-import { adminAnalyticsService } from './admin-analytics.service';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { cronRunService } from "./cron-run.service";
+import { adminAnalyticsService } from "./admin-analytics.service";
 import {
   ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS,
   ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS,
-} from '@cusown/config';
+} from "@cusown/config";
 
 export interface PlatformMetrics {
   totalBusinesses: number;
@@ -47,7 +47,7 @@ export interface AdminOverview {
   failedBookingsLast24h: number;
   cronRunsLast24h: number;
   systemHealth: {
-    status: 'healthy' | 'unhealthy';
+    status: "healthy" | "unhealthy";
     database: string;
     cronExpireBookingsOk: boolean;
     cronExpireBookingsLastRun: string | null;
@@ -63,21 +63,25 @@ export class AdminService {
     const systemMetrics = await adminAnalyticsService.getSystemMetrics();
 
     const since24h = new Date();
-    since24h.setHours(since24h.getHours() - ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS);
+    since24h.setHours(
+      since24h.getHours() - ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS,
+    );
     const cronSince = new Date();
-    cronSince.setHours(cronSince.getHours() - ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS);
+    cronSince.setHours(
+      cronSince.getHours() - ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS,
+    );
 
     let failedBookingsLast24h = 0;
     let cronRunsLast24h = 0;
 
     try {
       const supabase = requireSupabaseAdmin();
-      const countOpt = { count: 'exact' as const, head: true };
+      const countOpt = { count: "exact" as const, head: true };
       const failedBookingsRes = await supabase
-        .from('bookings')
-        .select('id', countOpt)
-        .eq('status', 'rejected')
-        .gte('updated_at', since24h.toISOString());
+        .from("bookings")
+        .select("id", countOpt)
+        .eq("status", "rejected")
+        .gte("updated_at", since24h.toISOString());
       failedBookingsLast24h = failedBookingsRes?.count ?? 0;
     } catch {
       // table or query error; use 0
@@ -103,8 +107,8 @@ export class AdminService {
       failedBookingsLast24h,
       cronRunsLast24h,
       systemHealth: {
-        status: systemMetrics.cronExpireBookingsOk ? 'healthy' : 'unhealthy',
-        database: 'up',
+        status: systemMetrics.cronExpireBookingsOk ? "healthy" : "unhealthy",
+        database: "up",
         cronExpireBookingsOk: systemMetrics.cronExpireBookingsOk,
         cronExpireBookingsLastRun: systemMetrics.cronExpireBookingsLastRun,
       },
@@ -113,7 +117,7 @@ export class AdminService {
 
   async getPlatformMetrics(): Promise<PlatformMetrics> {
     const supabase = requireSupabaseAdmin();
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const monthAgo = new Date();
@@ -123,8 +127,8 @@ export class AdminService {
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-    const countOpt = { count: 'exact' as const, head: true };
-    const selectId = 'id';
+    const countOpt = { count: "exact" as const, head: true };
+    const selectId = "id";
 
     const [
       totalBusinessesRes,
@@ -147,57 +151,81 @@ export class AdminService {
       ownersLast30Res,
       ownersPrev30Res,
     ] = await Promise.all([
-      supabase.from('businesses').select(selectId, countOpt),
-      supabase.from('businesses').select(selectId, countOpt).eq('suspended', false),
-      supabase.from('businesses').select(selectId, countOpt).eq('suspended', true),
+      supabase.from("businesses").select(selectId, countOpt),
       supabase
-        .from('user_profiles')
+        .from("businesses")
         .select(selectId, countOpt)
-        .in('user_type', ['owner', 'both', 'admin']),
+        .eq("suspended", false),
       supabase
-        .from('user_profiles')
+        .from("businesses")
         .select(selectId, countOpt)
-        .in('user_type', ['customer', 'both']),
-      supabase.from('bookings').select(selectId, countOpt),
-      supabase.from('bookings').select(selectId, countOpt).eq('status', 'confirmed'),
-      supabase.from('bookings').select(selectId, countOpt).eq('status', 'rejected'),
-      supabase.from('bookings').select(selectId, countOpt).eq('status', 'pending'),
-      supabase.from('bookings').select(selectId, countOpt).eq('status', 'cancelled'),
-      supabase.from('bookings').select(selectId, countOpt).gte('created_at', `${today}T00:00:00Z`),
-      supabase.from('bookings').select(selectId, countOpt).gte('created_at', weekAgo.toISOString()),
+        .eq("suspended", true),
       supabase
-        .from('bookings')
+        .from("user_profiles")
         .select(selectId, countOpt)
-        .gte('created_at', monthAgo.toISOString()),
+        .in("user_type", ["owner", "both", "admin"]),
       supabase
-        .from('businesses')
+        .from("user_profiles")
         .select(selectId, countOpt)
-        .gte('created_at', thirtyDaysAgo.toISOString()),
+        .in("user_type", ["customer", "both"]),
+      supabase.from("bookings").select(selectId, countOpt),
       supabase
-        .from('businesses')
+        .from("bookings")
         .select(selectId, countOpt)
-        .gte('created_at', sixtyDaysAgo.toISOString())
-        .lt('created_at', thirtyDaysAgo.toISOString()),
+        .eq("status", "confirmed"),
       supabase
-        .from('bookings')
+        .from("bookings")
         .select(selectId, countOpt)
-        .gte('created_at', thirtyDaysAgo.toISOString()),
+        .eq("status", "rejected"),
       supabase
-        .from('bookings')
+        .from("bookings")
         .select(selectId, countOpt)
-        .gte('created_at', sixtyDaysAgo.toISOString())
-        .lt('created_at', thirtyDaysAgo.toISOString()),
+        .eq("status", "pending"),
       supabase
-        .from('user_profiles')
+        .from("bookings")
         .select(selectId, countOpt)
-        .in('user_type', ['owner', 'both', 'admin'])
-        .gte('created_at', thirtyDaysAgo.toISOString()),
+        .eq("status", "cancelled"),
       supabase
-        .from('user_profiles')
+        .from("bookings")
         .select(selectId, countOpt)
-        .in('user_type', ['owner', 'both', 'admin'])
-        .gte('created_at', sixtyDaysAgo.toISOString())
-        .lt('created_at', thirtyDaysAgo.toISOString()),
+        .gte("created_at", `${today}T00:00:00Z`),
+      supabase
+        .from("bookings")
+        .select(selectId, countOpt)
+        .gte("created_at", weekAgo.toISOString()),
+      supabase
+        .from("bookings")
+        .select(selectId, countOpt)
+        .gte("created_at", monthAgo.toISOString()),
+      supabase
+        .from("businesses")
+        .select(selectId, countOpt)
+        .gte("created_at", thirtyDaysAgo.toISOString()),
+      supabase
+        .from("businesses")
+        .select(selectId, countOpt)
+        .gte("created_at", sixtyDaysAgo.toISOString())
+        .lt("created_at", thirtyDaysAgo.toISOString()),
+      supabase
+        .from("bookings")
+        .select(selectId, countOpt)
+        .gte("created_at", thirtyDaysAgo.toISOString()),
+      supabase
+        .from("bookings")
+        .select(selectId, countOpt)
+        .gte("created_at", sixtyDaysAgo.toISOString())
+        .lt("created_at", thirtyDaysAgo.toISOString()),
+      supabase
+        .from("user_profiles")
+        .select(selectId, countOpt)
+        .in("user_type", ["owner", "both", "admin"])
+        .gte("created_at", thirtyDaysAgo.toISOString()),
+      supabase
+        .from("user_profiles")
+        .select(selectId, countOpt)
+        .in("user_type", ["owner", "both", "admin"])
+        .gte("created_at", sixtyDaysAgo.toISOString())
+        .lt("created_at", thirtyDaysAgo.toISOString()),
     ]);
 
     const n = (r: { count?: number | null }) => r?.count ?? 0;
@@ -252,12 +280,12 @@ export class AdminService {
     const supabase = requireSupabaseAdmin();
 
     const { data: businesses, error } = await supabase
-      .from('businesses')
+      .from("businesses")
       .select(
-        'id, owner_user_id, salon_name, booking_link, address, location, suspended, created_at, deleted_at, permanent_deletion_at, deletion_reason'
+        "id, owner_user_id, salon_name, booking_link, address, location, suspended, created_at, deleted_at, permanent_deletion_at, deletion_reason",
       )
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch businesses: ${error.message}`);
@@ -270,19 +298,26 @@ export class AdminService {
       ...new Set(businesses.map((b) => b.owner_user_id).filter(Boolean)),
     ] as string[];
 
-    const [profilesRes, bookingCountsRes, recentBookingsRes, authUsersRes] = await Promise.all([
-      ownerIds.length > 0
-        ? supabase.from('user_profiles').select('id, user_type, full_name').in('id', ownerIds)
-        : Promise.resolve({ data: [] }),
-      supabase.from('bookings').select('business_id').in('business_id', businessIds),
-      supabase
-        .from('bookings')
-        .select('business_id, id, customer_name, status, created_at')
-        .in('business_id', businessIds)
-        .order('created_at', { ascending: false })
-        .limit(Math.min(500, businesses.length * 5)),
-      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-    ]);
+    const [profilesRes, bookingCountsRes, recentBookingsRes, authUsersRes] =
+      await Promise.all([
+        ownerIds.length > 0
+          ? supabase
+              .from("user_profiles")
+              .select("id, user_type, full_name")
+              .in("id", ownerIds)
+          : Promise.resolve({ data: [] }),
+        supabase
+          .from("bookings")
+          .select("business_id")
+          .in("business_id", businessIds),
+        supabase
+          .from("bookings")
+          .select("business_id, id, customer_name, status, created_at")
+          .in("business_id", businessIds)
+          .order("created_at", { ascending: false })
+          .limit(Math.min(500, businesses.length * 5)),
+        supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+      ]);
 
     const profileMap = new Map<
       string,
@@ -292,7 +327,10 @@ export class AdminService {
 
     const countByBusiness = new Map<string, number>();
     (bookingCountsRes.data || []).forEach((r) => {
-      countByBusiness.set(r.business_id, (countByBusiness.get(r.business_id) ?? 0) + 1);
+      countByBusiness.set(
+        r.business_id,
+        (countByBusiness.get(r.business_id) ?? 0) + 1,
+      );
     });
 
     const recentByBusiness = new Map<
@@ -322,13 +360,13 @@ export class AdminService {
     }
 
     return businesses.map((business) => {
-      let owner: BusinessWithOwner['owner'] = null;
+      let owner: BusinessWithOwner["owner"] = null;
       if (business.owner_user_id) {
         const profile = profileMap.get(business.owner_user_id);
         if (profile) {
           owner = {
             id: profile.id,
-            email: emailByOwnerId.get(business.owner_user_id) ?? '',
+            email: emailByOwnerId.get(business.owner_user_id) ?? "",
             full_name: profile.full_name,
             user_type: profile.user_type,
           };
@@ -352,7 +390,7 @@ export class AdminService {
     limit?: number;
     offset?: number;
     role?: string;
-    status?: 'active' | 'banned';
+    status?: "active" | "banned";
     email?: string;
   }): Promise<{ users: any[]; total: number }> {
     const supabase = requireSupabaseAdmin();
@@ -360,12 +398,12 @@ export class AdminService {
     const offset = Math.max(0, filters?.offset ?? 0);
 
     let profileQuery = supabase
-      .from('user_profiles')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
+      .from("user_profiles")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false });
 
     if (filters?.role) {
-      profileQuery = profileQuery.eq('user_type', filters.role);
+      profileQuery = profileQuery.eq("user_type", filters.role);
     }
 
     const [profilesRes, authUsersRes] = await Promise.all([
@@ -391,11 +429,12 @@ export class AdminService {
     for (const u of authUsersRes.data?.users ?? []) {
       if (!u.id) continue;
       const banned =
-        typeof (u as { banned_until?: string }).banned_until === 'string' &&
+        typeof (u as { banned_until?: string }).banned_until === "string" &&
         (u as { banned_until: string }).banned_until !== null;
       authById.set(u.id, {
-        email: u.email ?? '',
-        last_sign_in_at: (u as { last_sign_in_at?: string }).last_sign_in_at ?? null,
+        email: u.email ?? "",
+        last_sign_in_at:
+          (u as { last_sign_in_at?: string }).last_sign_in_at ?? null,
         banned,
       });
     }
@@ -404,11 +443,11 @@ export class AdminService {
       const auth = authById.get(p.id);
       return {
         id: p.id,
-        email: auth?.email ?? '',
+        email: auth?.email ?? "",
         role: p.user_type,
         created_at: p.created_at,
         last_sign_in_at: auth?.last_sign_in_at ?? null,
-        status: auth?.banned ? 'banned' : 'active',
+        status: auth?.banned ? "banned" : "active",
         full_name: p.full_name,
         user_type: p.user_type,
       };
@@ -425,15 +464,18 @@ export class AdminService {
     return { users: combined, total: count };
   }
 
-  async getAllUsers(options?: { limit?: number; offset?: number }): Promise<any[]> {
+  async getAllUsers(options?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]> {
     const supabase = requireSupabaseAdmin();
     const limit = Math.min(100, Math.max(1, options?.limit ?? 50));
     const offset = Math.max(0, options?.offset ?? 0);
 
     const { data: profiles, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .from("user_profiles")
+      .select("*")
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
@@ -446,10 +488,13 @@ export class AdminService {
 
     const [businessesRes, bookingRowsRes, authUsersRes] = await Promise.all([
       supabase
-        .from('businesses')
-        .select('id, salon_name, booking_link, owner_user_id')
-        .in('owner_user_id', profileIds),
-      supabase.from('bookings').select('customer_user_id').in('customer_user_id', profileIds),
+        .from("businesses")
+        .select("id, salon_name, booking_link, owner_user_id")
+        .in("owner_user_id", profileIds),
+      supabase
+        .from("bookings")
+        .select("customer_user_id")
+        .in("customer_user_id", profileIds),
       supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     ]);
 
@@ -464,7 +509,8 @@ export class AdminService {
     for (const id of profileIds) countByCustomer.set(id, 0);
     for (const row of bookingRowsRes.data ?? []) {
       const id = row.customer_user_id;
-      if (id != null) countByCustomer.set(id, (countByCustomer.get(id) ?? 0) + 1);
+      if (id != null)
+        countByCustomer.set(id, (countByCustomer.get(id) ?? 0) + 1);
     }
 
     const authEmailMap = new Map<string, string>();
@@ -474,7 +520,7 @@ export class AdminService {
 
     return profiles.map((profile) => ({
       ...profile,
-      email: authEmailMap.get(profile.id) ?? '',
+      email: authEmailMap.get(profile.id) ?? "",
       businesses: businessesByOwner.get(profile.id) ?? [],
       bookingCount: countByCustomer.get(profile.id) ?? 0,
     }));
@@ -484,30 +530,33 @@ export class AdminService {
   async getAdminUserById(userId: string): Promise<any> {
     const supabase = requireSupabaseAdmin();
     const { data: profile, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("user_profiles")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') throw new Error('User not found');
+      if (error.code === "PGRST116") throw new Error("User not found");
       throw new Error(`Failed to fetch user: ${error.message}`);
     }
-    if (!profile) throw new Error('User not found');
+    if (!profile) throw new Error("User not found");
 
-    const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-    const email = authUser?.user?.email ?? '';
+    const { data: authUser } = await supabase.auth.admin.getUserById(
+      profile.id,
+    );
+    const email = authUser?.user?.email ?? "";
     const isBanned =
-      typeof (authUser?.user as { banned_until?: string } | undefined)?.banned_until === 'string';
+      typeof (authUser?.user as { banned_until?: string } | undefined)
+        ?.banned_until === "string";
 
     const { data: ownerBusinesses } = await supabase
-      .from('businesses')
-      .select('id, salon_name, booking_link, owner_user_id')
-      .eq('owner_user_id', profile.id);
+      .from("businesses")
+      .select("id, salon_name, booking_link, owner_user_id")
+      .eq("owner_user_id", profile.id);
     const { count } = await supabase
-      .from('bookings')
-      .select('*', { count: 'exact', head: true })
-      .eq('customer_user_id', profile.id);
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .eq("customer_user_id", profile.id);
 
     return {
       ...profile,
@@ -522,37 +571,38 @@ export class AdminService {
   async blockUser(userId: string): Promise<void> {
     const supabase = requireSupabaseAdmin();
     const { error } = await supabase.auth.admin.updateUserById(userId, {
-      ban_duration: '876600h',
+      ban_duration: "876600h",
     } as { ban_duration: string });
-    if (error) throw new Error(error.message || 'Failed to block user');
+    if (error) throw new Error(error.message || "Failed to block user");
   }
 
   /** Unblock user (Supabase Auth unban). */
   async unblockUser(userId: string): Promise<void> {
     const supabase = requireSupabaseAdmin();
     const { error } = await supabase.auth.admin.updateUserById(userId, {
-      ban_duration: 'none',
+      ban_duration: "none",
     } as { ban_duration: string });
-    if (error) throw new Error(error.message || 'Failed to unblock user');
+    if (error) throw new Error(error.message || "Failed to unblock user");
   }
 
   /** Soft delete user (30-day retention). Cannot delete self. Blocks: legal hold, last admin, outstanding payments. */
   async deleteUser(
     userId: string,
     requestingAdminId: string,
-    options?: { reason?: string; ip?: string | null }
+    options?: { reason?: string; ip?: string | null },
   ): Promise<void> {
-    if (userId === requestingAdminId) throw new Error('Cannot delete your own account');
+    if (userId === requestingAdminId)
+      throw new Error("Cannot delete your own account");
     const supabase = requireSupabaseAdmin();
-    const reason = options?.reason ?? 'Deleted by admin';
-    const { error } = await supabase.rpc('soft_delete_user_account', {
+    const reason = options?.reason ?? "Deleted by admin";
+    const { error } = await supabase.rpc("soft_delete_user_account", {
       p_user_id: userId,
       p_actor_id: requestingAdminId,
       p_reason: reason,
       p_ip_address: options?.ip ?? null,
       p_override_legal_hold: true,
     });
-    if (error) throw new Error(error.message || 'Failed to delete user');
+    if (error) throw new Error(error.message || "Failed to delete user");
   }
 
   /** Soft delete a business (30-day retention). Blocks when legal_hold unless override. */
@@ -560,36 +610,41 @@ export class AdminService {
     businessId: string,
     actorId: string,
     reason: string,
-    options?: { ip?: string | null; overrideLegalHold?: boolean }
-  ): Promise<{ business_id: string; deleted_at: string; permanent_deletion_at: string }> {
+    options?: { ip?: string | null; overrideLegalHold?: boolean },
+  ): Promise<{
+    business_id: string;
+    deleted_at: string;
+    permanent_deletion_at: string;
+  }> {
     const supabase = requireSupabaseAdmin();
-    const { data, error } = await supabase.rpc('soft_delete_business', {
+    const { data, error } = await supabase.rpc("soft_delete_business", {
       p_business_id: businessId,
       p_actor_id: actorId,
       p_reason: reason,
       p_ip_address: options?.ip ?? null,
       p_override_legal_hold: options?.overrideLegalHold ?? false,
     });
-    if (error) throw new Error(error.message || 'Failed to delete business');
+    if (error) throw new Error(error.message || "Failed to delete business");
     return data;
   }
 
   /** Restore a soft-deleted user account (admin only). Must be within 30-day retention period. */
   async restoreDeletedUser(
     userId: string,
-    options?: { actorId?: string | null; ip?: string | null }
+    options?: { actorId?: string | null; ip?: string | null },
   ): Promise<{
     user_id: string;
     restored_at: string;
     businesses_restored: number;
   }> {
     const supabase = requireSupabaseAdmin();
-    const { data, error } = await supabase.rpc('restore_deleted_user_account', {
+    const { data, error } = await supabase.rpc("restore_deleted_user_account", {
       p_user_id: userId,
       p_actor_id: options?.actorId ?? null,
       p_ip_address: options?.ip ?? null,
     });
-    if (error) throw new Error(error.message || 'Failed to restore user account');
+    if (error)
+      throw new Error(error.message || "Failed to restore user account");
     return data;
   }
 
@@ -600,15 +655,18 @@ export class AdminService {
     businesses_deleted: number;
   }> {
     const supabase = requireSupabaseAdmin();
-    const { data, error } = await supabase.rpc('cleanup_expired_soft_deleted_records');
-    if (error) throw new Error(error.message || 'Failed to cleanup expired records');
+    const { data, error } = await supabase.rpc(
+      "cleanup_expired_soft_deleted_records",
+    );
+    if (error)
+      throw new Error(error.message || "Failed to cleanup expired records");
     return data;
   }
 
   /** Update admin-editable profile fields (admin_note, user_type). */
   async updateAdminUserProfile(
     userId: string,
-    updates: { admin_note?: string | null; user_type?: string }
+    updates: { admin_note?: string | null; user_type?: string },
   ): Promise<any> {
     const supabase = requireSupabaseAdmin();
     const body: Record<string, unknown> = {};
@@ -616,19 +674,22 @@ export class AdminService {
     if (updates.user_type !== undefined) body.user_type = updates.user_type;
     if (Object.keys(body).length === 0) return this.getAdminUserById(userId);
 
-    const validTypes = ['owner', 'customer', 'both', 'admin'];
-    if (body.user_type !== undefined && !validTypes.includes(body.user_type as string)) {
-      throw new Error('Invalid user_type');
+    const validTypes = ["owner", "customer", "both", "admin"];
+    if (
+      body.user_type !== undefined &&
+      !validTypes.includes(body.user_type as string)
+    ) {
+      throw new Error("Invalid user_type");
     }
 
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from("user_profiles")
       .update(body)
-      .eq('id', userId)
+      .eq("id", userId)
       .select()
       .single();
 
-    if (error) throw new Error(error.message || 'Failed to update user');
+    if (error) throw new Error(error.message || "Failed to update user");
     return data;
   }
 
@@ -641,7 +702,7 @@ export class AdminService {
     const supabase = requireSupabaseAdmin();
 
     let query = supabase
-      .from('bookings')
+      .from("bookings")
       .select(
         `
         *,
@@ -661,22 +722,25 @@ export class AdminService {
           end_time,
           status
         )
-      `
+      `,
       )
-      .order('created_at', { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (filters?.businessId) {
-      query = query.eq('business_id', filters.businessId);
+      query = query.eq("business_id", filters.businessId);
     }
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
 
     if (filters?.limit) {
       query = query.limit(filters.limit);
     }
     if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1);
+      query = query.range(
+        filters.offset,
+        filters.offset + (filters.limit || 50) - 1,
+      );
     }
 
     const { data, error } = await query;
@@ -695,10 +759,10 @@ export class AdminService {
     startDate.setDate(startDate.getDate() - days);
 
     const { data: bookings, error } = await supabase
-      .from('bookings')
-      .select('created_at, status')
-      .gte('created_at', startDate.toISOString())
-      .order('created_at', { ascending: true });
+      .from("bookings")
+      .select("created_at, status")
+      .gte("created_at", startDate.toISOString())
+      .order("created_at", { ascending: true });
 
     if (error) {
       throw new Error(`Failed to fetch booking trends: ${error.message}`);
@@ -717,13 +781,13 @@ export class AdminService {
     } = {};
 
     bookings.forEach((booking) => {
-      const date = booking.created_at.split('T')[0];
+      const date = booking.created_at.split("T")[0];
       if (!trends[date]) {
         trends[date] = { date, total: 0, confirmed: 0, rejected: 0 };
       }
       trends[date].total++;
-      if (booking.status === 'confirmed') trends[date].confirmed++;
-      if (booking.status === 'rejected') trends[date].rejected++;
+      if (booking.status === "confirmed") trends[date].confirmed++;
+      if (booking.status === "rejected") trends[date].rejected++;
     });
 
     return Object.values(trends).sort((a, b) => a.date.localeCompare(b.date));
@@ -751,15 +815,15 @@ export class AdminService {
   > {
     const supabase = requireSupabaseAdmin();
     let query = supabase
-      .from('bookings')
-      .select('id, booking_id, status, created_at, business_id')
-      .gte('created_at', filters.startDate)
-      .lte('created_at', filters.endDate)
-      .order('created_at', { ascending: true })
+      .from("bookings")
+      .select("id, booking_id, status, created_at, business_id")
+      .gte("created_at", filters.startDate)
+      .lte("created_at", filters.endDate)
+      .order("created_at", { ascending: true })
       .range(filters.offset, filters.offset + filters.limit - 1);
 
     if (filters.businessId) {
-      query = query.eq('business_id', filters.businessId);
+      query = query.eq("business_id", filters.businessId);
     }
 
     const { data: rows, error } = await query;
@@ -768,10 +832,12 @@ export class AdminService {
 
     const businessIds = [...new Set(rows.map((r) => r.business_id))];
     const { data: businesses } = await supabase
-      .from('businesses')
-      .select('id, salon_name')
-      .in('id', businessIds);
-    const nameMap = new Map((businesses || []).map((b) => [b.id, b.salon_name ?? '']));
+      .from("businesses")
+      .select("id, salon_name")
+      .in("id", businessIds);
+    const nameMap = new Map(
+      (businesses || []).map((b) => [b.id, b.salon_name ?? ""]),
+    );
 
     return rows.map((r) => ({
       id: r.id,
@@ -779,7 +845,7 @@ export class AdminService {
       status: r.status,
       created_at: r.created_at,
       business_id: r.business_id,
-      business_name: nameMap.get(r.business_id) ?? '',
+      business_name: nameMap.get(r.business_id) ?? "",
     }));
   }
 
@@ -787,15 +853,15 @@ export class AdminService {
    * Get latest payment (by created_at) per booking for given ids. Returns map booking_id -> { amount_cents, status }.
    */
   async getPaymentsByBookingIds(
-    bookingIds: string[]
+    bookingIds: string[],
   ): Promise<Map<string, { amount_cents: number; status: string }>> {
     if (bookingIds.length === 0) return new Map();
     const supabase = requireSupabaseAdmin();
     const { data: payments, error } = await supabase
-      .from('payments')
-      .select('booking_id, amount_cents, status, created_at')
-      .in('booking_id', bookingIds)
-      .order('created_at', { ascending: false });
+      .from("payments")
+      .select("booking_id, amount_cents, status, created_at")
+      .in("booking_id", bookingIds)
+      .order("created_at", { ascending: false });
 
     if (error) return new Map();
     const map = new Map<string, { amount_cents: number; status: string }>();
@@ -803,7 +869,7 @@ export class AdminService {
       if (!map.has(p.booking_id)) {
         map.set(p.booking_id, {
           amount_cents: p.amount_cents ?? 0,
-          status: p.status ?? 'unknown',
+          status: p.status ?? "unknown",
         });
       }
     }
@@ -868,7 +934,7 @@ export interface FullAdminOverview {
     failedBookingsLast24h: number;
     cronRunsLast24h: number;
     systemHealth: {
-      status: 'healthy' | 'unhealthy';
+      status: "healthy" | "unhealthy";
       database: string;
       cronExpireBookingsOk: boolean;
       cronExpireBookingsLastRun: string | null;

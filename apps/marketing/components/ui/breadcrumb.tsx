@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import ChevronRightIcon from '@cusown/shared/icons/chevron-right.svg';
-import { cn } from '@cusown/shared';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import ChevronRightIcon from "@cusown/shared/icons/chevron-right.svg";
+import { cn } from "@cusown/shared";
 
 interface BreadcrumbItem {
   label: string;
@@ -20,7 +20,10 @@ export default function Breadcrumb({ items, className }: BreadcrumbProps) {
 
   return (
     <nav
-      className={cn('mb-6 hidden items-center gap-2 text-sm md:flex', className)}
+      className={cn(
+        "mb-6 hidden items-center gap-2 text-sm md:flex",
+        className,
+      )}
       aria-label="Breadcrumb"
     >
       {items.map((item, index) => {
@@ -29,13 +32,23 @@ export default function Breadcrumb({ items, className }: BreadcrumbProps) {
 
         return (
           <div key={item.href} className="flex items-center gap-2">
-            {index > 0 && <ChevronRightIcon className="w-4 h-4 text-gray-400" aria-hidden="true" />}
+            {index > 0 && (
+              <ChevronRightIcon
+                className="w-4 h-4 text-gray-400"
+                aria-hidden="true"
+              />
+            )}
             {isLast || isActive ? (
-              <span className={`font-medium ${isActive ? 'text-black' : 'text-gray-600'}`}>
+              <span
+                className={`font-medium ${isActive ? "text-black" : "text-gray-600"}`}
+              >
                 {item.label}
               </span>
             ) : (
-              <Link href={item.href} className="text-gray-600 hover:text-black transition-colors">
+              <Link
+                href={item.href}
+                className="text-gray-600 hover:text-black transition-colors"
+              >
                 {item.label}
               </Link>
             )}

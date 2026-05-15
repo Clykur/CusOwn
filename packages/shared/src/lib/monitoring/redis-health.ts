@@ -3,10 +3,10 @@
  * Does not imply BullMQ worker health (workers are a separate process).
  */
 
-import { env } from '@cusown/config';
-import { isRedisAvailable } from '../cache/redis';
+import { env } from "@cusown/config";
+import { isRedisAvailable } from "../cache/redis";
 
-export type RedisHealthStatus = 'up' | 'down' | 'disabled';
+export type RedisHealthStatus = "up" | "down" | "disabled";
 
 /**
  * - disabled: REDIS_URL unset or REDIS_ENABLED=false
@@ -15,8 +15,8 @@ export type RedisHealthStatus = 'up' | 'down' | 'disabled';
  */
 export async function getRedisHealthStatus(): Promise<RedisHealthStatus> {
   if (!env.redis.enabled || !env.redis.url?.trim()) {
-    return 'disabled';
+    return "disabled";
   }
   const ok = await isRedisAvailable();
-  return ok ? 'up' : 'down';
+  return ok ? "up" : "down";
 }

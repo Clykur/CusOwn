@@ -1,10 +1,10 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   SLOT_DURATIONS,
   BOOKING_STATUS,
   SLOT_STATUS,
   MAX_CONCURRENT_BOOKING_CAPACITY,
-} from '@cusown/config';
+} from "@cusown/config";
 
 export type PendingRatingBooking = {
   id: string;
@@ -15,16 +15,23 @@ export type PendingRatingBooking = {
   service_time: string;
 };
 
-export const slotDurationSchema = z.enum(SLOT_DURATIONS.map(String) as [string, ...string[]]);
+export const slotDurationSchema = z.enum(
+  SLOT_DURATIONS.map(String) as [string, ...string[]],
+);
 
 /** Accepts HH:MM or HH:MM:SS (IST wall-clock). */
 const wallTimeSchema = z.preprocess(
   (v) => {
-    if (typeof v !== 'string') return v;
+    if (typeof v !== "string") return v;
     const t = v.trim();
     return t.length === 5 && /^\d{2}:\d{2}$/.test(t) ? `${t}:00` : t;
   },
-  z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Invalid time format')
+  z
+    .string()
+    .regex(
+      /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/,
+      "Invalid time format",
+    ),
 );
 
 const weeklyHourRowSchema = z.object({
@@ -60,34 +67,37 @@ const createSalonServiceRowSchema = z.object({
 export const createSalonSchema = z.object({
   salon_name: z
     .string()
-    .min(2, 'Salon name must be at least 2 characters')
-    .max(100, 'Salon name must be at most 100 characters'),
+    .min(2, "Salon name must be at least 2 characters")
+    .max(100, "Salon name must be at most 100 characters"),
   owner_name: z
     .string()
-    .min(2, 'Owner name must be at least 2 characters')
-    .max(100, 'Owner name must be at most 100 characters'),
+    .min(2, "Owner name must be at least 2 characters")
+    .max(100, "Owner name must be at most 100 characters"),
   whatsapp_number: z
     .string()
-    .min(10, 'WhatsApp number must be at least 10 digits')
-    .max(15, 'WhatsApp number must be at most 15 digits')
-    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid WhatsApp number format'),
+    .min(10, "WhatsApp number must be at least 10 digits")
+    .max(15, "WhatsApp number must be at most 15 digits")
+    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid WhatsApp number format"),
   opening_time: wallTimeSchema,
   closing_time: wallTimeSchema,
   slot_duration: slotDurationSchema,
   address: z
     .string()
-    .min(5, 'Address must be at least 5 characters')
-    .max(500, 'Address must be at most 500 characters'),
+    .min(5, "Address must be at least 5 characters")
+    .max(500, "Address must be at most 500 characters"),
   location: z
     .string()
-    .min(2, 'Location must be at least 2 characters')
-    .max(100, 'Location must be at most 100 characters'),
-  city: z.string().max(100, 'City must be at most 100 characters').optional(),
-  area: z.string().max(100, 'Area must be at most 100 characters').optional(),
-  pincode: z.string().max(10, 'Pincode must be at most 10 characters').optional(),
+    .min(2, "Location must be at least 2 characters")
+    .max(100, "Location must be at most 100 characters"),
+  city: z.string().max(100, "City must be at most 100 characters").optional(),
+  area: z.string().max(100, "Area must be at most 100 characters").optional(),
+  pincode: z
+    .string()
+    .max(10, "Pincode must be at most 10 characters")
+    .optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
-  category: z.string().max(50).optional().default('salon'),
+  category: z.string().max(50).optional().default("salon"),
   concurrent_booking_capacity: z.coerce
     .number()
     .int()
@@ -169,15 +179,21 @@ export type Slot = {
 };
 
 export const createBookingSchema = z.object({
-  salon_id: z.string().uuid('Invalid salon ID'),
-  slot_id: z.string().uuid('Invalid slot ID'),
-  customer_name: z.string().min(2, 'Customer name must be at least 2 characters').max(100),
+  salon_id: z.string().uuid("Invalid salon ID"),
+  slot_id: z.string().uuid("Invalid slot ID"),
+  customer_name: z
+    .string()
+    .min(2, "Customer name must be at least 2 characters")
+    .max(100),
   customer_phone: z
     .string()
-    .min(10, 'Phone number must be at least 10 digits')
-    .max(15, 'Phone number must be at most 15 digits')
-    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
-  service_ids: z.array(z.string().uuid()).max(10, 'At most 10 services per booking').optional(),
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must be at most 15 digits")
+    .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+  service_ids: z
+    .array(z.string().uuid())
+    .max(10, "At most 10 services per booking")
+    .optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
@@ -194,18 +210,18 @@ export type Booking = {
   total_duration_minutes?: number | null;
   total_price_cents?: number | null;
   services_count?: number | null;
-  cancelled_by?: 'customer' | 'owner' | 'system' | null;
+  cancelled_by?: "customer" | "owner" | "system" | null;
   cancellation_reason?: string | null;
   cancelled_at?: string | null;
   rescheduled_from_booking_id?: string | null;
   rescheduled_at?: string | null;
-  rescheduled_by?: 'customer' | 'owner' | null;
+  rescheduled_by?: "customer" | "owner" | null;
   reschedule_reason?: string | null;
   reschedule_count?: number;
   late_cancellation?: boolean;
   no_show?: boolean;
   no_show_marked_at?: string | null;
-  no_show_marked_by?: 'owner' | 'system' | null;
+  no_show_marked_by?: "owner" | "system" | null;
   created_at: string;
   updated_at: string;
   undo_used_at?: string | null;
@@ -284,7 +300,7 @@ export type AdminSystemMetrics = {
 /** Media record (DB). */
 export type Media = {
   id: string;
-  entity_type: 'business' | 'profile';
+  entity_type: "business" | "profile";
   entity_id: string;
   storage_path: string;
   bucket_name: string;
@@ -313,15 +329,15 @@ export type MediaVariants = {
 /** Media list item (no internal path; optional etag for cache). */
 export type MediaListItem = Pick<
   Media,
-  | 'id'
-  | 'entity_type'
-  | 'entity_id'
-  | 'content_type'
-  | 'size_bytes'
-  | 'sort_order'
-  | 'created_at'
-  | 'etag'
-  | 'variants'
+  | "id"
+  | "entity_type"
+  | "entity_id"
+  | "content_type"
+  | "size_bytes"
+  | "sort_order"
+  | "created_at"
+  | "etag"
+  | "variants"
 >;
 
 /** Upload response: media record + optional signed URL. */

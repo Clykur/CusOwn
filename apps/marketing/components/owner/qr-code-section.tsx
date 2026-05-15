@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { memo } from 'react';
-import Image from 'next/image';
-import DownloadIcon from '@cusown/shared/icons/download.svg';
+import { memo } from "react";
+import Image from "next/image";
+import DownloadIcon from "@cusown/shared/icons/download.svg";
 
 interface QRCodeSectionProps {
   qrCode: string | null | undefined;
@@ -12,7 +12,7 @@ interface QRCodeSectionProps {
 function QRCodeSectionComponent({ qrCode, bookingLink }: QRCodeSectionProps) {
   const downloadQRCode = () => {
     if (!qrCode) return;
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = qrCode;
     link.download = `${bookingLink}-qr-code.png`;
     document.body.appendChild(link);
@@ -26,7 +26,13 @@ function QRCodeSectionComponent({ qrCode, bookingLink }: QRCodeSectionProps) {
         <div className="flex-shrink-0">
           {qrCode ? (
             <div className="flex justify-center bg-white p-3 lg:p-4 rounded-lg border-2 border-gray-200 relative w-40 h-40 lg:w-48 lg:h-48">
-              <Image src={qrCode} alt="QR Code" fill className="object-contain" unoptimized />
+              <Image
+                src={qrCode}
+                alt="QR Code"
+                fill
+                className="object-contain"
+                unoptimized
+              />
             </div>
           ) : (
             <div className="w-40 h-40 lg:w-48 lg:h-48 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-gray-200">
@@ -35,9 +41,12 @@ function QRCodeSectionComponent({ qrCode, bookingLink }: QRCodeSectionProps) {
           )}
         </div>
         <div className="flex-1 text-center md:text-left w-full md:w-auto">
-          <h2 className="mb-2 text-base font-bold text-gray-900 md:text-lg lg:text-xl">QR Code</h2>
+          <h2 className="mb-2 text-base font-bold text-gray-900 md:text-lg lg:text-xl">
+            QR Code
+          </h2>
           <p className="mb-4 text-sm text-gray-600">
-            Download and keep it safe. Stick it in your shop for customers to scan and book.
+            Download and keep it safe. Stick it in your shop for customers to
+            scan and book.
           </p>
           {qrCode && (
             <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">

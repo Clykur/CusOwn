@@ -12,7 +12,7 @@ export type MinuteInterval = { startMin: number; endMin: number };
 export function maxConcurrentInWindow(
   intervals: MinuteInterval[],
   windowStart: number,
-  windowEnd: number
+  windowEnd: number,
 ): number {
   if (windowEnd <= windowStart) {
     return 0;
@@ -59,7 +59,7 @@ export function canScheduleWithinCapacity(
   occupancy: MinuteInterval[],
   windowStart: number,
   windowEnd: number,
-  capacity: number
+  capacity: number,
 ): boolean {
   if (capacity < 1) {
     return false;
@@ -73,7 +73,12 @@ export function canScheduleWithinCapacity(
 /**
  * Half-open overlap: [a0,a1) intersects [b0,b1).
  */
-export function intervalsOverlapHalfOpen(a0: number, a1: number, b0: number, b1: number): boolean {
+export function intervalsOverlapHalfOpen(
+  a0: number,
+  a1: number,
+  b0: number,
+  b1: number,
+): boolean {
   return a0 < b1 && a1 > b0;
 }
 
@@ -83,7 +88,7 @@ export function intervalsOverlapHalfOpen(a0: number, a1: number, b0: number, b1:
 export function overlapsAnyBlocked(
   startMin: number,
   endMin: number,
-  blocked: MinuteInterval[]
+  blocked: MinuteInterval[],
 ): boolean {
   for (const b of blocked) {
     if (intervalsOverlapHalfOpen(startMin, endMin, b.startMin, b.endMin)) {

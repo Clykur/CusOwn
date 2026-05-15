@@ -1,10 +1,14 @@
-'use client';
+"use client";
 
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AnalyticsDashboardSkeleton() {
   return (
-    <div className="w-full space-y-6 lg:max-w-6xl lg:mx-auto" aria-busy="true" aria-hidden="true">
+    <div
+      className="w-full space-y-6 lg:max-w-6xl lg:mx-auto"
+      aria-busy="true"
+      aria-hidden="true"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <Skeleton className="h-8 w-32" />
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

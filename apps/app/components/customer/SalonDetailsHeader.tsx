@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@cusown/config';
-import { cn } from '@cusown/shared';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from "@cusown/config";
+import { cn } from "@cusown/shared";
 
 export interface SalonDetailsHeaderProps {
   salonName: string;
@@ -15,7 +15,7 @@ export interface SalonDetailsHeaderProps {
 }
 
 const getTimeParts = (time: string) => {
-  const [h, m] = time.split(':').map(Number);
+  const [h, m] = time.split(":").map(Number);
   return { h, m };
 };
 
@@ -38,8 +38,8 @@ export default function SalonDetailsHeader({
   closingTime,
 }: SalonDetailsHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [statusText, setStatusText] = useState('');
-  const [subText, setSubText] = useState('');
+  const [statusText, setStatusText] = useState("");
+  const [subText, setSubText] = useState("");
 
   useEffect(() => {
     const checkStatus = () => {
@@ -65,10 +65,10 @@ export default function SalonDetailsHeader({
       setIsOpen(openNow);
 
       if (openNow) {
-        setStatusText('Open Now');
+        setStatusText("Open Now");
         setSubText(`Closes in ${getTimeDiffString(now, close)}`);
       } else {
-        setStatusText('Closed');
+        setStatusText("Closed");
         setSubText(`Opens at ${openingTime}`);
       }
     };
@@ -82,14 +82,19 @@ export default function SalonDetailsHeader({
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex flex-col">
-        <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'leading-tight break-words')}>
+        <h1
+          className={cn(
+            CUSTOMER_SCREEN_TITLE_CLASSNAME,
+            "leading-tight break-words",
+          )}
+        >
           {salonName}
         </h1>
 
         <div className="flex flex-wrap items-center gap-2 mt-2">
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              isOpen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
             }`}
           >
             {statusText}
@@ -101,8 +106,10 @@ export default function SalonDetailsHeader({
 
       <div className="flex max-w-[min(100%,18rem)] shrink-0 items-center gap-3 sm:max-w-none">
         <div className="flex min-w-0 flex-col text-right">
-          {ownerName && ownerName.trim() !== '' && (
-            <span className="font-medium leading-snug text-slate-900">{ownerName}</span>
+          {ownerName && ownerName.trim() !== "" && (
+            <span className="font-medium leading-snug text-slate-900">
+              {ownerName}
+            </span>
           )}
 
           {ownerPhone && (
@@ -118,11 +125,11 @@ export default function SalonDetailsHeader({
           )}
         </div>
 
-        {ownerImage && ownerImage !== '' ? (
+        {ownerImage && ownerImage !== "" ? (
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-md ring-1 ring-slate-200/50">
             <Image
               src={ownerImage}
-              alt={ownerName || 'Owner'}
+              alt={ownerName || "Owner"}
               fill
               className="object-cover"
               sizes="48px"
@@ -134,7 +141,7 @@ export default function SalonDetailsHeader({
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-md">
             <Image
               src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
-              alt={ownerName || 'Owner'}
+              alt={ownerName || "Owner"}
               fill
               className="object-cover"
               sizes="48px"

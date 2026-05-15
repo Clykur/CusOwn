@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { pollWithRetry } from '../resilience/poll-with-retry';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { pollWithRetry } from "../resilience/poll-with-retry";
 import {
   ADMIN_FETCH_MAX_RETRIES,
   BOOKING_STATUS,
   BOOKING_STATUS_POLL_INTERVAL_MS,
   CLIENT_RETRY_BACKOFF_MS,
-} from '@cusown/config';
+} from "@cusown/config";
 
-const TERMINAL_STATUSES = new Set<string>([BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]);
+const TERMINAL_STATUSES = new Set<string>([
+  BOOKING_STATUS.CANCELLED,
+  BOOKING_STATUS.REJECTED,
+]);
 
 type BookingLike = {
   status: string;
@@ -20,9 +23,9 @@ type BookingLike = {
 };
 
 export type BookingTransitionType =
-  | 'pending_to_confirmed'
-  | 'confirmed_to_cancelled'
-  | 'confirmed_to_rescheduled';
+  | "pending_to_confirmed"
+  | "confirmed_to_cancelled"
+  | "confirmed_to_rescheduled";
 
 export type BookingTransitionEvent<TBooking extends BookingLike> = {
   type: BookingTransitionType;
@@ -45,15 +48,17 @@ export type UseBookingStatusPollingOptions<TBooking extends BookingLike> = {
 
 const hasSlotChanged = (prev: BookingLike, next: BookingLike): boolean => {
   if (!prev.slot || !next.slot) return false;
-  if (prev.slot.id && next.slot.id && prev.slot.id !== next.slot.id) return true;
+  if (prev.slot.id && next.slot.id && prev.slot.id !== next.slot.id)
+    return true;
   if (prev.slot.date !== next.slot.date) return true;
-  if (String(prev.slot.start_time) !== String(next.slot.start_time)) return true;
+  if (String(prev.slot.start_time) !== String(next.slot.start_time))
+    return true;
   if (String(prev.slot.end_time) !== String(next.slot.end_time)) return true;
   return false;
 };
 
 export const useBookingStatusPolling = <TBooking extends BookingLike>(
-  options: UseBookingStatusPollingOptions<TBooking>
+  options: UseBookingStatusPollingOptions<TBooking>,
 ) => {
   const {
     bookingId,
@@ -80,19 +85,22 @@ export const useBookingStatusPolling = <TBooking extends BookingLike>(
     if (prev) {
       let type: BookingTransitionType | null = null;
 
-      if (prev.status === BOOKING_STATUS.PENDING && booking.status === BOOKING_STATUS.CONFIRMED) {
-        type = 'pending_to_confirmed';
+      if (
+        prev.status === BOOKING_STATUS.PENDING &&
+        booking.status === BOOKING_STATUS.CONFIRMED
+      ) {
+        type = "pending_to_confirmed";
       } else if (
         prev.status === BOOKING_STATUS.CONFIRMED &&
         booking.status === BOOKING_STATUS.CANCELLED
       ) {
-        type = 'confirmed_to_cancelled';
+        type = "confirmed_to_cancelled";
       } else if (
         prev.status === BOOKING_STATUS.CONFIRMED &&
         booking.status === BOOKING_STATUS.CONFIRMED &&
         hasSlotChanged(prev, booking)
       ) {
-        type = 'confirmed_to_rescheduled';
+        type = "confirmed_to_rescheduled";
       }
 
       if (type && onTransition) {
@@ -167,10 +175,10 @@ export const useBookingStatusPolling = <TBooking extends BookingLike>(
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       stopPolling();
     };
   }, [bookingId, isEnabled, startPolling, stopPolling]);

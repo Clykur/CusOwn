@@ -3,16 +3,16 @@
  * Handles spatial lookup, route computation, caching, and mode selection.
  */
 
-import { env } from '@cusown/config';
-import { WeightedGraph } from './graph-data-structures';
-import { KDTree } from './spatial-index';
-import { computeRoute, computeTravelTime } from './shortest-path';
-import { haversineDistance, assertValidCoordinates } from '../utils/geo';
+import { env } from "@cusown/config";
+import { WeightedGraph } from "./graph-data-structures";
+import { KDTree } from "./spatial-index";
+import { computeRoute, computeTravelTime } from "./shortest-path";
+import { haversineDistance, assertValidCoordinates } from "../utils/geo";
 
 /** Sanitize a value for logging to prevent log injection (strip newlines/carriage returns). */
 function sanitizeLogValue(value: unknown): string {
   const str = value instanceof Error ? value.message : String(value);
-  return str.replace(/[\r\n]+/g, ' ');
+  return str.replace(/[\r\n]+/g, " ");
 }
 
 /**
@@ -22,18 +22,22 @@ function sanitizeLogValue(value: unknown): string {
 function getValidatedOsrmBaseUrl(rawUrl: string): URL {
   const parsed = new URL(rawUrl);
 
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error('OSRM URL must use http/https');
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("OSRM URL must use http/https");
   }
 
   if (parsed.username || parsed.password) {
-    throw new Error('OSRM URL must not contain credentials');
+    throw new Error("OSRM URL must not contain credentials");
   }
 
   const hostname = parsed.hostname.toLowerCase();
 
-  if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '::1') {
-    throw new Error('OSRM URL host is not allowed');
+  if (
+    hostname !== "localhost" &&
+    hostname !== "127.0.0.1" &&
+    hostname !== "::1"
+  ) {
+    throw new Error("OSRM URL host is not allowed");
   }
 
   // Critical: return only origin (removes any injected path/query)
@@ -45,15 +49,15 @@ interface RouteQuery {
   startLng: number;
   endLat: number;
   endLng: number;
-  mode?: 'walking' | 'driving';
+  mode?: "walking" | "driving";
 }
 
 interface RouteResult {
   distance_km: number;
   estimated_time_minutes: number;
-  mode: 'walking' | 'driving';
+  mode: "walking" | "driving";
   routed: boolean; // true if graph-based or OSRM, false if fallback (Haversine)
-  source?: 'osrm' | 'internal' | 'fallback';
+  source?: "osrm" | "internal" | "fallback";
   segments?: Array<{
     fromNodeId: string;
     toNodeId: string;
@@ -102,7 +106,9 @@ export class RoutingService {
   private constructor() {
     this.cache = new Map();
     this.osrmCache = new Map();
-    this.osrmUrl = env.geo.osrmUrl ? getValidatedOsrmBaseUrl(env.geo.osrmUrl) : null;
+    this.osrmUrl = env.geo.osrmUrl
+      ? getValidatedOsrmBaseUrl(env.geo.osrmUrl)
+      : null;
   }
 
   /**
@@ -120,7 +126,7 @@ export class RoutingService {
    */
   initialize(graph: WeightedGraph): void {
     if (this.isInitialized) {
-      console.warn('RoutingService already initialized');
+      console.warn("RoutingService already initialized");
       return;
     }
 
@@ -144,13 +150,13 @@ export class RoutingService {
    * Returns routed distance/time if graph available, otherwise falls back to Haversine.
    */
   async computeRoute(query: RouteQuery): Promise<RouteResult> {
-    const mode = query.mode || 'walking';
+    const mode = query.mode || "walking";
     const cacheKey = this.getCacheKey(
       query.startLat,
       query.startLng,
       query.endLat,
       query.endLng,
-      mode
+      mode,
     );
 
     // Check internal cache first
@@ -174,10 +180,10 @@ export class RoutingService {
           query.startLng,
           query.endLat,
           query.endLng,
-          mode
+          mode,
         );
         if (result) {
-          result.source = 'osrm';
+          result.source = "osrm";
           // compare with internal graph for validation
           if (this.isReady()) {
             const internal = this.routeWithGraph(
@@ -185,14 +191,15 @@ export class RoutingService {
               query.startLng,
               query.endLat,
               query.endLng,
-              mode
+              mode,
             );
             if (internal.routed) {
               const perc =
-                Math.abs(result.distance_km - internal.distance_km) / internal.distance_km;
+                Math.abs(result.distance_km - internal.distance_km) /
+                internal.distance_km;
               if (perc > 0.05) {
                 console.warn(
-                  `OSRM deviation too large: ${Math.round(perc * 100)}% (osrm=${result.distance_km}km, internal=${internal.distance_km}km)`
+                  `OSRM deviation too large: ${Math.round(perc * 100)}% (osrm=${result.distance_km}km, internal=${internal.distance_km}km)`,
                 );
               }
             }
@@ -202,13 +209,17 @@ export class RoutingService {
           const computeTime = Date.now() - startTime;
           this.stats.routesComputed++;
           this.stats.avgComputeTimeMs =
-            (this.stats.avgComputeTimeMs * (this.stats.routesComputed - 1) + computeTime) /
+            (this.stats.avgComputeTimeMs * (this.stats.routesComputed - 1) +
+              computeTime) /
             this.stats.routesComputed;
           return result;
         }
       } catch (err) {
         this.stats.osrmFailures++;
-        console.error('OSRM routing failed, falling back:', sanitizeLogValue(err));
+        console.error(
+          "OSRM routing failed, falling back:",
+          sanitizeLogValue(err),
+        );
       }
     }
 
@@ -220,9 +231,9 @@ export class RoutingService {
         query.startLng,
         query.endLat,
         query.endLng,
-        mode
+        mode,
       );
-      result.source = 'fallback';
+      result.source = "fallback";
       this.stats.fallbacksUsed++;
     } else {
       // Use graph-based routing
@@ -231,10 +242,10 @@ export class RoutingService {
         query.startLng,
         query.endLat,
         query.endLng,
-        mode
+        mode,
       );
       if (result.routed) {
-        result.source = 'internal';
+        result.source = "internal";
       }
       // If graph routing fails, fall back to Haversine
       if (!result.routed) {
@@ -243,9 +254,9 @@ export class RoutingService {
           query.startLng,
           query.endLat,
           query.endLng,
-          mode
+          mode,
         );
-        result.source = 'fallback';
+        result.source = "fallback";
         this.stats.fallbacksUsed++;
       }
     }
@@ -253,7 +264,8 @@ export class RoutingService {
     const computeTime = Date.now() - startTime;
     this.stats.routesComputed++;
     this.stats.avgComputeTimeMs =
-      (this.stats.avgComputeTimeMs * (this.stats.routesComputed - 1) + computeTime) /
+      (this.stats.avgComputeTimeMs * (this.stats.routesComputed - 1) +
+        computeTime) /
       this.stats.routesComputed;
 
     // Cache result (source may be internal or fallback)
@@ -270,7 +282,7 @@ export class RoutingService {
     startLng: number,
     endLat: number,
     endLng: number,
-    mode: 'walking' | 'driving'
+    mode: "walking" | "driving",
   ): RouteResult {
     // This should never be null/undefined if isReady() is true, but TypeScript safety
     if (!this.graph || !this.kdTree) {
@@ -296,7 +308,13 @@ export class RoutingService {
     }
 
     // Compute route using A* algorithm
-    const route = computeRoute(this.graph, startNode.id, endNode.id, mode, true); // useAStar=true
+    const route = computeRoute(
+      this.graph,
+      startNode.id,
+      endNode.id,
+      mode,
+      true,
+    ); // useAStar=true
 
     if (!route) {
       return {
@@ -312,7 +330,7 @@ export class RoutingService {
       estimated_time_minutes: route.totalTimeMinutes,
       mode: route.mode,
       routed: true,
-      source: 'internal',
+      source: "internal",
       segments: route.segments,
     };
   }
@@ -325,7 +343,7 @@ export class RoutingService {
     startLng: number,
     endLat: number,
     endLng: number,
-    mode: 'walking' | 'driving'
+    mode: "walking" | "driving",
   ): RouteResult {
     const distance = haversineDistance(startLat, startLng, endLat, endLng);
     const timeMinutes = computeTravelTime(distance, mode);
@@ -335,7 +353,7 @@ export class RoutingService {
       estimated_time_minutes: timeMinutes,
       mode,
       routed: false,
-      source: 'fallback',
+      source: "fallback",
     };
   }
 
@@ -348,7 +366,7 @@ export class RoutingService {
     startLng: number,
     endLat: number,
     endLng: number,
-    mode: 'walking' | 'driving'
+    mode: "walking" | "driving",
   ): Promise<RouteResult | null> {
     if (!this.osrmUrl) return null;
 
@@ -356,7 +374,7 @@ export class RoutingService {
     assertValidCoordinates(startLat, startLng);
     assertValidCoordinates(endLat, endLng);
 
-    const profile = mode === 'walking' ? 'foot' : 'car';
+    const profile = mode === "walking" ? "foot" : "car";
     const baseUrl = this.osrmUrl!;
     // Explicit numeric enforcement (helps SSRF analyzers)
     if (
@@ -365,13 +383,13 @@ export class RoutingService {
       !Number.isFinite(endLat) ||
       !Number.isFinite(endLng)
     ) {
-      throw new Error('Invalid coordinates');
+      throw new Error("Invalid coordinates");
     }
 
     // Construct URL from trusted base ONLY
-    const url = new URL('/route/v1/', baseUrl);
+    const url = new URL("/route/v1/", baseUrl);
     url.pathname += `${profile}/${startLng},${startLat};${endLng},${endLat}`;
-    url.searchParams.set('overview', 'false');
+    url.searchParams.set("overview", "false");
     const cacheKey = `osrm:${profile}:${startLat},${startLng}:${endLat},${endLng}`;
 
     // check osrm cache
@@ -398,14 +416,14 @@ export class RoutingService {
           estimated_time_minutes: r.duration / 60,
           mode,
           routed: true,
-          source: 'osrm',
+          source: "osrm",
         };
         this.osrmCache.set(cacheKey, { result, timestamp: Date.now() });
         return result;
       }
       return null;
     } catch (err) {
-      console.error('OSRM error:', sanitizeLogValue(err));
+      console.error("OSRM error:", sanitizeLogValue(err));
       return null;
     }
   }
@@ -418,7 +436,7 @@ export class RoutingService {
     startLng: number,
     endLat: number,
     endLng: number,
-    mode: string
+    mode: string,
   ): string {
     // Round to 5 decimal places (~1m precision) to allow fuzzy matching
     const round = (n: number) => Math.round(n * 100000) / 100000;
@@ -464,7 +482,10 @@ export class RoutingService {
   getCacheStats() {
     return {
       cacheSize: this.cache.size,
-      hitRate: this.stats.routesComputed > 0 ? this.stats.cacheHits / this.stats.routesComputed : 0,
+      hitRate:
+        this.stats.routesComputed > 0
+          ? this.stats.cacheHits / this.stats.routesComputed
+          : 0,
       totalRoutes: this.stats.routesComputed,
       fallbacksUsed: this.stats.fallbacksUsed,
       avgComputeTimeMs: Number(this.stats.avgComputeTimeMs.toFixed(2)),

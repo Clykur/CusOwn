@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { memo, useMemo, useCallback } from 'react';
-import { Button } from './button';
-import ChevronLeftIcon from '@cusown/shared/icons/chevron-left.svg';
-import ChevronRightIcon from '@cusown/shared/icons/chevron-right.svg';
-import { cn } from '@cusown/shared';
+import { memo, useMemo, useCallback } from "react";
+import { Button } from "./button";
+import ChevronLeftIcon from "@cusown/shared/icons/chevron-left.svg";
+import ChevronRightIcon from "@cusown/shared/icons/chevron-right.svg";
+import { cn } from "@cusown/shared";
 
 interface PaginationProps {
   currentPage: number;
@@ -23,7 +23,7 @@ function PaginationComponent({
   onPageChange,
   totalItems,
   itemsPerPage,
-  itemsLabel = 'salons',
+  itemsLabel = "salons",
   className,
 }: PaginationProps) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
@@ -42,21 +42,21 @@ function PaginationComponent({
         for (let i = 1; i <= 4; i++) {
           pages.push(i);
         }
-        pages.push('ellipsis');
+        pages.push("ellipsis");
         pages.push(totalPages);
       } else if (currentPage >= totalPages - 2) {
         pages.push(1);
-        pages.push('ellipsis');
+        pages.push("ellipsis");
         for (let i = totalPages - 3; i <= totalPages; i++) {
           pages.push(i);
         }
       } else {
         pages.push(1);
-        pages.push('ellipsis');
+        pages.push("ellipsis");
         for (let i = currentPage - 1; i <= currentPage + 1; i++) {
           pages.push(i);
         }
-        pages.push('ellipsis');
+        pages.push("ellipsis");
         pages.push(totalPages);
       }
     }
@@ -77,14 +77,15 @@ function PaginationComponent({
   return (
     <div
       className={cn(
-        'mt-4 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-4 sm:flex-row',
-        className
+        "mt-4 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-4 sm:flex-row",
+        className,
       )}
     >
       <div className="text-sm text-gray-600">
-        Showing <span className="font-semibold text-gray-900">{startItem}</span> to{' '}
-        <span className="font-semibold text-gray-900">{endItem}</span> of{' '}
-        <span className="font-semibold text-gray-900">{totalItems}</span> {itemsLabel}
+        Showing <span className="font-semibold text-gray-900">{startItem}</span>{" "}
+        to <span className="font-semibold text-gray-900">{endItem}</span> of{" "}
+        <span className="font-semibold text-gray-900">{totalItems}</span>{" "}
+        {itemsLabel}
       </div>
 
       <div className="flex items-center gap-2">
@@ -101,7 +102,7 @@ function PaginationComponent({
 
         <div className="flex items-center gap-1">
           {pageNumbers.map((page, index) => {
-            if (page === 'ellipsis') {
+            if (page === "ellipsis") {
               return (
                 <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
                   ...
@@ -156,11 +157,11 @@ const PageButton = memo(function PageButton({
       onClick={handleClick}
       className={`min-w-[2.5rem] h-10 px-3 rounded-lg text-sm font-medium transition-colors ${
         isActive
-          ? 'bg-black text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+          ? "bg-black text-white"
+          : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300"
       }`}
       aria-label={`Go to page ${pageNum}`}
-      aria-current={isActive ? 'page' : undefined}
+      aria-current={isActive ? "page" : undefined}
     >
       {pageNum}
     </button>

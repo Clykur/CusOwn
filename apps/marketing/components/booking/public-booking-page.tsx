@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useCallback, useRef, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   API_ROUTES,
   BOOKING_IDEMPOTENCY_HEADER,
@@ -10,13 +10,16 @@ import {
   ERROR_MESSAGES,
   PHONE_DIGITS,
   UI_CUSTOMER,
-} from '@cusown/config';
-import { ROUTES } from '@cusown/shared';
-import { generateUuidV7 } from '@cusown/shared';
-import type { Slot } from '@cusown/shared';
-import { logError } from '@cusown/shared';
-import { getCSRFToken } from '@cusown/shared';
-import { BookingPageSkeleton, CalendarGridLoadingSkeleton } from '@/components/ui/skeleton';
+} from "@cusown/config";
+import { ROUTES } from "@cusown/shared";
+import { generateUuidV7 } from "@cusown/shared";
+import type { Slot } from "@cusown/shared";
+import { logError } from "@cusown/shared";
+import { getCSRFToken } from "@cusown/shared";
+import {
+  BookingPageSkeleton,
+  CalendarGridLoadingSkeleton,
+} from "@/components/ui/skeleton";
 import {
   getLocalTodayStr,
   isToday,
@@ -26,22 +29,25 @@ import {
   loadPendingBooking,
   clearPendingBooking,
   getInitialRebookData,
-} from './booking-utils';
-import { cn } from '@cusown/shared';
-import { dedupFetch, cancelRequests } from '@cusown/shared';
-import { useBookingFlowStore } from '@cusown/shared/client';
+} from "./booking-utils";
+import { cn } from "@cusown/shared";
+import { dedupFetch, cancelRequests } from "@cusown/shared";
+import { useBookingFlowStore } from "@cusown/shared/client";
 
-import SlotSelectionGrid from './slot-selection-grid';
-import CustomerBookingForm from './customer-booking-form';
+import SlotSelectionGrid from "./slot-selection-grid";
+import CustomerBookingForm from "./customer-booking-form";
 
-const CalendarGrid = dynamic(() => import('@/components/booking/calendar-grid'), {
-  ssr: false,
-  loading: () => <CalendarGridLoadingSkeleton cells={14} />,
-});
+const CalendarGrid = dynamic(
+  () => import("@/components/booking/calendar-grid"),
+  {
+    ssr: false,
+    loading: () => <CalendarGridLoadingSkeleton cells={14} />,
+  },
+);
 
-import { useSlotUpdates } from '@cusown/shared/client';
-import type { Salon, PublicBusiness } from '@cusown/shared';
-import Breadcrumb from '@/components/ui/breadcrumb';
+import { useSlotUpdates } from "@cusown/shared/client";
+import type { Salon, PublicBusiness } from "@cusown/shared";
+import Breadcrumb from "@/components/ui/breadcrumb";
 
 type PublicBookingPageProps = {
   businessSlug: string;
@@ -93,25 +99,37 @@ export default function PublicBookingPage({
   const closedDates = useBookingFlowStore((state) => state.closedDates);
   const addClosedDate = useBookingFlowStore((state) => state.addClosedDate);
   const addClosedDates = useBookingFlowStore((state) => state.addClosedDates);
-  const removeClosedDate = useBookingFlowStore((state) => state.removeClosedDate);
-  const setClosedMessage = useBookingFlowStore((state) => state.setClosedMessage);
+  const removeClosedDate = useBookingFlowStore(
+    (state) => state.removeClosedDate,
+  );
+  const setClosedMessage = useBookingFlowStore(
+    (state) => state.setClosedMessage,
+  );
   const customerName = useBookingFlowStore((state) => state.customerName);
   const setCustomerName = useBookingFlowStore((state) => state.setCustomerName);
   const customerPhone = useBookingFlowStore((state) => state.customerPhone);
-  const setCustomerPhone = useBookingFlowStore((state) => state.setCustomerPhone);
+  const setCustomerPhone = useBookingFlowStore(
+    (state) => state.setCustomerPhone,
+  );
   const isLoading = useBookingFlowStore((state) => state.isLoading);
   const setIsLoading = useBookingFlowStore((state) => state.setIsLoading);
   const setDateLoading = useBookingFlowStore((state) => state.setDateLoading);
-  const setValidatingSlot = useBookingFlowStore((state) => state.setValidatingSlot);
+  const setValidatingSlot = useBookingFlowStore(
+    (state) => state.setValidatingSlot,
+  );
   const submitting = useBookingFlowStore((state) => state.submitting);
   const setSubmitting = useBookingFlowStore((state) => state.setSubmitting);
   const error = useBookingFlowStore((state) => state.error);
   const setError = useBookingFlowStore((state) => state.setError);
-  const setSlotValidationError = useBookingFlowStore((state) => state.setSlotValidationError);
+  const setSlotValidationError = useBookingFlowStore(
+    (state) => state.setSlotValidationError,
+  );
   const reset = useBookingFlowStore((state) => state.reset);
 
   const midnightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const slotRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const slotRefreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   const [, setTimeTick] = useState(0);
   const restoredFromPendingRef = useRef(false);
   const [services, setServices] = useState<
@@ -129,22 +147,28 @@ export default function PublicBookingPage({
   >([]);
 
   const searchParams = useSearchParams();
-  const serviceId = searchParams?.get('serviceId') ?? null;
+  const serviceId = searchParams?.get("serviceId") ?? null;
 
   // ── Multi-select: array instead of single string ──────────────────────────
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   const serverBusinessPreview = useMemo(
     () => (initialBusiness ? toPublicBusiness(initialBusiness) : null),
-    [initialBusiness]
+    [initialBusiness],
   );
   const displayBusiness = business ?? serverBusinessPreview;
-  const businessIdMemo = useMemo(() => displayBusiness?.id ?? null, [displayBusiness?.id]);
-  const servicesKey = useMemo(() => selectedServices.slice().sort().join(','), [selectedServices]);
+  const businessIdMemo = useMemo(
+    () => displayBusiness?.id ?? null,
+    [displayBusiness?.id],
+  );
+  const servicesKey = useMemo(
+    () => selectedServices.slice().sort().join(","),
+    [selectedServices],
+  );
 
   const toggleService = useCallback((id: string) => {
     setSelectedServices((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
   }, []);
 
@@ -153,7 +177,9 @@ export default function PublicBookingPage({
 
     const fetchServices = async () => {
       try {
-        const res = await fetch(`/api/public/services?businessId=${businessIdMemo}`);
+        const res = await fetch(
+          `/api/public/services?businessId=${businessIdMemo}`,
+        );
         const data = await res.json();
 
         if (data.success) {
@@ -167,10 +193,10 @@ export default function PublicBookingPage({
             urlServiceIdSeededRef.current = true;
           }
         } else {
-          console.error('Services API error:', data);
+          console.error("Services API error:", data);
         }
       } catch (err) {
-        console.error('Error fetching services:', err);
+        console.error("Error fetching services:", err);
       }
     };
 
@@ -273,7 +299,7 @@ export default function PublicBookingPage({
       setSlots(nextSlots);
       cacheSlots(selectedDate, nextSlots);
     },
-    [selectedDate, setSlots, cacheSlots]
+    [selectedDate, setSlots, cacheSlots],
   );
 
   const handleSlotStatusChange = useCallback(
@@ -282,13 +308,13 @@ export default function PublicBookingPage({
 
       const currentSelectedSlot = selectedSlotRef.current;
       if (currentSelectedSlot && currentSelectedSlot.id === slotId) {
-        if (updatedSlot.status !== 'available') {
+        if (updatedSlot.status !== "available") {
           setSelectedSlot(null);
           setSlotValidationError(UI_CUSTOMER.SLOT_NO_LONGER_AVAILABLE);
         }
       }
     },
-    [submitting, setSelectedSlot, setSlotValidationError]
+    [submitting, setSelectedSlot, setSlotValidationError],
   );
 
   useSlotUpdates({
@@ -325,26 +351,37 @@ export default function PublicBookingPage({
 
   useEffect(() => {
     if (!isToday(selectedDate)) {
-      if (slotRefreshTimerRef.current) clearInterval(slotRefreshTimerRef.current);
+      if (slotRefreshTimerRef.current)
+        clearInterval(slotRefreshTimerRef.current);
       return;
     }
     slotRefreshTimerRef.current = setInterval(() => {
       setTimeTick((t) => t + 1);
       if (selectedSlot) {
         const now = new Date();
-        const [h, m] = selectedSlot.start_time.split(':').map(Number);
+        const [h, m] = selectedSlot.start_time.split(":").map(Number);
         const closeH = displayBusiness?.closing_time
-          ? parseInt(displayBusiness.closing_time.split(':')[0], 10)
+          ? parseInt(displayBusiness.closing_time.split(":")[0], 10)
           : 24;
-        if (h * 60 + m <= now.getHours() * 60 + now.getMinutes() || isAfterBusinessHours(closeH)) {
+        if (
+          h * 60 + m <= now.getHours() * 60 + now.getMinutes() ||
+          isAfterBusinessHours(closeH)
+        ) {
           setSelectedSlot(null);
         }
       }
     }, 60_000);
     return () => {
-      if (slotRefreshTimerRef.current) clearInterval(slotRefreshTimerRef.current);
+      if (slotRefreshTimerRef.current)
+        clearInterval(slotRefreshTimerRef.current);
     };
-  }, [selectedDate, selectedSlot, displayBusiness?.closing_time, setSelectedSlot, setTimeTick]);
+  }, [
+    selectedDate,
+    selectedSlot,
+    displayBusiness?.closing_time,
+    setSelectedSlot,
+    setTimeTick,
+  ]);
 
   const restorePendingBooking = useCallback(
     (loadedSlots: Slot[]) => {
@@ -360,7 +397,7 @@ export default function PublicBookingPage({
         if (pending.selectedDate) setSelectedDate(pending.selectedDate);
         if (pending.selectedSlotId && loadedSlots.length > 0) {
           const matchedSlot = loadedSlots.find(
-            (s) => s.id === pending.selectedSlotId && s.status === 'available'
+            (s) => s.id === pending.selectedSlotId && s.status === "available",
           );
           if (matchedSlot) setSelectedSlot(matchedSlot);
         }
@@ -373,13 +410,19 @@ export default function PublicBookingPage({
       if (pending.selectedDate) setSelectedDate(pending.selectedDate);
       if (pending.selectedSlotId && loadedSlots.length > 0) {
         const matchedSlot = loadedSlots.find(
-          (s) => s.id === pending.selectedSlotId && s.status === 'available'
+          (s) => s.id === pending.selectedSlotId && s.status === "available",
         );
         if (matchedSlot) setSelectedSlot(matchedSlot);
       }
       restoredFromPendingRef.current = true;
     },
-    [businessSlug, setSelectedDate, setSelectedSlot, setCustomerName, setCustomerPhone]
+    [
+      businessSlug,
+      setSelectedDate,
+      setSelectedSlot,
+      setCustomerName,
+      setCustomerPhone,
+    ],
   );
 
   useEffect(() => {
@@ -389,7 +432,7 @@ export default function PublicBookingPage({
     businessFetchedRef.current = true;
 
     let cancelled = false;
-    fetch(`/api/salons/${businessSlug}`, { credentials: 'include' })
+    fetch(`/api/salons/${businessSlug}`, { credentials: "include" })
       .then((res) => res.json())
       .then((result) => {
         if (cancelled) return;
@@ -398,7 +441,7 @@ export default function PublicBookingPage({
       })
       .catch((err) => {
         if (!cancelled) {
-          logError(err, 'PublicBookingPage');
+          logError(err, "PublicBookingPage");
           setError(ERROR_MESSAGES.LOADING_ERROR);
         }
       })
@@ -411,7 +454,9 @@ export default function PublicBookingPage({
   }, [businessSlug, setBusiness, setError, setIsLoading]);
 
   // Track if downtime was already fetched from server
-  const downtimeFetchedRef = useRef(!!(initialClosedDates && initialClosedDates.length > 0));
+  const downtimeFetchedRef = useRef(
+    !!(initialClosedDates && initialClosedDates.length > 0),
+  );
   useEffect(() => {
     if (!business?.id) return;
     // Skip client fetch if server already provided downtime data
@@ -428,27 +473,32 @@ export default function PublicBookingPage({
     const lastDayNext = new Date(nextYear, nextMonth + 1, 0).getDate();
     const rangeCur = Array.from(
       { length: lastDayCur },
-      (_, i) => `${year}-${String(month + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
+      (_, i) =>
+        `${year}-${String(month + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
     );
     const rangeNext = Array.from(
       { length: lastDayNext },
       (_, i) =>
-        `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
+        `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
     );
     const visibleDates = new Set([...rangeCur, ...rangeNext]);
 
     Promise.all([
-      fetch(`/api/businesses/${business.id}/downtime/closures`, { credentials: 'include' }).then(
-        (r) => r.json()
-      ),
-      fetch(`/api/businesses/${business.id}/downtime/holidays`, { credentials: 'include' }).then(
-        (r) => r.json()
-      ),
+      fetch(`/api/businesses/${business.id}/downtime/closures`, {
+        credentials: "include",
+      }).then((r) => r.json()),
+      fetch(`/api/businesses/${business.id}/downtime/holidays`, {
+        credentials: "include",
+      }).then((r) => r.json()),
     ])
       .then(([closuresRes, holidaysRes]) => {
         if (cancelled) return;
-        const closureList = closuresRes?.success ? (closuresRes.data ?? []) : [];
-        const holidayList = holidaysRes?.success ? (holidaysRes.data ?? []) : [];
+        const closureList = closuresRes?.success
+          ? (closuresRes.data ?? [])
+          : [];
+        const holidayList = holidaysRes?.success
+          ? (holidaysRes.data ?? [])
+          : [];
         const closedSet = new Set<string>();
         holidayList.forEach((h: { holiday_date: string }) => {
           if (visibleDates.has(h.holiday_date)) closedSet.add(h.holiday_date);
@@ -461,7 +511,7 @@ export default function PublicBookingPage({
             const y = walk.getFullYear();
             const m = walk.getMonth();
             const day = walk.getDate();
-            const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             if (visibleDates.has(dateStr)) closedSet.add(dateStr);
             walk.setDate(walk.getDate() + 1);
           }
@@ -519,12 +569,12 @@ export default function PublicBookingPage({
       setClosedMessage(null);
       cancelRequests(`slots:${businessIdMemo}`);
 
-      const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : '';
-      const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${requestDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`;
+      const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : "";
+      const fetchUrl = `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${requestDate}${serviceIdsParam ? "&" + serviceIdsParam : ""}`;
       try {
         const res = await dedupFetch(fetchUrl, {
-          credentials: 'include',
-          dedupKey: `slots:${businessIdMemo}:${requestDate}:${servicesKey || 'none'}`,
+          credentials: "include",
+          dedupKey: `slots:${businessIdMemo}:${requestDate}:${servicesKey || "none"}`,
           cancelPrevious: true,
         });
         const result = await res.json();
@@ -537,7 +587,9 @@ export default function PublicBookingPage({
 
         if (result?.success && result?.data) {
           if (result.data.closed) {
-            setClosedMessage(result.data.message || 'Shop is closed on this day.');
+            setClosedMessage(
+              result.data.message || "Shop is closed on this day.",
+            );
             setSlots([]);
             addClosedDate(requestDate);
             cacheSlots(requestDate, []);
@@ -553,7 +605,7 @@ export default function PublicBookingPage({
 
           // Rebook logic (one-time)
           if (!rebookAppliedRef.current) {
-            const raw = sessionStorage.getItem('rebookData');
+            const raw = sessionStorage.getItem("rebookData");
             if (raw) {
               try {
                 const rebookData = JSON.parse(raw);
@@ -565,7 +617,7 @@ export default function PublicBookingPage({
               } catch {
                 // Ignore
               } finally {
-                sessionStorage.removeItem('rebookData');
+                sessionStorage.removeItem("rebookData");
               }
             }
           }
@@ -573,23 +625,28 @@ export default function PublicBookingPage({
           // Restore pending (conditional)
           if (!restoredFromPendingRef.current && !rebookAppliedRef.current) {
             restorePendingBooking(loadedSlots);
-          } else if (rebookAppliedRef.current && !restoredFromPendingRef.current) {
+          } else if (
+            rebookAppliedRef.current &&
+            !restoredFromPendingRef.current
+          ) {
             restoredFromPendingRef.current = true;
           }
 
           // Validate selected slot
           if (selectedSlot) {
-            const updated = loadedSlots.find((s: Slot) => s.id === selectedSlot.id);
-            if (!updated || updated.status !== 'available') {
+            const updated = loadedSlots.find(
+              (s: Slot) => s.id === selectedSlot.id,
+            );
+            if (!updated || updated.status !== "available") {
               setSelectedSlot(null);
-              if (updated?.status !== 'available')
+              if (updated?.status !== "available")
                 setSlotValidationError(UI_CUSTOMER.SLOT_NO_LONGER_AVAILABLE);
             }
           }
         }
       } catch (err) {
-        if ((err as Error)?.name !== 'AbortError') {
-          console.error('[PublicBookingPage] Failed to fetch slots:', err);
+        if ((err as Error)?.name !== "AbortError") {
+          console.error("[PublicBookingPage] Failed to fetch slots:", err);
         }
       } finally {
         isFetchingSlots.current = false;
@@ -624,13 +681,13 @@ export default function PublicBookingPage({
     const requestDate = selectedDate;
 
     try {
-      const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : '';
+      const serviceIdsParam = servicesKey ? `serviceIds=${servicesKey}` : "";
       const r = await dedupFetch(
-        `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${requestDate}${serviceIdsParam ? '&' + serviceIdsParam : ''}`,
+        `${API_ROUTES.SLOTS}?salon_id=${businessIdMemo}&date=${requestDate}${serviceIdsParam ? "&" + serviceIdsParam : ""}`,
         {
-          dedupKey: `slots-refetch:${businessIdMemo}:${requestDate}:${servicesKey || 'none'}`,
+          dedupKey: `slots-refetch:${businessIdMemo}:${requestDate}:${servicesKey || "none"}`,
           cancelPrevious: true,
-        }
+        },
       );
       const j = await r.json();
       if (useBookingFlowStore.getState().selectedDate !== requestDate) return;
@@ -640,16 +697,16 @@ export default function PublicBookingPage({
         cacheSlots(requestDate, newSlots);
       }
     } catch (err) {
-      if ((err as Error)?.name !== 'AbortError') {
-        console.error('[PublicBookingPage] Refetch slots failed:', err);
+      if ((err as Error)?.name !== "AbortError") {
+        console.error("[PublicBookingPage] Refetch slots failed:", err);
       }
     }
   }, [businessIdMemo, selectedDate, servicesKey, setSlots, cacheSlots]);
 
   const handleSlotSelect = useCallback(
     async (slot: Slot) => {
-      if (slot.status === 'booked' || slot.status === 'reserved') {
-        setError('This slot is no longer available. Please select another.');
+      if (slot.status === "booked" || slot.status === "reserved") {
+        setError("This slot is no longer available. Please select another.");
         return;
       }
 
@@ -662,29 +719,33 @@ export default function PublicBookingPage({
       }, 150);
 
       try {
-        cancelRequests('slot-validate');
+        cancelRequests("slot-validate");
         const serviceIdsParam = JSON.stringify(selectedServices);
         const res = await dedupFetch(
           `/api/slots/${slot.id}?serviceIds=${encodeURIComponent(serviceIdsParam)}`,
           {
-            credentials: 'include',
-            dedupKey: `slot-validate:${slot.id}:${selectedServices.join(',')}`,
+            credentials: "include",
+            dedupKey: `slot-validate:${slot.id}:${selectedServices.join(",")}`,
             cancelPrevious: true,
-          }
+          },
         );
         const result = await res.json();
 
         clearTimeout(validationTimeoutId);
 
-        if (!result?.success || result?.data?.status !== 'available') {
-          setSlotValidationError('This slot was just booked. Please select another.');
+        if (!result?.success || result?.data?.status !== "available") {
+          setSlotValidationError(
+            "This slot was just booked. Please select another.",
+          );
           setSelectedSlot(null);
           setTimeout(refetchSlots, 0);
         }
       } catch (err) {
         clearTimeout(validationTimeoutId);
-        if ((err as Error)?.name === 'AbortError') return;
-        setSlotValidationError('Unable to verify slot availability. Please try again.');
+        if ((err as Error)?.name === "AbortError") return;
+        setSlotValidationError(
+          "Unable to verify slot availability. Please try again.",
+        );
       } finally {
         setValidatingSlot(false);
       }
@@ -696,23 +757,23 @@ export default function PublicBookingPage({
       setError,
       setValidatingSlot,
       selectedServices,
-    ]
+    ],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting || !selectedSlot || !displayBusiness) return;
     if (!customerName.trim()) {
-      setError('Please enter your name');
+      setError("Please enter your name");
       return;
     }
     // ── Validate that at least one service is selected ────────────────────
     if (selectedServices.length === 0) {
-      setError('Please select at least one service');
+      setError("Please select at least one service");
       return;
     }
     // ─────────────────────────────────────────────────────────────────────
-    const phoneDigits = customerPhone.replace(/\D/g, '');
+    const phoneDigits = customerPhone.replace(/\D/g, "");
     if (!phoneDigits || phoneDigits.length !== PHONE_DIGITS) {
       setError(ERROR_MESSAGES.CUSTOMER_PHONE_INVALID);
       return;
@@ -722,7 +783,9 @@ export default function PublicBookingPage({
     setSlotValidationError(null);
 
     try {
-      const sessionRes = await fetch('/api/auth/session', { credentials: 'include' });
+      const sessionRes = await fetch("/api/auth/session", {
+        credentials: "include",
+      });
       const sessionData = await sessionRes.json();
       const isAuthenticated = sessionData?.success && sessionData?.data?.user;
 
@@ -736,29 +799,34 @@ export default function PublicBookingPage({
           savedAt: Date.now(),
         });
         const bookingPath = `/book/${businessSlug}`;
-        router.push(ROUTES.AUTH_LOGIN(bookingPath) + '&role=customer');
+        router.push(ROUTES.AUTH_LOGIN(bookingPath) + "&role=customer");
         return;
       }
 
       const verifyRes = await fetch(`/api/slots/${selectedSlot.id}`);
       const verifyResult = await verifyRes.json();
-      if (!verifyResult?.success || verifyResult?.data?.status !== 'available') {
+      if (
+        !verifyResult?.success ||
+        verifyResult?.data?.status !== "available"
+      ) {
         setSelectedSlot(null);
         setTimeout(refetchSlots, 0);
-        throw new Error('This slot is no longer available. Please select another.');
+        throw new Error(
+          "This slot is no longer available. Please select another.",
+        );
       }
 
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         [BOOKING_IDEMPOTENCY_HEADER]: generateUuidV7(),
       };
-      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (csrfToken) headers["x-csrf-token"] = csrfToken;
 
       const res = await fetch(API_ROUTES.BOOKINGS, {
-        method: 'POST',
+        method: "POST",
         headers,
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           salon_id: displayBusiness.id,
           slot_id: selectedSlot.id,
@@ -774,7 +842,7 @@ export default function PublicBookingPage({
           setSelectedSlot(null);
           setTimeout(refetchSlots, 0);
         }
-        throw new Error(result?.error || 'Failed to create booking');
+        throw new Error(result?.error || "Failed to create booking");
       }
       if (result?.success && result?.data) {
         clearPendingBooking();
@@ -782,8 +850,8 @@ export default function PublicBookingPage({
         return;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      if (err instanceof Error && err.message.includes('no longer available')) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      if (err instanceof Error && err.message.includes("no longer available")) {
         setSelectedSlot(null);
         setTimeout(refetchSlots, 0);
       }
@@ -819,29 +887,35 @@ export default function PublicBookingPage({
       setError,
       setSlots,
       setDateLoading,
-    ]
+    ],
   );
 
   const { businessOpenHour, businessCloseHour } = useMemo(
     () => ({
       businessOpenHour: displayBusiness?.opening_time
-        ? parseInt(displayBusiness.opening_time.split(':')[0], 10)
+        ? parseInt(displayBusiness.opening_time.split(":")[0], 10)
         : 0,
       businessCloseHour: displayBusiness?.closing_time
-        ? parseInt(displayBusiness.closing_time.split(':')[0], 10)
+        ? parseInt(displayBusiness.closing_time.split(":")[0], 10)
         : 24,
     }),
-    [displayBusiness?.opening_time, displayBusiness?.closing_time]
+    [displayBusiness?.opening_time, displayBusiness?.closing_time],
   );
 
   const filteredSlots = useMemo(
-    () => filterSlotsByBusinessHours(slots, selectedDate, businessOpenHour, businessCloseHour),
-    [slots, selectedDate, businessOpenHour, businessCloseHour]
+    () =>
+      filterSlotsByBusinessHours(
+        slots,
+        selectedDate,
+        businessOpenHour,
+        businessCloseHour,
+      ),
+    [slots, selectedDate, businessOpenHour, businessCloseHour],
   );
 
   const isTodayClosed = useMemo(
     () => isToday(selectedDate) && isAfterBusinessHours(businessCloseHour),
-    [selectedDate, businessCloseHour]
+    [selectedDate, businessCloseHour],
   );
 
   /** Clear selection when day changes, shop closes, or filters remove the slot (e.g. past times). */
@@ -856,13 +930,13 @@ export default function PublicBookingPage({
 
   const breadcrumbItems = useMemo(
     () => [
-      { label: 'My Activity', href: '/customer/dashboard' },
+      { label: "My Activity", href: "/customer/dashboard" },
       {
-        label: displayBusiness?.salon_name || 'Book Appointment',
+        label: displayBusiness?.salon_name || "Book Appointment",
         href: `/customer/book/${businessSlug}`,
       },
     ],
-    [displayBusiness?.salon_name, businessSlug]
+    [displayBusiness?.salon_name, businessSlug],
   );
 
   if (showLoadingShell) {
@@ -870,8 +944,8 @@ export default function PublicBookingPage({
       <div className="w-full space-y-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         <Breadcrumb
           items={[
-            { label: 'My Activity', href: '/customer/dashboard' },
-            { label: 'Loading...', href: `/customer/book/${businessSlug}` },
+            { label: "My Activity", href: "/customer/dashboard" },
+            { label: "Loading...", href: `/customer/book/${businessSlug}` },
           ]}
         />
         <BookingPageSkeleton />
@@ -884,15 +958,20 @@ export default function PublicBookingPage({
       <div className="w-full space-y-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         <Breadcrumb
           items={[
-            { label: 'My Activity', href: '/customer/dashboard' },
-            { label: 'Book Appointment', href: `/customer/book/${businessSlug}` },
+            { label: "My Activity", href: "/customer/dashboard" },
+            {
+              label: "Book Appointment",
+              href: `/customer/book/${businessSlug}`,
+            },
           ]}
         />
         <div className="rounded-2xl border border-slate-200/90 bg-white p-6 text-center shadow-sm sm:p-8">
-          <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-3')}>
+          <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, "mb-3")}>
             {ERROR_MESSAGES.SALON_NOT_FOUND}
           </h2>
-          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">{error}</p>
+          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">
+            {error}
+          </p>
         </div>
       </div>
     );
@@ -903,7 +982,7 @@ export default function PublicBookingPage({
   // }
 
   const sectionLabelClass =
-    'mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500';
+    "mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500";
 
   return (
     <div className="flex w-full flex-col gap-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:gap-6 md:pb-8">
@@ -912,13 +991,13 @@ export default function PublicBookingPage({
       <div className="w-full">
         <div
           className={cn(
-            'rounded-2xl bg-white',
-            'max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none',
-            'md:border md:border-slate-200/90 md:p-6 md:shadow-sm lg:p-8'
+            "rounded-2xl bg-white",
+            "max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none",
+            "md:border md:border-slate-200/90 md:p-6 md:shadow-sm lg:p-8",
           )}
         >
           <header className="mb-6 border-b border-slate-100 pb-5 max-md:mb-5 max-md:pb-4">
-            <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'break-words')}>
+            <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, "break-words")}>
               {displayBusiness?.salon_name}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
@@ -927,7 +1006,9 @@ export default function PublicBookingPage({
           </header>
 
           <div className="mb-6 md:mb-8">
-            <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_SERVICE}</p>
+            <p className={sectionLabelClass}>
+              {UI_CUSTOMER.LABEL_SELECT_SERVICE}
+            </p>
 
             {services.length === 0 ? (
               <p className="text-sm text-slate-400">Loading services…</p>
@@ -939,10 +1020,10 @@ export default function PublicBookingPage({
                     <label
                       key={service.id}
                       className={cn(
-                        'flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors sm:gap-4 sm:px-5 sm:py-4',
+                        "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors sm:gap-4 sm:px-5 sm:py-4",
                         checked
-                          ? 'border-slate-900 bg-slate-50 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70'
+                          ? "border-slate-900 bg-slate-50 shadow-sm"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70",
                       )}
                     >
                       <div className="flex shrink-0 items-center self-stretch">
@@ -990,7 +1071,9 @@ export default function PublicBookingPage({
 
           {selectedDate ? (
             <div className="mb-6 md:mb-8">
-              <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_TIME}</p>
+              <p className={sectionLabelClass}>
+                {UI_CUSTOMER.LABEL_SELECT_TIME}
+              </p>
               <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 sm:p-4">
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:grid-cols-4 lg:grid-cols-5">
                   <SlotSelectionGrid

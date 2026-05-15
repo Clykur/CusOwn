@@ -1,5 +1,5 @@
-import { setupEventHandlers } from '../events/event-handlers';
-import { startNonceCleanup } from '../security/nonce-store';
+import { setupEventHandlers } from "../events/event-handlers";
+import { startNonceCleanup } from "../security/nonce-store";
 
 let initialized = false;
 
@@ -10,6 +10,6 @@ export const initializeEvents = (): void => {
   initialized = true;
 };
 
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   initializeEvents();
 }

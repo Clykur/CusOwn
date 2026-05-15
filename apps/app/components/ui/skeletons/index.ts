@@ -5,7 +5,7 @@ export {
   SkeletonTable,
   SkeletonCardList,
   skeletonBase,
-} from './base-skeleton';
+} from "./base-skeleton";
 
 // Common components
 export {
@@ -13,15 +13,19 @@ export {
   AdminTableSkeleton,
   ListSkeleton,
   UsersTableBodySkeleton,
-} from './common/table-skeleton';
-export { DashboardStatSkeleton, SalonCardSkeleton, SlotGridSkeleton } from './common/card-skeleton';
+} from "./common/table-skeleton";
+export {
+  DashboardStatSkeleton,
+  SalonCardSkeleton,
+  SlotGridSkeleton,
+} from "./common/card-skeleton";
 export {
   HomeSkeleton,
   LoginSkeleton,
   SelectRoleSkeleton,
   RedirectSkeleton,
-} from './common/page-skeleton';
-export { ProfileSkeleton } from './common/profile-skeleton';
+} from "./common/page-skeleton";
+export { ProfileSkeleton } from "./common/profile-skeleton";
 
 // Admin skeletons
 export {
@@ -32,7 +36,7 @@ export {
   BookingsSkeleton,
   AuditLogsSkeleton,
   AdminAnalyticsSkeleton,
-} from './admin/admin-skeletons';
+} from "./admin/admin-skeletons";
 
 // Owner skeletons
 export {
@@ -43,7 +47,7 @@ export {
   OwnerAnalyticsSkeleton,
   BusinessCreateSkeleton,
   OwnerSalonDetailLoadingBody,
-} from './owner/owner-skeletons';
+} from "./owner/owner-skeletons";
 
 // Customer skeletons
 export {
@@ -51,7 +55,7 @@ export {
   CategoryGridSkeleton,
   SalonListSkeleton,
   BusinessProfileSkeleton,
-} from './customer/customer-skeletons';
+} from "./customer/customer-skeletons";
 
 // Booking skeletons
 export {
@@ -60,4 +64,4 @@ export {
   AcceptRejectSkeleton,
   SetupSkeleton,
   CalendarGridLoadingSkeleton,
-} from './booking/booking-skeletons';
+} from "./booking/booking-skeletons";

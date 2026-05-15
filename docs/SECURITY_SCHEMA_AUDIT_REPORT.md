@@ -225,7 +225,7 @@ async reserveSlot(slotId: string): Promise<boolean> {
 
 ```typescript
 // app/api/payments/verify/route.ts:56
-const isAdmin = userProfile?.role === 'admin'; // ❌ WRONG - should be user_type
+const isAdmin = userProfile?.role === "admin"; // ❌ WRONG - should be user_type
 
 // app/api/admin/bookings/[id]/route.ts:23
 const isAdmin = await checkIsAdminServer(user.id); // ✅ CORRECT
@@ -397,7 +397,7 @@ async markPaymentFailed(...) {
 export const SLOT_RESERVATION_TIMEOUT_MINUTES = 10; // ❌ HARDCODED
 
 // config/env.ts
-slotExpiryMinutes: parseInt(process.env.SLOT_EXPIRY_MINUTES || '10', 10); // ✅ ENV-DRIVEN
+slotExpiryMinutes: parseInt(process.env.SLOT_EXPIRY_MINUTES || "10", 10); // ✅ ENV-DRIVEN
 ```
 
 ---
@@ -670,9 +670,9 @@ slotExpiryMinutes: parseInt(process.env.SLOT_EXPIRY_MINUTES || '10', 10); // ✅
 
    ```typescript
    // Replace all instances of:
-   userProfile?.role === 'admin';
+   userProfile?.role === "admin";
    // With:
-   userProfile?.user_type === 'admin';
+   userProfile?.user_type === "admin";
    ```
 
 7. **Set payment_required and payment_type**
@@ -681,16 +681,17 @@ slotExpiryMinutes: parseInt(process.env.SLOT_EXPIRY_MINUTES || '10', 10); // ✅
    // app/api/payments/initiate/route.ts
    // After payment creation, update booking:
    await supabaseAdmin
-     .from('bookings')
-     .update({ payment_required: true, payment_type: 'full' })
-     .eq('id', booking_id);
+     .from("bookings")
+     .update({ payment_required: true, payment_type: "full" })
+     .eq("id", booking_id);
    ```
 
 8. **Use env for slot reservation timeout**
    ```typescript
    // config/constants.ts
    // Remove hardcoded value, import from env
-   export const SLOT_RESERVATION_TIMEOUT_MINUTES = env.payment.slotExpiryMinutes;
+   export const SLOT_RESERVATION_TIMEOUT_MINUTES =
+     env.payment.slotExpiryMinutes;
    ```
 
 ---

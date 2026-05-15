@@ -1,8 +1,14 @@
-import { NextRequest } from 'next/server';
-import { requireAdmin, successResponse, errorResponse, parseAdminDateRange, adminAnalyticsService } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import {
+  requireAdmin,
+  successResponse,
+  errorResponse,
+  parseAdminDateRange,
+  adminAnalyticsService,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 
-const ROUTE = 'GET /api/admin/revenue-metrics';
+const ROUTE = "GET /api/admin/revenue-metrics";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +20,8 @@ export async function GET(request: NextRequest) {
     return successResponse(data);
   } catch (error) {
     console.error(`[API ERROR] ${ROUTE}:`, error);
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

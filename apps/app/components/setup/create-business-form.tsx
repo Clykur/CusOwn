@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   APP_SCREEN_TITLE_CLASSNAME,
   SLOT_DURATIONS,
@@ -13,22 +13,30 @@ import {
   BUSINESS_CATEGORIES_FALLBACK,
   DEFAULT_CONCURRENT_BOOKING_CAPACITY,
   MAX_CONCURRENT_BOOKING_CAPACITY,
-} from '@cusown/config';
-import { CreateSalonInput } from '@cusown/shared';
-import { logError } from '@cusown/shared';
-import { getServerSessionClient } from '@cusown/shared';
-import { ROUTES } from '@cusown/shared';
+} from "@cusown/config";
+import { CreateSalonInput } from "@cusown/shared";
+import { logError } from "@cusown/shared";
+import { getServerSessionClient } from "@cusown/shared";
+import { ROUTES } from "@cusown/shared";
 
-type ServiceDraftRow = { name: string; duration_minutes: number; price_inr: number };
-import { getCSRFToken, clearCSRFToken } from '@cusown/shared';
-import { formatPhoneNumber } from '@cusown/shared';
+type ServiceDraftRow = {
+  name: string;
+  duration_minutes: number;
+  price_inr: number;
+};
+import { getCSRFToken, clearCSRFToken } from "@cusown/shared";
+import { formatPhoneNumber } from "@cusown/shared";
 
 export type CreateBusinessFormProps = {
   redirectAfterSuccess?: string;
   /** When true, render without full-page wrapper (for owner layout). */
   embedded?: boolean;
   /** Called on successful business creation instead of navigating. When provided, the component will NOT auto-redirect. */
-  onSuccess?: (data: { bookingLink: string; bookingUrl: string; qrCode?: string }) => void;
+  onSuccess?: (data: {
+    bookingLink: string;
+    bookingUrl: string;
+    qrCode?: string;
+  }) => void;
 };
 
 export default function CreateBusinessForm({
@@ -39,18 +47,18 @@ export default function CreateBusinessForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateSalonInput>({
-    salon_name: '',
-    owner_name: '',
-    whatsapp_number: '',
-    opening_time: '10:00:00',
-    closing_time: '21:00:00',
-    slot_duration: '30',
-    address: '',
-    location: '',
-    category: 'salon',
-    city: '',
-    area: '',
-    pincode: '',
+    salon_name: "",
+    owner_name: "",
+    whatsapp_number: "",
+    opening_time: "10:00:00",
+    closing_time: "21:00:00",
+    slot_duration: "30",
+    address: "",
+    location: "",
+    category: "salon",
+    city: "",
+    area: "",
+    pincode: "",
     latitude: 0,
     longitude: 0,
     concurrent_booking_capacity: DEFAULT_CONCURRENT_BOOKING_CAPACITY,
@@ -58,11 +66,11 @@ export default function CreateBusinessForm({
   const [ownerBusinesses, setOwnerBusinesses] = useState<
     { salon_name: string; whatsapp_number: string }[] | null
   >(null);
-  const [businessCategories, setBusinessCategories] = useState<{ value: string; label: string }[]>(
-    BUSINESS_CATEGORIES_FALLBACK
-  );
+  const [businessCategories, setBusinessCategories] = useState<
+    { value: string; label: string }[]
+  >(BUSINESS_CATEGORIES_FALLBACK);
   const [serviceRows, setServiceRows] = useState<ServiceDraftRow[]>([
-    { name: '', duration_minutes: 30, price_inr: 0 },
+    { name: "", duration_minutes: 30, price_inr: 0 },
   ]);
 
   useEffect(() => {
@@ -71,12 +79,14 @@ export default function CreateBusinessForm({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(API_ROUTES.BUSINESS_CATEGORIES, { credentials: 'include' })
+    fetch(API_ROUTES.BUSINESS_CATEGORIES, { credentials: "include" })
       .then((r) => r.json())
       .then((res) => {
         if (cancelled) return;
         const list = res?.data && Array.isArray(res.data) ? res.data : [];
-        setBusinessCategories(list.length ? list : BUSINESS_CATEGORIES_FALLBACK);
+        setBusinessCategories(
+          list.length ? list : BUSINESS_CATEGORIES_FALLBACK,
+        );
       })
       .catch(() => {
         if (!cancelled) setBusinessCategories(BUSINESS_CATEGORIES_FALLBACK);
@@ -90,15 +100,17 @@ export default function CreateBusinessForm({
     let cancelled = false;
     getServerSessionClient().then(({ user }) => {
       if (!user || cancelled) return;
-      fetch('/api/owner/businesses', { credentials: 'include' })
+      fetch("/api/owner/businesses", { credentials: "include" })
         .then((r) => r.json())
         .then((res) => {
           if (cancelled || !res?.data?.length) return;
           setOwnerBusinesses(
-            res.data.map((b: { salon_name: string; whatsapp_number: string }) => ({
-              salon_name: b.salon_name,
-              whatsapp_number: b.whatsapp_number,
-            }))
+            res.data.map(
+              (b: { salon_name: string; whatsapp_number: string }) => ({
+                salon_name: b.salon_name,
+                whatsapp_number: b.whatsapp_number,
+              }),
+            ),
           );
         })
         .catch(() => {});
@@ -109,35 +121,42 @@ export default function CreateBusinessForm({
   }, []);
 
   const whatsappReuseHint = useMemo(() => {
-    const digits = formData.whatsapp_number.replace(/\D/g, '');
-    if (digits.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH || !ownerBusinesses?.length)
+    const digits = formData.whatsapp_number.replace(/\D/g, "");
+    if (
+      digits.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH ||
+      !ownerBusinesses?.length
+    )
       return null;
     const formatted = formatPhoneNumber(formData.whatsapp_number);
     const existing = ownerBusinesses.find(
-      (b) => formatPhoneNumber(b.whatsapp_number) === formatted
+      (b) => formatPhoneNumber(b.whatsapp_number) === formatted,
     );
     return existing?.salon_name ?? null;
   }, [formData.whatsapp_number, ownerBusinesses]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
     let processedValue = value;
-    if (name === 'concurrent_booking_capacity') {
+    if (name === "concurrent_booking_capacity") {
       const n = Math.min(
         MAX_CONCURRENT_BOOKING_CAPACITY,
-        Math.max(1, parseInt(value, 10) || DEFAULT_CONCURRENT_BOOKING_CAPACITY)
+        Math.max(1, parseInt(value, 10) || DEFAULT_CONCURRENT_BOOKING_CAPACITY),
       );
       setFormData((prev) => ({ ...prev, concurrent_booking_capacity: n }));
       setError(null);
       return;
     }
-    if ((name === 'opening_time' || name === 'closing_time') && value) {
+    if ((name === "opening_time" || name === "closing_time") && value) {
       processedValue = value.length === 5 ? `${value}:00` : value;
     }
-    if (name === 'whatsapp_number') {
-      const digitsOnly = value.replace(/\D/g, '').slice(0, VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH);
+    if (name === "whatsapp_number") {
+      const digitsOnly = value
+        .replace(/\D/g, "")
+        .slice(0, VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH);
       processedValue = digitsOnly;
     }
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
@@ -146,29 +165,29 @@ export default function CreateBusinessForm({
 
   const validateForm = (): string | null => {
     if (!formData.salon_name.trim() || formData.salon_name.trim().length < 2) {
-      return 'Business name must be at least 2 characters';
+      return "Business name must be at least 2 characters";
     }
     if (!formData.owner_name.trim() || formData.owner_name.trim().length < 2) {
-      return 'Owner name must be at least 2 characters';
+      return "Owner name must be at least 2 characters";
     }
-    const whatsappDigits = formData.whatsapp_number.replace(/\D/g, '');
+    const whatsappDigits = formData.whatsapp_number.replace(/\D/g, "");
     if (whatsappDigits.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH) {
       return ERROR_MESSAGES.WHATSAPP_NUMBER_INVALID;
     }
     if (formData.opening_time >= formData.closing_time) {
-      return 'Closing time must be after opening time';
+      return "Closing time must be after opening time";
     }
     if (!formData.address.trim() || formData.address.trim().length < 5) {
-      return 'Address is required (minimum 5 characters)';
+      return "Address is required (minimum 5 characters)";
     }
     if (!formData.location.trim() || formData.location.trim().length < 2) {
-      return 'Location/Area is required';
+      return "Location/Area is required";
     }
     if (!formData.city?.trim()) {
-      return 'City is required';
+      return "City is required";
     }
     if (!formData.latitude || !formData.longitude) {
-      return 'Please set your business location (coordinates)';
+      return "Please set your business location (coordinates)";
     }
     return null;
   };
@@ -185,33 +204,40 @@ export default function CreateBusinessForm({
     try {
       const { user: sessionUser } = await getServerSessionClient();
       if (!sessionUser) {
-        throw new Error('Authentication required. Please sign in again.');
+        throw new Error("Authentication required. Please sign in again.");
       }
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
-      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (csrfToken) headers["x-csrf-token"] = csrfToken;
       const servicesPayload = serviceRows
         .filter((s) => s.name.trim().length > 0)
         .map((s) => ({
           name: s.name.trim(),
-          duration_minutes: Math.max(1, Math.floor(Number(s.duration_minutes)) || 1),
+          duration_minutes: Math.max(
+            1,
+            Math.floor(Number(s.duration_minutes)) || 1,
+          ),
           price_cents: Math.max(0, Math.round(Number(s.price_inr) * 100)),
         }));
 
       const response = await fetch(API_ROUTES.SALONS, {
-        method: 'POST',
+        method: "POST",
         headers,
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           ...(servicesPayload.length > 0 ? { services: servicesPayload } : {}),
         }),
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
-        throw new Error(errorData.error || `Failed to create business (${response.status})`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(
+          errorData.error || `Failed to create business (${response.status})`,
+        );
       }
       const result = await response.json();
       if (result.success && result.data) {
@@ -229,11 +255,15 @@ export default function CreateBusinessForm({
         }
         return;
       } else {
-        throw new Error(result.error || 'Failed to create business. Please try again.');
+        throw new Error(
+          result.error || "Failed to create business. Please try again.",
+        );
       }
     } catch (err) {
-      logError(err, 'Salon Creation');
-      setError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+      logError(err, "Salon Creation");
+      setError(
+        err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR,
+      );
       clearCSRFToken();
     } finally {
       setLoading(false);
@@ -242,7 +272,7 @@ export default function CreateBusinessForm({
 
   const handleUseLocation = async () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      alert("Geolocation is not supported by your browser");
       return;
     }
 
@@ -252,9 +282,9 @@ export default function CreateBusinessForm({
         const { latitude, longitude } = position.coords;
         try {
           const res = await fetch(
-            `/api/geo/reverse-geocode?latitude=${latitude}&longitude=${longitude}`
+            `/api/geo/reverse-geocode?latitude=${latitude}&longitude=${longitude}`,
           );
-          if (!res.ok) throw new Error('Failed to fetch address');
+          if (!res.ok) throw new Error("Failed to fetch address");
           const result = await res.json();
           if (result.success && result.data) {
             const { city, region } = result.data;
@@ -264,23 +294,23 @@ export default function CreateBusinessForm({
               longitude,
               city: city || prev.city,
               area: region || prev.area,
-              address: [city, region].filter(Boolean).join(', '),
-              location: city || '',
+              address: [city, region].filter(Boolean).join(", "),
+              location: city || "",
             }));
           }
         } catch (err) {
-          console.error('Error reverse geocoding:', err);
+          console.error("Error reverse geocoding:", err);
           setFormData((prev) => ({ ...prev, latitude, longitude }));
         } finally {
           setLoading(false);
         }
       },
       (err) => {
-        console.error('Error getting location:', err);
+        console.error("Error getting location:", err);
         setLoading(false);
-        alert('Could not get your location. Please enter it manually.');
+        alert("Could not get your location. Please enter it manually.");
       },
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
   };
   const lat = Number(formData.latitude);
@@ -289,9 +319,9 @@ export default function CreateBusinessForm({
   const mapsUrl = useMemo(() => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     try {
-      const u = new URL('https://www.google.com/maps/search/');
-      u.searchParams.set('api', '1');
-      u.searchParams.set('query', `${lat},${lng}`);
+      const u = new URL("https://www.google.com/maps/search/");
+      u.searchParams.set("api", "1");
+      u.searchParams.set("query", `${lat},${lng}`);
       return u.toString();
     } catch {
       return null;
@@ -299,7 +329,7 @@ export default function CreateBusinessForm({
   }, [lat, lng]);
 
   const existingBusinessPathFromError = useMemo(() => {
-    if (!error || !error.includes('/b/')) return null;
+    if (!error || !error.includes("/b/")) return null;
     const m = error.match(/\/b\/[A-Za-z0-9_-]{1,128}/);
     return m ? m[0] : null;
   }, [error]);
@@ -311,8 +341,9 @@ export default function CreateBusinessForm({
         </div>
         <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
           <p className="text-xs md:text-sm text-blue-800">
-            <strong className="font-semibold">Tip:</strong> You can create multiple businesses
-            later. Each business gets its own booking link and QR code.
+            <strong className="font-semibold">Tip:</strong> You can create
+            multiple businesses later. Each business gets its own booking link
+            and QR code.
           </p>
         </div>
         <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
@@ -346,9 +377,11 @@ export default function CreateBusinessForm({
             id="category"
             name="category"
             value={
-              businessCategories.some((c) => c.value === (formData.category ?? 'salon'))
-                ? (formData.category ?? 'salon')
-                : (businessCategories[0]?.value ?? 'salon')
+              businessCategories.some(
+                (c) => c.value === (formData.category ?? "salon"),
+              )
+                ? (formData.category ?? "salon")
+                : (businessCategories[0]?.value ?? "salon")
             }
             onChange={handleChange}
             required
@@ -484,12 +517,15 @@ export default function CreateBusinessForm({
             name="concurrent_booking_capacity"
             min={1}
             max={MAX_CONCURRENT_BOOKING_CAPACITY}
-            value={formData.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY}
+            value={
+              formData.concurrent_booking_capacity ??
+              DEFAULT_CONCURRENT_BOOKING_CAPACITY
+            }
             onChange={handleChange}
             className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
           />
           <p className="mt-1.5 text-xs text-gray-600">
-            How many appointments can run at the same time (default{' '}
+            How many appointments can run at the same time (default{" "}
             {DEFAULT_CONCURRENT_BOOKING_CAPACITY}).
           </p>
         </div>
@@ -503,7 +539,7 @@ export default function CreateBusinessForm({
               onClick={() =>
                 setServiceRows((rows) => [
                   ...rows,
-                  { name: '', duration_minutes: 30, price_inr: 0 },
+                  { name: "", duration_minutes: 30, price_inr: 0 },
                 ])
               }
               className="text-xs font-semibold text-blue-600 hover:text-blue-800"
@@ -518,14 +554,18 @@ export default function CreateBusinessForm({
                 className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-gray-200 pb-3 last:border-0"
               >
                 <div className="sm:col-span-5">
-                  <label className="block text-xs text-gray-600 mb-1">Name</label>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={row.name}
                     onChange={(e) => {
                       const v = e.target.value;
                       setServiceRows((prev) =>
-                        prev.map((r, i) => (i === index ? { ...r, name: v } : r))
+                        prev.map((r, i) =>
+                          i === index ? { ...r, name: v } : r,
+                        ),
                       );
                     }}
                     className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
@@ -534,7 +574,9 @@ export default function CreateBusinessForm({
                   />
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="block text-xs text-gray-600 mb-1">Duration (min)</label>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Duration (min)
+                  </label>
                   <input
                     type="number"
                     min={1}
@@ -542,14 +584,18 @@ export default function CreateBusinessForm({
                     onChange={(e) => {
                       const v = Math.max(1, parseInt(e.target.value, 10) || 1);
                       setServiceRows((prev) =>
-                        prev.map((r, i) => (i === index ? { ...r, duration_minutes: v } : r))
+                        prev.map((r, i) =>
+                          i === index ? { ...r, duration_minutes: v } : r,
+                        ),
                       );
                     }}
                     className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
                   />
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="block text-xs text-gray-600 mb-1">Price (₹)</label>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Price (₹)
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -558,7 +604,9 @@ export default function CreateBusinessForm({
                     onChange={(e) => {
                       const v = Math.max(0, parseFloat(e.target.value) || 0);
                       setServiceRows((prev) =>
-                        prev.map((r, i) => (i === index ? { ...r, price_inr: v } : r))
+                        prev.map((r, i) =>
+                          i === index ? { ...r, price_inr: v } : r,
+                        ),
                       );
                     }}
                     className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
@@ -568,7 +616,11 @@ export default function CreateBusinessForm({
                   {serviceRows.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => setServiceRows((prev) => prev.filter((_, i) => i !== index))}
+                      onClick={() =>
+                        setServiceRows((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
                       className="text-xs font-medium text-red-600 hover:text-red-800"
                       aria-label="Remove service row"
                     >
@@ -580,8 +632,8 @@ export default function CreateBusinessForm({
             ))}
           </div>
           <p className="mt-2 text-xs text-gray-600">
-            Leave rows empty to skip; you can add services later. Price is stored in paise (₹ ×
-            100).
+            Leave rows empty to skip; you can add services later. Price is
+            stored in paise (₹ × 100).
           </p>
         </div>
         <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
@@ -615,7 +667,7 @@ export default function CreateBusinessForm({
               <input
                 type="text"
                 name="city"
-                value={formData.city || ''}
+                value={formData.city || ""}
                 onChange={handleChange}
                 required
                 className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
@@ -637,7 +689,7 @@ export default function CreateBusinessForm({
               <input
                 type="text"
                 name="area"
-                value={formData.area || ''}
+                value={formData.area || ""}
                 onChange={handleChange}
                 maxLength={100}
                 className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
@@ -646,7 +698,7 @@ export default function CreateBusinessForm({
               <input
                 type="text"
                 name="pincode"
-                value={formData.pincode || ''}
+                value={formData.pincode || ""}
                 onChange={handleChange}
                 maxLength={10}
                 className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
@@ -656,12 +708,15 @@ export default function CreateBusinessForm({
 
             {formData.latitude !== 0 && formData.longitude !== 0 && (
               <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-500">
-                <p className="font-semibold text-gray-700 mb-1">Map Preview (Coordinates)</p>
+                <p className="font-semibold text-gray-700 mb-1">
+                  Map Preview (Coordinates)
+                </p>
                 <p>
-                  Lat: {formData.latitude!.toFixed(6)}, Lng: {formData.longitude!.toFixed(6)}
+                  Lat: {formData.latitude!.toFixed(6)}, Lng:{" "}
+                  {formData.longitude!.toFixed(6)}
                 </p>
                 <a
-                  href={mapsUrl || '#'}
+                  href={mapsUrl || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 inline-block text-blue-600 hover:underline"
@@ -716,7 +771,9 @@ export default function CreateBusinessForm({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-8">
-      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">{formContent}</div>
+      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        {formContent}
+      </div>
     </div>
   );
 }

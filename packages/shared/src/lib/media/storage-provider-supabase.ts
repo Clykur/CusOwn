@@ -3,29 +3,31 @@
  * CDN-ready: cache-control can be set via metadata; lifecycle via bucket policy.
  */
 
-import { requireSupabaseAdmin } from '../supabase/server';
+import { requireSupabaseAdmin } from "../supabase/server";
 import type {
   StorageProvider,
   UploadOptions,
   SignedUrlOptions,
-} from './storage-provider.interface';
-import { MEDIA_CACHE_CONTROL_HEADER } from '@cusown/config';
+} from "./storage-provider.interface";
+import { MEDIA_CACHE_CONTROL_HEADER } from "@cusown/config";
 
 export const supabaseStorageProvider: StorageProvider = {
   async upload(
     bucket: string,
     path: string,
     body: Buffer,
-    options: UploadOptions
+    options: UploadOptions,
   ): Promise<{ etag?: string }> {
     const supabase = requireSupabaseAdmin();
     const cacheControl = options.cacheControl ?? MEDIA_CACHE_CONTROL_HEADER;
-    const { data, error } = await supabase.storage.from(bucket).upload(path, body, {
-      contentType: options.contentType,
-      upsert: options.upsert ?? false,
-      cacheControl,
-      metadata: options.metadata ?? {},
-    });
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(path, body, {
+        contentType: options.contentType,
+        upsert: options.upsert ?? false,
+        cacheControl,
+        metadata: options.metadata ?? {},
+      });
     if (error) throw new Error(error.message);
     return { etag: (data as { etag?: string })?.etag };
   },
@@ -40,14 +42,16 @@ export const supabaseStorageProvider: StorageProvider = {
   async createSignedUrl(
     bucket: string,
     path: string,
-    options: SignedUrlOptions
+    options: SignedUrlOptions,
   ): Promise<{ url: string; expiresAt: string } | null> {
     const supabase = requireSupabaseAdmin();
     const { data, error } = await supabase.storage
       .from(bucket)
       .createSignedUrl(path, options.expiresInSeconds);
     if (error || !data?.signedUrl) return null;
-    const expiresAt = new Date(Date.now() + options.expiresInSeconds * 1000).toISOString();
+    const expiresAt = new Date(
+      Date.now() + options.expiresInSeconds * 1000,
+    ).toISOString();
     return { url: data.signedUrl, expiresAt };
   },
 };

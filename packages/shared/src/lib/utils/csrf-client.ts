@@ -16,11 +16,13 @@ export const getCSRFToken = async (): Promise<string | null> => {
 
   try {
     // Try to read from cookie first
-    if (typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      const csrfCookie = cookies.find((c) => c.trim().startsWith('csrf-token='));
+    if (typeof document !== "undefined") {
+      const cookies = document.cookie.split(";");
+      const csrfCookie = cookies.find((c) =>
+        c.trim().startsWith("csrf-token="),
+      );
       if (csrfCookie) {
-        const token = csrfCookie.split('=')[1]?.trim() || null;
+        const token = csrfCookie.split("=")[1]?.trim() || null;
         if (token) {
           cachedToken = token;
           return token;
@@ -29,9 +31,9 @@ export const getCSRFToken = async (): Promise<string | null> => {
     }
 
     // Fetch token from API endpoint
-    const response = await fetch('/api/csrf-token', {
-      method: 'GET',
-      credentials: 'include',
+    const response = await fetch("/api/csrf-token", {
+      method: "GET",
+      credentials: "include",
     });
 
     if (response.ok) {
@@ -42,7 +44,7 @@ export const getCSRFToken = async (): Promise<string | null> => {
       }
     }
   } catch (error) {
-    console.error('Error fetching CSRF token:', error);
+    console.error("Error fetching CSRF token:", error);
   }
 
   return null;

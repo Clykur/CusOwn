@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getClientIp } from '../utils/security.server';
+import { NextRequest, NextResponse } from "next/server";
+import { getClientIp } from "../utils/security.server";
 
 interface RateLimitEntry {
   key: string;
@@ -33,7 +33,7 @@ export const enhancedRateLimit = (options: EnhancedRateLimitOptions) => {
     }
 
     const keys: string[] = [];
-    const prefix = options.keyPrefix || 'rate_limit';
+    const prefix = options.keyPrefix || "rate_limit";
 
     if (options.perIP) {
       keys.push(`${prefix}:ip:${getClientIp(request)}`);
@@ -42,7 +42,7 @@ export const enhancedRateLimit = (options: EnhancedRateLimitOptions) => {
     if (options.perUser) {
       try {
         // Dynamically import to avoid bundling server-only code
-        const { getServerUser } = await import('../supabase/server-auth');
+        const { getServerUser } = await import("../supabase/server-auth");
         const user = await getServerUser(request);
         if (user) {
           keys.push(`${prefix}:user:${user.id}`);
@@ -54,7 +54,7 @@ export const enhancedRateLimit = (options: EnhancedRateLimitOptions) => {
       keys.push(`${prefix}:ip:${getClientIp(request)}`);
     }
 
-    const windowKey = `${keys.join(':')}:${Math.floor(Date.now() / options.windowMs)}`;
+    const windowKey = `${keys.join(":")}:${Math.floor(Date.now() / options.windowMs)}`;
     const now = Date.now();
     const resetAt = now + options.windowMs;
 
@@ -63,8 +63,8 @@ export const enhancedRateLimit = (options: EnhancedRateLimitOptions) => {
       entry.count++;
       if (entry.count > options.maxRequests) {
         return NextResponse.json(
-          { error: 'Too many requests. Please try again later.' },
-          { status: 429 }
+          { error: "Too many requests. Please try again later." },
+          { status: 429 },
         );
       }
     } else {
@@ -80,14 +80,14 @@ export const userRateLimit = enhancedRateLimit({
   maxRequests: 100,
   perUser: true,
   perIP: true,
-  keyPrefix: 'user_api',
+  keyPrefix: "user_api",
 });
 
 export const ipRateLimit = enhancedRateLimit({
   windowMs: 60000,
   maxRequests: 200,
   perIP: true,
-  keyPrefix: 'ip_api',
+  keyPrefix: "ip_api",
 });
 
 export const bookingRateLimitEnhanced = enhancedRateLimit({
@@ -95,5 +95,5 @@ export const bookingRateLimitEnhanced = enhancedRateLimit({
   maxRequests: 10,
   perUser: true,
   perIP: true,
-  keyPrefix: 'booking',
+  keyPrefix: "booking",
 });

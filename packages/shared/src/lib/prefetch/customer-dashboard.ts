@@ -1,7 +1,10 @@
-'use client';
+"use client";
 
-import { useCustomerBookingsStore, selectCustomerHasValidCache } from '../store';
-import { PREFETCH_DEBOUNCE_MS } from '@cusown/config';
+import {
+  useCustomerBookingsStore,
+  selectCustomerHasValidCache,
+} from "../store";
+import { PREFETCH_DEBOUNCE_MS } from "@cusown/config";
 
 let lastPrefetchTime = 0;
 
@@ -27,10 +30,10 @@ export async function prefetchCustomerDashboard(): Promise<boolean> {
   lastPrefetchTime = now;
 
   try {
-    const response = await fetch('/api/customer/bookings', {
-      credentials: 'include',
+    const response = await fetch("/api/customer/bookings", {
+      credentials: "include",
       headers: {
-        'x-prefetch': '1',
+        "x-prefetch": "1",
       },
     });
 

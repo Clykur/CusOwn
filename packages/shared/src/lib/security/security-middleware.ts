@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { sanitizeRequestBody } from './input-sanitizer';
-import { csrfProtection } from './csrf';
-import { tokenBucketRateLimit } from './token-bucket-rate-limit.security';
+import { NextRequest, NextResponse } from "next/server";
+import { sanitizeRequestBody } from "./input-sanitizer";
+import { csrfProtection } from "./csrf";
+import { tokenBucketRateLimit } from "./token-bucket-rate-limit.security";
 
-export const securityMiddleware = async (request: NextRequest): Promise<NextResponse | null> => {
-  if (!request.nextUrl.pathname.startsWith('/api/')) {
+export const securityMiddleware = async (
+  request: NextRequest,
+): Promise<NextResponse | null> => {
+  if (!request.nextUrl.pathname.startsWith("/api/")) {
     return null;
   }
 
@@ -16,12 +18,12 @@ export const securityMiddleware = async (request: NextRequest): Promise<NextResp
   // Exempt: read-only URL generation; webhooks (signature-verified); cron (CRON_SECRET);
   // public booking (no session when user lands from QR, so no CSRF cookie yet).
   const isExemptFromCsrf =
-    request.nextUrl.pathname === '/api/security/generate-salon-url' ||
-    request.nextUrl.pathname === '/api/security/generate-resource-url' ||
-    request.nextUrl.pathname.startsWith('/api/payments/webhook/') ||
-    request.nextUrl.pathname.startsWith('/api/cron/') ||
-    request.nextUrl.pathname === '/api/book/set-pending' ||
-    request.nextUrl.pathname === '/api/bookings';
+    request.nextUrl.pathname === "/api/security/generate-salon-url" ||
+    request.nextUrl.pathname === "/api/security/generate-resource-url" ||
+    request.nextUrl.pathname.startsWith("/api/payments/webhook/") ||
+    request.nextUrl.pathname.startsWith("/api/cron/") ||
+    request.nextUrl.pathname === "/api/book/set-pending" ||
+    request.nextUrl.pathname === "/api/bookings";
 
   if (!isExemptFromCsrf) {
     const csrfResponse = await csrfProtection(request);
@@ -34,7 +36,7 @@ export const securityMiddleware = async (request: NextRequest): Promise<NextResp
 };
 
 export const sanitizeRequest = async (request: NextRequest): Promise<any> => {
-  if (request.method === 'GET' || request.method === 'HEAD') {
+  if (request.method === "GET" || request.method === "HEAD") {
     return null;
   }
 

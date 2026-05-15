@@ -1,11 +1,11 @@
-import { CACHE_TTL_AUTH_MS } from '@cusown/config';
-import type { User } from '@supabase/supabase-js';
+import { CACHE_TTL_AUTH_MS } from "@cusown/config";
+import type { User } from "@supabase/supabase-js";
 
 const MAX_ENTRIES = 1000;
 const accessOrder: string[] = [];
 const cache = new Map<string, { user: User; expiresAt: number }>();
 
-const PROFILE_PREFIX = 'profile:';
+const PROFILE_PREFIX = "profile:";
 const profileCache = new Map<string, { profile: unknown; expiresAt: number }>();
 const profileOrder: string[] = [];
 const MAX_PROFILE_ENTRIES = 2000;
@@ -79,7 +79,10 @@ export function getCachedProfile(userId: string): unknown | null {
 }
 
 export function setCachedProfile(userId: string, profile: unknown): void {
-  if (profileCache.size >= MAX_PROFILE_ENTRIES && !profileCache.has(PROFILE_PREFIX + userId)) {
+  if (
+    profileCache.size >= MAX_PROFILE_ENTRIES &&
+    !profileCache.has(PROFILE_PREFIX + userId)
+  ) {
     evictOneProfile();
   }
   const key = PROFILE_PREFIX + userId;

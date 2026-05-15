@@ -3,7 +3,7 @@
  * Reuses the same Redis connection configuration as the cache layer.
  */
 
-import { env } from '@cusown/config';
+import { env } from "@cusown/config";
 
 let queueUnavailableLogged = false;
 let queueInvalidUrlLogged = false;
@@ -12,12 +12,12 @@ function logQueueUnavailableOnce(): void {
   if (queueUnavailableLogged) return;
   queueUnavailableLogged = true;
   const reason = !env.redis.enabled
-    ? 'REDIS_ENABLED=false'
+    ? "REDIS_ENABLED=false"
     : !env.redis.url?.trim()
-      ? 'REDIS_URL is not set'
-      : 'unknown';
+      ? "REDIS_URL is not set"
+      : "unknown";
   console.warn(
-    `[Queue] BullMQ unavailable (${reason}). Reminder/analytics/notification jobs are not enqueued; workers do not start. Set REDIS_URL and REDIS_ENABLED=true, or rely on inline fallbacks where implemented (e.g. accept booking → sync reminder schedule).`
+    `[Queue] BullMQ unavailable (${reason}). Reminder/analytics/notification jobs are not enqueued; workers do not start. Set REDIS_URL and REDIS_ENABLED=true, or rely on inline fallbacks where implemented (e.g. accept booking → sync reminder schedule).`,
   );
 }
 
@@ -38,7 +38,10 @@ export const getQueueConnection = () => {
   } catch (err) {
     if (!queueInvalidUrlLogged) {
       queueInvalidUrlLogged = true;
-      console.error('[Queue] Invalid REDIS_URL for BullMQ (cannot parse as URL):', err);
+      console.error(
+        "[Queue] Invalid REDIS_URL for BullMQ (cannot parse as URL):",
+        err,
+      );
     }
     return null;
   }

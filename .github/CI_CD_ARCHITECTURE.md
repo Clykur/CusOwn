@@ -196,7 +196,11 @@ setup
   "require_code_owner_review": true,
   "require_last_push_approval": true,
   "strict_required_status_checks_policy": true,
-  "required_status_checks": ["Pre-deploy Gate", "CodeQL Analysis", "Dependency Review"],
+  "required_status_checks": [
+    "Pre-deploy Gate",
+    "CodeQL Analysis",
+    "Dependency Review"
+  ],
   "allow_force_pushes": false,
   "allow_deletions": false
 }

@@ -1,4 +1,4 @@
-import { env } from '@cusown/config';
+import { env } from "@cusown/config";
 
 export interface ReverseGeocodeResult {
   address_line1: string;
@@ -25,15 +25,18 @@ export interface IpLookupResult {
 
 class GeolocationService {
   private readonly apiKey: string = env.geo.bigDataCloudApiKey;
-  private readonly baseUrl: string = 'https://api.bigdatacloud.net/data';
+  private readonly baseUrl: string = "https://api.bigdatacloud.net/data";
 
-  private async fetchWithRetry(url: string, retries: number = 2): Promise<Response> {
+  private async fetchWithRetry(
+    url: string,
+    retries: number = 2,
+  ): Promise<Response> {
     let lastError: Error | undefined;
     for (let i = 0; i <= retries; i++) {
       try {
         const response = await fetch(url, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
+          method: "GET",
+          headers: { Accept: "application/json" },
           signal: AbortSignal.timeout(5000), // 5s timeout
         });
         if (response.ok) return response;
@@ -48,15 +51,18 @@ class GeolocationService {
         }
       }
     }
-    throw lastError || new Error('Fetch failed after retries');
+    throw lastError || new Error("Fetch failed after retries");
   }
 
-  async reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult | null> {
+  async reverseGeocode(
+    lat: number,
+    lng: number,
+  ): Promise<ReverseGeocodeResult | null> {
     const url = new URL(`${this.baseUrl}/reverse-geocode-client`);
-    url.searchParams.set('latitude', lat.toString());
-    url.searchParams.set('longitude', lng.toString());
-    url.searchParams.set('localityLanguage', 'en');
-    if (this.apiKey) url.searchParams.set('key', this.apiKey);
+    url.searchParams.set("latitude", lat.toString());
+    url.searchParams.set("longitude", lng.toString());
+    url.searchParams.set("localityLanguage", "en");
+    if (this.apiKey) url.searchParams.set("key", this.apiKey);
 
     try {
       const response = await this.fetchWithRetry(url.toString());
@@ -65,30 +71,30 @@ class GeolocationService {
       const data = await response.json();
 
       // Construct address_line1 from locality and principalSubdivision if needed
-      const address_line1 = data.locality || data.city || '';
+      const address_line1 = data.locality || data.city || "";
 
       return {
         address_line1,
-        city: data.city || data.locality || '',
-        state: data.principalSubdivision || '',
-        country: data.countryName || '',
-        postal_code: data.postcode || '',
-        countryCode: data.countryCode || '',
-        locality: data.locality || '',
-        principalSubdivision: data.principalSubdivision || '',
+        city: data.city || data.locality || "",
+        state: data.principalSubdivision || "",
+        country: data.countryName || "",
+        postal_code: data.postcode || "",
+        countryCode: data.countryCode || "",
+        locality: data.locality || "",
+        principalSubdivision: data.principalSubdivision || "",
         latitude: data.latitude || lat,
         longitude: data.longitude || lng,
       };
     } catch (error) {
-      console.error('[GeolocationService] reverseGeocode error:', error);
+      console.error("[GeolocationService] reverseGeocode error:", error);
       return null;
     }
   }
 
   async ipLookup(ip: string): Promise<IpLookupResult | null> {
     const url = new URL(`${this.baseUrl}/ip-geolocation`);
-    url.searchParams.set('ip', ip);
-    if (this.apiKey) url.searchParams.set('key', this.apiKey);
+    url.searchParams.set("ip", ip);
+    if (this.apiKey) url.searchParams.set("key", this.apiKey);
 
     try {
       const response = await this.fetchWithRetry(url.toString());
@@ -98,7 +104,7 @@ class GeolocationService {
 
       const latResult = data.location?.latitude || 0;
       const lngResult = data.location?.longitude || 0;
-      const cityName = data.location?.city || data.locality || '';
+      const cityName = data.location?.city || data.locality || "";
 
       // If we get 0,0 and no city, it's a failure to pinpoint (Null Island)
       if (latResult === 0 && lngResult === 0 && !cityName) {
@@ -109,13 +115,13 @@ class GeolocationService {
         latitude: latResult,
         longitude: lngResult,
         city: cityName,
-        country: data.country?.name || '',
-        countryCode: data.country?.code || '',
-        state: data.location?.principalSubdivision || '',
+        country: data.country?.name || "",
+        countryCode: data.country?.code || "",
+        state: data.location?.principalSubdivision || "",
         ip: data.ip || ip,
       };
     } catch (error) {
-      console.error('[GeolocationService] ipLookup error:', error);
+      console.error("[GeolocationService] ipLookup error:", error);
       return null;
     }
   }

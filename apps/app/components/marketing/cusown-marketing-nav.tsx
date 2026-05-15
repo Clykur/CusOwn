@@ -1,24 +1,31 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion, useMotionValueEvent, useReducedMotion, useScroll } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  motion,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+} from "framer-motion";
+import { Menu, X } from "lucide-react";
 import {
   CUSOWN_LANDING_NAV_COMPACT_AFTER_SCROLL_PX,
   CUSOWN_LANDING_SECTION_IDS,
-} from '@cusown/config';
-import { ROUTES } from '@cusown/shared';
+} from "@cusown/config";
+import { ROUTES } from "@cusown/shared";
 
-export type CusownMarketingNavSectionMode = 'landing' | 'external';
+export type CusownMarketingNavSectionMode = "landing" | "external";
 
 type CusownMarketingNavProps = {
   /** `landing`: smooth-scroll to section ids on this page. `external`: go to `/#section` (e.g. from /select-role). */
   sectionNavMode: CusownMarketingNavSectionMode;
 };
 
-export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) {
+export function CusownMarketingNav({
+  sectionNavMode,
+}: CusownMarketingNavProps) {
   const router = useRouter();
   const reduceMotionNav = useReducedMotion();
   const [navSolid, setNavSolid] = useState(false);
@@ -27,10 +34,12 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
   const { scrollY } = useScroll();
 
   useEffect(() => {
-    setPastHeroNav(window.scrollY >= CUSOWN_LANDING_NAV_COMPACT_AFTER_SCROLL_PX);
+    setPastHeroNav(
+      window.scrollY >= CUSOWN_LANDING_NAV_COMPACT_AFTER_SCROLL_PX,
+    );
   }, []);
 
-  useMotionValueEvent(scrollY, 'change', (y) => {
+  useMotionValueEvent(scrollY, "change", (y) => {
     setNavSolid(y > 24);
     setPastHeroNav(y >= CUSOWN_LANDING_NAV_COMPACT_AFTER_SCROLL_PX);
   });
@@ -39,13 +48,17 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
   const navMorphTransition = reduceMotionNav
     ? { duration: 0.15 }
     : compactBar
-      ? { type: 'spring' as const, stiffness: 380, damping: 36, mass: 0.9 }
-      : { type: 'tween' as const, duration: 0.14, ease: [0.22, 1, 0.36, 1] as const };
+      ? { type: "spring" as const, stiffness: 380, damping: 36, mass: 0.9 }
+      : {
+          type: "tween" as const,
+          duration: 0.14,
+          ease: [0.22, 1, 0.36, 1] as const,
+        };
 
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
@@ -56,23 +69,26 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
       setMobileOpen(false);
       router.push(path);
     },
-    [router]
+    [router],
   );
 
   const scrollToSection = useCallback((id: string) => {
     setMobileOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
   const navItemClass = `text-left font-medium tracking-tight text-zinc-400 transition-colors hover:text-white ${
-    compactBar ? 'text-[13px]' : 'text-sm'
+    compactBar ? "text-[13px]" : "text-sm"
   }`;
 
   const mobileNavItemClass =
-    'min-h-[2.75rem] py-2.5 text-left text-[15px] font-medium tracking-tight text-zinc-300 transition-colors hover:text-white active:text-white';
+    "min-h-[2.75rem] py-2.5 text-left text-[15px] font-medium tracking-tight text-zinc-300 transition-colors hover:text-white active:text-white";
 
-  const navLink = (id: keyof typeof CUSOWN_LANDING_SECTION_IDS, label: string) =>
-    sectionNavMode === 'external' ? (
+  const navLink = (
+    id: keyof typeof CUSOWN_LANDING_SECTION_IDS,
+    label: string,
+  ) =>
+    sectionNavMode === "external" ? (
       <Link
         href={`/#${CUSOWN_LANDING_SECTION_IDS[id]}`}
         onClick={() => setMobileOpen(false)}
@@ -90,8 +106,11 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
       </button>
     );
 
-  const mobileNavLink = (id: keyof typeof CUSOWN_LANDING_SECTION_IDS, label: string) =>
-    sectionNavMode === 'external' ? (
+  const mobileNavLink = (
+    id: keyof typeof CUSOWN_LANDING_SECTION_IDS,
+    label: string,
+  ) =>
+    sectionNavMode === "external" ? (
       <Link
         href={`/#${CUSOWN_LANDING_SECTION_IDS[id]}`}
         onClick={() => setMobileOpen(false)}
@@ -122,9 +141,9 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
       <motion.header
         initial={false}
         animate={{
-          left: compactBar ? '50%' : '0%',
-          x: compactBar ? '-50%' : 0,
-          width: compactBar ? 'min(94vw, 56rem)' : '100%',
+          left: compactBar ? "50%" : "0%",
+          x: compactBar ? "-50%" : 0,
+          width: compactBar ? "min(94vw, 56rem)" : "100%",
           borderTopLeftRadius: compactBar ? 22 : 0,
           borderTopRightRadius: compactBar ? 22 : 0,
           borderBottomLeftRadius: compactBar ? 22 : 0,
@@ -133,27 +152,29 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
         transition={navMorphTransition}
         className={`marketing-safe-x fixed z-50 ${
           compactBar
-            ? 'top-[max(0.75rem,env(safe-area-inset-top,0px))] md:top-5'
-            : 'top-0 pt-[env(safe-area-inset-top,0px)]'
+            ? "top-[max(0.75rem,env(safe-area-inset-top,0px))] md:top-5"
+            : "top-0 pt-[env(safe-area-inset-top,0px)]"
         } ${
           compactBar
-            ? 'border border-white/[0.13] bg-zinc-950/88 shadow-[0_16px_56px_-20px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06)_inset,0_0_60px_-24px_rgba(34,197,94,0.14)] backdrop-blur-2xl backdrop-saturate-150'
+            ? "border border-white/[0.13] bg-zinc-950/88 shadow-[0_16px_56px_-20px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06)_inset,0_0_60px_-24px_rgba(34,197,94,0.14)] backdrop-blur-2xl backdrop-saturate-150"
             : navSolid
-              ? 'border-b border-white/5 bg-zinc-950/78 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl backdrop-saturate-150'
-              : 'border-b border-transparent bg-transparent'
+              ? "border-b border-white/5 bg-zinc-950/78 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl backdrop-saturate-150"
+              : "border-b border-transparent bg-transparent"
         }`}
       >
         <div
           className={`mx-auto flex max-w-6xl items-center justify-between gap-2 sm:gap-4 ${
-            compactBar ? 'px-3 py-2 sm:px-5 sm:py-2.5' : 'px-4 py-4 sm:px-6 lg:px-8'
+            compactBar
+              ? "px-3 py-2 sm:px-5 sm:py-2.5"
+              : "px-4 py-4 sm:px-6 lg:px-8"
           }`}
         >
           <button
             type="button"
             onClick={() => {
               setMobileOpen(false);
-              if (sectionNavMode === 'landing') {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (sectionNavMode === "landing") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
               } else {
                 router.push(ROUTES.HOME);
               }
@@ -162,7 +183,7 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
           >
             <div
               className={`font-display font-bold tracking-tight text-white transition-[font-size] duration-200 ${
-                compactBar ? 'text-base sm:text-[1.05rem]' : 'text-lg'
+                compactBar ? "text-base sm:text-[1.05rem]" : "text-lg"
               }`}
             >
               CUSOWN
@@ -175,21 +196,21 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
           </button>
 
           <nav
-            className={`hidden items-center md:flex ${compactBar ? 'gap-3 lg:gap-4 xl:gap-5' : 'gap-5 lg:gap-6 xl:gap-8'}`}
+            className={`hidden items-center md:flex ${compactBar ? "gap-3 lg:gap-4 xl:gap-5" : "gap-5 lg:gap-6 xl:gap-8"}`}
           >
-            {navLink('platform', 'Platform')}
-            {navLink('capabilities', 'Capabilities')}
-            {navLink('pricing', 'Pricing')}
-            {navLink('process', 'Process')}
-            {navLink('roadmap', 'Roadmap')}
-            {navLink('faq', 'FAQ')}
+            {navLink("platform", "Platform")}
+            {navLink("capabilities", "Capabilities")}
+            {navLink("pricing", "Pricing")}
+            {navLink("process", "Process")}
+            {navLink("roadmap", "Roadmap")}
+            {navLink("faq", "FAQ")}
             <motion.button
               type="button"
               onClick={() => go(ROUTES.SELECT_ROLE())}
               whileHover={reduceMotionNav ? undefined : { scale: 1.02 }}
               whileTap={reduceMotionNav ? undefined : { scale: 0.98 }}
               className={`rounded-lg bg-accent font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_28px_rgba(34,197,94,0.38)] ${
-                compactBar ? 'px-4 py-1.5 text-[13px]' : 'px-5 py-2 text-sm'
+                compactBar ? "px-4 py-1.5 text-[13px]" : "px-5 py-2 text-sm"
               }`}
             >
               Get Started
@@ -202,7 +223,7 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
               onClick={() => go(ROUTES.SELECT_ROLE())}
               whileTap={reduceMotionNav ? undefined : { scale: 0.97 }}
               className={`rounded-lg bg-accent font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${
-                compactBar ? 'px-3 py-1.5 text-[11px]' : 'px-3.5 py-2 text-xs'
+                compactBar ? "px-3 py-1.5 text-[11px]" : "px-3.5 py-2 text-xs"
               }`}
             >
               Get Started
@@ -211,10 +232,14 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
               type="button"
               onClick={() => setMobileOpen((o) => !o)}
               className="rounded-lg p-2.5 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset] transition-colors hover:border-white/20"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
             >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
@@ -222,17 +247,17 @@ export function CusownMarketingNav({ sectionNavMode }: CusownMarketingNavProps) 
         {mobileOpen ? (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="border-t border-white/[0.09] bg-zinc-950/97 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-2xl md:hidden"
           >
             <div className="flex flex-col gap-0.5">
-              {mobileNavLink('platform', 'Platform')}
-              {mobileNavLink('capabilities', 'Capabilities')}
-              {mobileNavLink('pricing', 'Pricing')}
-              {mobileNavLink('process', 'Process')}
-              {mobileNavLink('roadmap', 'Roadmap')}
-              {mobileNavLink('faq', 'FAQ')}
+              {mobileNavLink("platform", "Platform")}
+              {mobileNavLink("capabilities", "Capabilities")}
+              {mobileNavLink("pricing", "Pricing")}
+              {mobileNavLink("process", "Process")}
+              {mobileNavLink("roadmap", "Roadmap")}
+              {mobileNavLink("faq", "FAQ")}
             </div>
           </motion.div>
         ) : null}

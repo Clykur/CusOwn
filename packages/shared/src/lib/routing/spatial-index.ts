@@ -1,4 +1,4 @@
-import { GraphNode } from './graph-data-structures';
+import { GraphNode } from "./graph-data-structures";
 
 interface KDNode {
   point: GraphNode;
@@ -45,7 +45,12 @@ export class KDTree {
     const search = (node: KDNode | undefined, depth: number) => {
       if (!node) return;
 
-      const dist = this.distance(node.point.latitude, node.point.longitude, latitude, longitude);
+      const dist = this.distance(
+        node.point.latitude,
+        node.point.longitude,
+        latitude,
+        longitude,
+      );
 
       if (dist < bestDistance) {
         bestDistance = dist;
@@ -78,7 +83,12 @@ export class KDTree {
     const search = (node: KDNode | undefined) => {
       if (!node) return;
 
-      const dist = this.distance(node.point.latitude, node.point.longitude, latitude, longitude);
+      const dist = this.distance(
+        node.point.latitude,
+        node.point.longitude,
+        latitude,
+        longitude,
+      );
 
       candidates.push({ node: node.point, distance: dist });
 
@@ -94,7 +104,11 @@ export class KDTree {
       .map((c) => c.node);
   }
 
-  findWithinRadius(latitude: number, longitude: number, radiusKm: number): GraphNode[] {
+  findWithinRadius(
+    latitude: number,
+    longitude: number,
+    radiusKm: number,
+  ): GraphNode[] {
     if (!this.root) return [];
 
     const result: GraphNode[] = [];
@@ -102,7 +116,12 @@ export class KDTree {
     const search = (node: KDNode | undefined) => {
       if (!node) return;
 
-      const dist = this.distance(node.point.latitude, node.point.longitude, latitude, longitude);
+      const dist = this.distance(
+        node.point.latitude,
+        node.point.longitude,
+        latitude,
+        longitude,
+      );
 
       if (dist <= radiusKm) {
         result.push(node.point);
@@ -116,9 +135,15 @@ export class KDTree {
     return result;
   }
 
-  private distance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private distance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const latDiff = lat2 - lat1;
-    const lonDiff = (lon2 - lon1) * Math.cos(((lat1 + lat2) / 2) * (Math.PI / 180));
+    const lonDiff =
+      (lon2 - lon1) * Math.cos(((lat1 + lat2) / 2) * (Math.PI / 180));
 
     const latKm = latDiff * 111.32;
     const lonKm = lonDiff * 111.32;

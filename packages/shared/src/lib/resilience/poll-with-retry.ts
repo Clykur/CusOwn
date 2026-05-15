@@ -1,4 +1,4 @@
-import { retry, RetryOptions } from './retry';
+import { retry, RetryOptions } from "./retry";
 
 export type PollWithRetryOptions<T> = {
   fn: () => Promise<T>;
@@ -32,7 +32,7 @@ export function pollWithRetry<T>(options: PollWithRetryOptions<T>): PollHandle {
       stopped = true;
       return { stop };
     }
-    signal.addEventListener('abort', stop, { once: true });
+    signal.addEventListener("abort", stop, { once: true });
   }
 
   const tick = async () => {

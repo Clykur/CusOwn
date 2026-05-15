@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { NominatimService } from '@cusown/shared/server';
+import { NextRequest, NextResponse } from "next/server";
+import { NominatimService } from "@cusown/shared/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,23 +9,36 @@ export async function POST(req: NextRequest) {
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-      return NextResponse.json({ error: 'Invalid coordinates' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid coordinates" },
+        { status: 400 },
+      );
     }
     if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
-      return NextResponse.json({ error: 'Coordinates out of range' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Coordinates out of range" },
+        { status: 400 },
+      );
     }
 
-    const ip = req.headers.get('x-forwarded-for') || undefined;
+    const ip = req.headers.get("x-forwarded-for") || undefined;
     const service = NominatimService.getInstance();
-    const result = await service.reverseGeocode(latNum, lngNum, ip as string | undefined);
+    const result = await service.reverseGeocode(
+      latNum,
+      lngNum,
+      ip as string | undefined,
+    );
 
     if (!result) {
-      return NextResponse.json({ error: 'Geocoding failed or rate limited' }, { status: 502 });
+      return NextResponse.json(
+        { error: "Geocoding failed or rate limited" },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error('reverse geocode error', err);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    console.error("reverse geocode error", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

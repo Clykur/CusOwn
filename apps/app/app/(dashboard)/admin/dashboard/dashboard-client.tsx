@@ -1,73 +1,104 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
-import dynamic from 'next/dynamic';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { DashboardErrorBoundary } from '@/components/admin/dashboard-error-boundary';
-import CloseIcon from '@cusown/shared/icons/close.svg';
-import { AdminMetricCard } from '@/components/admin/admin-metric-card';
-import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
-import { useAdminSession } from '@/components/admin/admin-session-context';
-import { AdminPrefetchProvider, useAdminPrefetch } from '@/components/admin/admin-prefetch-context';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  Suspense,
+  lazy,
+} from "react";
+import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
+import { DashboardErrorBoundary } from "@/components/admin/dashboard-error-boundary";
+import CloseIcon from "@cusown/shared/icons/close.svg";
+import { AdminMetricCard } from "@/components/admin/admin-metric-card";
+import { AdminSectionWrapper } from "@/components/admin/admin-section-wrapper";
+import { useAdminSession } from "@/components/admin/admin-session-context";
+import {
+  AdminPrefetchProvider,
+  useAdminPrefetch,
+} from "@/components/admin/admin-prefetch-context";
 import {
   getAdminCached,
   getAdminCachedStale,
   setAdminCache,
   invalidateAdminCache,
   ADMIN_CACHE_KEYS,
-} from '@/components/admin/admin-cache';
-import { adminFetch } from '@cusown/shared';
+} from "@/components/admin/admin-cache";
+import { adminFetch } from "@cusown/shared";
 import {
   AdminDashboardSkeleton,
   AdminAnalyticsSkeleton,
   OverviewSkeleton,
-} from '@/components/ui/skeleton';
-import FilterDropdown from '@/components/analytics/FilterDropdown';
-import { ROUTES, getAdminDashboardUrl } from '@cusown/shared';
-import { SUCCESS_MESSAGES } from '@cusown/config';
-import { getCSRFToken } from '@cusown/shared';
-import { useAdminDashboardStore } from '@cusown/shared/client';
+} from "@/components/ui/skeleton";
+import FilterDropdown from "@/components/analytics/FilterDropdown";
+import { ROUTES, getAdminDashboardUrl } from "@cusown/shared";
+import { SUCCESS_MESSAGES } from "@cusown/config";
+import { getCSRFToken } from "@cusown/shared";
+import { useAdminDashboardStore } from "@cusown/shared/client";
 
-const AdminBusinessesTab = lazy(() => import('@/components/admin/admin-businesses-tab'));
-const AdminUsersTab = lazy(() => import('@/components/admin/admin-users-tab'));
-const AdminBookingsTab = lazy(() => import('@/components/admin/admin-bookings-tab'));
+const AdminBusinessesTab = lazy(
+  () => import("@/components/admin/admin-businesses-tab"),
+);
+const AdminUsersTab = lazy(() => import("@/components/admin/admin-users-tab"));
+const AdminBookingsTab = lazy(
+  () => import("@/components/admin/admin-bookings-tab"),
+);
 
 const SuccessMetricsDashboard = dynamic(
-  () => import('@/components/admin/success-metrics-dashboard'),
-  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+  () => import("@/components/admin/success-metrics-dashboard"),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> },
 );
-const AdminAnalyticsTab = dynamic(() => import('@/components/admin/admin-analytics-tab'), {
-  ssr: false,
-  loading: () => <AdminAnalyticsSkeleton />,
-});
+const AdminAnalyticsTab = dynamic(
+  () => import("@/components/admin/admin-analytics-tab"),
+  {
+    ssr: false,
+    loading: () => <AdminAnalyticsSkeleton />,
+  },
+);
 const AdminCronMonitorTab = dynamic(
-  () => import('@/components/admin/admin-cron-monitor-tab').then((m) => m.AdminCronMonitorTab),
-  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+  () =>
+    import("@/components/admin/admin-cron-monitor-tab").then(
+      (m) => m.AdminCronMonitorTab,
+    ),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> },
 );
 const AdminAuthManagementTab = dynamic(
   () =>
-    import('@/components/admin/admin-auth-management-tab').then((m) => m.AdminAuthManagementTab),
-  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+    import("@/components/admin/admin-auth-management-tab").then(
+      (m) => m.AdminAuthManagementTab,
+    ),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> },
 );
 const AdminStorageOverviewTab = dynamic(
   () =>
-    import('@/components/admin/admin-storage-overview-tab').then((m) => m.AdminStorageOverviewTab),
-  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> }
+    import("@/components/admin/admin-storage-overview-tab").then(
+      (m) => m.AdminStorageOverviewTab,
+    ),
+  { ssr: false, loading: () => <AdminAnalyticsSkeleton /> },
 );
 
 const LazyLine = dynamic(
-  () => import('@/components/admin/lazy-charts').then((m) => ({ default: m.Line })),
-  { ssr: false }
+  () =>
+    import("@/components/admin/lazy-charts").then((m) => ({ default: m.Line })),
+  { ssr: false },
 );
 const LazyBar = dynamic(
-  () => import('@/components/admin/lazy-charts').then((m) => ({ default: m.Bar })),
-  { ssr: false }
+  () =>
+    import("@/components/admin/lazy-charts").then((m) => ({ default: m.Bar })),
+  { ssr: false },
 );
 
-function PrefetchAnalyticsWhenReady({ adminConfirmed }: { adminConfirmed: boolean }) {
+function PrefetchAnalyticsWhenReady({
+  adminConfirmed,
+}: {
+  adminConfirmed: boolean;
+}) {
   const { prefetchTab } = useAdminPrefetch();
   useEffect(() => {
-    if (adminConfirmed) prefetchTab('analytics');
+    if (adminConfirmed) prefetchTab("analytics");
   }, [adminConfirmed, prefetchTab]);
   return null;
 }
@@ -105,21 +136,21 @@ const LIST_LIMIT = 25;
 const TABLE_PAGE_SIZE = 10;
 
 const VALID_TABS = [
-  'overview',
-  'businesses',
-  'users',
-  'bookings',
-  'audit',
-  'cron-monitor',
-  'auth-management',
-  'storage',
-  'success-metrics',
-  'analytics',
+  "overview",
+  "businesses",
+  "users",
+  "bookings",
+  "audit",
+  "cron-monitor",
+  "auth-management",
+  "storage",
+  "success-metrics",
+  "analytics",
 ] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 function normalizeTab(tab: string | undefined): TabValue {
-  return VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : 'overview';
+  return VALID_TABS.includes(tab as TabValue) ? (tab as TabValue) : "overview";
 }
 
 function parsePageParam(value: string | null): number {
@@ -130,12 +161,14 @@ function parsePageParam(value: string | null): number {
 function AdminDashboardContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = normalizeTab(searchParams?.get('tab') ?? undefined);
-  const currentPage = parsePageParam(searchParams?.get('page') ?? null);
+  const activeTab = normalizeTab(searchParams?.get("tab") ?? undefined);
+  const currentPage = parsePageParam(searchParams?.get("page") ?? null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('admin-tab-change', { detail: { tab: activeTab } }));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("admin-tab-change", { detail: { tab: activeTab } }),
+      );
     }
   }, [activeTab]);
 
@@ -144,15 +177,21 @@ function AdminDashboardContentInner() {
   const redirectToLoginRef = useRef(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [adminConfirmed, setAdminConfirmed] = useState(!!initialAdminConfirmed);
-  const [usersToastMessage, setUsersToastMessage] = useState<string | null>(null);
+  const [usersToastMessage, setUsersToastMessage] = useState<string | null>(
+    null,
+  );
   const dashboardStore = useAdminDashboardStore();
   const hasStoreData = dashboardStore.metrics !== null;
 
   const [overviewLoadSettled, setOverviewLoadSettled] = useState(hasStoreData);
   const [overviewRetryKey, setOverviewRetryKey] = useState(0);
 
-  const [metrics, setMetrics] = useState<PlatformMetrics | null>(() => dashboardStore.metrics);
-  const [trends, setTrends] = useState<BookingTrend[]>(() => dashboardStore.trends);
+  const [metrics, setMetrics] = useState<PlatformMetrics | null>(
+    () => dashboardStore.metrics,
+  );
+  const [trends, setTrends] = useState<BookingTrend[]>(
+    () => dashboardStore.trends,
+  );
   const [revenueSnapshot, setRevenueSnapshot] = useState<{
     totalRevenue: number;
     revenueToday: number;
@@ -180,18 +219,19 @@ function AdminDashboardContentInner() {
   }, [trends]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (revenueSnapshot) dashboardStore.setRevenueSnapshot(revenueSnapshot as any);
+    if (revenueSnapshot)
+      dashboardStore.setRevenueSnapshot(revenueSnapshot as any);
   }, [revenueSnapshot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (overviewExtras) dashboardStore.setOverviewExtras(overviewExtras as any);
   }, [overviewExtras]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toastParam = searchParams?.get('toast');
+  const toastParam = searchParams?.get("toast");
   useEffect(() => {
-    if (toastParam === 'user_deleted' && activeTab === 'users') {
+    if (toastParam === "user_deleted" && activeTab === "users") {
       setUsersToastMessage(SUCCESS_MESSAGES.USER_DELETED);
-      router.replace(getAdminDashboardUrl('users'));
+      router.replace(getAdminDashboardUrl("users"));
     }
   }, [toastParam, activeTab, router]);
 
@@ -207,8 +247,8 @@ function AdminDashboardContentInner() {
     const ac = new AbortController();
     const timeoutId = setTimeout(() => ac.abort(), 10000);
 
-    fetch('/api/admin/check-status', {
-      credentials: 'include',
+    fetch("/api/admin/check-status", {
+      credentials: "include",
       signal: ac.signal,
     })
       .then((res) => res.json())
@@ -224,7 +264,7 @@ function AdminDashboardContentInner() {
         }) => {
           if (ac.signal.aborted) return;
           if (!statusData.success) {
-            setAuthError(statusData.error || 'Failed to check admin status');
+            setAuthError(statusData.error || "Failed to check admin status");
             return;
           }
           const { is_admin, user_type, profile_exists } = statusData.data ?? {};
@@ -234,24 +274,24 @@ function AdminDashboardContentInner() {
           }
           if (!profile_exists) {
             setAuthError(
-              `Your profile doesn't exist yet. User type: ${user_type || 'none'}. Please contact support or use the migration query to set admin status.`
+              `Your profile doesn't exist yet. User type: ${user_type || "none"}. Please contact support or use the migration query to set admin status.`,
             );
           } else {
             setAuthError(
-              `You don't have admin access. Current user type: ${user_type}. Please run the migration query to set your account as admin.`
+              `You don't have admin access. Current user type: ${user_type}. Please run the migration query to set your account as admin.`,
             );
           }
-        }
+        },
       )
       .catch((err) => {
         if (ac.signal.aborted) {
-          setAuthError('Admin check timed out. Please refresh the page.');
+          setAuthError("Admin check timed out. Please refresh the page.");
           return;
         }
         setAuthError(
-          err?.name === 'AbortError'
-            ? 'Admin check timed out. Please refresh.'
-            : 'Failed to check admin status'
+          err?.name === "AbortError"
+            ? "Admin check timed out. Please refresh."
+            : "Failed to check admin status",
         );
       })
       .finally(() => clearTimeout(timeoutId));
@@ -265,10 +305,10 @@ function AdminDashboardContentInner() {
   // Prefetch only list endpoints that are not already cached (auth via cookies).
   const prefetchListData = useCallback(() => {
     if (!adminConfirmed) return;
-    const opts: RequestInit = { credentials: 'include' };
+    const opts: RequestInit = { credentials: "include" };
     const urls = [
       `/api/admin/users?limit=${LIST_LIMIT}`,
-      '/api/admin/businesses',
+      "/api/admin/businesses",
       `/api/admin/bookings?limit=${LIST_LIMIT}`,
       `/api/admin/audit-logs?limit=${AUDIT_LOGS_FETCH_LIMIT}`,
     ];
@@ -292,7 +332,7 @@ function AdminDashboardContentInner() {
   // Overview: only after admin confirmed. Auth via cookies.
   useEffect(() => {
     if (!ready || !adminConfirmed) return;
-    const opts: RequestInit = { credentials: 'include' };
+    const opts: RequestInit = { credentials: "include" };
 
     const freshOverview = getAdminCached<{
       metrics: PlatformMetrics;
@@ -309,7 +349,8 @@ function AdminDashboardContentInner() {
     if (freshOverview?.metrics) {
       setMetrics(freshOverview.metrics);
       if (freshOverview.trends?.length) setTrends(freshOverview.trends);
-      if (freshOverview.revenueSnapshot) setRevenueSnapshot(freshOverview.revenueSnapshot);
+      if (freshOverview.revenueSnapshot)
+        setRevenueSnapshot(freshOverview.revenueSnapshot);
       setOverviewLoadSettled(true);
       prefetchListData();
       return;
@@ -331,10 +372,14 @@ function AdminDashboardContentInner() {
     if (staleEntry?.data) {
       if (staleEntry.data.metrics) setMetrics(staleEntry.data.metrics);
       if (staleEntry.data.trends?.length) setTrends(staleEntry.data.trends);
-      if (staleEntry.data.revenueSnapshot) setRevenueSnapshot(staleEntry.data.revenueSnapshot);
+      if (staleEntry.data.revenueSnapshot)
+        setRevenueSnapshot(staleEntry.data.revenueSnapshot);
     }
 
-    adminFetch(`/api/admin/overview?aggregated=true&days=${OVERVIEW_DAYS}`, opts)
+    adminFetch(
+      `/api/admin/overview?aggregated=true&days=${OVERVIEW_DAYS}`,
+      opts,
+    )
       .then((r) => r.json())
       .then((result) => {
         setOverviewLoadSettled(true);
@@ -373,13 +418,16 @@ function AdminDashboardContentInner() {
         }
         if (data.overviewExtras?.systemHealth) {
           setOverviewExtras({
-            failedBookingsLast24h: data.overviewExtras.failedBookingsLast24h ?? 0,
+            failedBookingsLast24h:
+              data.overviewExtras.failedBookingsLast24h ?? 0,
             cronRunsLast24h: data.overviewExtras.cronRunsLast24h ?? 0,
             systemHealth: {
-              status: data.overviewExtras.systemHealth.status ?? 'unknown',
-              cronExpireBookingsOk: data.overviewExtras.systemHealth.cronExpireBookingsOk ?? false,
+              status: data.overviewExtras.systemHealth.status ?? "unknown",
+              cronExpireBookingsOk:
+                data.overviewExtras.systemHealth.cronExpireBookingsOk ?? false,
               cronExpireBookingsLastRun:
-                data.overviewExtras.systemHealth.cronExpireBookingsLastRun ?? null,
+                data.overviewExtras.systemHealth.cronExpireBookingsLastRun ??
+                null,
             },
           });
         }
@@ -403,39 +451,39 @@ function AdminDashboardContentInner() {
       }),
       datasets: [
         {
-          label: 'Total Bookings',
+          label: "Total Bookings",
           data: trends.map((t) => t.total),
-          backgroundColor: 'rgb(0, 0, 0)',
-          borderColor: 'rgb(0, 0, 0)',
+          backgroundColor: "rgb(0, 0, 0)",
+          borderColor: "rgb(0, 0, 0)",
           borderWidth: 2,
         },
         {
-          label: 'Confirmed',
+          label: "Confirmed",
           data: trends.map((t) => t.confirmed),
-          backgroundColor: 'rgb(64, 64, 64)',
-          borderColor: 'rgb(64, 64, 64)',
+          backgroundColor: "rgb(64, 64, 64)",
+          borderColor: "rgb(64, 64, 64)",
           borderWidth: 2,
         },
         {
-          label: 'Rejected',
+          label: "Rejected",
           data: trends.map((t) => t.rejected),
-          backgroundColor: 'rgb(128, 128, 128)',
-          borderColor: 'rgb(128, 128, 128)',
+          backgroundColor: "rgb(128, 128, 128)",
+          borderColor: "rgb(128, 128, 128)",
           borderWidth: 2,
         },
       ],
     }),
-    [trends]
+    [trends],
   );
 
   const bookingStatusChart = useMemo(
     () =>
       metrics
         ? {
-            labels: ['Confirmed', 'Pending', 'Rejected', 'Cancelled'],
+            labels: ["Confirmed", "Pending", "Rejected", "Cancelled"],
             datasets: [
               {
-                label: 'Number of Bookings',
+                label: "Number of Bookings",
                 data: [
                   metrics.confirmedBookings,
                   metrics.pendingBookings,
@@ -443,51 +491,55 @@ function AdminDashboardContentInner() {
                   metrics.cancelledBookings,
                 ],
                 backgroundColor: [
-                  'rgb(0, 0, 0)',
-                  'rgb(64, 64, 64)',
-                  'rgb(128, 128, 128)',
-                  'rgb(192, 192, 192)',
+                  "rgb(0, 0, 0)",
+                  "rgb(64, 64, 64)",
+                  "rgb(128, 128, 128)",
+                  "rgb(192, 192, 192)",
                 ],
-                borderColor: 'rgb(0, 0, 0)',
+                borderColor: "rgb(0, 0, 0)",
                 borderWidth: 2,
               },
             ],
           }
         : null,
-    [metrics]
+    [metrics],
   );
 
   const growthChart = useMemo(
     () =>
       metrics
         ? {
-            labels: ['Businesses', 'Bookings', 'Owners'],
+            labels: ["Businesses", "Bookings", "Owners"],
             datasets: [
               {
-                label: 'Growth Rate (%)',
+                label: "Growth Rate (%)",
                 data: [
                   metrics.growthRate.businesses,
                   metrics.growthRate.bookings,
                   metrics.growthRate.owners,
                 ],
-                borderColor: 'rgb(0, 0, 0)',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                borderColor: "rgb(0, 0, 0)",
+                backgroundColor: "rgba(0, 0, 0, 0.1)",
                 borderWidth: 3,
                 tension: 0.4,
                 fill: true,
                 pointRadius: 8,
-                pointBackgroundColor: ['rgb(0, 0, 0)', 'rgb(64, 64, 64)', 'rgb(128, 128, 128)'],
-                pointBorderColor: 'rgb(0, 0, 0)',
+                pointBackgroundColor: [
+                  "rgb(0, 0, 0)",
+                  "rgb(64, 64, 64)",
+                  "rgb(128, 128, 128)",
+                ],
+                pointBorderColor: "rgb(0, 0, 0)",
                 pointBorderWidth: 2,
               },
             ],
           }
         : null,
-    [metrics]
+    [metrics],
   );
 
   if (!ready) {
-    const isAnalyticsTab = activeTab === 'analytics';
+    const isAnalyticsTab = activeTab === "analytics";
     return (
       <div className="min-h-screen bg-white flex">
         <div className="flex-1 w-full flex flex-col min-h-0">
@@ -518,10 +570,12 @@ function AdminDashboardContentInner() {
       <div className="min-h-screen bg-white flex">
         <div className="flex-1 w-full flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Access Denied
+            </h2>
             <p className="text-gray-600 mb-4">{authError}</p>
 
-            {authError.includes('migration') && (
+            {authError.includes("migration") && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left">
                 <p className="text-sm text-yellow-800 mb-2">
                   <strong>To fix this:</strong>
@@ -529,7 +583,7 @@ function AdminDashboardContentInner() {
                 <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
                   <li>Go to Supabase Dashboard → SQL Editor</li>
                   <li>
-                    Run the migration query from{' '}
+                    Run the migration query from{" "}
                     <code className="bg-yellow-100 px-1 rounded">
                       database/migration_set_admin_quick.sql
                     </code>
@@ -546,22 +600,22 @@ function AdminDashboardContentInner() {
               >
                 Go to Home
               </button>
-              {(user?.email === 'chinnuk0521@gmail.com' ||
-                user?.email === 'karthiknaramala9949@gmail.com') && (
+              {(user?.email === "chinnuk0521@gmail.com" ||
+                user?.email === "karthiknaramala9949@gmail.com") && (
                 <button
                   onClick={async () => {
                     try {
                       const csrfToken = await getCSRFToken();
                       const headers: Record<string, string> = {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                       };
                       if (csrfToken) {
-                        headers['x-csrf-token'] = csrfToken;
+                        headers["x-csrf-token"] = csrfToken;
                       }
-                      const res = await fetch('/api/admin/check-status', {
-                        method: 'POST',
+                      const res = await fetch("/api/admin/check-status", {
+                        method: "POST",
                         headers,
-                        credentials: 'include',
+                        credentials: "include",
                         body: JSON.stringify({ email: user.email }),
                       });
                       const data = await res.json();
@@ -569,10 +623,18 @@ function AdminDashboardContentInner() {
                         setAuthError(null);
                         setAdminConfirmed(true);
                       } else {
-                        alert('Failed to set admin status: ' + (data.error || 'Unknown error'));
+                        alert(
+                          "Failed to set admin status: " +
+                            (data.error || "Unknown error"),
+                        );
                       }
                     } catch (err) {
-                      alert('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
+                      alert(
+                        "Error: " +
+                          (err instanceof Error
+                            ? err.message
+                            : "Unknown error"),
+                      );
                     }
                   }}
                   className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
@@ -604,8 +666,10 @@ function AdminDashboardContentInner() {
         <div className="flex-1 w-full">
           <DashboardErrorBoundary>
             <div className="w-full max-w-full">
-              {activeTab === 'overview' && !metrics && !overviewLoadSettled && <OverviewSkeleton />}
-              {activeTab === 'overview' && !metrics && overviewLoadSettled && (
+              {activeTab === "overview" && !metrics && !overviewLoadSettled && (
+                <OverviewSkeleton />
+              )}
+              {activeTab === "overview" && !metrics && overviewLoadSettled && (
                 <div className="space-y-8">
                   <AdminSectionWrapper
                     title="Overview"
@@ -613,7 +677,8 @@ function AdminDashboardContentInner() {
                   >
                     <div className="rounded-xl border border-amber-200 bg-amber-50/50 py-12 text-center">
                       <p className="text-sm font-medium text-amber-800">
-                        Could not load metrics. The request may have failed or timed out.
+                        Could not load metrics. The request may have failed or
+                        timed out.
                       </p>
                       <button
                         type="button"
@@ -630,7 +695,7 @@ function AdminDashboardContentInner() {
                   </AdminSectionWrapper>
                 </div>
               )}
-              {activeTab === 'overview' && metrics && (
+              {activeTab === "overview" && metrics && (
                 <div className="flex flex-col gap-8">
                   <div>
                     <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
@@ -648,13 +713,13 @@ function AdminDashboardContentInner() {
                       <AdminMetricCard
                         label="Total businesses"
                         value={metrics.totalBusinesses}
-                        secondary={`${metrics.growthRate.businesses > 0 ? '+' : ''}${metrics.growthRate.businesses.toFixed(1)}% growth`}
+                        secondary={`${metrics.growthRate.businesses > 0 ? "+" : ""}${metrics.growthRate.businesses.toFixed(1)}% growth`}
                         secondaryVariant={
                           metrics.growthRate.businesses > 0
-                            ? 'positive'
+                            ? "positive"
                             : metrics.growthRate.businesses < 0
-                              ? 'negative'
-                              : 'neutral'
+                              ? "negative"
+                              : "neutral"
                         }
                       />
                       <AdminMetricCard
@@ -665,25 +730,25 @@ function AdminDashboardContentInner() {
                       <AdminMetricCard
                         label="Total bookings"
                         value={metrics.totalBookings}
-                        secondary={`${metrics.growthRate.bookings > 0 ? '+' : ''}${metrics.growthRate.bookings.toFixed(1)}% growth`}
+                        secondary={`${metrics.growthRate.bookings > 0 ? "+" : ""}${metrics.growthRate.bookings.toFixed(1)}% growth`}
                         secondaryVariant={
                           metrics.growthRate.bookings > 0
-                            ? 'positive'
+                            ? "positive"
                             : metrics.growthRate.bookings < 0
-                              ? 'negative'
-                              : 'neutral'
+                              ? "negative"
+                              : "neutral"
                         }
                       />
                       <AdminMetricCard
                         label="Total owners"
                         value={metrics.totalOwners}
-                        secondary={`${metrics.growthRate.owners > 0 ? '+' : ''}${metrics.growthRate.owners.toFixed(1)}% growth`}
+                        secondary={`${metrics.growthRate.owners > 0 ? "+" : ""}${metrics.growthRate.owners.toFixed(1)}% growth`}
                         secondaryVariant={
                           metrics.growthRate.owners > 0
-                            ? 'positive'
+                            ? "positive"
                             : metrics.growthRate.owners < 0
-                              ? 'negative'
-                              : 'neutral'
+                              ? "negative"
+                              : "neutral"
                         }
                       />
                     </div>
@@ -694,10 +759,22 @@ function AdminDashboardContentInner() {
                     subtitle="Today, this week, this month and customers"
                   >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                      <AdminMetricCard label="Bookings today" value={metrics.bookingsToday} />
-                      <AdminMetricCard label="This week" value={metrics.bookingsThisWeek} />
-                      <AdminMetricCard label="This month" value={metrics.bookingsThisMonth} />
-                      <AdminMetricCard label="Total customers" value={metrics.totalCustomers} />
+                      <AdminMetricCard
+                        label="Bookings today"
+                        value={metrics.bookingsToday}
+                      />
+                      <AdminMetricCard
+                        label="This week"
+                        value={metrics.bookingsThisWeek}
+                      />
+                      <AdminMetricCard
+                        label="This month"
+                        value={metrics.bookingsThisMonth}
+                      />
+                      <AdminMetricCard
+                        label="Total customers"
+                        value={metrics.totalCustomers}
+                      />
                     </div>
                   </AdminSectionWrapper>
 
@@ -721,14 +798,20 @@ function AdminDashboardContentInner() {
                         />
                         <AdminMetricCard
                           label="Cron expire OK"
-                          value={overviewExtras.systemHealth.cronExpireBookingsOk ? 'Yes' : 'No'}
+                          value={
+                            overviewExtras.systemHealth.cronExpireBookingsOk
+                              ? "Yes"
+                              : "No"
+                          }
                         />
                       </div>
-                      {overviewExtras.systemHealth.cronExpireBookingsLastRun && (
+                      {overviewExtras.systemHealth
+                        .cronExpireBookingsLastRun && (
                         <p className="mt-2 text-xs text-slate-500">
-                          Last cron run:{' '}
+                          Last cron run:{" "}
                           {new Date(
-                            overviewExtras.systemHealth.cronExpireBookingsLastRun
+                            overviewExtras.systemHealth
+                              .cronExpireBookingsLastRun,
                           ).toLocaleString()}
                         </p>
                       )}
@@ -780,7 +863,7 @@ function AdminDashboardContentInner() {
                           options={{
                             responsive: true,
                             plugins: {
-                              legend: { position: 'top' as const },
+                              legend: { position: "top" as const },
                               title: { display: false },
                             },
                             scales: { y: { beginAtZero: true } },
@@ -788,7 +871,9 @@ function AdminDashboardContentInner() {
                         />
                       ) : (
                         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                          <p className="text-sm font-medium text-slate-500">No data available</p>
+                          <p className="text-sm font-medium text-slate-500">
+                            No data available
+                          </p>
                         </div>
                       )}
                     </AdminSectionWrapper>
@@ -802,26 +887,31 @@ function AdminDashboardContentInner() {
                           data={bookingStatusChart}
                           options={{
                             responsive: true,
-                            plugins: { legend: { position: 'top' as const } },
+                            plugins: { legend: { position: "top" as const } },
                             scales: { y: { beginAtZero: true } },
                           }}
                         />
                       ) : (
                         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                          <p className="text-sm font-medium text-slate-500">No data available</p>
+                          <p className="text-sm font-medium text-slate-500">
+                            No data available
+                          </p>
                         </div>
                       )}
                     </AdminSectionWrapper>
                   </div>
 
-                  <AdminSectionWrapper title="Growth trends" subtitle="Growth rate by category">
+                  <AdminSectionWrapper
+                    title="Growth trends"
+                    subtitle="Growth rate by category"
+                  >
                     {growthChart ? (
                       <LazyLine
                         data={growthChart}
                         options={{
                           responsive: true,
                           plugins: {
-                            legend: { position: 'top' as const },
+                            legend: { position: "top" as const },
                             title: { display: false },
                           },
                           scales: { y: { beginAtZero: true } },
@@ -829,23 +919,27 @@ function AdminDashboardContentInner() {
                       />
                     ) : (
                       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                        <p className="text-sm font-medium text-slate-500">No data available</p>
+                        <p className="text-sm font-medium text-slate-500">
+                          No data available
+                        </p>
                       </div>
                     )}
                   </AdminSectionWrapper>
                 </div>
               )}
 
-              {activeTab === 'businesses' && (
+              {activeTab === "businesses" && (
                 <Suspense fallback={<OverviewSkeleton />}>
                   <AdminBusinessesTab
                     page={currentPage}
-                    onPageChange={(p) => router.replace(getAdminDashboardUrl('businesses', p))}
+                    onPageChange={(p) =>
+                      router.replace(getAdminDashboardUrl("businesses", p))
+                    }
                   />
                 </Suspense>
               )}
 
-              {activeTab === 'users' && (
+              {activeTab === "users" && (
                 <div className="space-y-4">
                   {usersToastMessage && (
                     <div
@@ -867,35 +961,41 @@ function AdminDashboardContentInner() {
                   <Suspense fallback={<OverviewSkeleton />}>
                     <AdminUsersTab
                       page={currentPage}
-                      onPageChange={(p) => router.replace(getAdminDashboardUrl('users', p))}
+                      onPageChange={(p) =>
+                        router.replace(getAdminDashboardUrl("users", p))
+                      }
                     />
                   </Suspense>
                 </div>
               )}
 
-              {activeTab === 'bookings' && (
+              {activeTab === "bookings" && (
                 <Suspense fallback={<OverviewSkeleton />}>
                   <AdminBookingsTab
                     page={currentPage}
-                    onPageChange={(p) => router.replace(getAdminDashboardUrl('bookings', p))}
+                    onPageChange={(p) =>
+                      router.replace(getAdminDashboardUrl("bookings", p))
+                    }
                   />
                 </Suspense>
               )}
 
-              {activeTab === 'audit' && (
+              {activeTab === "audit" && (
                 <AuditLogsTab
                   page={currentPage}
-                  onPageChange={(p) => router.replace(getAdminDashboardUrl('audit', p))}
+                  onPageChange={(p) =>
+                    router.replace(getAdminDashboardUrl("audit", p))
+                  }
                 />
               )}
 
-              {activeTab === 'cron-monitor' && <AdminCronMonitorTab />}
-              {activeTab === 'auth-management' && <AdminAuthManagementTab />}
-              {activeTab === 'storage' && <AdminStorageOverviewTab />}
+              {activeTab === "cron-monitor" && <AdminCronMonitorTab />}
+              {activeTab === "auth-management" && <AdminAuthManagementTab />}
+              {activeTab === "storage" && <AdminStorageOverviewTab />}
 
-              {activeTab === 'success-metrics' && <SuccessMetricsDashboard />}
+              {activeTab === "success-metrics" && <SuccessMetricsDashboard />}
 
-              {activeTab === 'analytics' && <AdminAnalyticsTab />}
+              {activeTab === "analytics" && <AdminAnalyticsTab />}
             </div>
           </DashboardErrorBoundary>
         </div>
@@ -920,49 +1020,52 @@ interface ListTabPageProps {
 }
 
 const AUDIT_SEVERITY_OPTIONS = [
-  { value: '', label: 'All severities' },
-  { value: 'info', label: 'Info' },
-  { value: 'warning', label: 'Warning' },
-  { value: 'critical', label: 'Critical' },
+  { value: "", label: "All severities" },
+  { value: "info", label: "Info" },
+  { value: "warning", label: "Warning" },
+  { value: "critical", label: "Critical" },
 ];
 const AUDIT_STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
-  { value: 'success', label: 'Success' },
-  { value: 'failed', label: 'Failed' },
+  { value: "", label: "All statuses" },
+  { value: "success", label: "Success" },
+  { value: "failed", label: "Failed" },
 ];
 const AUDIT_ACTION_GROUP_OPTIONS = [
-  { value: '', label: 'All groups' },
-  { value: 'booking', label: 'Booking' },
-  { value: 'business', label: 'Business' },
-  { value: 'user', label: 'User' },
-  { value: 'payment', label: 'Payment' },
-  { value: 'system', label: 'System' },
-  { value: 'slot', label: 'Slot' },
+  { value: "", label: "All groups" },
+  { value: "booking", label: "Booking" },
+  { value: "business", label: "Business" },
+  { value: "user", label: "User" },
+  { value: "payment", label: "Payment" },
+  { value: "system", label: "System" },
+  { value: "slot", label: "Slot" },
 ];
 const AUDIT_ACTOR_ROLE_OPTIONS = [
-  { value: '', label: 'All actors' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'owner', label: 'Owner' },
-  { value: 'customer', label: 'Customer' },
-  { value: 'both', label: 'Owner & Customer' },
-  { value: 'system', label: 'System' },
+  { value: "", label: "All actors" },
+  { value: "admin", label: "Admin" },
+  { value: "owner", label: "Owner" },
+  { value: "customer", label: "Customer" },
+  { value: "both", label: "Owner & Customer" },
+  { value: "system", label: "System" },
 ];
 
 const AUDIT_LOGS_FETCH_LIMIT = 50;
 
-function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
+function AuditLogsTab({
+  page: controlledPage,
+  onPageChange,
+}: ListTabPageProps = {}) {
   const { session, ready } = useAdminSession();
   const [logs, setLogs] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterActorRole, setFilterActorRole] = useState('');
-  const [filterActionGroup, setFilterActionGroup] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterSeverity, setFilterSeverity] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterActorRole, setFilterActorRole] = useState("");
+  const [filterActionGroup, setFilterActionGroup] = useState("");
   const [internalPage, setInternalPage] = useState(1);
   const page = controlledPage ?? internalPage;
   const setPage = onPageChange
     ? (p: number | ((prev: number) => number)) =>
-        onPageChange(typeof p === 'function' ? p(page) : p)
+        onPageChange(typeof p === "function" ? p(page) : p)
     : setInternalPage;
 
   const prevSearchRef = useRef(searchQuery);
@@ -978,30 +1081,47 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const isDev =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
 
   const hasFilters =
-    filterSeverity !== '' ||
-    filterStatus !== '' ||
-    filterActorRole !== '' ||
-    filterActionGroup !== '';
+    filterSeverity !== "" ||
+    filterStatus !== "" ||
+    filterActorRole !== "" ||
+    filterActionGroup !== "";
 
   const severityOptions = useMemo(
-    () => AUDIT_SEVERITY_OPTIONS.map((o) => ({ ...o, checked: filterSeverity === o.value })),
-    [filterSeverity]
+    () =>
+      AUDIT_SEVERITY_OPTIONS.map((o) => ({
+        ...o,
+        checked: filterSeverity === o.value,
+      })),
+    [filterSeverity],
   );
   const statusOptions = useMemo(
-    () => AUDIT_STATUS_OPTIONS.map((o) => ({ ...o, checked: filterStatus === o.value })),
-    [filterStatus]
+    () =>
+      AUDIT_STATUS_OPTIONS.map((o) => ({
+        ...o,
+        checked: filterStatus === o.value,
+      })),
+    [filterStatus],
   );
   const actionGroupOptions = useMemo(
-    () => AUDIT_ACTION_GROUP_OPTIONS.map((o) => ({ ...o, checked: filterActionGroup === o.value })),
-    [filterActionGroup]
+    () =>
+      AUDIT_ACTION_GROUP_OPTIONS.map((o) => ({
+        ...o,
+        checked: filterActionGroup === o.value,
+      })),
+    [filterActionGroup],
   );
   const actorRoleOptions = useMemo(
-    () => AUDIT_ACTOR_ROLE_OPTIONS.map((o) => ({ ...o, checked: filterActorRole === o.value })),
-    [filterActorRole]
+    () =>
+      AUDIT_ACTOR_ROLE_OPTIONS.map((o) => ({
+        ...o,
+        checked: filterActorRole === o.value,
+      })),
+    [filterActorRole],
   );
 
   useEffect(() => {
@@ -1019,7 +1139,7 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
         setLoading(false);
         if (!ready || !session) return;
         adminFetch(`/api/admin/audit-logs?limit=${AUDIT_LOGS_FETCH_LIMIT}`, {
-          credentials: 'include',
+          credentials: "include",
         })
           .then((r) => r.json())
           .then((data) => {
@@ -1034,7 +1154,7 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
       }
     }
     if (!ready || !session) {
-      setError('Session expired. Please log in again.');
+      setError("Session expired. Please log in again.");
       setLoading(false);
       return;
     }
@@ -1043,12 +1163,12 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     const params = new URLSearchParams({
       limit: String(AUDIT_LOGS_FETCH_LIMIT),
     });
-    if (filterSeverity) params.set('severity', filterSeverity);
-    if (filterStatus) params.set('status', filterStatus);
-    if (filterActorRole) params.set('actor_role', filterActorRole);
-    if (filterActionGroup) params.set('action_group', filterActionGroup);
+    if (filterSeverity) params.set("severity", filterSeverity);
+    if (filterStatus) params.set("status", filterStatus);
+    if (filterActorRole) params.set("actor_role", filterActorRole);
+    if (filterActionGroup) params.set("action_group", filterActionGroup);
     const url = `/api/admin/audit-logs?${params.toString()}`;
-    adminFetch(url, { credentials: 'include', signal: ac.signal })
+    adminFetch(url, { credentials: "include", signal: ac.signal })
       .then((r) => r.json())
       .then((data) => {
         if (ac.signal.aborted) return;
@@ -1057,12 +1177,14 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
           setLogs(list);
           if (!hasFilters) setAdminCache(ADMIN_CACHE_KEYS.AUDIT, list);
         } else {
-          setError(data.error || 'Failed to load audit logs');
+          setError(data.error || "Failed to load audit logs");
         }
       })
       .catch((err) => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to load audit logs');
+        if (err instanceof Error && err.name === "AbortError") return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load audit logs",
+        );
       })
       .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
@@ -1079,19 +1201,22 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
   ]);
 
   const humanAction = (action: string) =>
-    action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   const formatAuditDescription = (log: any): string => {
     if (log.description && String(log.description).trim()) {
       const d = String(log.description).trim();
-      return d.endsWith('.') ? d : d.charAt(0).toUpperCase() + d.slice(1) + '.';
+      return d.endsWith(".") ? d : d.charAt(0).toUpperCase() + d.slice(1) + ".";
     }
-    const actionType = log.action_type || '';
+    const actionType = log.action_type || "";
     const oldData = log.old_data || {};
     const newData = log.new_data || {};
 
     // Business actions
-    if (actionType === 'business_updated' || actionType === 'business_suspended') {
+    if (
+      actionType === "business_updated" ||
+      actionType === "business_suspended"
+    ) {
       const changes: string[] = [];
       if (
         oldData.suspended !== undefined &&
@@ -1099,21 +1224,23 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
         oldData.suspended !== newData.suspended
       ) {
         changes.push(
-          newData.suspended ? 'Business was suspended' : 'Business suspension was removed'
+          newData.suspended
+            ? "Business was suspended"
+            : "Business suspension was removed",
         );
         if (newData.suspended && newData.suspended_reason) {
           changes.push(`Reason: ${newData.suspended_reason}`);
         }
       }
       const fields: Record<string, string> = {
-        salon_name: 'Business name',
-        owner_name: 'Owner name',
-        whatsapp_number: 'WhatsApp number',
-        opening_time: 'Opening time',
-        closing_time: 'Closing time',
-        slot_duration: 'Slot duration',
-        address: 'Address',
-        location: 'Location',
+        salon_name: "Business name",
+        owner_name: "Owner name",
+        whatsapp_number: "WhatsApp number",
+        opening_time: "Opening time",
+        closing_time: "Closing time",
+        slot_duration: "Slot duration",
+        address: "Address",
+        location: "Location",
       };
       for (const [key, label] of Object.entries(fields)) {
         if (
@@ -1121,89 +1248,91 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
           newData[key] !== undefined &&
           oldData[key] !== newData[key]
         ) {
-          const oldVal = oldData[key] === null ? 'Not set' : String(oldData[key]);
-          const newVal = newData[key] === null ? 'Not set' : String(newData[key]);
+          const oldVal =
+            oldData[key] === null ? "Not set" : String(oldData[key]);
+          const newVal =
+            newData[key] === null ? "Not set" : String(newData[key]);
           changes.push(`${label} changed from "${oldVal}" to "${newVal}"`);
         }
       }
-      if (changes.length > 0) return changes.join('. ');
-      return 'Business details were updated.';
+      if (changes.length > 0) return changes.join(". ");
+      return "Business details were updated.";
     }
 
-    if (actionType === 'business_created') {
-      return `New business "${newData.salon_name || 'Unknown'}" was created.`;
+    if (actionType === "business_created") {
+      return `New business "${newData.salon_name || "Unknown"}" was created.`;
     }
-    if (actionType === 'business_deleted') {
-      return `Business "${oldData.salon_name || 'Unknown'}" was deleted.`;
+    if (actionType === "business_deleted") {
+      return `Business "${oldData.salon_name || "Unknown"}" was deleted.`;
     }
 
     // User actions
-    if (actionType === 'user_updated') {
+    if (actionType === "user_updated") {
       const changes: string[] = [];
       if (oldData.user_type !== newData.user_type) {
         changes.push(
-          `User type changed from ${String(oldData.user_type)} to ${String(newData.user_type)}.`
+          `User type changed from ${String(oldData.user_type)} to ${String(newData.user_type)}.`,
         );
       }
       if (oldData.full_name !== newData.full_name) {
         changes.push(
-          `Name changed from "${oldData.full_name || 'Not set'}" to "${newData.full_name || 'Not set'}".`
+          `Name changed from "${oldData.full_name || "Not set"}" to "${newData.full_name || "Not set"}".`,
         );
       }
-      if (changes.length > 0) return changes.join(' ');
-      return 'User details were updated.';
+      if (changes.length > 0) return changes.join(" ");
+      return "User details were updated.";
     }
-    if (actionType === 'user_created') {
-      return `New user "${newData.full_name || newData.email || 'Unknown'}" was created.`;
+    if (actionType === "user_created") {
+      return `New user "${newData.full_name || newData.email || "Unknown"}" was created.`;
     }
-    if (actionType === 'user_deleted') {
-      return `User "${oldData.full_name || oldData.email || 'Unknown'}" was deleted.`;
+    if (actionType === "user_deleted") {
+      return `User "${oldData.full_name || oldData.email || "Unknown"}" was deleted.`;
     }
 
     // Booking actions
-    if (actionType === 'booking_updated') {
+    if (actionType === "booking_updated") {
       if (oldData.status !== newData.status) {
         return `Booking status changed from ${String(oldData.status)} to ${String(newData.status)}.`;
       }
-      return 'Booking details were updated.';
+      return "Booking details were updated.";
     }
-    if (actionType === 'booking_cancelled') {
-      return 'Booking was cancelled.';
+    if (actionType === "booking_cancelled") {
+      return "Booking was cancelled.";
     }
     if (
-      actionType === 'booking_confirmed' ||
-      actionType === 'booking_rejected' ||
-      actionType === 'booking_expired'
+      actionType === "booking_confirmed" ||
+      actionType === "booking_rejected" ||
+      actionType === "booking_expired"
     ) {
-      return `Booking was ${actionType.replace('booking_', '')}.`;
+      return `Booking was ${actionType.replace("booking_", "")}.`;
     }
 
-    return humanAction(actionType) + ' performed.';
+    return humanAction(actionType) + " performed.";
   };
 
   const actorLabel = (log: any): string => {
     const role = log.actor_role && String(log.actor_role).trim();
     if (role) {
       const r = role.toLowerCase();
-      if (r === 'admin') return 'Admin';
-      if (r === 'owner') return 'Owner';
-      if (r === 'customer') return 'Customer';
-      if (r === 'both') return 'Owner & Customer';
+      if (r === "admin") return "Admin";
+      if (r === "owner") return "Owner";
+      if (r === "customer") return "Customer";
+      if (r === "both") return "Owner & Customer";
       return role.charAt(0).toUpperCase() + role.slice(1);
     }
-    if (log.admin_user_id) return '—';
-    return 'System';
+    if (log.admin_user_id) return "—";
+    return "System";
   };
 
   const severityBadge = (severity: string) => {
-    const s = (severity || 'info').toLowerCase();
-    if (s === 'critical')
+    const s = (severity || "info").toLowerCase();
+    if (s === "critical")
       return (
         <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
           Critical
         </span>
       );
-    if (s === 'warning')
+    if (s === "warning")
       return (
         <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
           Warning
@@ -1217,8 +1346,8 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
   };
 
   const statusBadge = (status: string) => {
-    const s = (status || 'success').toLowerCase();
-    if (s === 'failed')
+    const s = (status || "success").toLowerCase();
+    if (s === "failed")
       return (
         <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
           Failed
@@ -1235,8 +1364,12 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     return (
       <div className="space-y-8">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Audit logs</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Recent platform activity and changes</p>
+          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+            Audit logs
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Recent platform activity and changes
+          </p>
         </div>
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
@@ -1251,14 +1384,20 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
     <div className="space-y-8">
       {/* Page header */}
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Audit logs</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Recent platform activity and changes</p>
+        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+          Audit logs
+        </h2>
+        <p className="text-sm text-slate-500 mt-0.5">
+          Recent platform activity and changes
+        </p>
       </div>
 
       {isDev && selectedLog && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-sm">
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-semibold text-amber-900">Debug information (dev only)</h3>
+            <h3 className="text-lg font-semibold text-amber-900">
+              Debug information (dev only)
+            </h3>
             <button
               onClick={() => setSelectedLog(null)}
               className="text-amber-700 hover:text-amber-900 text-sm font-medium"
@@ -1268,19 +1407,25 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
           </div>
           <div className="space-y-4">
             <div>
-              <h4 className="font-semibold text-amber-900 mb-2 text-sm">Raw data</h4>
+              <h4 className="font-semibold text-amber-900 mb-2 text-sm">
+                Raw data
+              </h4>
               <pre className="bg-white p-4 rounded-xl border border-amber-200 overflow-auto text-xs text-slate-700">
                 {JSON.stringify(selectedLog, null, 2)}
               </pre>
             </div>
             <div>
-              <h4 className="font-semibold text-amber-900 mb-2 text-sm">Old data</h4>
+              <h4 className="font-semibold text-amber-900 mb-2 text-sm">
+                Old data
+              </h4>
               <pre className="bg-white p-4 rounded-xl border border-amber-200 overflow-auto text-xs text-slate-700">
                 {JSON.stringify(selectedLog.old_data, null, 2)}
               </pre>
             </div>
             <div>
-              <h4 className="font-semibold text-amber-900 mb-2 text-sm">New data</h4>
+              <h4 className="font-semibold text-amber-900 mb-2 text-sm">
+                New data
+              </h4>
               <pre className="bg-white p-4 rounded-xl border border-amber-200 overflow-auto text-xs text-slate-700">
                 {JSON.stringify(selectedLog.new_data, null, 2)}
               </pre>
@@ -1292,7 +1437,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
       <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Activity log</h3>
+            <h3 className="text-lg font-semibold text-slate-900">
+              Activity log
+            </h3>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-[160px]">
@@ -1360,14 +1507,14 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
             <div className="overflow-x-auto">
               <table className="w-full max-w-full table-fixed border-collapse">
                 <colgroup>
-                  <col style={{ width: '14%' }} />
-                  <col style={{ width: '8%' }} />
-                  <col style={{ width: '16%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '8%' }} />
-                  <col style={{ width: '8%' }} />
-                  <col style={{ width: isDev ? '28%' : '36%' }} />
-                  {isDev && <col style={{ width: '8%' }} />}
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: isDev ? "28%" : "36%" }} />
+                  {isDev && <col style={{ width: "8%" }} />}
                 </colgroup>
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80">
@@ -1407,7 +1554,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                         className="px-4 py-16 text-center text-sm text-slate-500"
                       >
                         <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                        <p className="mt-3 font-medium">Loading audit logs...</p>
+                        <p className="mt-3 font-medium">
+                          Loading audit logs...
+                        </p>
                       </td>
                     </tr>
                   ) : (
@@ -1417,21 +1566,30 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                         ? logs.filter((log) => {
                             const desc = formatAuditDescription(log);
                             return (
-                              (log.action_type || '').toLowerCase().includes(q) ||
-                              (log.entity_type || '').toLowerCase().includes(q) ||
-                              (log.entity_id || '').toLowerCase().includes(q) ||
-                              (log.actor_role || '').toLowerCase().includes(q) ||
+                              (log.action_type || "")
+                                .toLowerCase()
+                                .includes(q) ||
+                              (log.entity_type || "")
+                                .toLowerCase()
+                                .includes(q) ||
+                              (log.entity_id || "").toLowerCase().includes(q) ||
+                              (log.actor_role || "")
+                                .toLowerCase()
+                                .includes(q) ||
                               desc.toLowerCase().includes(q)
                             );
                           })
                         : logs;
                       const start = (page - 1) * TABLE_PAGE_SIZE;
-                      const paginated = filtered.slice(start, start + TABLE_PAGE_SIZE);
+                      const paginated = filtered.slice(
+                        start,
+                        start + TABLE_PAGE_SIZE,
+                      );
                       return paginated.map((log, idx) => (
                         <tr
                           key={log.id}
                           className={`border-b border-slate-100 transition-colors hover:bg-slate-50/70 ${
-                            idx % 2 === 1 ? 'bg-slate-50/30' : 'bg-white'
+                            idx % 2 === 1 ? "bg-slate-50/30" : "bg-white"
                           }`}
                         >
                           <td className="px-4 py-3.5 align-top">
@@ -1444,33 +1602,41 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                           </td>
                           <td className="px-4 py-3.5 align-top">
                             <span className="inline-block break-words rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-sm font-medium text-slate-700">
-                              {log.action_type?.replace(/_/g, ' ')}
+                              {log.action_type?.replace(/_/g, " ")}
                             </span>
                           </td>
                           <td className="px-4 py-3.5 align-top text-sm font-medium text-slate-800">
                             {log.entity_type}
                             {log.entity_id ? (
                               <span className="font-mono text-slate-500">
-                                {' '}
+                                {" "}
                                 ({log.entity_id.substring(0, 8)}…)
                               </span>
                             ) : null}
                           </td>
-                          <td className="px-4 py-3.5 align-top">{severityBadge(log.severity)}</td>
-                          <td className="px-4 py-3.5 align-top">{statusBadge(log.status)}</td>
+                          <td className="px-4 py-3.5 align-top">
+                            {severityBadge(log.severity)}
+                          </td>
+                          <td className="px-4 py-3.5 align-top">
+                            {statusBadge(log.status)}
+                          </td>
                           <td className="px-4 py-3.5 min-w-0 align-top text-sm leading-relaxed text-slate-600">
-                            <span className="block break-words">{formatAuditDescription(log)}</span>
+                            <span className="block break-words">
+                              {formatAuditDescription(log)}
+                            </span>
                           </td>
                           {isDev && (
                             <td className="px-4 py-3.5 align-top">
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setSelectedLog(selectedLog?.id === log.id ? null : log)
+                                  setSelectedLog(
+                                    selectedLog?.id === log.id ? null : log,
+                                  )
                                 }
                                 className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-100"
                               >
-                                {selectedLog?.id === log.id ? 'Hide' : 'View'}
+                                {selectedLog?.id === log.id ? "Hide" : "View"}
                               </button>
                             </td>
                           )}
@@ -1488,25 +1654,28 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                   ? logs.filter((log) => {
                       const desc = formatAuditDescription(log);
                       return (
-                        (log.action_type || '').toLowerCase().includes(q) ||
-                        (log.entity_type || '').toLowerCase().includes(q) ||
-                        (log.entity_id || '').toLowerCase().includes(q) ||
+                        (log.action_type || "").toLowerCase().includes(q) ||
+                        (log.entity_type || "").toLowerCase().includes(q) ||
+                        (log.entity_id || "").toLowerCase().includes(q) ||
                         desc.toLowerCase().includes(q)
                       );
                     })
                   : logs;
                 const totalItems = filtered.length;
-                const totalPages = Math.max(1, Math.ceil(totalItems / TABLE_PAGE_SIZE));
+                const totalPages = Math.max(
+                  1,
+                  Math.ceil(totalItems / TABLE_PAGE_SIZE),
+                );
                 const start = (page - 1) * TABLE_PAGE_SIZE;
                 const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
                 if (totalItems === 0) return null;
                 return (
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-4 py-3">
                     <p className="text-sm text-slate-600">
-                      Showing{' '}
+                      Showing{" "}
                       <span className="font-medium">
                         {start + 1}–{end}
-                      </span>{' '}
+                      </span>{" "}
                       of <span className="font-medium">{totalItems}</span>
                     </p>
                     <div className="flex items-center gap-2">
@@ -1523,7 +1692,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
                       </span>
                       <button
                         type="button"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        onClick={() =>
+                          setPage((p) => Math.min(totalPages, p + 1))
+                        }
                         disabled={page >= totalPages}
                         className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -1536,7 +1707,9 @@ function AuditLogsTab({ page: controlledPage, onPageChange }: ListTabPageProps =
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-14 text-center">
-            <p className="text-sm font-medium text-slate-600">No audit logs found</p>
+            <p className="text-sm font-medium text-slate-600">
+              No audit logs found
+            </p>
             <p className="mt-1.5 text-sm text-slate-400">
               Activity will appear here as changes occur
             </p>

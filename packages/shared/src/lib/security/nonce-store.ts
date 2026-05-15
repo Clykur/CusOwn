@@ -1,4 +1,4 @@
-import { requireSupabaseAdmin } from '../supabase/server';
+import { requireSupabaseAdmin } from "../supabase/server";
 
 const NONCE_TTL_MINUTES = 5;
 const NONCE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
@@ -8,7 +8,7 @@ let cleanupInterval: NodeJS.Timeout | null = null;
 export async function storeNonce(
   nonce: string,
   userId?: string,
-  ipAddress?: string
+  ipAddress?: string,
 ): Promise<boolean> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (!supabaseAdmin) {
@@ -18,7 +18,7 @@ export async function storeNonce(
   const expiresAt = new Date();
   expiresAt.setMinutes(expiresAt.getMinutes() + NONCE_TTL_MINUTES);
 
-  const { error } = await supabaseAdmin.from('request_nonces').insert({
+  const { error } = await supabaseAdmin.from("request_nonces").insert({
     nonce,
     user_id: userId || null,
     ip_address: ipAddress || null,
@@ -26,10 +26,10 @@ export async function storeNonce(
   });
 
   if (error) {
-    if (error.code === '23505') {
+    if (error.code === "23505") {
       return false;
     }
-    console.error('[NONCE_STORE] Error storing nonce:', error);
+    console.error("[NONCE_STORE] Error storing nonce:", error);
     return false;
   }
 
@@ -43,10 +43,10 @@ export async function checkNonce(nonce: string): Promise<boolean> {
   }
 
   const { data, error } = await supabaseAdmin
-    .from('request_nonces')
-    .select('nonce')
-    .eq('nonce', nonce)
-    .gt('expires_at', new Date().toISOString())
+    .from("request_nonces")
+    .select("nonce")
+    .eq("nonce", nonce)
+    .gt("expires_at", new Date().toISOString())
     .single();
 
   if (error || !data) {
@@ -61,12 +61,12 @@ export async function cleanupExpiredNonces(): Promise<void> {
   if (!supabaseAdmin) return;
 
   const { error } = await supabaseAdmin
-    .from('request_nonces')
+    .from("request_nonces")
     .delete()
-    .lt('expires_at', new Date().toISOString());
+    .lt("expires_at", new Date().toISOString());
 
   if (error) {
-    console.error('[NONCE_STORE] Error cleaning up nonces:', error);
+    console.error("[NONCE_STORE] Error cleaning up nonces:", error);
   }
 }
 

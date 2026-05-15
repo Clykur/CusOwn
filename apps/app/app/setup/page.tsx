@@ -1,30 +1,30 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { API_ROUTES, BUSINESS_CATEGORIES_FALLBACK } from '@cusown/config';
-import { getServerSessionClient } from '@cusown/shared';
-import { ROUTES } from '@cusown/shared';
-import { SetupSkeleton } from '@/components/ui/skeleton';
-import { getCSRFToken } from '@cusown/shared';
-import CheckIcon from '@cusown/shared/icons/check.svg';
-import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
-import InfoIcon from '@cusown/shared/icons/info.svg';
-import CreateBusinessForm from '@/components/setup/create-business-form';
-import { useSearchParams } from 'next/navigation';
-import { fetchUserState } from '@cusown/shared';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { API_ROUTES, BUSINESS_CATEGORIES_FALLBACK } from "@cusown/config";
+import { getServerSessionClient } from "@cusown/shared";
+import { ROUTES } from "@cusown/shared";
+import { SetupSkeleton } from "@/components/ui/skeleton";
+import { getCSRFToken } from "@cusown/shared";
+import CheckIcon from "@cusown/shared/icons/check.svg";
+import BusinessesIcon from "@cusown/shared/icons/businesses.svg";
+import InfoIcon from "@cusown/shared/icons/info.svg";
+import CreateBusinessForm from "@/components/setup/create-business-form";
+import { useSearchParams } from "next/navigation";
+import { fetchUserState } from "@cusown/shared";
 
 export default function SetupPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [, setBusinessCategories] = useState<{ value: string; label: string }[]>(
-    BUSINESS_CATEGORIES_FALLBACK
-  );
+  const [, setBusinessCategories] = useState<
+    { value: string; label: string }[]
+  >(BUSINESS_CATEGORIES_FALLBACK);
 
   const searchParams = useSearchParams();
-  const fromOnboarding = searchParams?.get('from') === 'onboarding';
+  const fromOnboarding = searchParams?.get("from") === "onboarding";
 
   useEffect(() => {
     // Pre-fetch CSRF token
@@ -63,12 +63,14 @@ export default function SetupPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(API_ROUTES.BUSINESS_CATEGORIES, { credentials: 'include' })
+    fetch(API_ROUTES.BUSINESS_CATEGORIES, { credentials: "include" })
       .then((r) => r.json())
       .then((res) => {
         if (cancelled) return;
         const list = res?.data && Array.isArray(res.data) ? res.data : [];
-        setBusinessCategories(list.length ? list : BUSINESS_CATEGORIES_FALLBACK);
+        setBusinessCategories(
+          list.length ? list : BUSINESS_CATEGORIES_FALLBACK,
+        );
       })
       .catch(() => {
         if (!cancelled) setBusinessCategories(BUSINESS_CATEGORIES_FALLBACK);
@@ -102,7 +104,7 @@ export default function SetupPage() {
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         refreshState();
       }
     };
@@ -113,7 +115,7 @@ export default function SetupPage() {
 
     // Listen for storage events (when business is created in another tab)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'business_created' || e.key === 'user_state_changed') {
+      if (e.key === "business_created" || e.key === "user_state_changed") {
         refreshState();
       }
     };
@@ -123,19 +125,19 @@ export default function SetupPage() {
       refreshState();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('businessCreated', handleCustomEvent);
-    window.addEventListener('userStateChanged', handleCustomEvent);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("businessCreated", handleCustomEvent);
+    window.addEventListener("userStateChanged", handleCustomEvent);
 
     return () => {
       if (refreshTimeout) clearTimeout(refreshTimeout);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('businessCreated', handleCustomEvent);
-      window.removeEventListener('userStateChanged', handleCustomEvent);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("businessCreated", handleCustomEvent);
+      window.removeEventListener("userStateChanged", handleCustomEvent);
     };
   }, [checkAuthAndState]);
 
@@ -150,19 +152,24 @@ export default function SetupPage() {
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 mt-6 text-center">
             <div className="mb-8 flex justify-center">
               <div className="bg-black rounded-full p-6">
-                <BusinessesIcon className="w-12 h-12 text-white" aria-hidden="true" />
+                <BusinessesIcon
+                  className="w-12 h-12 text-white"
+                  aria-hidden="true"
+                />
               </div>
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Sign In to Create Your Business
             </h1>
             <p className="text-gray-600 text-lg mb-8">
-              Sign in with Google to create and manage your booking page. Your account will be
-              created automatically.
+              Sign in with Google to create and manage your booking page. Your
+              account will be created automatically.
             </p>
             <div className="space-y-4">
               <button
-                onClick={() => router.push(ROUTES.AUTH_LOGIN(ROUTES.SETUP) + '&role=owner')}
+                onClick={() =>
+                  router.push(ROUTES.AUTH_LOGIN(ROUTES.SETUP) + "&role=owner")
+                }
                 className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-4 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -185,7 +192,7 @@ export default function SetupPage() {
                 </svg>
                 Continue with Google
               </button>
-              <Link href={ROUTES.SELECT_ROLE('owner')}>
+              <Link href={ROUTES.SELECT_ROLE("owner")}>
                 <button className="w-full text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
                   ← Back to Role Selection
                 </button>
@@ -198,19 +205,31 @@ export default function SetupPage() {
               </p>
               <ul className="text-sm text-blue-800 space-y-2">
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon
+                    className="w-4 h-4 text-blue-600"
+                    aria-hidden="true"
+                  />
                   Secure access to your dashboard
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon
+                    className="w-4 h-4 text-blue-600"
+                    aria-hidden="true"
+                  />
                   Manage multiple businesses
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon
+                    className="w-4 h-4 text-blue-600"
+                    aria-hidden="true"
+                  />
                   View booking history & analytics
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon
+                    className="w-4 h-4 text-blue-600"
+                    aria-hidden="true"
+                  />
                   Switch between owner and customer roles
                 </li>
               </ul>

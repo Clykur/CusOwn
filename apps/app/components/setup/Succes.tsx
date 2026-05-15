@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { ROUTES, getOwnerDashboardUrl } from '@cusown/shared';
-import CheckIcon from '@cusown/shared/icons/check.svg';
-import DownloadIcon from '@cusown/shared/icons/download.svg';
-import LinkIcon from '@cusown/shared/icons/link.svg';
-import ChevronRightIcon from '@cusown/shared/icons/chevron-right.svg';
-import { APP_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
-import { cn } from '@cusown/shared';
+import Image from "next/image";
+import Link from "next/link";
+import { ROUTES, getOwnerDashboardUrl } from "@cusown/shared";
+import CheckIcon from "@cusown/shared/icons/check.svg";
+import DownloadIcon from "@cusown/shared/icons/download.svg";
+import LinkIcon from "@cusown/shared/icons/link.svg";
+import ChevronRightIcon from "@cusown/shared/icons/chevron-right.svg";
+import { APP_SCREEN_TITLE_CLASSNAME } from "@cusown/config";
+import { cn } from "@cusown/shared";
 
 type Props = {
   bookingLink: string;
@@ -16,10 +16,14 @@ type Props = {
   qrCode?: string;
 };
 
-export default function BusinessSuccess({ bookingLink, bookingUrl, qrCode }: Props) {
+export default function BusinessSuccess({
+  bookingLink,
+  bookingUrl,
+  qrCode,
+}: Props) {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert('Copied!');
+    alert("Copied!");
   };
 
   return (
@@ -30,7 +34,9 @@ export default function BusinessSuccess({ bookingLink, bookingUrl, qrCode }: Pro
           <CheckIcon className="w-10 h-10 text-green-600" />
         </div>
 
-        <h2 className={cn(APP_SCREEN_TITLE_CLASSNAME, 'mb-2')}>Business Created Successfully</h2>
+        <h2 className={cn(APP_SCREEN_TITLE_CLASSNAME, "mb-2")}>
+          Business Created Successfully
+        </h2>
         <p className="text-gray-600 mb-6">
           Your booking page is live and ready to accept customers.
         </p>
@@ -57,7 +63,8 @@ export default function BusinessSuccess({ bookingLink, bookingUrl, qrCode }: Pro
           </div>
 
           <p className="text-xs text-gray-500 mt-2">
-            Share this link on WhatsApp, Instagram, or anywhere customers can book you.
+            Share this link on WhatsApp, Instagram, or anywhere customers can
+            book you.
           </p>
         </div>
 
@@ -77,7 +84,7 @@ export default function BusinessSuccess({ bookingLink, bookingUrl, qrCode }: Pro
 
             <button
               onClick={() => {
-                const a = document.createElement('a');
+                const a = document.createElement("a");
                 a.href = qrCode;
                 a.download = `${bookingLink}-qr.png`;
                 a.click();
@@ -96,7 +103,9 @@ export default function BusinessSuccess({ bookingLink, bookingUrl, qrCode }: Pro
 
         {/* Next Steps */}
         <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4 text-left">
-          <p className="text-xs md:text-sm text-blue-800 font-semibold mb-2">Next Steps</p>
+          <p className="text-xs md:text-sm text-blue-800 font-semibold mb-2">
+            Next Steps
+          </p>
           <ul className="text-sm text-gray-700 space-y-2">
             <li className="flex items-center gap-2">
               <ChevronRightIcon className="w-4 h-4 text-gray-500" />

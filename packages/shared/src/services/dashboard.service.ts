@@ -4,20 +4,20 @@
  * Caches aggregated results for fast subsequent loads.
  */
 
-import { requireSupabaseAdmin } from '../lib/supabase/server';
-import { userService } from './user.service';
-import { getCache, setCache, deletePattern } from '../lib/cache/cache';
-import { Salon, BookingWithDetails, Slot } from '../types';
-import { ERROR_MESSAGES } from '@cusown/config';
-import { getISTDateString } from '../lib/time/ist';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { userService } from "./user.service";
+import { getCache, setCache, deletePattern } from "../lib/cache/cache";
+import { Salon, BookingWithDetails, Slot } from "../types";
+import { ERROR_MESSAGES } from "@cusown/config";
+import { getISTDateString } from "../lib/time/ist";
 
 /** Dashboard cache TTL (30 seconds for real-time feel) */
 const DASHBOARD_CACHE_TTL = 30;
 
 /** Cache key prefixes */
 const CACHE_PREFIX = {
-  OWNER_DASHBOARD: 'dashboard:owner:',
-  ADMIN_DASHBOARD: 'dashboard:admin:',
+  OWNER_DASHBOARD: "dashboard:owner:",
+  ADMIN_DASHBOARD: "dashboard:admin:",
 } as const;
 
 /** Owner dashboard aggregated data */
@@ -84,7 +84,7 @@ export class DashboardService {
    */
   async getOwnerDashboard(
     ownerId: string,
-    options?: { fromDate?: string; toDate?: string }
+    options?: { fromDate?: string; toDate?: string },
   ): Promise<OwnerDashboardData> {
     const cacheKey = this.buildOwnerCacheKey(ownerId, options);
 
@@ -149,9 +149,9 @@ export class DashboardService {
     try {
       const supabase = requireSupabaseAdmin();
       const { data: business } = await supabase
-        .from('businesses')
-        .select('owner_user_id')
-        .eq('id', businessId)
+        .from("businesses")
+        .select("owner_user_id")
+        .eq("id", businessId)
         .single();
 
       if (business?.owner_user_id) {
@@ -169,11 +169,11 @@ export class DashboardService {
    */
   private buildOwnerCacheKey(
     ownerId: string,
-    options?: { fromDate?: string; toDate?: string }
+    options?: { fromDate?: string; toDate?: string },
   ): string {
     const base = `${CACHE_PREFIX.OWNER_DASHBOARD}${ownerId}`;
     if (options?.fromDate || options?.toDate) {
-      return `${base}:${options.fromDate || 'any'}:${options.toDate || 'any'}`;
+      return `${base}:${options.fromDate || "any"}:${options.toDate || "any"}`;
     }
     return `${base}:all`;
   }
@@ -183,7 +183,7 @@ export class DashboardService {
    */
   private async fetchOwnerDashboardData(
     ownerId: string,
-    options?: { fromDate?: string; toDate?: string }
+    options?: { fromDate?: string; toDate?: string },
   ): Promise<OwnerDashboardData> {
     const supabase = requireSupabaseAdmin();
 
@@ -207,26 +207,31 @@ export class DashboardService {
     while (true) {
       pageCount++;
       let query = supabase
-        .from('bookings')
+        .from("bookings")
         .select(
-          'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at'
+          "id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at",
         )
-        .in('business_id', businessIds)
-        .order('created_at', { ascending: false })
+        .in("business_id", businessIds)
+        .order("created_at", { ascending: false })
         .range(from, from + pageSize - 1);
 
       // Direct date filtering on created_at
       if (options?.fromDate) {
-        query = query.gte('created_at', options.fromDate);
+        query = query.gte("created_at", options.fromDate);
       }
       if (options?.toDate) {
-        query = query.lte('created_at', options.toDate);
+        query = query.lte("created_at", options.toDate);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        console.error('[DASHBOARD] Pagination page', pageCount, 'error:', error);
+        console.error(
+          "[DASHBOARD] Pagination page",
+          pageCount,
+          "error:",
+          error,
+        );
         break;
       }
 
@@ -246,14 +251,18 @@ export class DashboardService {
     // ---------------------------
     // RELATED DATA
     // ---------------------------
-    const bookingSlotIds = [...new Set(allBookings.map((b) => b.slot_id).filter(Boolean))];
+    const bookingSlotIds = [
+      ...new Set(allBookings.map((b) => b.slot_id).filter(Boolean)),
+    ];
 
     let slots: Slot[] = [];
     if (bookingSlotIds.length > 0) {
       const { data } = await supabase
-        .from('slots')
-        .select('id, business_id, date, start_time, end_time, status, reserved_until')
-        .in('id', bookingSlotIds);
+        .from("slots")
+        .select(
+          "id, business_id, date, start_time, end_time, status, reserved_until",
+        )
+        .in("id", bookingSlotIds);
 
       slots = (data || []) as Slot[];
     }
@@ -263,12 +272,12 @@ export class DashboardService {
     let reviews: ReviewSummary[] = [];
     if (bookingIds.length > 0) {
       const { data, error } = await supabase
-        .from('reviews')
-        .select('id, booking_id, rating, comment')
-        .in('booking_id', bookingIds);
+        .from("reviews")
+        .select("id, booking_id, rating, comment")
+        .in("booking_id", bookingIds);
 
       if (error) {
-        console.error('[Dashboard] Reviews error:', error);
+        console.error("[Dashboard] Reviews error:", error);
         throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
       }
 
@@ -299,26 +308,46 @@ export class DashboardService {
     // ---------------------------
     const totalBookings = enrichedBookings.length;
 
-    const confirmedBookings = enrichedBookings.filter((b) => b.status === 'confirmed').length;
-    const pendingBookings = enrichedBookings.filter((b) => b.status === 'pending').length;
-    const rejectedBookings = enrichedBookings.filter((b) => b.status === 'rejected').length;
-    const cancelledBookings = enrichedBookings.filter((b) => b.status === 'cancelled').length;
+    const confirmedBookings = enrichedBookings.filter(
+      (b) => b.status === "confirmed",
+    ).length;
+    const pendingBookings = enrichedBookings.filter(
+      (b) => b.status === "pending",
+    ).length;
+    const rejectedBookings = enrichedBookings.filter(
+      (b) => b.status === "rejected",
+    ).length;
+    const cancelledBookings = enrichedBookings.filter(
+      (b) => b.status === "cancelled",
+    ).length;
     const noShowCount = enrichedBookings.filter((b) => b.no_show).length;
 
-    const conversionRate = totalBookings ? (confirmedBookings / totalBookings) * 100 : 0;
-    const cancellationRate = totalBookings ? (cancelledBookings / totalBookings) * 100 : 0;
-    const noShowRate = confirmedBookings ? (noShowCount / confirmedBookings) * 100 : 0;
+    const conversionRate = totalBookings
+      ? (confirmedBookings / totalBookings) * 100
+      : 0;
+    const cancellationRate = totalBookings
+      ? (cancelledBookings / totalBookings) * 100
+      : 0;
+    const noShowRate = confirmedBookings
+      ? (noShowCount / confirmedBookings) * 100
+      : 0;
 
     // ---------------------------
     // GROUPING
     // ---------------------------
-    const todaysBookings = enrichedBookings.filter((b) => b.slot?.date === todayStr);
-    const pendingBookingsList = enrichedBookings.filter((b) => b.status === 'pending');
+    const todaysBookings = enrichedBookings.filter(
+      (b) => b.slot?.date === todayStr,
+    );
+    const pendingBookingsList = enrichedBookings.filter(
+      (b) => b.status === "pending",
+    );
     const recentBookings = enrichedBookings.slice(0, 50);
 
     const bookingsByBusiness: Record<string, BookingWithDetails[]> = {};
     businessIds.forEach((id) => {
-      bookingsByBusiness[id] = enrichedBookings.filter((b) => b.business_id === id);
+      bookingsByBusiness[id] = enrichedBookings.filter(
+        (b) => b.business_id === id,
+      );
     });
 
     return {
@@ -349,54 +378,73 @@ export class DashboardService {
     const supabase = requireSupabaseAdmin();
     const todayStr = getISTDateString();
 
-    const [businessesResult, ownersResult, bookingsResult, todaySlotsResult] = await Promise.all([
-      supabase
-        .from('businesses')
-        .select('id, salon_name, owner_name, booking_link, created_at, owner_user_id')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(100),
+    const [businessesResult, ownersResult, bookingsResult, todaySlotsResult] =
+      await Promise.all([
+        supabase
+          .from("businesses")
+          .select(
+            "id, salon_name, owner_name, booking_link, created_at, owner_user_id",
+          )
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(100),
 
-      supabase
-        .from('user_profiles')
-        .select('id')
-        .or('user_type.eq.owner,user_type.eq.both,user_type.eq.admin'),
+        supabase
+          .from("user_profiles")
+          .select("id")
+          .or("user_type.eq.owner,user_type.eq.both,user_type.eq.admin"),
 
-      supabase
-        .from('bookings')
-        .select('id, business_id, status, customer_name, booking_id, created_at, slot_id, no_show')
-        .order('created_at', { ascending: false })
-        .limit(1000),
+        supabase
+          .from("bookings")
+          .select(
+            "id, business_id, status, customer_name, booking_id, created_at, slot_id, no_show",
+          )
+          .order("created_at", { ascending: false })
+          .limit(1000),
 
-      supabase.from('slots').select('id').eq('date', todayStr),
-    ]);
+        supabase.from("slots").select("id").eq("date", todayStr),
+      ]);
 
     const businesses = (businessesResult.data || []) as Salon[];
     const owners = ownersResult.data || [];
     const allBookings = bookingsResult.data || [];
-    const todaySlotIds = new Set((todaySlotsResult.data || []).map((s) => s.id));
+    const todaySlotIds = new Set(
+      (todaySlotsResult.data || []).map((s) => s.id),
+    );
 
-    const todayBookings = allBookings.filter((b) => todaySlotIds.has(b.slot_id));
-    const confirmedBookings = allBookings.filter((b) => b.status === 'confirmed').length;
-    const pendingBookings = allBookings.filter((b) => b.status === 'pending').length;
-    const cancelledBookings = allBookings.filter((b) => b.status === 'cancelled').length;
+    const todayBookings = allBookings.filter((b) =>
+      todaySlotIds.has(b.slot_id),
+    );
+    const confirmedBookings = allBookings.filter(
+      (b) => b.status === "confirmed",
+    ).length;
+    const pendingBookings = allBookings.filter(
+      (b) => b.status === "pending",
+    ).length;
+    const cancelledBookings = allBookings.filter(
+      (b) => b.status === "cancelled",
+    ).length;
     const conversionRate =
-      allBookings.length > 0 ? (confirmedBookings / allBookings.length) * 100 : 0;
+      allBookings.length > 0
+        ? (confirmedBookings / allBookings.length) * 100
+        : 0;
 
     const businessMap = new Map<string, Salon>();
     businesses.forEach((b) => businessMap.set(b.id, b));
 
-    const recentBookings: AdminBookingSummary[] = allBookings.slice(0, 20).map((b) => ({
-      id: b.id,
-      business_id: b.business_id,
-      status: b.status,
-      customer_name: b.customer_name,
-      booking_id: b.booking_id,
-      created_at: b.created_at,
-      slot_id: b.slot_id,
-      no_show: b.no_show || false,
-      salon: businessMap.get(b.business_id) || undefined,
-    }));
+    const recentBookings: AdminBookingSummary[] = allBookings
+      .slice(0, 20)
+      .map((b) => ({
+        id: b.id,
+        business_id: b.business_id,
+        status: b.status,
+        customer_name: b.customer_name,
+        booking_id: b.booking_id,
+        created_at: b.created_at,
+        slot_id: b.slot_id,
+        no_show: b.no_show || false,
+        salon: businessMap.get(b.business_id) || undefined,
+      }));
 
     return {
       stats: {

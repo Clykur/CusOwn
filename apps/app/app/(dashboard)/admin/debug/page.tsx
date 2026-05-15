@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { supabaseAuth } from '@cusown/shared';
+import { useState, useEffect } from "react";
+import { supabaseAuth } from "@cusown/shared";
 
 // Force dynamic rendering - this page requires runtime data
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default function DebugAuthPage() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
@@ -16,7 +16,7 @@ export default function DebugAuthPage() {
       try {
         // Get client-side session
         if (!supabaseAuth) {
-          setError('Supabase not configured');
+          setError("Supabase not configured");
           setLoading(false);
           return;
         }
@@ -25,7 +25,7 @@ export default function DebugAuthPage() {
           error: sessionError,
         } = await supabaseAuth.auth.getSession();
 
-        console.log('[Debug] Client session:', {
+        console.log("[Debug] Client session:", {
           hasSession: !!session,
           hasUser: !!session?.user,
           hasToken: !!session?.access_token,
@@ -34,10 +34,10 @@ export default function DebugAuthPage() {
         });
 
         // Call debug endpoint
-        const response = await fetch('/api/debug/auth');
+        const response = await fetch("/api/debug/auth");
         const data = await response.json();
 
-        console.log('[Debug] Server debug response:', data);
+        console.log("[Debug] Server debug response:", data);
 
         setDebugInfo({
           clientSession: {
@@ -50,8 +50,8 @@ export default function DebugAuthPage() {
           serverDebug: data.data || data,
         });
       } catch (err) {
-        console.error('[Debug] Error:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        console.error("[Debug] Error:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
       }
@@ -84,7 +84,9 @@ export default function DebugAuthPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl font-bold mb-6">Authentication Debug Information</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        Authentication Debug Information
+      </h1>
 
       <div className="space-y-6">
         {/* Client Session Info */}
@@ -109,46 +111,55 @@ export default function DebugAuthPage() {
             <h2 className="text-xl font-semibold mb-4">Summary</h2>
             <ul className="space-y-2">
               <li>
-                <strong>Authenticated:</strong>{' '}
+                <strong>Authenticated:</strong>{" "}
                 <span
                   className={
-                    debugInfo.serverDebug.summary.authenticated ? 'text-green-600' : 'text-red-600'
+                    debugInfo.serverDebug.summary.authenticated
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
-                  {debugInfo.serverDebug.summary.authenticated ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.authenticated ? "Yes" : "No"}
                 </span>
               </li>
               <li>
-                <strong>Has Profile:</strong>{' '}
+                <strong>Has Profile:</strong>{" "}
                 <span
                   className={
-                    debugInfo.serverDebug.summary.hasProfile ? 'text-green-600' : 'text-red-600'
+                    debugInfo.serverDebug.summary.hasProfile
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
-                  {debugInfo.serverDebug.summary.hasProfile ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.hasProfile ? "Yes" : "No"}
                 </span>
               </li>
               <li>
-                <strong>Is Admin:</strong>{' '}
+                <strong>Is Admin:</strong>{" "}
                 <span
                   className={
-                    debugInfo.serverDebug.summary.isAdmin ? 'text-green-600' : 'text-red-600'
+                    debugInfo.serverDebug.summary.isAdmin
+                      ? "text-green-600"
+                      : "text-red-600"
                   }
                 >
-                  {debugInfo.serverDebug.summary.isAdmin ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.isAdmin ? "Yes" : "No"}
                 </span>
               </li>
               <li>
-                <strong>Auth Method Used:</strong> {debugInfo.serverDebug.summary.authMethodUsed}
+                <strong>Auth Method Used:</strong>{" "}
+                {debugInfo.serverDebug.summary.authMethodUsed}
               </li>
               <li>
-                <strong>Has Errors:</strong>{' '}
+                <strong>Has Errors:</strong>{" "}
                 <span
                   className={
-                    debugInfo.serverDebug.summary.hasErrors ? 'text-red-600' : 'text-green-600'
+                    debugInfo.serverDebug.summary.hasErrors
+                      ? "text-red-600"
+                      : "text-green-600"
                   }
                 >
-                  {debugInfo.serverDebug.summary.hasErrors ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.hasErrors ? "Yes" : "No"}
                 </span>
               </li>
             </ul>
@@ -156,18 +167,23 @@ export default function DebugAuthPage() {
         )}
 
         {/* Errors */}
-        {debugInfo?.serverDebug?.errors && debugInfo.serverDebug.errors.length > 0 && (
-          <section className="bg-red-50 p-6 rounded-lg border-2 border-red-200">
-            <h2 className="text-xl font-semibold mb-4 text-red-600">Errors</h2>
-            <ul className="list-disc list-inside space-y-1">
-              {debugInfo.serverDebug.errors.map((err: string, idx: number) => (
-                <li key={idx} className="text-red-700">
-                  {err}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {debugInfo?.serverDebug?.errors &&
+          debugInfo.serverDebug.errors.length > 0 && (
+            <section className="bg-red-50 p-6 rounded-lg border-2 border-red-200">
+              <h2 className="text-xl font-semibold mb-4 text-red-600">
+                Errors
+              </h2>
+              <ul className="list-disc list-inside space-y-1">
+                {debugInfo.serverDebug.errors.map(
+                  (err: string, idx: number) => (
+                    <li key={idx} className="text-red-700">
+                      {err}
+                    </li>
+                  ),
+                )}
+              </ul>
+            </section>
+          )}
 
         {/* Instructions */}
         <section className="bg-yellow-50 p-6 rounded-lg border-2 border-yellow-200">

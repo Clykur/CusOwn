@@ -1,5 +1,5 @@
-import { createSalonSchema, createBookingSchema } from '../../types';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { createSalonSchema, createBookingSchema } from "../../types";
+import { ERROR_MESSAGES } from "@cusown/config";
 
 export const validateCreateSalon = (data: unknown) => {
   try {
@@ -23,9 +23,12 @@ export const validateCreateBooking = (data: unknown) => {
   }
 };
 
-export const validateTimeRange = (openingTime: string, closingTime: string): void => {
-  const [openingHours, openingMinutes] = openingTime.split(':').map(Number);
-  const [closingHours, closingMinutes] = closingTime.split(':').map(Number);
+export const validateTimeRange = (
+  openingTime: string,
+  closingTime: string,
+): void => {
+  const [openingHours, openingMinutes] = openingTime.split(":").map(Number);
+  const [closingHours, closingMinutes] = closingTime.split(":").map(Number);
 
   const openingTotal = openingHours * 60 + openingMinutes;
   const closingTotal = closingHours * 60 + closingMinutes;

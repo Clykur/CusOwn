@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface AnalyticsOverview {
   totalBookings: number;
@@ -98,15 +98,15 @@ const getDefaultDates = () => {
   const start = new Date();
   start.setDate(start.getDate() - 29);
   return {
-    startDate: start.toISOString().split('T')[0],
-    endDate: end.toISOString().split('T')[0],
+    startDate: start.toISOString().split("T")[0],
+    endDate: end.toISOString().split("T")[0],
   };
 };
 
 const { startDate: defaultStart, endDate: defaultEnd } = getDefaultDates();
 
 const initialState = {
-  selectedBusinessId: '',
+  selectedBusinessId: "",
   startDate: defaultStart,
   endDate: defaultEnd,
   overview: null,
@@ -124,7 +124,8 @@ export const useAnalyticsStore = create<AnalyticsState>()(
     (set) => ({
       ...initialState,
 
-      setSelectedBusinessId: (selectedBusinessId) => set({ selectedBusinessId }),
+      setSelectedBusinessId: (selectedBusinessId) =>
+        set({ selectedBusinessId }),
 
       setStartDate: (startDate) => set({ startDate }),
 
@@ -163,20 +164,23 @@ export const useAnalyticsStore = create<AnalyticsState>()(
       },
     }),
     {
-      name: 'analytics-store',
+      name: "analytics-store",
       partialize: (state) => ({
         selectedBusinessId: state.selectedBusinessId,
         startDate: state.startDate,
         endDate: state.endDate,
       }),
-    }
-  )
+    },
+  ),
 );
 
 export const selectDaysSelected = (state: AnalyticsState): number => {
   const from = new Date(state.startDate);
   const to = new Date(state.endDate);
-  return Math.max(1, Math.floor((to.getTime() - from.getTime()) / 86400000) + 1);
+  return Math.max(
+    1,
+    Math.floor((to.getTime() - from.getTime()) / 86400000) + 1,
+  );
 };
 
 export const selectHasNoActivity = (state: AnalyticsState): boolean => {
@@ -187,4 +191,10 @@ export const selectHasNoActivity = (state: AnalyticsState): boolean => {
   );
 };
 
-export type { AnalyticsOverview, DailyPoint, PeakHourPoint, AdvancedAnalytics, AnalyticsState };
+export type {
+  AnalyticsOverview,
+  DailyPoint,
+  PeakHourPoint,
+  AdvancedAnalytics,
+  AnalyticsState,
+};

@@ -1,11 +1,11 @@
-import { requireSupabaseAdmin } from '../lib/supabase/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 import {
   buildQueryCacheKey,
   withQueryCache,
   QUERY_CACHE_TTL,
   QUERY_CACHE_PREFIX,
-} from '../lib/cache/query-cache';
+} from "../lib/cache/query-cache";
 
 export interface BookingAnalytics {
   totalBookings: number;
@@ -52,7 +52,11 @@ export interface OwnerAnalyticsAdvanced {
   repeatCustomerPercentage: number;
   cancellationRate: number;
   revenueTrend: { date: string; revenueCents: number }[];
-  servicePopularityRanking: { serviceId: string; serviceName: string; bookingCount: number }[];
+  servicePopularityRanking: {
+    serviceId: string;
+    serviceName: string;
+    bookingCount: number;
+  }[];
   totalConfirmed: number;
   totalCancelled: number;
   totalAttempts: number;
@@ -60,7 +64,7 @@ export interface OwnerAnalyticsAdvanced {
 
 export class AnalyticsService {
   private toIsoDate(value: string): string {
-    return value.split('T')[0];
+    return value.split("T")[0];
   }
 
   private normalizeBusinessIds(businessIds: string[]): string[] {
@@ -69,23 +73,27 @@ export class AnalyticsService {
 
   private applyBusinessScope(query: any, businessIds: string[]) {
     if (businessIds.length === 1) {
-      return query.eq('business_id', businessIds[0]);
+      return query.eq("business_id", businessIds[0]);
     }
-    return query.in('business_id', businessIds);
+    return query.in("business_id", businessIds);
   }
 
   async getBookingAnalytics(
     businessId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<BookingAnalytics> {
-    return this.getBookingAnalyticsForBusinesses([businessId], startDate, endDate);
+    return this.getBookingAnalyticsForBusinesses(
+      [businessId],
+      startDate,
+      endDate,
+    );
   }
 
   async getBookingAnalyticsForBusinesses(
     businessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<BookingAnalytics> {
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
@@ -108,32 +116,45 @@ export class AnalyticsService {
     // Build cache key for analytics
     const cacheKey = buildQueryCacheKey(
       `${QUERY_CACHE_PREFIX.ANALYTICS}booking:`,
-      normalizedBusinessIds.join(','),
-      { startDate, endDate }
+      normalizedBusinessIds.join(","),
+      { startDate, endDate },
     );
 
-    return withQueryCache(cacheKey, QUERY_CACHE_TTL.DASHBOARD_STATS, async () => {
-      return this._getBookingAnalyticsUncached(normalizedBusinessIds, startDate, endDate);
-    });
+    return withQueryCache(
+      cacheKey,
+      QUERY_CACHE_TTL.DASHBOARD_STATS,
+      async () => {
+        return this._getBookingAnalyticsUncached(
+          normalizedBusinessIds,
+          startDate,
+          endDate,
+        );
+      },
+    );
   }
 
   private async _getBookingAnalyticsUncached(
     normalizedBusinessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<BookingAnalytics> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
 
     let bookingsQuery = supabaseAdmin
-      .from('bookings')
-      .select('id, business_id, status, no_show, total_price_cents, slot_id, created_at');
-    bookingsQuery = this.applyBusinessScope(bookingsQuery, normalizedBusinessIds);
+      .from("bookings")
+      .select(
+        "id, business_id, status, no_show, total_price_cents, slot_id, created_at",
+      );
+    bookingsQuery = this.applyBusinessScope(
+      bookingsQuery,
+      normalizedBusinessIds,
+    );
     const { data, error } = await bookingsQuery
-      .gte('created_at', startDate)
-      .lte('created_at', endDate);
+      .gte("created_at", startDate)
+      .lte("created_at", endDate);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -141,21 +162,34 @@ export class AnalyticsService {
 
     const bookings = data || [];
     const totalBookings = bookings.length;
-    const confirmedBookings = bookings.filter((b) => b.status === 'confirmed').length;
-    const rejectedBookings = bookings.filter((b) => b.status === 'rejected').length;
-    const cancelledBookings = bookings.filter((b) => b.status === 'cancelled').length;
+    const confirmedBookings = bookings.filter(
+      (b) => b.status === "confirmed",
+    ).length;
+    const rejectedBookings = bookings.filter(
+      (b) => b.status === "rejected",
+    ).length;
+    const cancelledBookings = bookings.filter(
+      (b) => b.status === "cancelled",
+    ).length;
     const noShowCount = bookings.filter((b) => b.no_show === true).length;
-    const confirmedList = bookings.filter((b) => b.status === 'confirmed');
+    const confirmedList = bookings.filter((b) => b.status === "confirmed");
     const totalRevenueCents = confirmedList.reduce(
-      (sum, b) => sum + (typeof b.total_price_cents === 'number' ? b.total_price_cents : 0),
-      0
+      (sum, b) =>
+        sum +
+        (typeof b.total_price_cents === "number" ? b.total_price_cents : 0),
+      0,
     );
     const averageTicketCents =
-      confirmedList.length > 0 ? Math.round(totalRevenueCents / confirmedList.length) : 0;
+      confirmedList.length > 0
+        ? Math.round(totalRevenueCents / confirmedList.length)
+        : 0;
 
-    const conversionRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
-    const cancellationRate = totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
-    const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
+    const conversionRate =
+      totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
+    const cancellationRate =
+      totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
+    const noShowRate =
+      confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
     // Peak hour from confirmed bookings' slots
     let peakHour: string | null = null;
@@ -163,14 +197,14 @@ export class AnalyticsService {
       new Set(
         confirmedList
           .map((b) => b.slot_id as string | null | undefined)
-          .filter((id): id is string => !!id)
-      )
+          .filter((id): id is string => !!id),
+      ),
     );
     if (slotIds.length > 0) {
       const { data: slots } = await supabaseAdmin
-        .from('slots')
-        .select('id, start_time')
-        .in('id', slotIds);
+        .from("slots")
+        .select("id, start_time")
+        .in("id", slotIds);
       const slotHourMap = new Map<string, number>();
       (slots || []).forEach((s) => {
         const hour = new Date(s.start_time).getHours();
@@ -190,16 +224,20 @@ export class AnalyticsService {
           bestHour = hour;
         }
       });
-      if (bestHour !== null) peakHour = `${String(bestHour).padStart(2, '0')}:00`;
+      if (bestHour !== null)
+        peakHour = `${String(bestHour).padStart(2, "0")}:00`;
     }
 
     // Service popularity for this owner's business in the selected date range
     let servicesQuery = supabaseAdmin
-      .from('services')
-      .select('id, name, business_id')
-      .eq('is_active', true)
-      .order('name', { ascending: true });
-    servicesQuery = this.applyBusinessScope(servicesQuery, normalizedBusinessIds);
+      .from("services")
+      .select("id, name, business_id")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+    servicesQuery = this.applyBusinessScope(
+      servicesQuery,
+      normalizedBusinessIds,
+    );
     const { data: servicesData } = await servicesQuery;
     const serviceMap = new Map<
       string,
@@ -216,14 +254,15 @@ export class AnalyticsService {
     const bookingIds = bookings.map((b) => b.id as string);
     if (bookingIds.length > 0 && serviceMap.size > 0) {
       const { data: bookingServices } = await supabaseAdmin
-        .from('booking_services')
-        .select('service_id, price_cents')
-        .in('booking_id', bookingIds);
+        .from("booking_services")
+        .select("service_id, price_cents")
+        .in("booking_id", bookingIds);
       (bookingServices || []).forEach((bs) => {
         const row = serviceMap.get(bs.service_id as string);
         if (!row) return;
         row.count += 1;
-        row.revenueCents += typeof bs.price_cents === 'number' ? bs.price_cents : 0;
+        row.revenueCents +=
+          typeof bs.price_cents === "number" ? bs.price_cents : 0;
       });
     }
     const servicesByBusiness = Array.from(serviceMap.values()).sort((a, b) => {
@@ -247,7 +286,7 @@ export class AnalyticsService {
                 acc.set(key, current);
                 return acc;
               }, new Map<string, { id: string; name: string; count: number; revenueCents: number }>())
-              .values()
+              .values(),
           ).sort((a, b) => {
             if (b.count !== a.count) return b.count - a.count;
             return a.name.localeCompare(b.name);
@@ -273,15 +312,19 @@ export class AnalyticsService {
   async getDailyAnalytics(
     businessId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<DailyAnalytics[]> {
-    return this.getDailyAnalyticsForBusinesses([businessId], startDate, endDate);
+    return this.getDailyAnalyticsForBusinesses(
+      [businessId],
+      startDate,
+      endDate,
+    );
   }
 
   async getDailyAnalyticsForBusinesses(
     businessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<DailyAnalytics[]> {
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
@@ -291,58 +334,70 @@ export class AnalyticsService {
     // Build cache key for daily analytics
     const cacheKey = buildQueryCacheKey(
       `${QUERY_CACHE_PREFIX.ANALYTICS}daily:`,
-      normalizedBusinessIds.join(','),
-      { startDate, endDate }
+      normalizedBusinessIds.join(","),
+      { startDate, endDate },
     );
 
-    return withQueryCache(cacheKey, QUERY_CACHE_TTL.DASHBOARD_STATS, async () => {
-      return this._getDailyAnalyticsUncached(normalizedBusinessIds, startDate, endDate);
-    });
+    return withQueryCache(
+      cacheKey,
+      QUERY_CACHE_TTL.DASHBOARD_STATS,
+      async () => {
+        return this._getDailyAnalyticsUncached(
+          normalizedBusinessIds,
+          startDate,
+          endDate,
+        );
+      },
+    );
   }
 
   private async _getDailyAnalyticsUncached(
     normalizedBusinessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<DailyAnalytics[]> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
 
-    let dailyQuery = supabaseAdmin.from('booking_analytics_daily').select('*');
+    let dailyQuery = supabaseAdmin.from("booking_analytics_daily").select("*");
     dailyQuery = this.applyBusinessScope(dailyQuery, normalizedBusinessIds);
     const { data, error } = await dailyQuery
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: true });
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
     let bookingsQuery = supabaseAdmin
-      .from('bookings')
-      .select('created_at, status, total_price_cents');
-    bookingsQuery = this.applyBusinessScope(bookingsQuery, normalizedBusinessIds);
+      .from("bookings")
+      .select("created_at, status, total_price_cents");
+    bookingsQuery = this.applyBusinessScope(
+      bookingsQuery,
+      normalizedBusinessIds,
+    );
     const { data: bookingsData, error: bookingsError } = await bookingsQuery
-      .gte('created_at', startDate)
-      .lte('created_at', endDate);
+      .gte("created_at", startDate)
+      .lte("created_at", endDate);
     if (bookingsError) {
       throw new Error(bookingsError.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
     const revenueByDate = new Map<string, number>();
     (bookingsData || []).forEach((b) => {
-      if (b.status !== 'confirmed') return;
+      if (b.status !== "confirmed") return;
       const key = this.toIsoDate(b.created_at as string);
       const current = revenueByDate.get(key) || 0;
       revenueByDate.set(
         key,
-        current + (typeof b.total_price_cents === 'number' ? b.total_price_cents : 0)
+        current +
+          (typeof b.total_price_cents === "number" ? b.total_price_cents : 0),
       );
     });
 
-    const dailyTotals = new Map<string, Omit<DailyAnalytics, 'revenue'>>();
+    const dailyTotals = new Map<string, Omit<DailyAnalytics, "revenue">>();
     (data || []).forEach((item) => {
       const current = dailyTotals.get(item.date) || {
         date: item.date,
@@ -360,7 +415,9 @@ export class AnalyticsService {
       dailyTotals.set(item.date, current);
     });
 
-    const allDates = Array.from(new Set([...dailyTotals.keys(), ...revenueByDate.keys()])).sort();
+    const allDates = Array.from(
+      new Set([...dailyTotals.keys(), ...revenueByDate.keys()]),
+    ).sort();
     return allDates.map((date) => {
       const current = dailyTotals.get(date) || {
         date,
@@ -380,7 +437,7 @@ export class AnalyticsService {
   async getPeakHours(
     businessId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<PeakHoursData[]> {
     return this.getPeakHoursForBusinesses([businessId], startDate, endDate);
   }
@@ -388,7 +445,7 @@ export class AnalyticsService {
   async getPeakHoursForBusinesses(
     businessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<PeakHoursData[]> {
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
@@ -398,31 +455,40 @@ export class AnalyticsService {
     // Build cache key for peak hours
     const cacheKey = buildQueryCacheKey(
       `${QUERY_CACHE_PREFIX.ANALYTICS}peakhours:`,
-      normalizedBusinessIds.join(','),
-      { startDate, endDate }
+      normalizedBusinessIds.join(","),
+      { startDate, endDate },
     );
 
     return withQueryCache(cacheKey, QUERY_CACHE_TTL.PEAK_HOURS, async () => {
-      return this._getPeakHoursUncached(normalizedBusinessIds, startDate, endDate);
+      return this._getPeakHoursUncached(
+        normalizedBusinessIds,
+        startDate,
+        endDate,
+      );
     });
   }
 
   private async _getPeakHoursUncached(
     normalizedBusinessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<PeakHoursData[]> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
 
-    let peakHoursQuery = supabaseAdmin.from('booking_analytics_hourly').select('*');
-    peakHoursQuery = this.applyBusinessScope(peakHoursQuery, normalizedBusinessIds);
+    let peakHoursQuery = supabaseAdmin
+      .from("booking_analytics_hourly")
+      .select("*");
+    peakHoursQuery = this.applyBusinessScope(
+      peakHoursQuery,
+      normalizedBusinessIds,
+    );
     const { data, error } = await peakHoursQuery
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('hour', { ascending: true });
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("hour", { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -440,16 +506,20 @@ export class AnalyticsService {
       .map(([hour, bookingCount]) => ({
         hour,
         bookingCount,
-        date: '',
+        date: "",
       }))
       .sort((a, b) => a.hour - b.hour);
   }
 
-  async getCustomerRetention(businessId: string): Promise<CustomerRetentionData[]> {
+  async getCustomerRetention(
+    businessId: string,
+  ): Promise<CustomerRetentionData[]> {
     return this.getCustomerRetentionForBusinesses([businessId]);
   }
 
-  async getCustomerRetentionForBusinesses(businessIds: string[]): Promise<CustomerRetentionData[]> {
+  async getCustomerRetentionForBusinesses(
+    businessIds: string[],
+  ): Promise<CustomerRetentionData[]> {
     const normalizedBusinessIds = this.normalizeBusinessIds(businessIds);
     if (normalizedBusinessIds.length === 0) {
       return [];
@@ -458,8 +528,8 @@ export class AnalyticsService {
     // Build cache key for customer retention
     const cacheKey = buildQueryCacheKey(
       `${QUERY_CACHE_PREFIX.ANALYTICS}retention:`,
-      normalizedBusinessIds.join(','),
-      {}
+      normalizedBusinessIds.join(","),
+      {},
     );
 
     return withQueryCache(cacheKey, QUERY_CACHE_TTL.RETENTION, async () => {
@@ -468,24 +538,29 @@ export class AnalyticsService {
   }
 
   private async _getCustomerRetentionUncached(
-    normalizedBusinessIds: string[]
+    normalizedBusinessIds: string[],
   ): Promise<CustomerRetentionData[]> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
 
-    let retentionQuery = supabaseAdmin.from('customer_retention').select('*');
-    retentionQuery = this.applyBusinessScope(retentionQuery, normalizedBusinessIds);
+    let retentionQuery = supabaseAdmin.from("customer_retention").select("*");
+    retentionQuery = this.applyBusinessScope(
+      retentionQuery,
+      normalizedBusinessIds,
+    );
     const { data, error } = await retentionQuery
-      .order('total_bookings', { ascending: false })
+      .order("total_bookings", { ascending: false })
       .limit(500);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    const customerPhones = new Set((data || []).map((item) => item.customer_phone));
+    const customerPhones = new Set(
+      (data || []).map((item) => item.customer_phone),
+    );
     const phoneArray = Array.from(customerPhones);
 
     if (phoneArray.length === 0) {
@@ -513,20 +588,32 @@ export class AnalyticsService {
       };
       current.bookingDays += item.booking_days || 0;
       current.totalBookings += item.total_bookings || 0;
-      if (new Date(item.last_booking_at).getTime() > new Date(current.lastBookingAt).getTime()) {
+      if (
+        new Date(item.last_booking_at).getTime() >
+        new Date(current.lastBookingAt).getTime()
+      ) {
         current.lastBookingAt = item.last_booking_at;
       }
-      if (new Date(item.first_booking_at).getTime() < new Date(current.firstBookingAt).getTime()) {
+      if (
+        new Date(item.first_booking_at).getTime() <
+        new Date(current.firstBookingAt).getTime()
+      ) {
         current.firstBookingAt = item.first_booking_at;
       }
       totalsByPhone.set(phone, current);
     });
 
     let bookingsQuery = supabaseAdmin
-      .from('bookings')
-      .select('customer_phone, customer_name, created_at');
-    bookingsQuery = this.applyBusinessScope(bookingsQuery, normalizedBusinessIds);
-    const { data: bookingsData } = await bookingsQuery.in('customer_phone', phoneArray);
+      .from("bookings")
+      .select("customer_phone, customer_name, created_at");
+    bookingsQuery = this.applyBusinessScope(
+      bookingsQuery,
+      normalizedBusinessIds,
+    );
+    const { data: bookingsData } = await bookingsQuery.in(
+      "customer_phone",
+      phoneArray,
+    );
 
     const nameMap = new Map<string, { name: string; createdAt: string }>();
     (bookingsData || []).forEach((booking) => {
@@ -534,10 +621,11 @@ export class AnalyticsService {
       const current = nameMap.get(phone);
       if (
         !current ||
-        new Date(booking.created_at).getTime() > new Date(current.createdAt).getTime()
+        new Date(booking.created_at).getTime() >
+          new Date(current.createdAt).getTime()
       ) {
         nameMap.set(phone, {
-          name: (booking.customer_name as string) || 'Unknown',
+          name: (booking.customer_name as string) || "Unknown",
           createdAt: booking.created_at as string,
         });
       }
@@ -546,7 +634,7 @@ export class AnalyticsService {
     return Array.from(totalsByPhone.values())
       .map((row) => ({
         customerPhone: row.customerPhone,
-        customerName: nameMap.get(row.customerPhone)?.name || 'Unknown',
+        customerName: nameMap.get(row.customerPhone)?.name || "Unknown",
         bookingDays: row.bookingDays,
         totalBookings: row.totalBookings,
         lastBookingAt: row.lastBookingAt,
@@ -561,41 +649,52 @@ export class AnalyticsService {
     businessId: string,
     startDate: string,
     endDate: string,
-    serviceRankLimit?: number
+    serviceRankLimit?: number,
   ): Promise<OwnerAnalyticsAdvanced> {
     // Build cache key for owner advanced analytics
-    const cacheKey = buildQueryCacheKey(`${QUERY_CACHE_PREFIX.DASHBOARD}advanced:`, businessId, {
-      startDate,
-      endDate,
-      serviceRankLimit,
-    });
-
-    return withQueryCache(cacheKey, QUERY_CACHE_TTL.DASHBOARD_STATS, async () => {
-      return this._getOwnerAnalyticsAdvancedUncached(
-        businessId,
+    const cacheKey = buildQueryCacheKey(
+      `${QUERY_CACHE_PREFIX.DASHBOARD}advanced:`,
+      businessId,
+      {
         startDate,
         endDate,
-        serviceRankLimit
-      );
-    });
+        serviceRankLimit,
+      },
+    );
+
+    return withQueryCache(
+      cacheKey,
+      QUERY_CACHE_TTL.DASHBOARD_STATS,
+      async () => {
+        return this._getOwnerAnalyticsAdvancedUncached(
+          businessId,
+          startDate,
+          endDate,
+          serviceRankLimit,
+        );
+      },
+    );
   }
 
   private async _getOwnerAnalyticsAdvancedUncached(
     businessId: string,
     startDate: string,
     endDate: string,
-    serviceRankLimit?: number
+    serviceRankLimit?: number,
   ): Promise<OwnerAnalyticsAdvanced> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error('Database not configured');
+      throw new Error("Database not configured");
     }
-    const { data, error } = await supabaseAdmin.rpc('get_owner_analytics_advanced', {
-      p_business_id: businessId,
-      p_start_date: startDate,
-      p_end_date: endDate,
-      p_service_rank_limit: serviceRankLimit ?? 50,
-    });
+    const { data, error } = await supabaseAdmin.rpc(
+      "get_owner_analytics_advanced",
+      {
+        p_business_id: businessId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+        p_service_rank_limit: serviceRankLimit ?? 50,
+      },
+    );
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
@@ -620,7 +719,7 @@ export class AnalyticsService {
       repeatCustomerPercentage: raw?.repeatCustomerPercentage ?? 0,
       cancellationRate: raw?.cancellationRate ?? 0,
       revenueTrend: (raw?.revenueTrend ?? []).map((r) => ({
-        date: typeof r.date === 'string' ? r.date : String(r.date),
+        date: typeof r.date === "string" ? r.date : String(r.date),
         revenueCents: Number(r.revenueCents ?? 0),
       })),
       servicePopularityRanking: raw?.servicePopularityRanking ?? [],
@@ -633,19 +732,34 @@ export class AnalyticsService {
   async exportAnalyticsCSV(
     businessId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<string> {
-    return this.exportAnalyticsCSVForBusinesses([businessId], startDate, endDate);
+    return this.exportAnalyticsCSVForBusinesses(
+      [businessId],
+      startDate,
+      endDate,
+    );
   }
 
   async exportAnalyticsCSVForBusinesses(
     businessIds: string[],
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<string> {
-    const analytics = await this.getDailyAnalyticsForBusinesses(businessIds, startDate, endDate);
+    const analytics = await this.getDailyAnalyticsForBusinesses(
+      businessIds,
+      startDate,
+      endDate,
+    );
 
-    const headers = ['Date', 'Total Bookings', 'Confirmed', 'Rejected', 'Cancelled', 'No Shows'];
+    const headers = [
+      "Date",
+      "Total Bookings",
+      "Confirmed",
+      "Rejected",
+      "Cancelled",
+      "No Shows",
+    ];
     const rows = analytics.map((a) => [
       a.date,
       a.totalBookings.toString(),
@@ -655,7 +769,9 @@ export class AnalyticsService {
       a.noShowCount.toString(),
     ]);
 
-    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join(
+      "\n",
+    );
 
     return csv;
   }
@@ -668,7 +784,7 @@ export class AnalyticsService {
     businessIds: string[],
     startDate: string,
     endDate: string,
-    includeAdvanced: boolean = false
+    includeAdvanced: boolean = false,
   ): Promise<AggregatedAnalytics> {
     const normalizedIds = this.normalizeBusinessIds(businessIds);
     const isSingleBusiness = normalizedIds.length === 1;
@@ -681,22 +797,31 @@ export class AnalyticsService {
     ];
 
     if (includeAdvanced && isSingleBusiness) {
-      promises.push(this.getOwnerAnalyticsAdvanced(normalizedIds[0], startDate, endDate));
+      promises.push(
+        this.getOwnerAnalyticsAdvanced(normalizedIds[0], startDate, endDate),
+      );
     }
 
     const results = await Promise.allSettled(promises);
 
     const overview =
-      results[0].status === 'fulfilled' ? (results[0].value as BookingAnalytics) : null;
-    const daily = results[1].status === 'fulfilled' ? (results[1].value as DailyAnalytics[]) : [];
+      results[0].status === "fulfilled"
+        ? (results[0].value as BookingAnalytics)
+        : null;
+    const daily =
+      results[1].status === "fulfilled"
+        ? (results[1].value as DailyAnalytics[])
+        : [];
     const peakHours =
-      results[2].status === 'fulfilled'
+      results[2].status === "fulfilled"
         ? (results[2].value as { hour: number; bookingCount: number }[])
         : [];
     const retention =
-      results[3].status === 'fulfilled' ? (results[3].value as { totalBookings: number }[]) : [];
+      results[3].status === "fulfilled"
+        ? (results[3].value as { totalBookings: number }[])
+        : [];
     const advanced =
-      includeAdvanced && isSingleBusiness && results[4]?.status === 'fulfilled'
+      includeAdvanced && isSingleBusiness && results[4]?.status === "fulfilled"
         ? (results[4].value as OwnerAnalyticsAdvanced)
         : null;
 

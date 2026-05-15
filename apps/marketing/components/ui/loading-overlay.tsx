@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Spinner } from './loading-button';
-import { cn } from '@cusown/shared';
+import { Spinner } from "./loading-button";
+import { cn } from "@cusown/shared";
 
 export interface LoadingOverlayProps {
   loading: boolean;
@@ -19,19 +19,21 @@ export function LoadingOverlay({
   message,
 }: LoadingOverlayProps) {
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       {children}
       {loading && (
         <div
           className={cn(
-            'absolute inset-0 flex items-center justify-center bg-white/80 z-10',
-            blur && 'backdrop-blur-sm'
+            "absolute inset-0 flex items-center justify-center bg-white/80 z-10",
+            blur && "backdrop-blur-sm",
           )}
           aria-busy="true"
         >
           <div className="flex flex-col items-center gap-2">
             <Spinner className="h-6 w-6 text-slate-600" />
-            {message && <span className="text-sm text-slate-600">{message}</span>}
+            {message && (
+              <span className="text-sm text-slate-600">{message}</span>
+            )}
           </div>
         </div>
       )}
@@ -41,20 +43,24 @@ export function LoadingOverlay({
 
 export interface InlineLoadingProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   text?: string;
 }
 
-export function InlineLoading({ className, size = 'md', text }: InlineLoadingProps) {
+export function InlineLoading({
+  className,
+  size = "md",
+  text,
+}: InlineLoadingProps) {
   const sizeClasses = {
-    sm: 'h-3 w-3',
-    md: 'h-4 w-4',
-    lg: 'h-5 w-5',
+    sm: "h-3 w-3",
+    md: "h-4 w-4",
+    lg: "h-5 w-5",
   };
 
   return (
     <span
-      className={cn('inline-flex items-center gap-2 text-slate-500', className)}
+      className={cn("inline-flex items-center gap-2 text-slate-500", className)}
       aria-busy="true"
     >
       <Spinner className={sizeClasses[size]} />
@@ -67,7 +73,7 @@ export interface PageLoadingProps {
   message?: string;
 }
 
-export function PageLoading({ message = 'Loading...' }: PageLoadingProps) {
+export function PageLoading({ message = "Loading..." }: PageLoadingProps) {
   return (
     <div
       className="flex min-h-[50vh] items-center justify-center"

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -9,13 +9,13 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
-import { formatAnalyticsChartDayLabel } from '@cusown/shared';
+} from "recharts";
+import { formatAnalyticsChartDayLabel } from "@cusown/shared";
 
 function formatCurrency(v: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(v || 0);
 }
@@ -35,12 +35,14 @@ export default function RevenueTrendChart({
 }) {
   const chartData = useMemo(
     () => dailyData.map((d) => ({ ...d, revenue: d.revenue ?? 0 })),
-    [dailyData]
+    [dailyData],
   );
 
   return (
     <div className="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-      <h3 className="mb-1 text-sm font-semibold text-slate-900 md:mb-3">Revenue Over Time</h3>
+      <h3 className="mb-1 text-sm font-semibold text-slate-900 md:mb-3">
+        Revenue Over Time
+      </h3>
       <p className="mb-3 text-xs text-slate-500 md:hidden">
         Daily revenue in the selected range (INR).
       </p>
@@ -53,28 +55,41 @@ export default function RevenueTrendChart({
                 <stop offset="95%" stopColor="#334155" stopOpacity={0.04} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#e2e8f0"
+              vertical={false}
+            />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: '#64748b' }}
+              tick={{ fontSize: 10, fill: "#64748b" }}
               tickLine={false}
-              axisLine={{ stroke: '#e2e8f0' }}
+              axisLine={{ stroke: "#e2e8f0" }}
               tickFormatter={formatAnalyticsChartDayLabel}
               interval="preserveStartEnd"
               minTickGap={28}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#64748b' }}
+              tick={{ fontSize: 10, fill: "#64748b" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={formatYAxisTick}
               width={36}
             />
             <Tooltip
-              contentStyle={{ borderRadius: 10, borderColor: '#e2e8f0', fontSize: 12 }}
-              formatter={(value) => [formatCurrency(value as number), 'Revenue']}
+              contentStyle={{
+                borderRadius: 10,
+                borderColor: "#e2e8f0",
+                fontSize: 12,
+              }}
+              formatter={(value) => [
+                formatCurrency(value as number),
+                "Revenue",
+              ]}
               labelFormatter={(label) =>
-                typeof label === 'string' ? formatAnalyticsChartDayLabel(label) : String(label)
+                typeof label === "string"
+                  ? formatAnalyticsChartDayLabel(label)
+                  : String(label)
               }
             />
             <Area

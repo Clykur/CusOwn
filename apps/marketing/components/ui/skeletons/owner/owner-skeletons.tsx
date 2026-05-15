@@ -1,15 +1,20 @@
-'use client';
+"use client";
 
-import AnalyticsSkeleton from '@/components/analytics/AnalyticsSkeleton';
-import { skeletonBase } from '../base-skeleton';
+import AnalyticsSkeleton from "@/components/analytics/AnalyticsSkeleton";
+import { skeletonBase } from "../base-skeleton";
 
 export function OwnerDashboardSkeleton() {
   return (
     <div className="w-full pb-24 flex flex-col gap-6" aria-busy="true">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white border border-slate-200 rounded-lg p-6 skeleton-shimmer">
-            <div className={`text-sm text-slate-500 h-4 ${skeletonBase} w-24 mb-2 rounded`} />
+          <div
+            key={i}
+            className="bg-white border border-slate-200 rounded-lg p-6 skeleton-shimmer"
+          >
+            <div
+              className={`text-sm text-slate-500 h-4 ${skeletonBase} w-24 mb-2 rounded`}
+            />
             <div className={`h-8 ${skeletonBase} w-12 rounded`} />
           </div>
         ))}
@@ -75,13 +80,19 @@ export function OwnerBusinessesSkeleton() {
                 <div
                   className={`mb-2 h-4 ${skeletonBase} w-40 max-w-full rounded md:h-5 md:w-48`}
                 />
-                <div className={`h-3 ${skeletonBase} w-32 max-w-full rounded md:h-4 md:w-36`} />
+                <div
+                  className={`h-3 ${skeletonBase} w-32 max-w-full rounded md:h-4 md:w-36`}
+                />
               </div>
               <div className={`h-4 w-3 shrink-0 ${skeletonBase} rounded`} />
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 md:mt-6 md:pt-4">
-              <div className={`h-3 ${skeletonBase} w-28 rounded md:h-4 md:w-32`} />
-              <div className={`h-3 ${skeletonBase} w-14 rounded md:h-4 md:w-16`} />
+              <div
+                className={`h-3 ${skeletonBase} w-28 rounded md:h-4 md:w-32`}
+              />
+              <div
+                className={`h-3 ${skeletonBase} w-14 rounded md:h-4 md:w-16`}
+              />
             </div>
           </div>
         ))}
@@ -95,9 +106,13 @@ export function OwnerSetupSkeleton() {
     <div className="w-full pb-24" aria-busy="true">
       <div className="bg-white border border-slate-200 rounded-lg p-6 md:p-8 skeleton-shimmer">
         <div className="mb-6 text-center">
-          <div className={`h-14 w-14 ${skeletonBase} rounded-full mx-auto mb-3`} />
+          <div
+            className={`h-14 w-14 ${skeletonBase} rounded-full mx-auto mb-3`}
+          />
           <div className={`h-6 ${skeletonBase} w-56 mx-auto mb-2 rounded`} />
-          <div className={`h-4 ${skeletonBase} w-72 max-w-full mx-auto rounded`} />
+          <div
+            className={`h-4 ${skeletonBase} w-72 max-w-full mx-auto rounded`}
+          />
         </div>
         <div className={`h-4 ${skeletonBase} w-full max-w-md mb-4 rounded`} />
         <div className="space-y-4">
@@ -136,7 +151,9 @@ export function OwnerProfileSkeleton() {
       <section className="skeleton-shimmer space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-            <div className={`h-24 w-24 shrink-0 rounded-full sm:h-28 sm:w-28 ${skeletonBase}`} />
+            <div
+              className={`h-24 w-24 shrink-0 rounded-full sm:h-28 sm:w-28 ${skeletonBase}`}
+            />
             <div className="flex w-full flex-col items-center gap-2 sm:items-start">
               <div className={`h-5 w-44 max-w-full rounded ${skeletonBase}`} />
               <div className={`h-4 w-52 max-w-full rounded ${skeletonBase}`} />
@@ -150,13 +167,17 @@ export function OwnerProfileSkeleton() {
             <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
               <div className={`h-3 w-16 rounded ${skeletonBase}`} />
             </div>
-            <div className="divide-y divide-slate-100">{[1, 2, 3].map(fieldRow)}</div>
+            <div className="divide-y divide-slate-100">
+              {[1, 2, 3].map(fieldRow)}
+            </div>
           </div>
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
             <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
               <div className={`h-3 w-20 rounded ${skeletonBase}`} />
             </div>
-            <div className="divide-y divide-slate-100">{[4, 5, 6].map(fieldRow)}</div>
+            <div className="divide-y divide-slate-100">
+              {[4, 5, 6].map(fieldRow)}
+            </div>
           </div>
         </div>
       </section>
@@ -165,11 +186,15 @@ export function OwnerProfileSkeleton() {
         <div className={`mb-2 h-5 w-36 rounded ${skeletonBase}`} />
         <div className={`mb-4 h-4 w-full max-w-sm rounded ${skeletonBase}`} />
         <div className={`mb-4 h-16 w-full rounded-lg ${skeletonBase}`} />
-        <div className={`h-10 w-full max-w-xs rounded-lg sm:w-40 ${skeletonBase}`} />
+        <div
+          className={`h-10 w-full max-w-xs rounded-lg sm:w-40 ${skeletonBase}`}
+        />
       </section>
 
       <div className="flex justify-stretch px-0.5 lg:hidden">
-        <div className={`mx-auto h-12 w-full max-w-lg rounded-xl ${skeletonBase}`} />
+        <div
+          className={`mx-auto h-12 w-full max-w-lg rounded-xl ${skeletonBase}`}
+        />
       </div>
     </div>
   );
@@ -185,16 +210,24 @@ export function OwnerAnalyticsSkeleton() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className={`h-8 ${skeletonBase} w-40 max-w-[85%] rounded`} />
-            <div className={`mt-2 hidden h-5 ${skeletonBase} w-full max-w-md rounded md:block`} />
+            <div
+              className={`mt-2 hidden h-5 ${skeletonBase} w-full max-w-md rounded md:block`}
+            />
           </div>
           <div className="shrink-0 pt-0.5 md:hidden">
             <div className="flex items-center gap-2">
-              <div className={`h-10 w-10 shrink-0 rounded-xl md:h-11 md:w-11 ${skeletonBase}`} />
-              <div className={`h-10 w-10 shrink-0 rounded-xl md:h-11 md:w-11 ${skeletonBase}`} />
+              <div
+                className={`h-10 w-10 shrink-0 rounded-xl md:h-11 md:w-11 ${skeletonBase}`}
+              />
+              <div
+                className={`h-10 w-10 shrink-0 rounded-xl md:h-11 md:w-11 ${skeletonBase}`}
+              />
             </div>
           </div>
         </div>
-        <div className={`mt-2 h-5 ${skeletonBase} w-full max-w-md rounded md:hidden`} />
+        <div
+          className={`mt-2 h-5 ${skeletonBase} w-full max-w-md rounded md:hidden`}
+        />
       </div>
       <AnalyticsSkeleton />
     </div>
@@ -228,7 +261,7 @@ export function BusinessCreateSkeleton() {
 }
 
 const cardShell =
-  'rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6';
+  "rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6";
 
 /**
  * `/owner/[bookingLink]` — mirrors loaded page: title, business card, services, QR, photos, slots tabs, reviews.
@@ -261,7 +294,9 @@ export function OwnerSalonDetailLoadingBody() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="space-y-2">
               <div className={`h-3 ${skeletonBase} w-24 rounded`} />
-              <div className={`h-4 ${skeletonBase} w-full max-w-[10rem] rounded`} />
+              <div
+                className={`h-4 ${skeletonBase} w-full max-w-[10rem] rounded`}
+              />
             </div>
           ))}
           <div className="col-span-2 space-y-2">
@@ -279,7 +314,10 @@ export function OwnerSalonDetailLoadingBody() {
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {[1, 2].map((i) => (
-            <div key={i} className={`h-28 rounded-xl border border-slate-100 ${skeletonBase}`} />
+            <div
+              key={i}
+              className={`h-28 rounded-xl border border-slate-100 ${skeletonBase}`}
+            />
           ))}
         </div>
       </div>
@@ -291,10 +329,18 @@ export function OwnerSalonDetailLoadingBody() {
             className={`h-40 w-40 shrink-0 rounded-xl ${skeletonBase} sm:mx-0 lg:h-48 lg:w-48`}
           />
           <div className="w-full flex-1 space-y-3 text-center sm:text-left">
-            <div className={`mx-auto h-6 ${skeletonBase} w-24 rounded sm:mx-0 md:h-7`} />
-            <div className={`mx-auto h-4 ${skeletonBase} w-full max-w-md rounded sm:mx-0`} />
-            <div className={`mx-auto h-4 ${skeletonBase} w-48 rounded sm:mx-0`} />
-            <div className={`mx-auto h-11 w-full max-w-xs ${skeletonBase} rounded-lg sm:mx-0`} />
+            <div
+              className={`mx-auto h-6 ${skeletonBase} w-24 rounded sm:mx-0 md:h-7`}
+            />
+            <div
+              className={`mx-auto h-4 ${skeletonBase} w-full max-w-md rounded sm:mx-0`}
+            />
+            <div
+              className={`mx-auto h-4 ${skeletonBase} w-48 rounded sm:mx-0`}
+            />
+            <div
+              className={`mx-auto h-11 w-full max-w-xs ${skeletonBase} rounded-lg sm:mx-0`}
+            />
           </div>
         </div>
       </div>
@@ -308,7 +354,10 @@ export function OwnerSalonDetailLoadingBody() {
         </div>
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 lg:grid-cols-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className={`aspect-[4/3] ${skeletonBase} rounded-lg`} />
+            <div
+              key={i}
+              className={`aspect-[4/3] ${skeletonBase} rounded-lg`}
+            />
           ))}
         </div>
       </div>
@@ -320,7 +369,9 @@ export function OwnerSalonDetailLoadingBody() {
           <div className={`h-10 flex-1 ${skeletonBase} rounded-lg`} />
         </div>
         <div className="p-4 lg:p-6">
-          <div className={`mb-2 h-3 ${skeletonBase} w-20 rounded md:mb-2 md:h-4 md:w-24`} />
+          <div
+            className={`mb-2 h-3 ${skeletonBase} w-20 rounded md:mb-2 md:h-4 md:w-24`}
+          />
           <div className={`mb-4 h-11 max-w-xs ${skeletonBase} rounded-xl`} />
           {/* Mobile: chessboard-style slot grid */}
           <div className="grid grid-cols-3 gap-1.5 md:hidden">
@@ -331,14 +382,20 @@ export function OwnerSalonDetailLoadingBody() {
           {/* Desktop: kanban columns */}
           <div className="hidden gap-4 md:grid md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-lg border border-slate-200 bg-gray-50 p-4">
+              <div
+                key={i}
+                className="rounded-lg border border-slate-200 bg-gray-50 p-4"
+              >
                 <div className="mb-3 flex items-center justify-between">
                   <div className={`h-4 ${skeletonBase} w-20 rounded`} />
                   <div className={`h-5 w-8 ${skeletonBase} rounded-full`} />
                 </div>
                 <div className="space-y-2">
                   {[1, 2, 3, 4].map((j) => (
-                    <div key={j} className={`h-12 ${skeletonBase} rounded-lg`} />
+                    <div
+                      key={j}
+                      className={`h-12 ${skeletonBase} rounded-lg`}
+                    />
                   ))}
                 </div>
               </div>

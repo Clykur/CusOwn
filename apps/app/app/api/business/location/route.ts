@@ -1,10 +1,10 @@
-import { NextRequest } from 'next/server';
-import { requireOwner } from '@cusown/shared/server';
-import { requireSupabaseAdmin } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
+import { NextRequest } from "next/server";
+import { requireOwner } from "@cusown/shared/server";
+import { requireSupabaseAdmin } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
 
-const ROUTE = 'POST /api/business/location';
+const ROUTE = "POST /api/business/location";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
 
     // Verify ownership
     const { data: business, error: fetchError } = await supabaseAdmin
-      .from('businesses')
-      .select('id, owner_user_id')
-      .eq('id', business_id)
+      .from("businesses")
+      .select("id, owner_user_id")
+      .eq("id", business_id)
       .single();
 
     if (fetchError || !business) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { error: updateError } = await supabaseAdmin
-      .from('businesses')
+      .from("businesses")
       .update({
         address_line1,
         address_line2,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         longitude: parseFloat(longitude),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', business_id);
+      .eq("id", business_id);
 
     if (updateError) {
       throw updateError;

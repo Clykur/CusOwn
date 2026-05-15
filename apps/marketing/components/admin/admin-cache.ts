@@ -1,28 +1,34 @@
-'use client';
+"use client";
 
 import {
   ADMIN_CACHE_TTL_MS,
   ADMIN_CACHE_STALE_GRACE_MS,
   ADMIN_CACHE_MAX_ENTRIES,
-} from '@cusown/config';
+} from "@cusown/config";
 
 const TTL_MS = ADMIN_CACHE_TTL_MS;
 const STALE_GRACE_MS = ADMIN_CACHE_STALE_GRACE_MS;
 const MAX_ENTRIES = ADMIN_CACHE_MAX_ENTRIES;
 
 export const ADMIN_CACHE_KEYS = {
-  OVERVIEW: 'admin_overview',
-  USERS: 'admin_users',
-  BUSINESSES: 'admin_businesses',
-  BOOKINGS: 'admin_bookings',
-  AUDIT: 'admin_audit',
+  OVERVIEW: "admin_overview",
+  USERS: "admin_users",
+  BUSINESSES: "admin_businesses",
+  BOOKINGS: "admin_bookings",
+  AUDIT: "admin_audit",
 } as const;
 
-export function getAdminAnalyticsCacheKey(startDate: string, endDate: string): string {
+export function getAdminAnalyticsCacheKey(
+  startDate: string,
+  endDate: string,
+): string {
   return `admin_analytics_${startDate}_${endDate}`;
 }
 
-export function getSuccessMetricsCacheKey(startDate: string, endDate: string): string {
+export function getSuccessMetricsCacheKey(
+  startDate: string,
+  endDate: string,
+): string {
   return `admin_success_metrics_${startDate}_${endDate}`;
 }
 
@@ -55,7 +61,9 @@ export function getAdminCached<T>(key: string): T | null {
 }
 
 /** Returns cached data even if TTL expired (stale). Use for instant render + background revalidate. */
-export function getAdminCachedStale<T>(key: string): { data: T; stale: boolean } | null {
+export function getAdminCachedStale<T>(
+  key: string,
+): { data: T; stale: boolean } | null {
   const entry = cache.get(key);
   if (!entry) return null;
   touch(key);

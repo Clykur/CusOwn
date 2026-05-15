@@ -4,25 +4,25 @@
  * If only lat/lon provided, reverse-geocodes once (BigDataCloud) to fill city/region/country, then stores in DB + cookie.
  */
 
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { enhancedRateLimit } from '@cusown/shared/server';
-import { validateCSRFToken } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
-import { setLocation } from '@cusown/shared/server';
-import { reverseGeocode } from '@cusown/shared/server';
-import { validateCoordinates } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { enhancedRateLimit } from "@cusown/shared/server";
+import { validateCSRFToken } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
+import { setLocation } from "@cusown/shared/server";
+import { reverseGeocode } from "@cusown/shared/server";
+import { validateCoordinates } from "@cusown/shared/server";
 import {
   ERROR_MESSAGES,
   GEO_RATE_LIMIT_WINDOW_MS,
   GEO_RATE_LIMIT_MAX_PER_WINDOW,
-} from '@cusown/config';
+} from "@cusown/config";
 
 const locationRateLimit = enhancedRateLimit({
   maxRequests: GEO_RATE_LIMIT_MAX_PER_WINDOW,
   windowMs: GEO_RATE_LIMIT_WINDOW_MS,
   perIP: true,
-  keyPrefix: 'location_set',
+  keyPrefix: "location_set",
 });
 
 export async function POST(request: NextRequest) {
@@ -30,15 +30,23 @@ export async function POST(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   const csrfValid = await validateCSRFToken(request);
-  if (!csrfValid) return errorResponse('Invalid CSRF token', 403);
+  if (!csrfValid) return errorResponse("Invalid CSRF token", 403);
 
   try {
     const body = await request.json().catch(() => ({}));
-    const lat = typeof body.latitude === 'number' ? body.latitude : Number(body.latitude);
-    const lon = typeof body.longitude === 'number' ? body.longitude : Number(body.longitude);
-    const source = body.source === 'ip' ? 'ip' : 'gps';
+    const lat =
+      typeof body.latitude === "number" ? body.latitude : Number(body.latitude);
+    const lon =
+      typeof body.longitude === "number"
+        ? body.longitude
+        : Number(body.longitude);
+    const source = body.source === "ip" ? "ip" : "gps";
 
-    if (Number.isNaN(lat) || Number.isNaN(lon) || !validateCoordinates(lat, lon)) {
+    if (
+      Number.isNaN(lat) ||
+      Number.isNaN(lon) ||
+      !validateCoordinates(lat, lon)
+    ) {
       return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
     }
 
@@ -46,7 +54,7 @@ export async function POST(request: NextRequest) {
     let region: string | undefined = body.region;
     let country_code: string | undefined = body.country_code;
 
-    if ((!city && !region && !country_code) || source === 'gps') {
+    if ((!city && !region && !country_code) || source === "gps") {
       const resolved = await reverseGeocode(lat, lon);
       if (resolved) {
         city = resolved.city ?? city;
@@ -62,7 +70,7 @@ export async function POST(request: NextRequest) {
       city,
       region,
       country_code,
-      source: source as 'gps' | 'ip',
+      source: source as "gps" | "ip",
     };
     const { setCookieHeader } = await setLocation(payload, user?.id ?? null);
 
@@ -76,10 +84,11 @@ export async function POST(request: NextRequest) {
         source,
       },
     });
-    response.headers.set('Set-Cookie', setCookieHeader);
+    response.headers.set("Set-Cookie", setCookieHeader);
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.LOCATION_INVALID;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.LOCATION_INVALID;
     return errorResponse(message, 400);
   }
 }

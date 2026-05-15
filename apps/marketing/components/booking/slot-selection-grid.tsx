@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { memo } from 'react';
-import { UI_CUSTOMER } from '@cusown/config';
-import { formatTime } from '@cusown/shared';
-import { useBookingFlowStore } from '@cusown/shared/client';
-import type { Slot } from '@cusown/shared';
+import { memo } from "react";
+import { UI_CUSTOMER } from "@cusown/config";
+import { formatTime } from "@cusown/shared";
+import { useBookingFlowStore } from "@cusown/shared/client";
+import type { Slot } from "@cusown/shared";
 
 interface SlotSelectionGridProps {
   /** Filtered for business hours / “now”; do not pass raw store slots for today. */
@@ -29,7 +29,9 @@ function SlotSelectionGridComponent({
 
   const setSelectedSlot = useBookingFlowStore((state) => state.setSelectedSlot);
   const setError = useBookingFlowStore((state) => state.setError);
-  const setSlotValidationError = useBookingFlowStore((state) => state.setSlotValidationError);
+  const setSlotValidationError = useBookingFlowStore(
+    (state) => state.setSlotValidationError,
+  );
 
   if (closedMessage) {
     return (
@@ -44,8 +46,9 @@ function SlotSelectionGridComponent({
   if (isTodayClosed) {
     return (
       <p className="w-full py-3 text-center text-sm leading-relaxed text-slate-600">
-        No slots available for today. The shop is closed after{' '}
-        {closingTime ? formatTime(closingTime) : 'closing time'}. Please select tomorrow.
+        No slots available for today. The shop is closed after{" "}
+        {closingTime ? formatTime(closingTime) : "closing time"}. Please select
+        tomorrow.
       </p>
     );
   }
@@ -61,7 +64,9 @@ function SlotSelectionGridComponent({
 
   if (!dateLoading && displaySlots.length === 0) {
     return (
-      <p className="w-full py-6 text-center text-sm text-slate-500">{UI_CUSTOMER.SLOTS_NONE}</p>
+      <p className="w-full py-6 text-center text-sm text-slate-500">
+        {UI_CUSTOMER.SLOTS_NONE}
+      </p>
     );
   }
 
@@ -69,7 +74,7 @@ function SlotSelectionGridComponent({
     <>
       {displaySlots.map((slot) => {
         const isSelected = selectedSlot?.id === slot.id;
-        const isBooked = slot.status === 'booked';
+        const isBooked = slot.status === "booked";
 
         return (
           <button
@@ -85,12 +90,12 @@ function SlotSelectionGridComponent({
             disabled={isBooked || validatingSlot || submitting}
             className={`min-h-[2.75rem] w-full min-w-0 rounded-lg border px-1.5 py-2 text-xs font-medium leading-tight transition-colors sm:px-2.5 sm:text-sm ${
               isBooked
-                ? 'cursor-not-allowed border-slate-100 bg-slate-100/80 text-slate-400'
+                ? "cursor-not-allowed border-slate-100 bg-slate-100/80 text-slate-400"
                 : validatingSlot && isSelected
-                  ? 'border-amber-300 bg-amber-50 text-amber-900'
+                  ? "border-amber-300 bg-amber-50 text-amber-900"
                   : isSelected
-                    ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-800 hover:border-slate-400 hover:bg-white'
+                    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                    : "border-slate-200 bg-white text-slate-800 hover:border-slate-400 hover:bg-white"
             }`}
           >
             {validatingSlot && isSelected ? (
@@ -101,7 +106,7 @@ function SlotSelectionGridComponent({
             ) : (
               <span className="tabular-nums tracking-tight">
                 {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
-                {isBooked ? ` · ${UI_CUSTOMER.SLOT_FULL}` : ''}
+                {isBooked ? ` · ${UI_CUSTOMER.SLOT_FULL}` : ""}
               </span>
             )}
           </button>

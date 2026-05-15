@@ -3,21 +3,21 @@
  * API key from env only; never logged or exposed. Never call in loops.
  */
 
-import { GEO_BIGDATACLOUD_BASE } from '@cusown/config';
-import { validateCoordinates } from '../utils/geo';
-import { env } from '@cusown/config';
-import { getIpCached, setIpCached } from './cache';
-import { getCache, setCache } from '../cache/cache';
+import { GEO_BIGDATACLOUD_BASE } from "@cusown/config";
+import { validateCoordinates } from "../utils/geo";
+import { env } from "@cusown/config";
+import { getIpCached, setIpCached } from "./cache";
+import { getCache, setCache } from "../cache/cache";
 import {
   GEO_PROVIDER_TIMEOUT_MS,
   GEO_PROVIDER_MAX_RETRIES,
   GEO_CACHE_MAX_AGE_SECONDS,
   GEO_IP_REDIS_TTL_SECONDS,
   GEO_IP_REDIS_PREFIX,
-} from '@cusown/config';
+} from "@cusown/config";
 
-const REVERSE_GEOCODE_PATH = '/reverse-geocode-client';
-const IP_GEOLOCATION_PATH = '/ip-geolocation';
+const REVERSE_GEOCODE_PATH = "/reverse-geocode-client";
+const IP_GEOLOCATION_PATH = "/ip-geolocation";
 
 export interface ReverseGeocodeResult {
   city?: string;
@@ -38,33 +38,36 @@ export interface IpGeocodeResult {
 }
 
 function getApiKey(): string {
-  return env.geo.bigDataCloudApiKey ?? '';
+  return env.geo.bigDataCloudApiKey ?? "";
 }
 
 function buildUrl(path: string, params: Record<string, string>): string {
   const url = new URL(path, GEO_BIGDATACLOUD_BASE);
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== '') url.searchParams.set(k, v);
+    if (v !== undefined && v !== "") url.searchParams.set(k, v);
   });
   const key = getApiKey();
-  if (key.trim() !== '') url.searchParams.set('key', key.trim());
+  if (key.trim() !== "") url.searchParams.set("key", key.trim());
   return url.toString();
 }
 
-async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number,
+): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      headers: { Accept: "application/json" },
       next: { revalidate: GEO_CACHE_MAX_AGE_SECONDS },
     });
     clearTimeout(timeout);
     return res;
   } catch {
     clearTimeout(timeout);
-    throw new Error('Geo request failed');
+    throw new Error("Geo request failed");
   }
 }
 
@@ -74,7 +77,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
 export async function reverseGeocode(
   latitude: number,
   longitude: number,
-  options?: { localityLanguage?: string }
+  options?: { localityLanguage?: string },
 ): Promise<ReverseGeocodeResult | null> {
   if (!validateCoordinates(latitude, longitude)) return null;
 
@@ -121,7 +124,8 @@ export async function ipGeocode(ip: string): Promise<IpGeocodeResult | null> {
 
   // 1. Check Redis cache first (shared across instances, 24h TTL)
   try {
-    const { hit, data: redisData } = await getCache<IpGeocodeResult>(redisCacheKey);
+    const { hit, data: redisData } =
+      await getCache<IpGeocodeResult>(redisCacheKey);
     if (hit && redisData) {
       setIpCached(ip, redisData);
       return redisData;

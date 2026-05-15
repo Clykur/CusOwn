@@ -1,15 +1,15 @@
-import { NextRequest } from 'next/server';
-import { bookingService } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { getClientIp } from '@cusown/shared/server';
-import { ERROR_MESSAGES } from '@cusown/config';
-import { setCacheHeaders } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
-import { userService } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { bookingService } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { getClientIp } from "@cusown/shared/server";
+import { ERROR_MESSAGES } from "@cusown/config";
+import { setCacheHeaders } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
+import { userService } from "@cusown/shared/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ bookingId: string }> }
+  { params }: { params: Promise<{ bookingId: string }> },
 ) {
   const clientIP = getClientIp(request);
 
@@ -25,7 +25,7 @@ export async function GET(
     const booking = await bookingService.getBookingById(bookingId);
     if (!booking) {
       console.warn(
-        `[SECURITY] Booking not found from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`
+        `[SECURITY] Booking not found from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`,
       );
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
     }
@@ -45,35 +45,38 @@ export async function GET(
 
       // Check if user is admin
       const profile = await userService.getUserProfile(user.id);
-      const isAdmin = profile?.user_type === 'admin';
+      const isAdmin = profile?.user_type === "admin";
 
       if (!isCustomer && !isOwner && !isAdmin) {
         console.warn(
-          `[SECURITY] Unauthorized booking access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., BookingId: ${bookingId.substring(0, 8)}...`
+          `[SECURITY] Unauthorized booking access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., BookingId: ${bookingId.substring(0, 8)}...`,
         );
-        return errorResponse('Access denied', 403);
+        return errorResponse("Access denied", 403);
       }
     } else {
       // For public bookingId access, only allow if customer_user_id is null (legacy bookings)
       // This maintains backward compatibility but logs the access
       if (booking.customer_user_id) {
         console.warn(
-          `[SECURITY] Unauthenticated access to authenticated booking from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`
+          `[SECURITY] Unauthenticated access to authenticated booking from IP: ${clientIP}, BookingId: ${bookingId.substring(0, 8)}...`,
         );
-        return errorResponse('Authentication required', 401);
+        return errorResponse("Authentication required", 401);
       }
     }
 
     const response = successResponse(booking);
-    if (booking.status === 'pending' || booking.status === 'confirmed') {
+    if (booking.status === "pending" || booking.status === "confirmed") {
       setCacheHeaders(response, 30, 60);
     } else {
       setCacheHeaders(response, 300, 600);
     }
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
-    console.error(`[SECURITY] Booking access error: IP: ${clientIP}, Error: ${message}`);
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    console.error(
+      `[SECURITY] Booking access error: IP: ${clientIP}, Error: ${message}`,
+    );
     return errorResponse(message, 500);
   }
 }

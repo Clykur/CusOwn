@@ -3,7 +3,7 @@
  * Use for lifecycle, metrics, and alerting. Context keys must be safe (ids, counts, codes).
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export interface StructuredLogContext {
   [key: string]: string | number | boolean | null | undefined;
@@ -20,7 +20,7 @@ function sanitize(context: StructuredLogContext): Record<string, unknown> {
 export function logStructured(
   level: LogLevel,
   message: string,
-  context: StructuredLogContext = {}
+  context: StructuredLogContext = {},
 ): void {
   const payload = {
     ts: new Date().toISOString(),
@@ -29,7 +29,7 @@ export function logStructured(
     ...sanitize(context),
   };
   const line = JSON.stringify(payload);
-  if (level === 'error') {
+  if (level === "error") {
     console.error(line);
   } else {
     console.warn(line);

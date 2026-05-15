@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { skeletonBase } from '../base-skeleton';
+import { skeletonBase } from "../base-skeleton";
 
 export function CustomerDashboardSkeleton() {
   return (
@@ -68,8 +68,13 @@ export function CategoryGridSkeleton() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 skeleton-shimmer">
-                <div className={`h-20 w-20 ${skeletonBase} rounded-2xl mx-auto mb-6`} />
+              <div
+                key={i}
+                className="rounded-2xl border-2 border-gray-200 p-8 skeleton-shimmer"
+              >
+                <div
+                  className={`h-20 w-20 ${skeletonBase} rounded-2xl mx-auto mb-6`}
+                />
                 <div className={`h-8 ${skeletonBase} w-1/2 mx-auto mb-3`} />
                 <div className={`h-4 ${skeletonBase} w-full mb-6`} />
                 <div className={`h-10 ${skeletonBase} w-3/4`} />
@@ -127,7 +132,9 @@ export function BusinessProfileSkeleton() {
           <div className="aspect-[3/1] w-full bg-slate-200" />
           <div className="p-6 md:p-8">
             <div className="flex items-start gap-4 mb-6">
-              <div className={`h-16 w-16 ${skeletonBase} rounded-full flex-shrink-0`} />
+              <div
+                className={`h-16 w-16 ${skeletonBase} rounded-full flex-shrink-0`}
+              />
               <div className="flex-1">
                 <div className={`h-7 ${skeletonBase} w-2/3 mb-2 rounded`} />
                 <div className={`h-5 ${skeletonBase} w-1/2 rounded`} />
@@ -150,7 +157,9 @@ export function BusinessProfileSkeleton() {
                     className="flex items-center justify-between py-3 border-b border-slate-100"
                   >
                     <div className="flex-1">
-                      <div className={`h-4 ${skeletonBase} w-32 mb-1 rounded`} />
+                      <div
+                        className={`h-4 ${skeletonBase} w-32 mb-1 rounded`}
+                      />
                       <div className={`h-3 ${skeletonBase} w-20 rounded`} />
                     </div>
                     <div className={`h-4 ${skeletonBase} w-16 rounded`} />

@@ -4,7 +4,7 @@
  * O(1) profile-based checks used by API auth pipeline to avoid N+1.
  */
 
-import type { UserType } from '../../services/user.service';
+import type { UserType } from "../../services/user.service";
 
 /** Profile shape for O(1) role checks (no refetch). */
 export interface ProfileLike {
@@ -15,7 +15,7 @@ export interface ProfileLike {
  * O(1) check: is profile admin? Use when profile already fetched (single fetch per request).
  */
 export function isAdminProfile(profile: ProfileLike | null): boolean {
-  return profile?.user_type === 'admin';
+  return profile?.user_type === "admin";
 }
 
 /**
@@ -23,7 +23,7 @@ export function isAdminProfile(profile: ProfileLike | null): boolean {
  */
 export function hasOwnerProfile(profile: ProfileLike | null): boolean {
   const t = profile?.user_type;
-  return t === 'owner' || t === 'both' || t === 'admin';
+  return t === "owner" || t === "both" || t === "admin";
 }
 
 /**
@@ -31,7 +31,7 @@ export function hasOwnerProfile(profile: ProfileLike | null): boolean {
  */
 export function hasCustomerProfile(profile: ProfileLike | null): boolean {
   const t = profile?.user_type;
-  return t === 'customer' || t === 'both' || t === 'admin';
+  return t === "customer" || t === "both" || t === "admin";
 }
 
 /**
@@ -39,13 +39,13 @@ export function hasCustomerProfile(profile: ProfileLike | null): boolean {
  */
 async function getUserProfileSafe(userId: string): Promise<any> {
   // Check if we're in a server context (no window object)
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Server-side: use server-auth
-    const { getServerUserProfile } = await import('../supabase/server-auth');
+    const { getServerUserProfile } = await import("../supabase/server-auth");
     return getServerUserProfile(userId);
   } else {
     // Client-side: use client auth
-    const { getUserProfile } = await import('../supabase/auth');
+    const { getUserProfile } = await import("../supabase/auth");
     return getUserProfile(userId);
   }
 }
@@ -56,7 +56,7 @@ async function getUserProfileSafe(userId: string): Promise<any> {
  */
 export async function hasOwnerAccess(
   userId: string,
-  profile?: ProfileLike | null
+  profile?: ProfileLike | null,
 ): Promise<boolean> {
   if (profile !== undefined) return hasOwnerProfile(profile ?? null);
   try {
@@ -73,7 +73,7 @@ export async function hasOwnerAccess(
  */
 export async function hasCustomerAccess(
   userId: string,
-  profile?: ProfileLike | null
+  profile?: ProfileLike | null,
 ): Promise<boolean> {
   if (profile !== undefined) return hasCustomerProfile(profile ?? null);
   try {
@@ -90,7 +90,7 @@ export async function hasCustomerAccess(
  */
 export async function hasAdminAccess(
   userId: string,
-  profile?: ProfileLike | null
+  profile?: ProfileLike | null,
 ): Promise<boolean> {
   if (profile !== undefined) return isAdminProfile(profile ?? null);
   try {
@@ -118,10 +118,13 @@ export async function getUserType(userId: string): Promise<UserType | null> {
 /**
  * Verify user owns a specific business
  */
-export async function userOwnsBusiness(userId: string, businessId: string): Promise<boolean> {
+export async function userOwnsBusiness(
+  userId: string,
+  businessId: string,
+): Promise<boolean> {
   try {
     // Dynamically import userService to avoid bundling server-only code in client
-    const { userService } = await import('../../services/user.service');
+    const { userService } = await import("../../services/user.service");
     const businesses = await userService.getUserBusinesses(userId);
     return businesses.some((b) => b.id === businessId);
   } catch {

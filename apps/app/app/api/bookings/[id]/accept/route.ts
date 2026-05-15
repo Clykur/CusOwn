@@ -1,41 +1,47 @@
-import { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import { bookingService } from '@cusown/shared/server';
-import { whatsappService } from '@cusown/shared/server';
-import { reminderService } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { getClientIp, isValidUUID } from '@cusown/shared/server';
-import { setNoCacheHeaders } from '@cusown/shared/server';
-import { invalidateBookingCache } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { bookingService } from "@cusown/shared/server";
+import { whatsappService } from "@cusown/shared/server";
+import { reminderService } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { getClientIp, isValidUUID } from "@cusown/shared/server";
+import { setNoCacheHeaders } from "@cusown/shared/server";
+import { invalidateBookingCache } from "@cusown/shared/server";
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
   UI_ERROR_CONTEXT,
   SECURE_LINK_RESPONSE_CODE,
-} from '@cusown/config';
-import { getAuthContext } from '@cusown/shared/server';
+} from "@cusown/config";
+import { getAuthContext } from "@cusown/shared/server";
 import {
   validateOwnerActionLink,
   recordOwnerActionLinkUsed,
-} from '@cusown/shared/server';
-import { userService } from '@cusown/shared/server';
-import { enhancedRateLimit } from '@cusown/shared/server';
-import { auditService } from '@cusown/shared/server';
-import { isAdminProfile } from '@cusown/shared/server';
-import { logAuthDeny } from '@cusown/shared/server';
-import { logStructured } from '@cusown/shared/server';
-import { enqueueScheduleReminders, isQueueAvailable } from '@cusown/shared/server';
-import { parseBookingActionQueryToken } from '@cusown/shared/server';
+} from "@cusown/shared/server";
+import { userService } from "@cusown/shared/server";
+import { enhancedRateLimit } from "@cusown/shared/server";
+import { auditService } from "@cusown/shared/server";
+import { isAdminProfile } from "@cusown/shared/server";
+import { logAuthDeny } from "@cusown/shared/server";
+import { logStructured } from "@cusown/shared/server";
+import {
+  enqueueScheduleReminders,
+  isQueueAvailable,
+} from "@cusown/shared/server";
+import { parseBookingActionQueryToken } from "@cusown/shared/server";
 
 const acceptRateLimit = enhancedRateLimit({
   maxRequests: 10,
   windowMs: 60000,
   perIP: true,
-  keyPrefix: 'booking_accept',
+  keyPrefix: "booking_accept",
 });
-const ROUTE = 'POST /api/bookings/[id]/accept';
+const ROUTE = "POST /api/bookings/[id]/accept";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const clientIP = getClientIp(request);
 
   try {
@@ -54,10 +60,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     let decodedToken: string | null = null;
     let tokenValid = false;
 
-    if (tokenParse.kind === 'malformed') {
+    if (tokenParse.kind === "malformed") {
       logAuthDeny({
         route: ROUTE,
-        reason: 'auth_invalid_token',
+        reason: "auth_invalid_token",
         resource: id,
       });
 
@@ -67,18 +73,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
           code: SECURE_LINK_RESPONSE_CODE,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (tokenParse.kind === 'present') {
+    if (tokenParse.kind === "present") {
       decodedToken = tokenParse.decoded;
-      const linkValidation = await validateOwnerActionLink('accept', id, decodedToken);
+      const linkValidation = await validateOwnerActionLink(
+        "accept",
+        id,
+        decodedToken,
+      );
 
       if (!linkValidation.valid) {
         logAuthDeny({
           route: ROUTE,
-          reason: 'auth_invalid_token',
+          reason: "auth_invalid_token",
           resource: id,
           audit_metadata: { link_validation_reason: linkValidation.reason },
         });
@@ -89,7 +99,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
             code: SECURE_LINK_RESPONSE_CODE,
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
       tokenValid = true;
@@ -103,64 +113,79 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const ctx = await getAuthContext(request);
     if (ctx) {
       const userBusinesses = await userService.getUserBusinesses(ctx.user.id);
-      const ownsBusiness = userBusinesses.some((b) => b.id === booking.business_id);
+      const ownsBusiness = userBusinesses.some(
+        (b) => b.id === booking.business_id,
+      );
       if (!ownsBusiness && !isAdminProfile(ctx.profile)) {
         logAuthDeny({
           user_id: ctx.user.id,
           route: ROUTE,
-          reason: 'auth_denied',
-          role: (ctx.profile as any)?.user_type ?? 'unknown',
+          reason: "auth_denied",
+          role: (ctx.profile as any)?.user_type ?? "unknown",
           resource: id,
         });
-        return errorResponse('Access denied', 403);
+        return errorResponse("Access denied", 403);
       }
     } else if (!tokenValid) {
-      logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
-      return errorResponse('Authentication required', 401);
+      logAuthDeny({ route: ROUTE, reason: "auth_missing", resource: id });
+      return errorResponse("Authentication required", 401);
     }
 
     const user = ctx?.user ?? null;
 
     // Idempotency: already confirmed → return 200 with current state (same result as success)
-    if (booking.status === 'confirmed') {
-      const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
+    if (booking.status === "confirmed") {
+      const bookingWithDetails =
+        await bookingService.getBookingByUuidWithDetails(id);
       if (bookingWithDetails?.salon?.address?.trim()) {
         const whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
           bookingWithDetails,
-          bookingWithDetails.salon
+          bookingWithDetails.salon,
         );
         const response = successResponse(
           { ...booking, whatsapp_url: whatsappUrl },
-          SUCCESS_MESSAGES.BOOKING_CONFIRMED
+          SUCCESS_MESSAGES.BOOKING_CONFIRMED,
         );
         setNoCacheHeaders(response);
         return response;
       }
-      const response = successResponse(booking, SUCCESS_MESSAGES.BOOKING_CONFIRMED);
+      const response = successResponse(
+        booking,
+        SUCCESS_MESSAGES.BOOKING_CONFIRMED,
+      );
       setNoCacheHeaders(response);
       return response;
     }
-    if (booking.status === 'rejected') {
+    if (booking.status === "rejected") {
       return errorResponse(ERROR_MESSAGES.BOOKING_ALREADY_REJECTED, 409);
     }
-    if (booking.status === 'cancelled') {
+    if (booking.status === "cancelled") {
       return errorResponse(ERROR_MESSAGES.BOOKING_ALREADY_CANCELLED, 409);
     }
 
     const confirmedBooking = await bookingService.confirmBooking(id, user?.id);
     if (decodedToken) {
-      await recordOwnerActionLinkUsed(id, 'accept', decodedToken);
+      await recordOwnerActionLinkUsed(id, "accept", decodedToken);
     }
-    const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
+    const bookingWithDetails =
+      await bookingService.getBookingByUuidWithDetails(id);
 
-    if (!bookingWithDetails || !bookingWithDetails.salon || !bookingWithDetails.slot) {
+    if (
+      !bookingWithDetails ||
+      !bookingWithDetails.salon ||
+      !bookingWithDetails.slot
+    ) {
       throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
     }
 
     const hasSalonAddress =
-      !!bookingWithDetails.salon.address && bookingWithDetails.salon.address.trim() !== '';
+      !!bookingWithDetails.salon.address &&
+      bookingWithDetails.salon.address.trim() !== "";
     const whatsappUrl = hasSalonAddress
-      ? whatsappService.getConfirmationWhatsAppUrl(bookingWithDetails, bookingWithDetails.salon)
+      ? whatsappService.getConfirmationWhatsAppUrl(
+          bookingWithDetails,
+          bookingWithDetails.salon,
+        )
       : undefined;
 
     // Schedule reminders via queue (background) or directly
@@ -168,7 +193,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       void enqueueScheduleReminders(id);
     } else {
       console.warn(
-        `[Queue] BullMQ unavailable; scheduling reminders inline booking_id=${id} (same outcome, synchronous)`
+        `[Queue] BullMQ unavailable; scheduling reminders inline booking_id=${id} (same outcome, synchronous)`,
       );
       await reminderService.scheduleBookingReminders(id);
     }
@@ -176,18 +201,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // SECURITY: Log mutation for audit
     if (user) {
       try {
-        await auditService.createAuditLog(user.id, 'booking_confirmed', 'booking', {
-          entityId: id,
-          newData: { status: 'confirmed', business_id: booking.business_id },
-          actorRole: ctx?.profile?.user_type ?? undefined,
-        });
+        await auditService.createAuditLog(
+          user.id,
+          "booking_confirmed",
+          "booking",
+          {
+            entityId: id,
+            newData: { status: "confirmed", business_id: booking.business_id },
+            actorRole: ctx?.profile?.user_type ?? undefined,
+          },
+        );
       } catch (auditError) {
-        console.error('[SECURITY] Failed to create audit log:', auditError);
+        console.error("[SECURITY] Failed to create audit log:", auditError);
       }
     }
 
-    logStructured('info', 'Booking accepted', {
-      action: 'booking_accepted',
+    logStructured("info", "Booking accepted", {
+      action: "booking_accepted",
       booking_id: id,
     });
 
@@ -196,22 +226,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       whatsappUrl !== undefined
         ? { ...confirmedBooking, whatsapp_url: whatsappUrl }
         : confirmedBooking;
-    const response = successResponse(payload, SUCCESS_MESSAGES.BOOKING_CONFIRMED);
+    const response = successResponse(
+      payload,
+      SUCCESS_MESSAGES.BOOKING_CONFIRMED,
+    );
     setNoCacheHeaders(response);
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
-    console.error(`[SECURITY] Accept booking error: IP: ${clientIP}, Error: ${message}`);
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    console.error(
+      `[SECURITY] Accept booking error: IP: ${clientIP}, Error: ${message}`,
+    );
     const authCtx = await getAuthContext(request).catch(() => null);
     const { id: bookingId } = await params;
     try {
-      await auditService.createAuditLog(authCtx?.user?.id ?? null, 'booking_confirmed', 'booking', {
-        entityId: bookingId,
-        status: 'failed',
-        metadata: { error_message: message },
-      });
+      await auditService.createAuditLog(
+        authCtx?.user?.id ?? null,
+        "booking_confirmed",
+        "booking",
+        {
+          entityId: bookingId,
+          status: "failed",
+          metadata: { error_message: message },
+        },
+      );
     } catch (auditErr) {
-      console.error('[SECURITY] Failed to create audit log for accept failure:', auditErr);
+      console.error(
+        "[SECURITY] Failed to create audit log for accept failure:",
+        auditErr,
+      );
     }
     return errorResponse(message, 400);
   }

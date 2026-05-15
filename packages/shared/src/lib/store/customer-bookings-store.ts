@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { useShallow } from 'zustand/react/shallow';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
 
 export interface CustomerBooking {
   id: string;
   booking_id: string;
   business_id: string;
-  status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'expired';
+  status: "pending" | "confirmed" | "rejected" | "cancelled" | "expired";
   customer_name: string;
   customer_phone: string;
   no_show?: boolean;
@@ -73,27 +73,31 @@ export const useCustomerBookingsStore = create<CustomerBookingsState>()(
 
       updateBooking: (bookingId, updates) =>
         set((state) => ({
-          bookings: state.bookings.map((b) => (b.id === bookingId ? { ...b, ...updates } : b)),
+          bookings: state.bookings.map((b) =>
+            b.id === bookingId ? { ...b, ...updates } : b,
+          ),
         })),
 
       setIsInitialLoad: (isInitialLoad) => set({ isInitialLoad }),
 
       setIsRefreshing: (isRefreshing) => set({ isRefreshing }),
 
-      setLastFetchedAt: (lastFetchedAt) => set({ lastFetchedAt, shouldRefetch: false }),
+      setLastFetchedAt: (lastFetchedAt) =>
+        set({ lastFetchedAt, shouldRefetch: false }),
 
-      invalidateBookings: () => set({ shouldRefetch: true, lastFetchedAt: Date.now() }),
+      invalidateBookings: () =>
+        set({ shouldRefetch: true, lastFetchedAt: Date.now() }),
 
       reset: () => set(initialState),
     }),
     {
-      name: 'customer-bookings-store',
+      name: "customer-bookings-store",
       partialize: (state) => ({
         bookings: state.bookings,
         lastFetchedAt: state.lastFetchedAt,
       }),
-    }
-  )
+    },
+  ),
 );
 
 const computeStats = (bookings: CustomerBooking[]): CustomerBookingsStats => {
@@ -110,7 +114,7 @@ const computeStats = (bookings: CustomerBooking[]): CustomerBookingsStats => {
       isFuture = bookingTime > now;
     }
 
-    if ((b.status === 'confirmed' || b.status === 'pending') && isFuture) {
+    if ((b.status === "confirmed" || b.status === "pending") && isFuture) {
       upcoming++;
     } else {
       completed++;
@@ -127,7 +131,9 @@ const computeStats = (bookings: CustomerBooking[]): CustomerBookingsStats => {
 let cachedStats: CustomerBookingsStats | null = null;
 let cachedBookingsRef: CustomerBooking[] | null = null;
 
-export const selectBookingsStats = (state: CustomerBookingsState): CustomerBookingsStats => {
+export const selectBookingsStats = (
+  state: CustomerBookingsState,
+): CustomerBookingsStats => {
   if (cachedBookingsRef === state.bookings && cachedStats !== null) {
     return cachedStats;
   }
@@ -137,10 +143,14 @@ export const selectBookingsStats = (state: CustomerBookingsState): CustomerBooki
 };
 
 export function useBookingsStats(): CustomerBookingsStats {
-  return useCustomerBookingsStore(useShallow((state) => selectBookingsStats(state)));
+  return useCustomerBookingsStore(
+    useShallow((state) => selectBookingsStats(state)),
+  );
 }
 
-export const selectCustomerHasValidCache = (state: CustomerBookingsState): boolean => {
+export const selectCustomerHasValidCache = (
+  state: CustomerBookingsState,
+): boolean => {
   if (!state.lastFetchedAt) return false;
   return Date.now() - state.lastFetchedAt < CACHE_TTL_MS;
 };

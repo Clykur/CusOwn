@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
+import { create } from "zustand";
 
-type ToastVariant = 'success' | 'error' | 'default';
+type ToastVariant = "success" | "error" | "default";
 
 interface Toast {
   id: string;
@@ -23,7 +23,11 @@ interface UIState {
 
   modals: Record<string, ModalState>;
 
-  showToast: (message: string, variant?: ToastVariant, duration?: number) => string;
+  showToast: (
+    message: string,
+    variant?: ToastVariant,
+    duration?: number,
+  ) => string;
   dismissToast: (id: string) => void;
   clearToasts: () => void;
 
@@ -54,7 +58,7 @@ const initialState = {
 export const useUIStore = create<UIState>()((set, get) => ({
   ...initialState,
 
-  showToast: (message, variant = 'default', duration = 3000) => {
+  showToast: (message, variant = "default", duration = 3000) => {
     const id = generateToastId();
     const toast: Toast = { id, message, variant, duration };
 
@@ -99,15 +103,16 @@ export const useUIStore = create<UIState>()((set, get) => ({
 
   isModalOpen: (modalId) => get().modals[modalId]?.isOpen ?? false,
 
-  getModalData: <T>(modalId: string) => get().modals[modalId]?.data as T | undefined,
+  getModalData: <T>(modalId: string) =>
+    get().modals[modalId]?.data as T | undefined,
 
   reset: () => set(initialState),
 }));
 
 export const MODAL_IDS = {
-  EDIT_BUSINESS: 'edit-business',
-  CONFIRM_DELETE: 'confirm-delete',
-  RESCHEDULE_BOOKING: 'reschedule-booking',
+  EDIT_BUSINESS: "edit-business",
+  CONFIRM_DELETE: "confirm-delete",
+  RESCHEDULE_BOOKING: "reschedule-booking",
 } as const;
 
 export type { Toast, ToastVariant, ModalState, UIState };

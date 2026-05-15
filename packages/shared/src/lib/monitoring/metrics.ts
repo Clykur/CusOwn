@@ -1,11 +1,11 @@
-import { requireSupabaseAdmin } from '../supabase/server';
+import { requireSupabaseAdmin } from "../supabase/server";
 
 export class MetricsService {
   async increment(metric: string, value: number = 1): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) return;
     try {
-      await supabaseAdmin.rpc('increment_metric', {
+      await supabaseAdmin.rpc("increment_metric", {
         metric_name: metric,
         increment_value: value,
       });
@@ -16,7 +16,7 @@ export class MetricsService {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) return;
     try {
-      await supabaseAdmin.rpc('record_timing', {
+      await supabaseAdmin.rpc("record_timing", {
         metric_name: metric,
         duration_ms: durationMs,
       });
@@ -28,9 +28,9 @@ export class MetricsService {
     if (!supabaseAdmin) return 0;
     try {
       const { data } = await supabaseAdmin
-        .from('metrics')
-        .select('value')
-        .eq('metric', metric)
+        .from("metrics")
+        .select("value")
+        .eq("metric", metric)
         .single();
       return data?.value || 0;
     } catch {
@@ -43,10 +43,10 @@ export class MetricsService {
     if (!supabaseAdmin) return [];
     try {
       const { data } = await supabaseAdmin
-        .from('metric_timings')
-        .select('duration_ms')
-        .eq('metric', metric)
-        .order('recorded_at', { ascending: false })
+        .from("metric_timings")
+        .select("duration_ms")
+        .eq("metric", metric)
+        .order("recorded_at", { ascending: false })
         .limit(1000);
       return data?.map((d) => d.duration_ms) || [];
     } catch {
@@ -62,13 +62,13 @@ export class MetricsService {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) return;
     try {
-      await supabaseAdmin.from('metrics').upsert(
+      await supabaseAdmin.from("metrics").upsert(
         {
           metric,
           value: Math.floor(value),
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'metric' }
+        { onConflict: "metric" },
       );
     } catch {
       // ignore

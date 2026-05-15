@@ -2,7 +2,7 @@
  * Realtime module exports
  */
 
-export { useSlotUpdates, type UseSlotUpdatesOptions } from './use-slot-updates';
+export { useSlotUpdates, type UseSlotUpdatesOptions } from "./use-slot-updates";
 export {
   subscribeSlotUpdates,
   slotEventId,
@@ -10,7 +10,7 @@ export {
   type SlotUpdateEventType,
   type SupabaseRealtime,
   type SubscribeSlotUpdatesOptions,
-} from './slot-updates';
+} from "./slot-updates";
 export {
   throttle,
   batchUpdates,
@@ -20,4 +20,4 @@ export {
   createRealtimeMetrics,
   type RealtimeSubscriptionStatus,
   type RealtimeMetrics,
-} from './realtime-utils';
+} from "./realtime-utils";

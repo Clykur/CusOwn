@@ -10,8 +10,8 @@
  * Redis or another persistent store.
  */
 
-import { env } from '@cusown/config';
-import { GEO_NOMINATIM_DEFAULT_BASE } from '@cusown/config';
+import { env } from "@cusown/config";
+import { GEO_NOMINATIM_DEFAULT_BASE } from "@cusown/config";
 
 interface GeocodeResult {
   lat: number;
@@ -55,7 +55,10 @@ export class NominatimService {
    * Forward geocode an address string.
    * Optionally pass ip for rate limiting.
    */
-  async forwardGeocode(address: string, ip?: string): Promise<GeocodeResult | null> {
+  async forwardGeocode(
+    address: string,
+    ip?: string,
+  ): Promise<GeocodeResult | null> {
     const key = `fwd:${address}`;
     const cached = this.getFromCache(key);
     if (cached) return cached;
@@ -79,7 +82,7 @@ export class NominatimService {
       this.setInCache(key, result);
       return result;
     } catch (err) {
-      console.error('Nominatim forward error', err);
+      console.error("Nominatim forward error", err);
       return null;
     }
   }
@@ -87,7 +90,11 @@ export class NominatimService {
   /**
    * Reverse geocode coordinates.
    */
-  async reverseGeocode(lat: number, lng: number, ip?: string): Promise<GeocodeResult | null> {
+  async reverseGeocode(
+    lat: number,
+    lng: number,
+    ip?: string,
+  ): Promise<GeocodeResult | null> {
     const key = `rev:${lat},${lng}`;
     const cached = this.getFromCache(key);
     if (cached) return cached;
@@ -110,7 +117,7 @@ export class NominatimService {
       this.setInCache(key, result);
       return result;
     } catch (err) {
-      console.error('Nominatim reverse error', err);
+      console.error("Nominatim reverse error", err);
       return null;
     }
   }

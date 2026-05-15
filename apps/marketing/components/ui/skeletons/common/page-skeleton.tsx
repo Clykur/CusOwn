@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { skeletonBase } from '../base-skeleton';
+import { skeletonBase } from "../base-skeleton";
 
 export function HomeSkeleton() {
   return (
@@ -8,7 +8,9 @@ export function HomeSkeleton() {
       <section className="pt-20 pb-20 sm:pt-28 sm:pb-28 px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <div className={`h-8 ${skeletonBase} w-32 mx-auto mb-8`} />
-          <div className={`h-14 sm:h-16 ${skeletonBase} w-full max-w-2xl mx-auto mb-6`} />
+          <div
+            className={`h-14 sm:h-16 ${skeletonBase} w-full max-w-2xl mx-auto mb-6`}
+          />
           <div className={`h-6 ${skeletonBase} w-3/4 max-w-xl mx-auto mb-12`} />
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <div className={`h-14 ${skeletonBase} w-48 rounded-lg`} />
@@ -38,7 +40,10 @@ export function HomeSkeleton() {
 
 export function LoginSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
+    <div
+      className="min-h-screen bg-white flex items-center justify-center p-4"
+      aria-busy="true"
+    >
       <div className="max-w-md w-full">
         <div className={`h-9 ${skeletonBase} w-32 mx-auto mb-2`} />
         <div className={`h-5 ${skeletonBase} w-48 mx-auto mb-8`} />
@@ -53,7 +58,7 @@ export function LoginSkeleton() {
 }
 
 export function SelectRoleSkeleton() {
-  const darkBase = 'rounded-lg bg-zinc-800/80';
+  const darkBase = "rounded-lg bg-zinc-800/80";
   return (
     <div
       className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 p-4"
@@ -86,7 +91,10 @@ export function SelectRoleSkeleton() {
 
 export function RedirectSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
+    <div
+      className="min-h-screen bg-white flex items-center justify-center p-4"
+      aria-busy="true"
+    >
       <div className="text-center">
         <div className={`h-5 ${skeletonBase} w-48 mx-auto mb-4`} />
         <div className={`h-4 w-4 ${skeletonBase} rounded-full mx-auto`} />

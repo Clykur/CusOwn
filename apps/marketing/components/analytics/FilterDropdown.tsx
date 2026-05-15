@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useCallback, memo } from 'react';
-import { cn } from '@cusown/shared';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  memo,
+} from "react";
+import { cn } from "@cusown/shared";
 
 type FilterOption = {
   value: string;
@@ -19,7 +27,7 @@ interface FilterDropdownProps {
    * `inline`: options render in document flow below the trigger (use inside scrollable
    * panels so menus are not clipped by `overflow-y-auto`). Default `popover` uses absolute positioning.
    */
-  layout?: 'popover' | 'inline';
+  layout?: "popover" | "inline";
 }
 
 function FilterDropdownComponent({
@@ -27,8 +35,8 @@ function FilterDropdownComponent({
   options,
   onToggle,
   multi = false,
-  className = '',
-  layout = 'popover',
+  className = "",
+  layout = "popover",
 }: FilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -40,8 +48,8 @@ function FilterDropdownComponent({
       if (wrapperRef.current.contains(event.target as Node)) return;
       setOpen(false);
     };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
   const selectedText = useMemo(() => {
@@ -57,7 +65,7 @@ function FilterDropdownComponent({
       onToggle(value, checked);
       if (!multi) setOpen(false);
     },
-    [onToggle, multi]
+    [onToggle, multi],
   );
 
   const toggleOpen = useCallback(() => {
@@ -65,10 +73,13 @@ function FilterDropdownComponent({
   }, []);
 
   const listClass =
-    'max-h-[min(50vh,18rem)] w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg';
+    "max-h-[min(50vh,18rem)] w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg";
 
   return (
-    <div ref={wrapperRef} className={cn(layout === 'popover' && 'relative', className)}>
+    <div
+      ref={wrapperRef}
+      className={cn(layout === "popover" && "relative", className)}
+    >
       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </label>
@@ -78,11 +89,13 @@ function FilterDropdownComponent({
         className="flex h-11 w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-3.5 text-sm text-slate-800 shadow-sm transition-colors hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
       >
         <span className="truncate">{selectedText}</span>
-        <span className="ml-2 shrink-0 text-xs text-slate-500">{open ? '▲' : '▼'}</span>
+        <span className="ml-2 shrink-0 text-xs text-slate-500">
+          {open ? "▲" : "▼"}
+        </span>
       </button>
 
       {open ? (
-        layout === 'inline' ? (
+        layout === "inline" ? (
           <div className={`mt-2 ${listClass}`}>
             {options.map((option) => (
               <FilterOptionItem
@@ -95,7 +108,7 @@ function FilterDropdownComponent({
             ))}
           </div>
         ) : (
-          <div className={cn('absolute z-30 mt-2 w-full', listClass)}>
+          <div className={cn("absolute z-30 mt-2 w-full", listClass)}>
             {options.map((option) => (
               <FilterOptionItem
                 key={option.value}
@@ -127,13 +140,13 @@ const FilterOptionItem = memo(function FilterOptionItem({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onToggle(option.value, e.target.checked);
     },
-    [onToggle, option.value]
+    [onToggle, option.value],
   );
 
   return (
     <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-gray-50">
       <input
-        type={multi ? 'checkbox' : 'radio'}
+        type={multi ? "checkbox" : "radio"}
         name={multi ? undefined : inputGroupName}
         checked={option.checked}
         onChange={handleChange}

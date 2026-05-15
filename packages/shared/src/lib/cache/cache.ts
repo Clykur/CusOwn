@@ -4,13 +4,13 @@
  * Includes dev-mode logging for cache hits/misses.
  */
 
-import { getRedisClient } from './redis';
-import { env } from '@cusown/config';
+import { getRedisClient } from "./redis";
+import { env } from "@cusown/config";
 
-const isDev = env.nodeEnv === 'development';
+const isDev = env.nodeEnv === "development";
 
 function sanitizeKeyForLog(key: string): string {
-  return key.replace(/[\r\n]/g, '').slice(0, 200);
+  return key.replace(/[\r\n]/g, "").slice(0, 200);
 }
 
 /** TTL presets in seconds */
@@ -35,14 +35,14 @@ export const CACHE_TTL = {
 
 /** Cache key prefixes for namespacing */
 export const CACHE_PREFIX = {
-  BUSINESS: 'business:',
-  SLOTS: 'slots:',
-  BOOKING: 'booking:',
-  USER: 'user:',
-  DASHBOARD: 'dashboard:',
-  SEARCH: 'search:',
-  STATIC: 'static:',
-  SESSION: 'session:',
+  BUSINESS: "business:",
+  SLOTS: "slots:",
+  BOOKING: "booking:",
+  USER: "user:",
+  DASHBOARD: "dashboard:",
+  SEARCH: "search:",
+  STATIC: "static:",
+  SESSION: "session:",
 } as const;
 
 type CacheResult<T> = {
@@ -73,7 +73,7 @@ export async function getCache<T>(key: string): Promise<CacheResult<T>> {
     return { hit: true, data: parsed };
   } catch (err) {
     if (isDev) {
-      console.error('[Cache] GET error for key:', sanitizeKeyForLog(key), err);
+      console.error("[Cache] GET error for key:", sanitizeKeyForLog(key), err);
     }
     return { hit: false, data: null };
   }
@@ -83,7 +83,11 @@ export async function getCache<T>(key: string): Promise<CacheResult<T>> {
  * Set cache value with TTL.
  * Fails silently if Redis unavailable.
  */
-export async function setCache<T>(key: string, data: T, ttlSeconds: number): Promise<boolean> {
+export async function setCache<T>(
+  key: string,
+  data: T,
+  ttlSeconds: number,
+): Promise<boolean> {
   const client = getRedisClient();
 
   if (!client) {
@@ -97,7 +101,7 @@ export async function setCache<T>(key: string, data: T, ttlSeconds: number): Pro
     return true;
   } catch (err) {
     if (isDev) {
-      console.error('[Cache] SET error for key:', sanitizeKeyForLog(key), err);
+      console.error("[Cache] SET error for key:", sanitizeKeyForLog(key), err);
     }
     return false;
   }
@@ -133,18 +137,24 @@ export async function deletePattern(pattern: string): Promise<number> {
   }
 
   try {
-    let cursor = '0';
+    let cursor = "0";
     let deletedCount = 0;
 
     do {
-      const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const [nextCursor, keys] = await client.scan(
+        cursor,
+        "MATCH",
+        pattern,
+        "COUNT",
+        100,
+      );
       cursor = nextCursor;
 
       if (keys.length > 0) {
         await client.del(...keys);
         deletedCount += keys.length;
       }
-    } while (cursor !== '0');
+    } while (cursor !== "0");
 
     return deletedCount;
   } catch {
@@ -159,7 +169,7 @@ export async function deletePattern(pattern: string): Promise<number> {
 export async function getOrSetCache<T>(
   key: string,
   fetcher: () => Promise<T>,
-  ttlSeconds: number
+  ttlSeconds: number,
 ): Promise<T> {
   const { hit, data } = await getCache<T>(key);
 
@@ -176,7 +186,9 @@ export async function getOrSetCache<T>(
 /**
  * Invalidate cache for a business (all related keys).
  */
-export async function invalidateBusinessCache(businessId: string): Promise<void> {
+export async function invalidateBusinessCache(
+  businessId: string,
+): Promise<void> {
   await Promise.all([
     deleteCache(`${CACHE_PREFIX.BUSINESS}${businessId}`),
     deletePattern(`${CACHE_PREFIX.SLOTS}${businessId}:*`),
@@ -202,7 +214,7 @@ export async function invalidateUserCache(userId: string): Promise<void> {
  */
 export async function invalidateDashboardCaches(
   businessId: string,
-  ownerId?: string
+  ownerId?: string,
 ): Promise<void> {
   const patterns: string[] = [
     `${CACHE_PREFIX.DASHBOARD}admin-overview`,
@@ -230,8 +242,11 @@ export async function invalidateAllDashboardCaches(): Promise<void> {
 /**
  * Build cache key with prefix and segments.
  */
-export function buildCacheKey(prefix: string, ...segments: (string | number)[]): string {
-  return `${prefix}${segments.join(':')}`;
+export function buildCacheKey(
+  prefix: string,
+  ...segments: (string | number)[]
+): string {
+  return `${prefix}${segments.join(":")}`;
 }
 
 /**

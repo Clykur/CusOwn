@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
-import { cn } from '@cusown/shared';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME } from "@cusown/config";
+import { cn } from "@cusown/shared";
 
 export default function CustomerHeader({
   title,
@@ -14,7 +14,12 @@ export default function CustomerHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('mb-8 flex flex-wrap items-start justify-between gap-4', className)}>
+    <div
+      className={cn(
+        "mb-8 flex flex-wrap items-start justify-between gap-4",
+        className,
+      )}
+    >
       <div>
         {title && <h1 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{title}</h1>}
         {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}

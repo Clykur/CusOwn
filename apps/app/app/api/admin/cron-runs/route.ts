@@ -1,8 +1,15 @@
-import { NextRequest } from 'next/server';
-import { cronRunService, type CronRunStatus, requireAdmin, successResponse, errorResponse, parseLimitOffset } from '@cusown/shared/server';
-import { ERROR_MESSAGES, API_PAGINATION_MAX_LIMIT } from '@cusown/config';
+import { NextRequest } from "next/server";
+import {
+  cronRunService,
+  type CronRunStatus,
+  requireAdmin,
+  successResponse,
+  errorResponse,
+  parseLimitOffset,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES, API_PAGINATION_MAX_LIMIT } from "@cusown/config";
 
-const ROUTE = 'GET /api/admin/cron-runs';
+const ROUTE = "GET /api/admin/cron-runs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,11 +17,15 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const searchParams = request.nextUrl.searchParams;
-    const { limit, offset } = parseLimitOffset(searchParams, 25, API_PAGINATION_MAX_LIMIT);
-    const job_name = searchParams.get('job_name') ?? undefined;
-    const status = searchParams.get('status') as CronRunStatus | undefined;
-    const start_date = searchParams.get('start_date') ?? undefined;
-    const end_date = searchParams.get('end_date') ?? undefined;
+    const { limit, offset } = parseLimitOffset(
+      searchParams,
+      25,
+      API_PAGINATION_MAX_LIMIT,
+    );
+    const job_name = searchParams.get("job_name") ?? undefined;
+    const status = searchParams.get("status") as CronRunStatus | undefined;
+    const start_date = searchParams.get("start_date") ?? undefined;
+    const end_date = searchParams.get("end_date") ?? undefined;
 
     const result = await cronRunService.getCronRuns({
       job_name,
@@ -27,7 +38,8 @@ export async function GET(request: NextRequest) {
 
     return successResponse(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

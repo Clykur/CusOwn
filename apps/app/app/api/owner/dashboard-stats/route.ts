@@ -1,15 +1,15 @@
-import { NextRequest } from 'next/server';
-import { 
-  userService, 
-  successResponse, 
-  errorResponse, 
-  setCacheHeaders, 
+import { NextRequest } from "next/server";
+import {
+  userService,
+  successResponse,
+  errorResponse,
+  setCacheHeaders,
   requireSupabaseAdmin,
   requireOwner,
   buildApiCacheKey,
   getCachedApiResponse,
   setCachedApiResponse,
-} from '@cusown/shared/server';
+} from "@cusown/shared/server";
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -33,7 +33,7 @@ interface DashboardStats {
   }>;
 }
 
-const ROUTE = 'GET /api/owner/dashboard-stats';
+const ROUTE = "GET /api/owner/dashboard-stats";
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,10 +41,15 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const { searchParams } = new URL(request.url);
-    const fromDate = searchParams.get('fromDate') || '';
-    const toDate = searchParams.get('toDate') || '';
+    const fromDate = searchParams.get("fromDate") || "";
+    const toDate = searchParams.get("toDate") || "";
 
-    const cacheKey = buildApiCacheKey('GET', '/api/owner/dashboard-stats', { fromDate, toDate }, auth.user.id);
+    const cacheKey = buildApiCacheKey(
+      "GET",
+      "/api/owner/dashboard-stats",
+      { fromDate, toDate },
+      auth.user.id,
+    );
 
     const cachedStats = getCachedApiResponse<DashboardStats>(cacheKey);
     if (cachedStats) {
@@ -77,24 +82,27 @@ export async function GET(request: NextRequest) {
     const supabase = requireSupabaseAdmin();
 
     let query = supabase
-      .from('bookings')
+      .from("bookings")
       .select(
-        'id, status, no_show, created_at, business_id, booking_id, customer_name, customer_phone, slot_id'
+        "id, status, no_show, created_at, business_id, booking_id, customer_name, customer_phone, slot_id",
       )
-      .in('business_id', businessIds);
+      .in("business_id", businessIds);
 
     if (fromDate || toDate) {
-      let slotQuery = supabase.from('slots').select('id').in('business_id', businessIds);
+      let slotQuery = supabase
+        .from("slots")
+        .select("id")
+        .in("business_id", businessIds);
 
-      if (fromDate) slotQuery = slotQuery.gte('date', fromDate);
-      if (toDate) slotQuery = slotQuery.lte('date', toDate);
+      if (fromDate) slotQuery = slotQuery.gte("date", fromDate);
+      if (toDate) slotQuery = slotQuery.lte("date", toDate);
 
       const { data: slots } = await slotQuery;
 
       if (slots && slots.length > 0) {
         query = query.in(
-          'slot_id',
-          slots.map((s) => s.id)
+          "slot_id",
+          slots.map((s) => s.id),
         );
       } else {
         const emptyStats: DashboardStats = {
@@ -115,23 +123,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const { data: bookings, error } = await query.order('created_at', { ascending: false });
+    const { data: bookings, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
     if (error) {
-      throw new Error(error.message || 'Failed to fetch bookings');
+      throw new Error(error.message || "Failed to fetch bookings");
     }
 
     const allBookings = bookings || [];
     const totalBookings = allBookings.length;
-    const confirmedBookings = allBookings.filter((b) => b.status === 'confirmed').length;
-    const pendingBookings = allBookings.filter((b) => b.status === 'pending').length;
-    const rejectedBookings = allBookings.filter((b) => b.status === 'rejected').length;
-    const cancelledBookings = allBookings.filter((b) => b.status === 'cancelled').length;
+    const confirmedBookings = allBookings.filter(
+      (b) => b.status === "confirmed",
+    ).length;
+    const pendingBookings = allBookings.filter(
+      (b) => b.status === "pending",
+    ).length;
+    const rejectedBookings = allBookings.filter(
+      (b) => b.status === "rejected",
+    ).length;
+    const cancelledBookings = allBookings.filter(
+      (b) => b.status === "cancelled",
+    ).length;
     const noShowCount = allBookings.filter((b) => b.no_show === true).length;
 
-    const conversionRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
-    const cancellationRate = totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
-    const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
+    const conversionRate =
+      totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
+    const cancellationRate =
+      totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
+    const noShowRate =
+      confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
     const recentBookings = allBookings.slice(0, 10).map((booking) => ({
       id: booking.id,
@@ -163,7 +184,10 @@ export async function GET(request: NextRequest) {
     setCacheHeaders(response, 300, 600);
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch dashboard statistics';
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch dashboard statistics";
     return errorResponse(message, 500);
   }
 }

@@ -23,7 +23,9 @@ const pendingReviewRequests = new Map<string, Promise<ReviewData | null>>();
  * Get cached reviews or fetch if stale/missing
  * Deduplicates concurrent review requests for the same business
  */
-export async function getCachedReviews(businessId: string): Promise<ReviewData | null> {
+export async function getCachedReviews(
+  businessId: string,
+): Promise<ReviewData | null> {
   const now = Date.now();
   const cached = reviewsCache.get(businessId);
 
@@ -49,9 +51,12 @@ export async function getCachedReviews(businessId: string): Promise<ReviewData |
 
 async function fetchReviews(businessId: string): Promise<ReviewData | null> {
   try {
-    const response = await fetch(`/api/reviews?business_id=${encodeURIComponent(businessId)}`, {
-      cache: 'no-store',
-    });
+    const response = await fetch(
+      `/api/reviews?business_id=${encodeURIComponent(businessId)}`,
+      {
+        cache: "no-store",
+      },
+    );
     const result = await response.json();
 
     if (result.success && result.data) {

@@ -1,32 +1,34 @@
-import { NextRequest } from 'next/server';
-import { requireSupabaseAdmin } from '@cusown/shared/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { requireSupabaseAdmin } from "@cusown/shared/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
 import {
   haversineDistance,
   parseAndValidateCoordinates,
   boundingBox,
   validateRadius,
-} from '@cusown/shared/server';
-import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from '@cusown/config';
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from "@cusown/config";
 
-const ROUTE = 'GET /api/business/nearby';
+const ROUTE = "GET /api/business/nearby";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const latStr = searchParams.get('lat');
-    const lngStr = searchParams.get('lng');
-    const city = searchParams.get('city');
-    const radius = parseFloat(searchParams.get('radius') || '10');
+    const latStr = searchParams.get("lat");
+    const lngStr = searchParams.get("lng");
+    const city = searchParams.get("city");
+    const radius = parseFloat(searchParams.get("radius") || "10");
 
     const supabaseAdmin = requireSupabaseAdmin();
 
     // FALLBACK: If no coordinates but we have a city, do a city-based search
     if ((!latStr || !lngStr) && city) {
       const { data: businesses, error: cityError } = await supabaseAdmin
-        .from('businesses')
-        .select('*')
-        .or(`city.ilike.%${city}%,location.ilike.%${city}%,address.ilike.%${city}%`)
+        .from("businesses")
+        .select("*")
+        .or(
+          `city.ilike.%${city}%,location.ilike.%${city}%,address.ilike.%${city}%`,
+        )
         .limit(50);
 
       if (cityError) throw cityError;
@@ -41,19 +43,20 @@ export async function GET(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
 
-    if (!validateRadius(radius)) return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
+    if (!validateRadius(radius))
+      return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
 
     // 1. Compute bounding box
     const { minLat, maxLat, minLng, maxLng } = boundingBox(lat, lng, radius);
 
     // 2. Query businesses within bounding box
     const { data: businesses, error: dbError } = await supabaseAdmin
-      .from('businesses')
-      .select('*')
-      .gte('latitude', minLat)
-      .lte('latitude', maxLat)
-      .gte('longitude', minLng)
-      .lte('longitude', maxLng)
+      .from("businesses")
+      .select("*")
+      .gte("latitude", minLat)
+      .lte("latitude", maxLat)
+      .gte("longitude", minLng)
+      .lte("longitude", maxLng)
       .limit(100); // safety limit
 
     if (dbError) throw dbError;
@@ -86,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // Enrich only top N with routed distance/time to limit parallel routing calls
     const toEnrich = toReturn.slice(0, ROUTING_ENRICH_MAX_BUSINESSES);
-    const { getRoute } = await import('@cusown/shared/server');
+    const { getRoute } = await import("@cusown/shared/server");
     const enriched = await Promise.all(
       toEnrich.map(async (biz) => {
         try {
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
             startLng: userLng,
             endLat: Number(biz.latitude),
             endLng: Number(biz.longitude),
-            mode: 'walking',
+            mode: "walking",
           });
           return {
             ...biz,
@@ -107,7 +110,7 @@ export async function GET(request: NextRequest) {
         } catch {
           return biz;
         }
-      })
+      }),
     );
 
     const rest = toReturn.slice(ROUTING_ENRICH_MAX_BUSINESSES);

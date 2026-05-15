@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { 
+import { NextRequest } from "next/server";
+import {
   requireOwner,
   successResponse,
   errorResponse,
@@ -7,13 +7,16 @@ import {
   userOwnsBusinessId,
   downtimeService,
   invalidateBusinessCache,
-  getUserFriendlyError
-} from '@cusown/shared/server';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
+  getUserFriendlyError,
+} from "@cusown/shared/server";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
 
-const ROUTE = 'POST /api/owner/businesses/[id]/closures';
+const ROUTE = "POST /api/owner/businesses/[id]/closures";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const auth = await requireOwner(request, ROUTE);
     if (auth instanceof Response) return auth;
@@ -32,8 +35,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const end_date = body?.end_date;
     const reason = body?.reason;
     if (
-      typeof start_date !== 'string' ||
-      typeof end_date !== 'string' ||
+      typeof start_date !== "string" ||
+      typeof end_date !== "string" ||
       !/^\d{4}-\d{2}-\d{2}$/.test(start_date) ||
       !/^\d{4}-\d{2}-\d{2}$/.test(end_date)
     ) {
@@ -44,13 +47,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       businessId,
       start_date,
       end_date,
-      typeof reason === 'string' ? reason : undefined
+      typeof reason === "string" ? reason : undefined,
     );
     await invalidateBusinessCache(businessId);
     return successResponse(created, SUCCESS_MESSAGES.UPDATED_SUCCESSFULLY);
   } catch (err) {
     const friendlyMessage = getUserFriendlyError(err);
-    const status = friendlyMessage === ERROR_MESSAGES.DOWNTIME_DATE_INVALID ? 400 : 500;
+    const status =
+      friendlyMessage === ERROR_MESSAGES.DOWNTIME_DATE_INVALID ? 400 : 500;
     return errorResponse(friendlyMessage, status);
   }
 }

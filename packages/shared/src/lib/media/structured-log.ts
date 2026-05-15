@@ -4,13 +4,13 @@
  */
 
 export type MediaLogEvent =
-  | 'media.upload.start'
-  | 'media.upload.success'
-  | 'media.upload.failure'
-  | 'media.signed_url.generated'
-  | 'media.delete'
-  | 'media.purge.cron'
-  | 'media.security.reject';
+  | "media.upload.start"
+  | "media.upload.success"
+  | "media.upload.failure"
+  | "media.signed_url.generated"
+  | "media.delete"
+  | "media.purge.cron"
+  | "media.security.reject";
 
 export interface MediaStructuredLogPayload {
   event: MediaLogEvent;
@@ -29,7 +29,7 @@ export function logMediaStructured(payload: MediaStructuredLogPayload): void {
   const line = JSON.stringify({
     ...payload,
     timestamp: new Date().toISOString(),
-    service: 'media',
+    service: "media",
   });
   // Use console.warn for all structured lines (console.log is disallowed by repo policy).
   console.warn(line);

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Section wrapper for admin dashboard: title, subtitle, and content with consistent spacing.
@@ -15,7 +15,7 @@ export function AdminSectionWrapper({
   title,
   subtitle,
   children,
-  className = '',
+  className = "",
 }: AdminSectionWrapperProps) {
   return (
     <section
@@ -23,7 +23,9 @@ export function AdminSectionWrapper({
     >
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+        {subtitle && (
+          <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>
+        )}
       </div>
       {children}
     </section>

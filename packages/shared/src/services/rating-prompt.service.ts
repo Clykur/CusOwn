@@ -1,7 +1,7 @@
-import { requireSupabaseAdmin } from '../lib/supabase/server';
-import { ERROR_MESSAGES } from '@cusown/config';
+import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { ERROR_MESSAGES } from "@cusown/config";
 
-import type { PendingRatingBooking } from '../types';
+import type { PendingRatingBooking } from "../types";
 
 type PendingRatingRpcResponse = {
   success?: boolean;
@@ -14,21 +14,23 @@ type PendingRatingRpcResponse = {
 };
 
 function isPendingRatingBooking(value: unknown): value is PendingRatingBooking {
-  if (!value || typeof value !== 'object') return false;
+  if (!value || typeof value !== "object") return false;
 
   const booking = value as Record<string, unknown>;
 
   return (
-    typeof booking.id === 'string' &&
-    typeof booking.booking_id === 'string' &&
-    typeof booking.salon_id === 'string' &&
-    typeof booking.salon_name === 'string' &&
-    typeof booking.service_date === 'string' &&
-    typeof booking.service_time === 'string'
+    typeof booking.id === "string" &&
+    typeof booking.booking_id === "string" &&
+    typeof booking.salon_id === "string" &&
+    typeof booking.salon_name === "string" &&
+    typeof booking.service_date === "string" &&
+    typeof booking.service_time === "string"
   );
 }
 
-function normalizePendingRatingResults(result: unknown): PendingRatingBooking[] {
+function normalizePendingRatingResults(
+  result: unknown,
+): PendingRatingBooking[] {
   if (!result) {
     return [];
   }
@@ -41,7 +43,7 @@ function normalizePendingRatingResults(result: unknown): PendingRatingBooking[] 
     return [result];
   }
 
-  if (typeof result !== 'object') {
+  if (typeof result !== "object") {
     return [];
   }
 
@@ -63,7 +65,10 @@ function normalizePendingRatingResults(result: unknown): PendingRatingBooking[] 
     return [rpcResponse.booking];
   }
 
-  if (rpcResponse.data?.booking && isPendingRatingBooking(rpcResponse.data.booking)) {
+  if (
+    rpcResponse.data?.booking &&
+    isPendingRatingBooking(rpcResponse.data.booking)
+  ) {
     return [rpcResponse.data.booking];
   }
 
@@ -75,16 +80,19 @@ function normalizePendingRatingResults(result: unknown): PendingRatingBooking[] 
  * Returns empty array if no pending ratings exist.
  */
 export async function getPendingRatingBookings(
-  customerUserId: string
+  customerUserId: string,
 ): Promise<PendingRatingBooking[]> {
   const supabase = requireSupabaseAdmin();
 
-  const { data: result, error } = await supabase.rpc('get_pending_rating_bookings', {
-    p_customer_user_id: customerUserId,
-  });
+  const { data: result, error } = await supabase.rpc(
+    "get_pending_rating_bookings",
+    {
+      p_customer_user_id: customerUserId,
+    },
+  );
 
   if (error) {
-    console.error('[RATING PROMPT] Error fetching pending ratings:', error);
+    console.error("[RATING PROMPT] Error fetching pending ratings:", error);
     return [];
   }
 
@@ -97,7 +105,7 @@ export async function getPendingRatingBookings(
  * Returns the first pending booking or null.
  */
 export async function getPendingRatingBooking(
-  customerUserId: string
+  customerUserId: string,
 ): Promise<PendingRatingBooking | null> {
   const bookings = await getPendingRatingBookings(customerUserId);
   return bookings[0] ?? null;
@@ -109,17 +117,20 @@ export async function getPendingRatingBooking(
  */
 export async function ignoreRatingPrompt(
   bookingId: string,
-  customerUserId: string
+  customerUserId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = requireSupabaseAdmin();
 
-  const { data: result, error } = await supabase.rpc('create_rating_prompt_ignore', {
-    p_booking_id: bookingId,
-    p_customer_user_id: customerUserId,
-  });
+  const { data: result, error } = await supabase.rpc(
+    "create_rating_prompt_ignore",
+    {
+      p_booking_id: bookingId,
+      p_customer_user_id: customerUserId,
+    },
+  );
 
   if (error) {
-    console.error('[RATING PROMPT] Error ignoring rating prompt:', error);
+    console.error("[RATING PROMPT] Error ignoring rating prompt:", error);
     return { success: false, error: ERROR_MESSAGES.DATABASE_ERROR };
   }
 

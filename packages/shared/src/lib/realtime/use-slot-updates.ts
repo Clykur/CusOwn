@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../supabase/client';
+import { useEffect, useRef, useCallback } from "react";
+import { supabase } from "../supabase/client";
 import {
   subscribeSlotUpdates,
   type SlotRealtimePayload,
   type SupabaseRealtime,
-} from './slot-updates';
-import { createRealtimeMetrics, type RealtimeMetrics } from './realtime-utils';
-import type { Slot } from '../../types';
-import { API_ROUTES } from '@cusown/config';
-import { isPublicSupabaseConfigured } from '@cusown/config';
+} from "./slot-updates";
+import { createRealtimeMetrics, type RealtimeMetrics } from "./realtime-utils";
+import type { Slot } from "../../types";
+import { API_ROUTES } from "@cusown/config";
+import { isPublicSupabaseConfigured } from "@cusown/config";
 
 const MAX_SEEN_EVENT_IDS = 500;
 const BATCH_DELAY_MS = 100;
@@ -71,7 +71,7 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
 
   // Set initial visibility state after mount (SSR-safe)
   useEffect(() => {
-    if (typeof document !== 'undefined') {
+    if (typeof document !== "undefined") {
       isVisibleRef.current = !document.hidden;
     }
   }, []);
@@ -86,7 +86,11 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
 
     pendingUpdatesRef.current.forEach((slot, id) => {
       const existing = byId.get(id);
-      if (!existing || existing.status !== slot.status || existing.updated_at !== slot.updated_at) {
+      if (
+        !existing ||
+        existing.status !== slot.status ||
+        existing.updated_at !== slot.updated_at
+      ) {
         byId.set(id, slot);
         hasChanges = true;
         onSlotChangeRef.current?.(id, slot);
@@ -125,7 +129,7 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
     const metrics = metricsRef.current;
     initialSubscribeRef.current = true;
     refetchCountRef.current = 0;
-    metrics.setStatus('connecting');
+    metrics.setStatus("connecting");
 
     const refetch = async () => {
       const currentDate = date;
@@ -145,12 +149,17 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
       lastRefetchRef.current = now;
 
       try {
-        const res = await fetch(`${API_ROUTES.SLOTS}?salon_id=${businessId}&date=${currentDate}`, {
-          credentials: 'include',
-        });
+        const res = await fetch(
+          `${API_ROUTES.SLOTS}?salon_id=${businessId}&date=${currentDate}`,
+          {
+            credentials: "include",
+          },
+        );
         const result = await res.json();
         if (result?.success && result?.data && !result.data.closed) {
-          const next = Array.isArray(result.data) ? result.data : (result.data.slots ?? []);
+          const next = Array.isArray(result.data)
+            ? result.data
+            : (result.data.slots ?? []);
 
           const current = slotsRef.current;
           const currentById = new Map(current.map((s) => [s.id, s]));
@@ -201,7 +210,7 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
 
     const handleRefetch = () => {
       metrics.recordReconnect();
-      metrics.setStatus('connected');
+      metrics.setStatus("connected");
 
       if (skipInitialRefetchRef.current && initialSubscribeRef.current) {
         initialSubscribeRef.current = false;
@@ -215,7 +224,7 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
     };
 
     const handleVisibilityChange = () => {
-      if (typeof document === 'undefined') return;
+      if (typeof document === "undefined") return;
       isVisibleRef.current = !document.hidden;
 
       if (!document.hidden && pendingUpdatesRef.current.size > 0) {
@@ -223,8 +232,8 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
       }
     };
 
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
     }
 
     const unsubscribe = subscribeSlotUpdates({
@@ -237,11 +246,14 @@ export function useSlotUpdates(options: UseSlotUpdatesOptions): void {
 
     return () => {
       isSubscribedRef.current = false;
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (typeof document !== "undefined") {
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
       }
       unsubscribe();
-      metrics.setStatus('disconnected');
+      metrics.setStatus("disconnected");
 
       if (batchTimerRef.current) {
         clearTimeout(batchTimerRef.current);

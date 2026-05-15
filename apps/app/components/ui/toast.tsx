@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import CheckIcon from '@cusown/shared/icons/check.svg';
+import { useEffect } from "react";
+import CheckIcon from "@cusown/shared/icons/check.svg";
 
 const TOAST_DURATION_MS = 3500;
 
-export type ToastVariant = 'success' | 'error' | 'default';
+export type ToastVariant = "success" | "error" | "default";
 
 export function Toast({
   message,
-  variant = 'success',
+  variant = "success",
   onDismiss,
   duration = TOAST_DURATION_MS,
 }: {
@@ -24,11 +24,11 @@ export function Toast({
   }, [onDismiss, duration]);
 
   const variantStyles =
-    variant === 'success'
-      ? 'bg-green-600 text-white border-green-700'
-      : variant === 'error'
-        ? 'bg-red-600 text-white border-red-700'
-        : 'bg-slate-800 text-white border-slate-700';
+    variant === "success"
+      ? "bg-green-600 text-white border-green-700"
+      : variant === "error"
+        ? "bg-red-600 text-white border-red-700"
+        : "bg-slate-800 text-white border-slate-700";
 
   return (
     <div
@@ -36,13 +36,13 @@ export function Toast({
       aria-live="polite"
       className={`fixed left-1/2 top-6 z-[100] -translate-x-1/2 px-4 py-3 text-sm font-medium shadow-lg border rounded-lg md:bottom-6 md:top-auto ${variantStyles}`}
     >
-      {variant === 'success' && (
+      {variant === "success" && (
         <span className="inline-flex items-center gap-2">
           <CheckIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
           {message}
         </span>
       )}
-      {variant !== 'success' && message}
+      {variant !== "success" && message}
     </div>
   );
 }

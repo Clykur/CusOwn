@@ -2,9 +2,9 @@ export const generateSlug = (text: string): string => {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 };
 
 export const generateUniqueId = (): string => {
@@ -12,17 +12,17 @@ export const generateUniqueId = (): string => {
 };
 
 export const formatTime = (time: string): string => {
-  const [hours, minutes] = time.split(':');
+  const [hours, minutes] = time.split(":");
   return `${hours}:${minutes}`;
 };
 
 export const formatDate = (date: string | Date): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-IN', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-IN", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 
@@ -32,20 +32,20 @@ export const formatDate = (date: string | Date): string => {
  */
 export const formatPhoneNumber = (phone: string): string => {
   // Remove all spaces and special characters except + and digits
-  let cleaned = phone.replace(/[\s-()]/g, '');
+  let cleaned = phone.replace(/[\s-()]/g, "");
 
   // If already starts with +91, return as is
-  if (cleaned.startsWith('+91')) {
+  if (cleaned.startsWith("+91")) {
     return cleaned;
   }
 
   // If starts with 91 (without +), add +
-  if (cleaned.startsWith('91') && cleaned.length >= 12) {
+  if (cleaned.startsWith("91") && cleaned.length >= 12) {
     return `+${cleaned}`;
   }
 
   // If starts with 0, remove it
-  if (cleaned.startsWith('0')) {
+  if (cleaned.startsWith("0")) {
     cleaned = cleaned.substring(1);
   }
 
@@ -55,7 +55,7 @@ export const formatPhoneNumber = (phone: string): string => {
   }
 
   // If it's already in correct format, return as is
-  if (cleaned.startsWith('+')) {
+  if (cleaned.startsWith("+")) {
     return cleaned;
   }
 

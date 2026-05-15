@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSecureSalonUrlClient } from '@cusown/shared';
-import { supabaseAuth } from '@cusown/shared';
-import { useVisibilityRefresh } from '@cusown/shared/client';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { getSecureSalonUrlClient } from "@cusown/shared";
+import { supabaseAuth } from "@cusown/shared";
+import { useVisibilityRefresh } from "@cusown/shared/client";
 
 interface UseBookingDataProps {
   bookingId: string;
@@ -12,8 +12,10 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
-  const [salonSecureUrl, setSalonSecureUrl] = useState<string>('');
-  const [secureBookingUrls, setSecureBookingUrls] = useState<Map<string, string>>(new Map());
+  const [salonSecureUrl, setSalonSecureUrl] = useState<string>("");
+  const [secureBookingUrls, setSecureBookingUrls] = useState<
+    Map<string, string>
+  >(new Map());
   const [refreshingStatus, setRefreshingStatus] = useState(false);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const cancelledRef = useRef(false);
@@ -22,7 +24,7 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
     async (options?: { silent?: boolean }) => {
       const silent = options?.silent === true;
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
+      const token = urlParams.get("token");
       cancelledRef.current = false;
 
       if (!silent) setLoading(true);
@@ -34,15 +36,18 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
 
         if (
           !token &&
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId)
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            bookingId,
+          )
         ) {
           try {
-            const { getSecureBookingStatusUrlClient } = await import('@cusown/shared');
+            const { getSecureBookingStatusUrlClient } =
+              await import("@cusown/shared");
             const secureUrl = await getSecureBookingStatusUrlClient(bookingId);
             window.location.href = secureUrl;
             return;
           } catch (urlError) {
-            console.error('Failed to generate secure URL:', urlError);
+            console.error("Failed to generate secure URL:", urlError);
           }
         }
 
@@ -56,8 +61,8 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
         }
 
         const response = await fetch(url, {
-          credentials: 'include',
-          cache: 'no-store',
+          credentials: "include",
+          cache: "no-store",
           headers: Object.keys(headers).length > 0 ? headers : undefined,
         });
         const result = await response.json();
@@ -65,7 +70,7 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
         if (cancelledRef.current) return;
 
         if (!response.ok) {
-          throw new Error(result.error || 'Booking not found');
+          throw new Error(result.error || "Booking not found");
         }
 
         if (result.success && result.data) {
@@ -74,31 +79,39 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
           const parallelFetches: Promise<void>[] = [];
 
           parallelFetches.push(
-            import('@cusown/shared')
+            import("@cusown/shared")
               .then(({ getSecureBookingStatusUrlClient }) =>
-                getSecureBookingStatusUrlClient(result.data.booking_id)
+                getSecureBookingStatusUrlClient(result.data.booking_id),
               )
               .then((secureUrl) => {
                 if (!cancelledRef.current) {
-                  setSecureBookingUrls(new Map([[result.data.booking_id, secureUrl]]));
+                  setSecureBookingUrls(
+                    new Map([[result.data.booking_id, secureUrl]]),
+                  );
                 }
               })
-              .catch(() => {})
+              .catch(() => {}),
           );
 
           if (result.data.salon && result.data.slot) {
             parallelFetches.push(
-              fetch(`/api/slots?salon_id=${result.data.salon.id}&date=${result.data.slot.date}`)
+              fetch(
+                `/api/slots?salon_id=${result.data.salon.id}&date=${result.data.slot.date}`,
+              )
                 .then((res) => res.json())
                 .then((slotsResult) => {
-                  if (!cancelledRef.current && slotsResult.success && slotsResult.data) {
+                  if (
+                    !cancelledRef.current &&
+                    slotsResult.success &&
+                    slotsResult.data
+                  ) {
                     const slotsArr = Array.isArray(slotsResult.data)
                       ? slotsResult.data
                       : (slotsResult.data.slots ?? []);
                     setAvailableSlots(slotsArr);
                   }
                 })
-                .catch(() => {})
+                .catch(() => {}),
             );
           }
 
@@ -108,32 +121,40 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
                 .then((salonUrl) => {
                   if (!cancelledRef.current) setSalonSecureUrl(salonUrl);
                 })
-                .catch(() => {})
+                .catch(() => {}),
             );
           }
 
           parallelFetches.push(
-            fetch(`/api/bookings/${result.data.booking_id}/whatsapp`, { credentials: 'include' })
+            fetch(`/api/bookings/${result.data.booking_id}/whatsapp`, {
+              credentials: "include",
+            })
               .then((res) => res.json())
               .then((wj) => {
-                if (!cancelledRef.current && wj?.success && wj?.data?.whatsapp_url) {
+                if (
+                  !cancelledRef.current &&
+                  wj?.success &&
+                  wj?.data?.whatsapp_url
+                ) {
                   setWhatsappUrl(wj.data.whatsapp_url);
                 }
               })
-              .catch(() => {})
+              .catch(() => {}),
           );
 
           await Promise.allSettled(parallelFetches);
         }
       } catch (err) {
         if (!silent && !cancelledRef.current) {
-          setError(err instanceof Error ? err.message : 'Failed to load booking');
+          setError(
+            err instanceof Error ? err.message : "Failed to load booking",
+          );
         }
       } finally {
         if (!silent && !cancelledRef.current) setLoading(false);
       }
     },
-    [bookingId]
+    [bookingId],
   );
 
   const handleRefreshStatus = async () => {
@@ -143,7 +164,10 @@ export function useBookingData({ bookingId }: UseBookingDataProps) {
     setRefreshingStatus(false);
   };
 
-  const refreshBookingSilent = useCallback(() => fetchBooking({ silent: true }), [fetchBooking]);
+  const refreshBookingSilent = useCallback(
+    () => fetchBooking({ silent: true }),
+    [fetchBooking],
+  );
 
   useEffect(() => {
     if (!bookingId) return;

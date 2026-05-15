@@ -5,12 +5,12 @@
  */
 
 const AUTH_COOKIE_MAX_AGE_SECONDS = 86400; // 24h, match config
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 /** Cookie names that must get hardened attributes (Supabase uses sb-* and auth-related). */
 function isAuthCookieName(name: string): boolean {
   const n = name.toLowerCase();
-  return n.startsWith('sb-') || n.includes('auth') || n.includes('session');
+  return n.startsWith("sb-") || n.includes("auth") || n.includes("session");
 }
 
 export type NormalizedCookieOptions = {
@@ -19,7 +19,7 @@ export type NormalizedCookieOptions = {
 
   maxAge: number;
 
-  sameSite: 'lax' | 'strict' | 'none';
+  sameSite: "lax" | "strict" | "none";
   secure: boolean;
   httpOnly: boolean;
   expires?: Date;
@@ -32,14 +32,15 @@ export type NormalizedCookieOptions = {
 export function normalizeCookieOptions(
   name: string,
   _value: string,
-  options?: Record<string, unknown>
+  options?: Record<string, unknown>,
 ): NormalizedCookieOptions {
   const opts = (options || {}) as Record<string, unknown>;
   const base: NormalizedCookieOptions = {
-    path: (opts.path as string) ?? '/',
+    path: (opts.path as string) ?? "/",
     maxAge: (opts.maxAge as number) ?? AUTH_COOKIE_MAX_AGE_SECONDS,
-    sameSite: (opts.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
-    secure: opts.secure !== undefined ? (opts.secure as boolean) : IS_PRODUCTION,
+    sameSite: (opts.sameSite as "lax" | "strict" | "none") ?? "lax",
+    secure:
+      opts.secure !== undefined ? (opts.secure as boolean) : IS_PRODUCTION,
     httpOnly: opts.httpOnly !== undefined ? (opts.httpOnly as boolean) : true,
   };
   if (opts.expires) base.expires = opts.expires as Date;
@@ -47,8 +48,8 @@ export function normalizeCookieOptions(
   if (isAuthCookieName(name)) {
     base.httpOnly = true;
     base.secure = IS_PRODUCTION;
-    base.sameSite = 'lax';
-    base.path = '/';
+    base.sameSite = "lax";
+    base.path = "/";
     if (base.maxAge === undefined || base.maxAge <= 0) {
       base.maxAge = AUTH_COOKIE_MAX_AGE_SECONDS;
     }
@@ -62,13 +63,17 @@ export function normalizeCookieOptions(
  * Pass to cookies.setAll after mapping through normalizeCookieOptions.
  */
 export function createSecureSetAll(
-  cookieSet: (name: string, value: string, options?: Record<string, unknown>) => void
+  cookieSet: (
+    name: string,
+    value: string,
+    options?: Record<string, unknown>,
+  ) => void,
 ): (
   cookiesToSet: {
     name: string;
     value: string;
     options?: Record<string, unknown>;
-  }[]
+  }[],
 ) => void {
   return (cookiesToSet) => {
     cookiesToSet.forEach(({ name, value, options }) => {

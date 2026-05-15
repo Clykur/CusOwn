@@ -78,10 +78,13 @@ Use the dedicated endpoints or the `NominatimService` class directly.
 
 ```typescript
 // app/api/geocode/forward/route.ts and /reverse/route.ts
-import { NominatimService } from '@/lib/geocoding';
+import { NominatimService } from "@/lib/geocoding";
 
 const service = NominatimService.getInstance();
-const fwd = await service.forwardGeocode('1600 Pennsylvania Ave NW, Washington, DC', req.ip);
+const fwd = await service.forwardGeocode(
+  "1600 Pennsylvania Ave NW, Washington, DC",
+  req.ip,
+);
 const rev = await service.reverseGeocode(38.8977, -77.0365, req.ip);
 ```
 
@@ -98,7 +101,10 @@ The endpoints expect POST requests with JSON bodies:
 Responses include `lat`, `lng`, `display_name`, and caching metadata. Requests are rate-limited and will return an error when exceeded.
 
 ```typescript
-fetch('/api/geocode/forward', { method: 'POST', body: JSON.stringify({ address }) });
+fetch("/api/geocode/forward", {
+  method: "POST",
+  body: JSON.stringify({ address }),
+});
 ```
 
 ## 1. Initialization (Server Startup)
@@ -109,7 +115,7 @@ Initialize the routing service once when your app starts (e.g., in middleware or
 
 ```typescript
 // middleware.ts or app/layout.tsx
-import { initializeRouting } from '@/lib/routing';
+import { initializeRouting } from "@/lib/routing";
 
 // Initialize with synthetic test network
 export async function invoke() {
@@ -125,14 +131,14 @@ export async function invoke() {
 Use the routing service to compute routes between two coordinates:
 
 ```typescript
-import { getRoute, type RouteQuery } from '@/lib/routing';
+import { getRoute, type RouteQuery } from "@/lib/routing";
 
 const query: RouteQuery = {
   startLat: 40.7128,
   startLng: -74.006,
   endLat: 40.71,
   endLng: -73.99,
-  mode: 'walking', // or 'driving'
+  mode: "walking", // or 'driving'
 };
 
 const result = await getRoute(query);
@@ -155,8 +161,8 @@ To integrate without modifying existing endpoints, create a new dedicated route 
 
 ```typescript
 // app/api/routes/compute/route.ts
-import { getRoute } from '@/lib/routing';
-import { NextRequest, NextResponse } from 'next/server';
+import { getRoute } from "@/lib/routing";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const { startLat, startLng, endLat, endLng, mode } = await req.json();
@@ -167,12 +173,15 @@ export async function POST(req: NextRequest) {
       startLng: parseFloat(startLng),
       endLat: parseFloat(endLat),
       endLng: parseFloat(endLng),
-      mode: mode || 'walking',
+      mode: mode || "walking",
     });
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: 'Route computation failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Route computation failed" },
+      { status: 500 },
+    );
   }
 }
 ```
@@ -180,14 +189,14 @@ export async function POST(req: NextRequest) {
 Call from frontend:
 
 ```typescript
-const response = await fetch('/api/routes/compute', {
-  method: 'POST',
+const response = await fetch("/api/routes/compute", {
+  method: "POST",
   body: JSON.stringify({
     startLat: userLat,
     startLng: userLng,
     endLat: businessLat,
     endLng: businessLng,
-    mode: 'walking',
+    mode: "walking",
   }),
 });
 const route = await response.json();
@@ -201,8 +210,12 @@ Integrate routing into existing endpoints for comprehensive location services:
 **Modified `/api/business/nearby`:**
 
 ```typescript
-import { haversineDistance, boundingBox, validateRadius } from '@/lib/utils/geo';
-import { getRoute } from '@/lib/routing';
+import {
+  haversineDistance,
+  boundingBox,
+  validateRadius,
+} from "@/lib/utils/geo";
+import { getRoute } from "@/lib/routing";
 
 export async function GET(request: NextRequest) {
   // ... existing validation ...
@@ -217,7 +230,7 @@ export async function GET(request: NextRequest) {
         startLng: userLng,
         endLat: biz.latitude,
         endLng: biz.longitude,
-        mode: 'walking',
+        mode: "walking",
       });
 
       return {
@@ -226,7 +239,7 @@ export async function GET(request: NextRequest) {
         estimated_walk_time_minutes: route.estimated_time_minutes,
         is_routed: route.routed,
       };
-    })
+    }),
   );
 
   // Sort by routed distance
@@ -327,7 +340,7 @@ private cacheTtlMs: number = 0; // TTL of 0 = no caching
 Development (synthetic grid):
 
 ```typescript
-import { createTestNetwork, createCitySampleNetwork } from '@/lib/routing';
+import { createTestNetwork, createCitySampleNetwork } from "@/lib/routing";
 
 const graph = createCitySampleNetwork(); // 10×10 grid, NYC coordinates
 ```
@@ -361,7 +374,7 @@ Production (real OSM data):
 Add business nodes:
 
 ```typescript
-import { addBusinessNodesToGraph } from '@/lib/routing';
+import { addBusinessNodesToGraph } from "@/lib/routing";
 
 const businesses = await fetchAllBusinesses();
 addBusinessNodesToGraph(
@@ -371,7 +384,7 @@ addBusinessNodesToGraph(
     name: b.name,
     latitude: b.latitude,
     longitude: b.longitude,
-  }))
+  })),
 );
 ```
 
@@ -408,7 +421,7 @@ Test output includes:
 Get routing health:
 
 ```typescript
-import { getRoutingHealth } from '@/lib/routing';
+import { getRoutingHealth } from "@/lib/routing";
 
 const health = getRoutingHealth();
 // Returns:
@@ -423,11 +436,11 @@ Add to API health check endpoint:
 
 ```typescript
 // app/api/health/route.ts
-import { getRoutingHealth } from '@/lib/routing';
+import { getRoutingHealth } from "@/lib/routing";
 
 export async function GET() {
   return NextResponse.json({
-    status: 'ok',
+    status: "ok",
     routing: getRoutingHealth(),
   });
 }

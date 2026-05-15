@@ -1,25 +1,28 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import ChevronRightIcon from '@cusown/shared/icons/chevron-right.svg';
-import { UI_CUSTOMER } from '@cusown/config';
-import { salonTelHref } from '@/components/customer/salon-tel-href';
-import type { BookingForSalonRow } from '@/components/customer/customer-bookings-types';
+import { useRouter } from "next/navigation";
+import ChevronRightIcon from "@cusown/shared/icons/chevron-right.svg";
+import { UI_CUSTOMER } from "@cusown/config";
+import { salonTelHref } from "@/components/customer/salon-tel-href";
+import type { BookingForSalonRow } from "@/components/customer/customer-bookings-types";
 
 export interface SalonBookingCardProps {
   booking: BookingForSalonRow;
   salonId: string;
 }
 
-export default function SalonBookingCard({ booking, salonId }: SalonBookingCardProps) {
+export default function SalonBookingCard({
+  booking,
+  salonId,
+}: SalonBookingCardProps) {
   const router = useRouter();
 
   const salon = booking.salon;
   const salonName = salon?.salon_name ?? UI_CUSTOMER.PROVIDER_FALLBACK;
-  const ownerName = salon?.owner_name?.trim() || '';
-  const phone = salon?.whatsapp_number ?? '';
+  const ownerName = salon?.owner_name?.trim() || "";
+  const phone = salon?.whatsapp_number ?? "";
   const isDeleted = !!salon?.deleted_at;
-  const location = salon?.location || salon?.address || '—';
+  const location = salon?.location || salon?.address || "—";
 
   const goToSalon = () => {
     if (isDeleted) return;
@@ -61,7 +64,7 @@ export default function SalonBookingCard({ booking, salonId }: SalonBookingCardP
       tabIndex={0}
       onClick={goToSalon}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           goToSalon();
         }
@@ -83,14 +86,16 @@ export default function SalonBookingCard({ booking, salonId }: SalonBookingCardP
           <dt className="pt-0.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             {UI_CUSTOMER.DASHBOARD_SALON_FIELD_LOCATION}
           </dt>
-          <dd className="min-w-0 break-words text-right text-slate-800 leading-snug">{location}</dd>
+          <dd className="min-w-0 break-words text-right text-slate-800 leading-snug">
+            {location}
+          </dd>
         </div>
         <div className="grid grid-cols-[minmax(5.5rem,7rem)_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-2.5">
           <dt className="pt-0.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             {UI_CUSTOMER.DASHBOARD_SALON_FIELD_OWNER}
           </dt>
           <dd className="min-w-0 break-words text-right text-slate-800 leading-snug">
-            {ownerName || '—'}
+            {ownerName || "—"}
           </dd>
         </div>
         <div className="grid grid-cols-[minmax(5.5rem,7rem)_minmax(0,1fr)] items-start gap-x-3 gap-y-1 py-2.5 last:pb-0">

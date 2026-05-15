@@ -28,7 +28,13 @@
 
 
     "prepare": "node scripts/infrastructure/prepare-husky.js",
-    "guard:all": "npm run lint && npm run type-check && npm run test && npm run build"
+    "guard:all": "npm run lint && npm run type-check && npm run test && npm run build",
+
+    "lint:strict": "npm run lint",
+    "typecheck": "npm run type-check",
+    "format:check": "npm run format",
+    "security-check": "npm run guard:all",
+    "security:audit": "npm audit --audit-level=high --production"
   },
   "dependencies": {
     "@supabase/postgrest-js": "^2.99.1",

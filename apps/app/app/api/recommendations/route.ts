@@ -1,9 +1,12 @@
-import { NextRequest } from 'next/server';
-import { successResponse, errorResponse } from '@cusown/shared/server';
-import { getServerUser } from '@cusown/shared/server';
-import { getRecommendations } from '@cusown/shared/server';
-import { setCacheHeaders } from '@cusown/shared/server';
-import { parseAndValidateCoordinates, validateRadius } from '@cusown/shared/server';
+import { NextRequest } from "next/server";
+import { successResponse, errorResponse } from "@cusown/shared/server";
+import { getServerUser } from "@cusown/shared/server";
+import { getRecommendations } from "@cusown/shared/server";
+import { setCacheHeaders } from "@cusown/shared/server";
+import {
+  parseAndValidateCoordinates,
+  validateRadius,
+} from "@cusown/shared/server";
 import {
   ERROR_MESSAGES,
   RECOMMENDATION_CACHE_TTL_SECONDS,
@@ -13,15 +16,15 @@ import {
   RECOMMENDATION_LIMIT_MAX,
   RECOMMENDATION_DEFAULT_LIMIT,
   RECOMMENDATION_DEFAULT_RADIUS_KM,
-} from '@cusown/config';
-import { enhancedRateLimit } from '@cusown/shared/server';
+} from "@cusown/config";
+import { enhancedRateLimit } from "@cusown/shared/server";
 
 const recommendationsRateLimit = enhancedRateLimit({
   maxRequests: 30,
   windowMs: 60_000,
   perIP: true,
   perUser: true,
-  keyPrefix: 'recommendations',
+  keyPrefix: "recommendations",
 });
 
 export async function GET(request: NextRequest) {
@@ -32,22 +35,28 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const pageRaw = searchParams.get('page');
-    const limitRaw = searchParams.get('limit');
-    const latStr = searchParams.get('latitude');
-    const lngStr = searchParams.get('longitude');
-    const radiusStr = searchParams.get('radius_km');
+    const pageRaw = searchParams.get("page");
+    const limitRaw = searchParams.get("limit");
+    const latStr = searchParams.get("latitude");
+    const lngStr = searchParams.get("longitude");
+    const radiusStr = searchParams.get("radius_km");
 
     const page = pageRaw
       ? Math.max(
           RECOMMENDATION_PAGE_MIN,
-          Math.min(RECOMMENDATION_PAGE_MAX, parseInt(pageRaw, 10) || RECOMMENDATION_PAGE_MIN)
+          Math.min(
+            RECOMMENDATION_PAGE_MAX,
+            parseInt(pageRaw, 10) || RECOMMENDATION_PAGE_MIN,
+          ),
         )
       : RECOMMENDATION_PAGE_MIN;
     const limit = limitRaw
       ? Math.max(
           RECOMMENDATION_LIMIT_MIN,
-          Math.min(RECOMMENDATION_LIMIT_MAX, parseInt(limitRaw, 10) || RECOMMENDATION_DEFAULT_LIMIT)
+          Math.min(
+            RECOMMENDATION_LIMIT_MAX,
+            parseInt(limitRaw, 10) || RECOMMENDATION_DEFAULT_LIMIT,
+          ),
         )
       : RECOMMENDATION_DEFAULT_LIMIT;
     let latitude: number | null = null;
@@ -61,7 +70,10 @@ export async function GET(request: NextRequest) {
         return errorResponse(ERROR_MESSAGES.GEO_INVALID_COORDINATES, 400);
       }
     }
-    const radiusKm = radiusStr != null ? parseFloat(radiusStr) : RECOMMENDATION_DEFAULT_RADIUS_KM;
+    const radiusKm =
+      radiusStr != null
+        ? parseFloat(radiusStr)
+        : RECOMMENDATION_DEFAULT_RADIUS_KM;
     if (!validateRadius(radiusKm)) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
@@ -77,18 +89,19 @@ export async function GET(request: NextRequest) {
         page,
         limit,
       },
-      RECOMMENDATION_CACHE_TTL_SECONDS
+      RECOMMENDATION_CACHE_TTL_SECONDS,
     );
 
     const response = successResponse(result);
     setCacheHeaders(
       response,
       RECOMMENDATION_CACHE_TTL_SECONDS,
-      RECOMMENDATION_CACHE_TTL_SECONDS * 2
+      RECOMMENDATION_CACHE_TTL_SECONDS * 2,
     );
     return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message =
+      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

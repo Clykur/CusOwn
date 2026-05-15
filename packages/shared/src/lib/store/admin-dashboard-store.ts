@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface PlatformMetrics {
   totalBusinesses: number;
@@ -81,7 +81,8 @@ export const useAdminDashboardStore = create<AdminDashboardState>()(
       setTrends: (trends) => set({ trends }),
       setOverviewExtras: (overviewExtras) => set({ overviewExtras }),
       setRevenueSnapshot: (revenueSnapshot) => set({ revenueSnapshot }),
-      setLastFetchedAt: (timestamp) => set({ lastFetchedAt: timestamp, isStale: false }),
+      setLastFetchedAt: (timestamp) =>
+        set({ lastFetchedAt: timestamp, isStale: false }),
       markStale: () => set({ isStale: true }),
       clearAll: () =>
         set({
@@ -101,7 +102,7 @@ export const useAdminDashboardStore = create<AdminDashboardState>()(
       },
     }),
     {
-      name: 'admin-dashboard-store',
+      name: "admin-dashboard-store",
       partialize: (state) => ({
         metrics: state.metrics,
         trends: state.trends,
@@ -109,8 +110,8 @@ export const useAdminDashboardStore = create<AdminDashboardState>()(
         revenueSnapshot: state.revenueSnapshot,
         lastFetchedAt: state.lastFetchedAt,
       }),
-    }
-  )
+    },
+  ),
 );
 
 export type { PlatformMetrics, BookingTrend, OverviewExtras, RevenueSnapshot };

@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ERROR_MESSAGES, OWNER_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
-import { ROUTES } from '@cusown/shared';
-import { getCSRFToken } from '@cusown/shared';
-import { supabaseAuth } from '@cusown/shared';
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ERROR_MESSAGES, OWNER_SCREEN_TITLE_CLASSNAME } from "@cusown/config";
+import { ROUTES } from "@cusown/shared";
+import { getCSRFToken } from "@cusown/shared";
+import { supabaseAuth } from "@cusown/shared";
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type DayRow = {
   day_of_week: number;
@@ -18,42 +18,49 @@ type DayRow = {
 };
 
 function toInputTime(t: string | null | undefined): string {
-  if (!t) return '10:00';
+  if (!t) return "10:00";
   const s = t.trim();
-  return s.length >= 5 ? s.substring(0, 5) : '10:00';
+  return s.length >= 5 ? s.substring(0, 5) : "10:00";
 }
 
-export default function BusinessSetupFlow({ businessId }: { businessId: string }) {
+export default function BusinessSetupFlow({
+  businessId,
+}: {
+  businessId: string;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [salonName, setSalonName] = useState('');
-  const [bookingLink, setBookingLink] = useState('');
+  const [salonName, setSalonName] = useState("");
+  const [bookingLink, setBookingLink] = useState("");
   const [dayRows, setDayRows] = useState<DayRow[]>(() =>
     Array.from({ length: 7 }, (_, i) => ({
       day_of_week: i,
-      opening_time: '10:00',
-      closing_time: '21:00',
+      opening_time: "10:00",
+      closing_time: "21:00",
       is_closed: false,
-    }))
+    })),
   );
   const [breakDay, setBreakDay] = useState<number>(1);
-  const [breakStart, setBreakStart] = useState('13:00');
-  const [breakEnd, setBreakEnd] = useState('14:00');
+  const [breakStart, setBreakStart] = useState("13:00");
+  const [breakEnd, setBreakEnd] = useState("14:00");
   const [includeBreak, setIncludeBreak] = useState(false);
-  const [holidayDate, setHolidayDate] = useState('');
-  const [holidayName, setHolidayName] = useState('');
+  const [holidayDate, setHolidayDate] = useState("");
+  const [holidayName, setHolidayName] = useState("");
 
   const authHeaders = useCallback(async (): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     const csrf = await getCSRFToken();
-    if (csrf) headers['x-csrf-token'] = csrf;
+    if (csrf) headers["x-csrf-token"] = csrf;
     if (supabaseAuth) {
       const {
         data: { session },
       } = await supabaseAuth.auth.getSession();
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (session?.access_token)
+        headers["Authorization"] = `Bearer ${session.access_token}`;
     }
     return headers;
   }, []);
@@ -69,20 +76,24 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
           const {
             data: { session },
           } = await supabaseAuth.auth.getSession();
-          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+          if (session?.access_token)
+            headers["Authorization"] = `Bearer ${session.access_token}`;
         }
-        const res = await fetch(`/api/salons/${encodeURIComponent(businessId)}`, {
-          credentials: 'include',
-          headers,
-        });
+        const res = await fetch(
+          `/api/salons/${encodeURIComponent(businessId)}`,
+          {
+            credentials: "include",
+            headers,
+          },
+        );
         const json = await res.json();
         if (!res.ok || !json.success || !json.data) {
           throw new Error(json.error || ERROR_MESSAGES.SALON_NOT_FOUND);
         }
         const s = json.data;
         if (cancelled) return;
-        setSalonName(s.salon_name || '');
-        setBookingLink(s.booking_link || '');
+        setSalonName(s.salon_name || "");
+        setBookingLink(s.booking_link || "");
         const o = toInputTime(s.opening_time);
         const c = toInputTime(s.closing_time);
         setDayRows(
@@ -91,10 +102,13 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
             opening_time: o,
             closing_time: c,
             is_closed: false,
-          }))
+          })),
         );
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+        if (!cancelled)
+          setError(
+            e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR,
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -115,16 +129,21 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
         opening_time: d.is_closed ? null : `${d.opening_time}:00`,
         closing_time: d.is_closed ? null : `${d.closing_time}:00`,
       }));
-      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(businessId)}/hours`, {
-        method: 'PUT',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ days }),
-      });
+      const res = await fetch(
+        `/api/owner/businesses/${encodeURIComponent(businessId)}/hours`,
+        {
+          method: "PUT",
+          headers,
+          credentials: "include",
+          body: JSON.stringify({ days }),
+        },
+      );
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to save hours');
+      if (!res.ok) throw new Error(json.error || "Failed to save hours");
     } catch (e) {
-      setError(e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+      setError(
+        e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR,
+      );
     } finally {
       setSaving(false);
     }
@@ -135,16 +154,21 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
       setSaving(true);
       try {
         const headers = await authHeaders();
-        const res = await fetch(`/api/owner/businesses/${encodeURIComponent(businessId)}/breaks`, {
-          method: 'PUT',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify({ breaks: [] }),
-        });
+        const res = await fetch(
+          `/api/owner/businesses/${encodeURIComponent(businessId)}/breaks`,
+          {
+            method: "PUT",
+            headers,
+            credentials: "include",
+            body: JSON.stringify({ breaks: [] }),
+          },
+        );
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Failed to clear breaks');
+        if (!res.ok) throw new Error(json.error || "Failed to clear breaks");
       } catch (e) {
-        setError(e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+        setError(
+          e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR,
+        );
       } finally {
         setSaving(false);
       }
@@ -154,24 +178,29 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
     setError(null);
     try {
       const headers = await authHeaders();
-      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(businessId)}/breaks`, {
-        method: 'PUT',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          breaks: [
-            {
-              day_of_week: breakDay,
-              start: `${breakStart}:00`,
-              end: `${breakEnd}:00`,
-            },
-          ],
-        }),
-      });
+      const res = await fetch(
+        `/api/owner/businesses/${encodeURIComponent(businessId)}/breaks`,
+        {
+          method: "PUT",
+          headers,
+          credentials: "include",
+          body: JSON.stringify({
+            breaks: [
+              {
+                day_of_week: breakDay,
+                start: `${breakStart}:00`,
+                end: `${breakEnd}:00`,
+              },
+            ],
+          }),
+        },
+      );
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to save break');
+      if (!res.ok) throw new Error(json.error || "Failed to save break");
     } catch (e) {
-      setError(e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+      setError(
+        e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR,
+      );
     } finally {
       setSaving(false);
     }
@@ -183,18 +212,26 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
     setError(null);
     try {
       const headers = await authHeaders();
-      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(businessId)}/holidays`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ holiday_date: holidayDate, holiday_name: holidayName || undefined }),
-      });
+      const res = await fetch(
+        `/api/owner/businesses/${encodeURIComponent(businessId)}/holidays`,
+        {
+          method: "POST",
+          headers,
+          credentials: "include",
+          body: JSON.stringify({
+            holiday_date: holidayDate,
+            holiday_name: holidayName || undefined,
+          }),
+        },
+      );
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to add holiday');
-      setHolidayDate('');
-      setHolidayName('');
+      if (!res.ok) throw new Error(json.error || "Failed to add holiday");
+      setHolidayDate("");
+      setHolidayName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+      setError(
+        e instanceof Error ? e.message : ERROR_MESSAGES.UNEXPECTED_ERROR,
+      );
     } finally {
       setSaving(false);
     }
@@ -234,8 +271,8 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
       <div>
         <h1 className={OWNER_SCREEN_TITLE_CLASSNAME}>{salonName}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Set weekly hours, an optional daily break, and holidays. You can change these anytime from
-          your business page.
+          Set weekly hours, an optional daily break, and holidays. You can
+          change these anytime from your business page.
         </p>
       </div>
 
@@ -253,7 +290,9 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
               key={row.day_of_week}
               className="flex flex-wrap items-center gap-3 border-b border-slate-100 pb-3 last:border-0"
             >
-              <span className="w-10 text-sm font-medium text-slate-700">{DAY_NAMES[idx]}</span>
+              <span className="w-10 text-sm font-medium text-slate-700">
+                {DAY_NAMES[idx]}
+              </span>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -262,8 +301,10 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
                     const v = e.target.checked;
                     setDayRows((prev) =>
                       prev.map((r) =>
-                        r.day_of_week === row.day_of_week ? { ...r, is_closed: v } : r
-                      )
+                        r.day_of_week === row.day_of_week
+                          ? { ...r, is_closed: v }
+                          : r,
+                      ),
                     );
                   }}
                 />
@@ -278,8 +319,10 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
                       const v = e.target.value;
                       setDayRows((prev) =>
                         prev.map((r) =>
-                          r.day_of_week === row.day_of_week ? { ...r, opening_time: v } : r
-                        )
+                          r.day_of_week === row.day_of_week
+                            ? { ...r, opening_time: v }
+                            : r,
+                        ),
                       );
                     }}
                     className="rounded border border-slate-300 px-2 py-1 text-sm"
@@ -292,8 +335,10 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
                       const v = e.target.value;
                       setDayRows((prev) =>
                         prev.map((r) =>
-                          r.day_of_week === row.day_of_week ? { ...r, closing_time: v } : r
-                        )
+                          r.day_of_week === row.day_of_week
+                            ? { ...r, closing_time: v }
+                            : r,
+                        ),
                       );
                     }}
                     className="rounded border border-slate-300 px-2 py-1 text-sm"
@@ -314,7 +359,9 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Break (optional)</h2>
+        <h2 className="text-lg font-semibold text-slate-900">
+          Break (optional)
+        </h2>
         <p className="mt-1 text-sm text-slate-600">
           One break window for a chosen weekday (e.g. lunch).
         </p>
@@ -360,7 +407,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
           onClick={saveBreak}
           className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
         >
-          {includeBreak ? 'Save break' : 'Clear breaks'}
+          {includeBreak ? "Save break" : "Clear breaks"}
         </button>
       </section>
 
