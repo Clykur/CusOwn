@@ -33,7 +33,7 @@ export const normalizeTime = (time: string): string => {
   } else if (parts.length === 2) {
     return time + ":00";
   } else {
-    console.error("Invalid time format:", time);
+    console.error("Invalid time format:", String(time).replace(/[\r\n]+/g, " "));
     return time;
   }
 };

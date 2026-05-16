@@ -7,7 +7,7 @@ module.exports = {
   ignorePatterns: ['.next/', 'node_modules/', '*.config.js', '*.config.ts'],
   settings: {
     next: {
-      rootDir: '../../apps/app/',
+      rootDir: ['apps/app/', '../../apps/app/'],
     },
   },
   rules: {

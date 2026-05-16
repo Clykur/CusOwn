@@ -12,7 +12,7 @@ import { haversineDistance, assertValidCoordinates } from "../utils/geo";
 /** Sanitize a value for logging to prevent log injection (strip newlines/carriage returns). */
 function sanitizeLogValue(value: unknown): string {
   const str = value instanceof Error ? value.message : String(value);
-  return str.replace(/[\r\n]+/g, " ");
+  return encodeURIComponent(str).replace(/%20/g, " ");
 }
 
 /**
