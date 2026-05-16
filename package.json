@@ -12,11 +12,14 @@
   },
   "overrides": {
     "dompurify": "3.4.0",
-    "immutable": "^4.3.8"
+    "immutable": "^4.3.8",
+    "next": "$next",
+    "react": "$react",
+    "react-dom": "$react-dom"
   },
   "scripts": {
     "dev": "dotenv -e .env.local -- turbo dev",
-    "build": "turbo build",
+    "build": "dotenv -e .env.local -- turbo build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "type-check": "turbo type-check",
     "test": "turbo test",
@@ -24,7 +27,7 @@
     "precommit:strict": "npm run lint && npm run type-check",
     "prepush:strict": "npm run guard:all",
     "prepare": "node scripts/infrastructure/prepare-husky.js",
-    "guard:all": "npm run lint && npm run type-check && npm run test && npm run build",
+    "guard:all": "dotenv -e .env.local -- npm run lint && npm run type-check && npm run test && npm run build",
     "lint:strict": "npm run lint",
     "typecheck": "npm run type-check",
     "format:check": "npm run format",

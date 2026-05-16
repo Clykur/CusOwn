@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const { salonId } = body;
     console.log(
       "[URL_GEN] Received salonId:",
-      salonId ? `${String(salonId).replace(/[\r\n]+/g, " ").substring(0, 8)}...` : "missing",
+      salonId ? "provided" : "missing",
     );
 
     if (!salonId || typeof salonId !== "string") {
@@ -53,8 +53,7 @@ export async function POST(request: NextRequest) {
     console.log("[URL_GEN] Validating UUID format...");
     if (!isValidUUID(salonId)) {
       console.error(
-        "[URL_GEN] Validation failed: Invalid UUID format for salonId:",
-        String(salonId).replace(/[\r\n]+/g, " "),
+        "[URL_GEN] Validation failed: Invalid UUID format for salonId",
       );
       return errorResponse("Invalid salon ID format", 400);
     }

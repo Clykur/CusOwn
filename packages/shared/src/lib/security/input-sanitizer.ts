@@ -72,7 +72,7 @@ export const sanitizeEmail = (input: string): string | null => {
   if (typeof input !== "string") return null;
 
   const trimmed = input.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@([^\s@.]+\.)+[^\s@.]+$/;
 
   return emailRegex.test(trimmed) ? trimmed : null;
 };

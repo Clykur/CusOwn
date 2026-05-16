@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sanitizeRequestBody } from "./input-sanitizer";
+import { sanitizeRequestBody } from "./input-sanitizer.server";
 import { csrfProtection } from "./csrf";
 import { tokenBucketRateLimit } from "./token-bucket-rate-limit.security";
 

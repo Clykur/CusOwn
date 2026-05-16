@@ -9,10 +9,13 @@ import { KDTree } from "./spatial-index";
 import { computeRoute, computeTravelTime } from "./shortest-path";
 import { haversineDistance, assertValidCoordinates } from "../utils/geo";
 
-/** Sanitize a value for logging to prevent log injection (strip newlines/carriage returns). */
+/** Sanitize a value for logging to prevent log injection (strip newlines/control chars). */
 function sanitizeLogValue(value: unknown): string {
   const str = value instanceof Error ? value.message : String(value);
-  return encodeURIComponent(str).replace(/%20/g, " ");
+  return str
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[\u0000-\u001F\u007F]+/g, " ")
+    .trim();
 }
 
 /**

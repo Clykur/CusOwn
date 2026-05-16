@@ -23,12 +23,15 @@
     "paths": {
       "@/*": ["./*"],
       "@cusown/shared": ["../../packages/shared/src"],
-      "@cusown/shared/*": ["../../packages/shared/src/*"]
+      "@cusown/shared/*": ["../../packages/shared/src/*"],
+      "@cusown/config": ["../../packages/config/src"],
+      "@cusown/config/*": ["../../packages/config/src/*"]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "declarations.d.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     ".next/dev/types/**/*.ts"

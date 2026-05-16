@@ -55,8 +55,9 @@ export async function POST(request: NextRequest) {
     const payment =
       await paymentService.getPaymentByTransactionId(transactionId);
     if (!payment) {
+      const safeTransactionId = String(transactionId).replace(/[\r\n]/g, "");
       console.warn(
-        `[WEBHOOK] Payment not found for transaction: ${transactionId}`,
+        `[WEBHOOK] Payment not found for transaction: ${safeTransactionId}`,
       );
       return errorResponse("Payment not found", 404);
     }

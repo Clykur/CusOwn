@@ -1,8 +1,10 @@
 {
-  "extends": "@cusown/typescript-config/base.json",
+  "extends": "../typescript-config/base.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"],
+      "@cusown/config": ["../config/src"],
+      "@cusown/config/*": ["../config/src/*"],
       "*": ["./*"]
     }
   },

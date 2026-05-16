@@ -54,37 +54,31 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // -------- STRICT INPUT EXTRACTION (no direct trust) --------
-    const rawPaymentId = body?.payment_id;
-    const rawTransactionId = body?.transaction_id;
-    const rawSignature = body?.signature;
+    const {
+      payment_id: rawPaymentId,
+      transaction_id: rawTransactionId,
+      signature: rawSignature,
+    } = body || {};
 
-    if (typeof rawPaymentId !== "string") {
-      return errorResponse("Invalid Payment ID", 400);
+    // -------- STRICT INPUT VALIDATION --------
+    if (!rawPaymentId || typeof rawPaymentId !== "string") {
+      return errorResponse("Payment ID required", 400);
     }
 
-    if (typeof rawTransactionId !== "string") {
-      return errorResponse("Invalid Transaction ID", 400);
+    if (!rawTransactionId || typeof rawTransactionId !== "string") {
+      return errorResponse("Transaction ID required", 400);
     }
 
-    // Signature is validated later conditionally
     if (rawSignature !== undefined && typeof rawSignature !== "string") {
-      return errorResponse("Invalid Signature", 400);
+      return errorResponse("Invalid signature format", 400);
     }
 
     const validatedPaymentId = getValidString(rawPaymentId);
     const validatedTransactionId = getValidString(rawTransactionId);
-    const validatedSignature = rawSignature
-      ? getValidString(rawSignature)
-      : null;
+    const validatedSignature = rawSignature ? getValidString(rawSignature) : null;
 
-    // -------- SAFE INPUT VALIDATION (not security decisions) --------
-    if (!validatedPaymentId) {
-      return errorResponse("Payment ID required", 400);
-    }
-
-    if (!validatedTransactionId) {
-      return errorResponse("Transaction ID required", 400);
+    if (!validatedPaymentId || !validatedTransactionId) {
+      return errorResponse("Invalid input format", 400);
     }
 
     // 1. Fetch trusted payment
