@@ -5,12 +5,12 @@ import {
   ERROR_MESSAGES,
   ADMIN_DELETION_OUTCOME,
   AUDIT_DEDUPE_WINDOW_MS,
-} from '../../config/constants';
+} from '@/config/constants';
 import {
   validateAdminDeletionReason,
   isDependencyBlockError,
   isReasonRequiredError,
-} from '../../lib/utils/admin-deletion.server';
+} from '@/lib/utils/admin-deletion.server';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

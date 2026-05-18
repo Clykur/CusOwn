@@ -4,7 +4,7 @@
  * Structure and presence of tokens and tw. No mocks.
  */
 
-import { tokens, tw } from '../../lib/design/tokens';
+import { tokens, tw } from '@/lib/design/tokens';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

@@ -4,7 +4,7 @@
  * Pure function; no mocks.
  */
 
-import { cn } from '../../lib/utils/cn';
+import { cn } from '@/lib/utils/cn';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

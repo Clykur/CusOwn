@@ -1,0 +1,27 @@
+import { NextRequest } from 'next/server';
+import { notificationService } from '@cusown/shared/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { isValidUUID } from '@cusown/shared/server';
+import { setCacheHeaders } from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ bookingId: string }> }
+) {
+  try {
+    const { bookingId } = await params;
+    if (!bookingId || !isValidUUID(bookingId)) {
+      return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
+    }
+
+    const history = await notificationService.getNotificationHistory(bookingId);
+
+    const response = successResponse(history);
+    setCacheHeaders(response, 60, 120);
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    return errorResponse(message, 500);
+  }
+}

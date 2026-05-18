@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { pollWithRetry } from '../../lib/resilience/poll-with-retry';
+import { pollWithRetry } from '@/lib/resilience/poll-with-retry';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

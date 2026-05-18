@@ -14,7 +14,7 @@ import {
   SLOT_DURATIONS,
   BOOKING_STATUS,
   DEFAULT_SLOT_DURATION,
-} from '../../config/constants';
+} from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

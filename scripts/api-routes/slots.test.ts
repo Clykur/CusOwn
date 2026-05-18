@@ -58,7 +58,9 @@ describe('GET /api/slots', () => {
 
   it('returns 400 when salon_id is missing', async () => {
     const { GET } = await import('@/app/api/slots/route');
-    const req = new NextRequest('http://localhost/api/slots', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/slots', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(400);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -68,7 +70,9 @@ describe('GET /api/slots', () => {
 
   it('returns 400 when salon_id is not a valid UUID', async () => {
     const { GET } = await import('@/app/api/slots/route');
-    const req = new NextRequest('http://localhost/api/slots?salon_id=invalid', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/slots?salon_id=invalid', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(400);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -140,7 +144,12 @@ describe('GET /api/slots', () => {
 
   it('returns 200 with slots when open and slots available', async () => {
     const salonId = '00000000-0000-4000-8000-000000000001';
-    const salon = { id: salonId, opening_time: '09:00', closing_time: '18:00', slot_duration: 30 };
+    const salon = {
+      id: salonId,
+      opening_time: '09:00',
+      closing_time: '18:00',
+      slot_duration: 30,
+    };
     mockGetSalonById.mockResolvedValue(salon);
     mockGetEffectiveHours.mockResolvedValue({
       isClosed: false,
@@ -150,7 +159,12 @@ describe('GET /api/slots', () => {
       break_end_time: null,
     });
     mockGetAvailableSlots.mockResolvedValue([
-      { id: 'slot1', start_time: '09:00', end_time: '09:30', status: 'available' },
+      {
+        id: 'slot1',
+        start_time: '09:00',
+        end_time: '09:30',
+        status: 'available',
+      },
     ]);
     const { GET } = await import('@/app/api/slots/route');
     const req = new NextRequest(`http://localhost/api/slots?salon_id=${salonId}&date=2025-03-15`, {
@@ -158,7 +172,10 @@ describe('GET /api/slots', () => {
     });
     const res = await GET(req);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { success?: boolean; data?: { slots?: unknown[] } };
+    const body = (await res.json()) as {
+      success?: boolean;
+      data?: { slots?: unknown[] };
+    };
     expect(body.success).toBe(true);
     expect(body.data).toHaveProperty('slots');
     expect(Array.isArray(body.data?.slots)).toBe(true);

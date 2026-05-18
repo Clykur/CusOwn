@@ -8,26 +8,30 @@ import { NextRequest } from 'next/server';
 
 const CRON_SECRET = 'test-cron-secret'; // pragma: allowlist secret
 
-vi.mock('@/config/env', () => ({
-  env: {
-    cron: { secret: CRON_SECRET },
-    /** Satisfies config/constants.ts (cron-auth → constants → env). */
-    payment: { slotExpiryMinutes: 10 },
-    /** Satisfies lib/utils/url.ts via getClientIp → security. */
-    app: { baseUrl: 'http://localhost:3000' },
-  },
-}));
-
 const mockCheckHealth = vi.fn();
 const mockWithCronRunLog = vi.fn((_name: string, fn: () => Promise<unknown>) => fn());
 
-vi.mock('@/lib/monitoring/health', () => ({
-  checkHealth: (...args: unknown[]) => mockCheckHealth(...args),
-}));
+vi.mock('@cusown/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@cusown/config')>();
+  return {
+    ...actual,
+    env: {
+      ...actual.env,
+      nodeEnv: 'test',
+      cron: { ...actual.env.cron, secret: CRON_SECRET },
+      app: { ...actual.env.app, baseUrl: 'http://localhost:3000' },
+    },
+  };
+});
 
-vi.mock('@/services/cron-run.service', () => ({
-  withCronRunLog: (...args: unknown[]) => mockWithCronRunLog(...args),
-}));
+vi.mock('@cusown/shared/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@cusown/shared/server')>();
+  return {
+    ...actual,
+    checkHealth: (...args: unknown[]) => mockCheckHealth(...args),
+    withCronRunLog: (...args: unknown[]) => mockWithCronRunLog(...args),
+  };
+});
 
 describe('GET /api/cron/health-check', () => {
   beforeEach(() => {
@@ -40,7 +44,9 @@ describe('GET /api/cron/health-check', () => {
 
   it('returns 401 when Authorization header is missing', async () => {
     const { GET } = await import('@/app/api/cron/health-check/route');
-    const req = new NextRequest('http://localhost/api/cron/health-check', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/cron/health-check', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(401);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -130,7 +136,9 @@ describe('POST /api/cron/health-check', () => {
 
   it('returns 401 when Authorization header is missing', async () => {
     const { POST } = await import('@/app/api/cron/health-check/route');
-    const req = new NextRequest('http://localhost/api/cron/health-check', { method: 'POST' });
+    const req = new NextRequest('http://localhost/api/cron/health-check', {
+      method: 'POST',
+    });
     const res = await POST(req);
     expect(res.status).toBe(401);
   });

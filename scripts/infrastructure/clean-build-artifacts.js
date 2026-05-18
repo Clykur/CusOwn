@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const targets = ['.next', path.join('node_modules', '.cache'), '.turbo'];
+const targets = [
+  '.next',
+  path.join('apps', 'app', '.next'),
+  path.join('apps', 'marketing', '.next'),
+  path.join('node_modules', '.cache'),
+  '.turbo',
+];
 
 for (const target of targets) {
   try {

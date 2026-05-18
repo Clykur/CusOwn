@@ -15,7 +15,7 @@ import {
   isTimeInRange,
   isSlotTimePassed,
   isSlotInPast,
-} from '../../lib/utils/time';
+} from '@/lib/utils/time';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

@@ -4,7 +4,7 @@
  * Pure function parseLimitOffset; no mocks.
  */
 
-import { parseLimitOffset, type ParsedLimitOffset } from '../../lib/utils/pagination';
+import { parseLimitOffset, type ParsedLimitOffset } from '@/lib/utils/pagination';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

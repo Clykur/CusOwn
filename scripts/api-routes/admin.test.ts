@@ -9,15 +9,17 @@ import { NextRequest } from 'next/server';
 const mockRequireAdmin = vi.fn();
 const mockGetAllUsers = vi.fn();
 
-vi.mock('@/lib/utils/api-auth-pipeline', () => ({
-  requireAdmin: (...args: unknown[]) => mockRequireAdmin(...args),
-}));
-
-vi.mock('@/services/admin.service', () => ({
-  adminService: {
-    getAllUsers: (...args: unknown[]) => mockGetAllUsers(...args),
-  },
-}));
+vi.mock('@cusown/shared/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@cusown/shared/server')>();
+  return {
+    ...actual,
+    requireAdmin: (...args: unknown[]) => mockRequireAdmin(...args),
+    adminService: {
+      ...actual.adminService,
+      getAllUsers: (...args: unknown[]) => mockGetAllUsers(...args),
+    },
+  };
+});
 
 describe('GET /api/admin/users', () => {
   beforeEach(() => {
@@ -33,7 +35,9 @@ describe('GET /api/admin/users', () => {
     );
     mockRequireAdmin.mockResolvedValue(authError);
     const { GET } = await import('@/app/api/admin/users/route');
-    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/admin/users', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(401);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -52,7 +56,9 @@ describe('GET /api/admin/users', () => {
     });
     mockGetAllUsers.mockResolvedValue(users);
     const { GET } = await import('@/app/api/admin/users/route');
-    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/admin/users', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success?: boolean; data?: unknown };
@@ -61,7 +67,10 @@ describe('GET /api/admin/users', () => {
   });
 
   it('passes limit and offset from query to getAllUsers', async () => {
-    mockRequireAdmin.mockResolvedValue({ user: { id: 'admin-1' }, profile: null });
+    mockRequireAdmin.mockResolvedValue({
+      user: { id: 'admin-1' },
+      profile: null,
+    });
     mockGetAllUsers.mockResolvedValue([]);
     const { GET } = await import('@/app/api/admin/users/route');
     const req = new NextRequest('http://localhost/api/admin/users?limit=10&offset=20', {
@@ -74,10 +83,15 @@ describe('GET /api/admin/users', () => {
   });
 
   it('response structure is consistent on success', async () => {
-    mockRequireAdmin.mockResolvedValue({ user: { id: 'admin-1' }, profile: null });
+    mockRequireAdmin.mockResolvedValue({
+      user: { id: 'admin-1' },
+      profile: null,
+    });
     mockGetAllUsers.mockResolvedValue([]);
     const { GET } = await import('@/app/api/admin/users/route');
-    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/admin/users', {
+      method: 'GET',
+    });
     const res = await GET(req);
     const body = await res.json();
     expect(body).toHaveProperty('success', true);
@@ -85,10 +99,15 @@ describe('GET /api/admin/users', () => {
   });
 
   it('returns 500 when getAllUsers throws', async () => {
-    mockRequireAdmin.mockResolvedValue({ user: { id: 'admin-1' }, profile: null });
+    mockRequireAdmin.mockResolvedValue({
+      user: { id: 'admin-1' },
+      profile: null,
+    });
     mockGetAllUsers.mockRejectedValue(new Error('Database error'));
     const { GET } = await import('@/app/api/admin/users/route');
-    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/admin/users', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(500);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -97,10 +116,15 @@ describe('GET /api/admin/users', () => {
   });
 
   it('returns 500 with DATABASE_ERROR when getAllUsers throws non-Error', async () => {
-    mockRequireAdmin.mockResolvedValue({ user: { id: 'admin-1' }, profile: null });
+    mockRequireAdmin.mockResolvedValue({
+      user: { id: 'admin-1' },
+      profile: null,
+    });
     mockGetAllUsers.mockRejectedValue('string throw');
     const { GET } = await import('@/app/api/admin/users/route');
-    const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/admin/users', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(500);
     const body = (await res.json()) as { success?: boolean; error?: string };

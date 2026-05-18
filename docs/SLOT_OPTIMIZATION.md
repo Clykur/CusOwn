@@ -35,14 +35,14 @@ Previously, slot generation was:
 ```typescript
 // First call: Generates and caches
 const slots1 = cache.getTemplate({
-  opening_time: '09:00',
-  closing_time: '18:00',
+  opening_time: "09:00",
+  closing_time: "18:00",
   slot_duration: 30,
 });
 // Second call: Instant cache hit (O(1))
 const slots2 = cache.getTemplate({
-  opening_time: '09:00',
-  closing_time: '18:00',
+  opening_time: "09:00",
+  closing_time: "18:00",
   slot_duration: 30,
 });
 ```
@@ -131,12 +131,12 @@ import {
   slotPoolManager,
   dateSlotOptimizer,
   generateOptimizedSlots,
-} from '@/services/slot-optimizer.service';
+} from "@/services/slot-optimizer.service";
 
 // Get cached template
 const timeSlots = slotTemplateCache.getTemplate({
-  opening_time: '09:00',
-  closing_time: '18:00',
+  opening_time: "09:00",
+  closing_time: "18:00",
   slot_duration: 30,
 });
 
@@ -148,7 +148,7 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
   businessId,
   startDate,
   days,
-  checkExistsFn
+  checkExistsFn,
 );
 ```
 
@@ -177,7 +177,7 @@ const BATCH_SIZE = 100; // Slots per database insert batch
 ```typescript
 const stats = slotTemplateCache.getStats();
 console.log(`Cache size: ${stats.size}/${stats.maxSize}`);
-console.log(`Cached configs: ${stats.keys.join(', ')}`);
+console.log(`Cached configs: ${stats.keys.join(", ")}`);
 ```
 
 ### Performance Metrics

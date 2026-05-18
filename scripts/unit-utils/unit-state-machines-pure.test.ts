@@ -4,9 +4,9 @@
  * Pure logic only; no DB or services. Deterministic.
  */
 
-import { bookingStateMachine } from '../../lib/state/booking-state-machine';
-import { slotStateMachine } from '../../lib/state/slot-state-machine';
-import { paymentStateMachine } from '../../lib/state/payment-state-machine';
+import { bookingStateMachine } from '@/lib/state/booking-state-machine';
+import { slotStateMachine } from '@/lib/state/slot-state-machine';
+import { paymentStateMachine } from '@/lib/state/payment-state-machine';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

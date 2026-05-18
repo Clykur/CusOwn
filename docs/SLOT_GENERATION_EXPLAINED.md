@@ -179,7 +179,7 @@ await slotPoolManager.queueGeneration(
   salonConfig,
   async (bid, date, cfg) => {
     await this.generateSlotsForDate(bid, date, cfg);
-  }
+  },
 );
 ```
 
@@ -224,13 +224,13 @@ const missingDates = await dateSlotOptimizer.getMissingDates(
   async (bid, date) => {
     // Check if slots exist for this date
     const { data } = await supabaseAdmin
-      .from('slots')
-      .select('id')
-      .eq('business_id', bid)
-      .eq('date', date)
+      .from("slots")
+      .select("id")
+      .eq("business_id", bid)
+      .eq("date", date)
       .limit(1);
     return data && data.length > 0;
-  }
+  },
 );
 ```
 

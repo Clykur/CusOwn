@@ -19,74 +19,44 @@ const mockWithBookingRetry = vi.fn();
 const mockCheckNonce = vi.fn().mockResolvedValue(false);
 const mockStoreNonce = vi.fn().mockResolvedValue(undefined);
 const mockRpc = vi.fn();
+const mockGetServerUser = vi.fn().mockResolvedValue(null);
 
-vi.mock('@/lib/security/rate-limit-api.security', () => ({
-  bookingRateLimitEnhanced: (...args: unknown[]) => mockBookingRateLimitEnhanced(...args),
-}));
-
-vi.mock('@/services/booking.service', () => ({
-  bookingService: {
-    runLazyExpireIfNeeded: (...args: unknown[]) => mockRunLazyExpireIfNeeded(...args),
-    prepareCreateBookingParams: (...args: unknown[]) => mockPrepareCreateBookingParams(...args),
-  },
-}));
-
-vi.mock('@/services/slot.service', () => ({
-  slotService: {
-    getSlotById: (...args: unknown[]) => mockGetSlotById(...args),
-  },
-}));
-
-vi.mock('@/services/business-hours.service', () => ({
-  businessHoursService: {
-    validateSlot: (...args: unknown[]) => mockValidateSlot(...args),
-  },
-}));
-
-vi.mock('@/services/salon.service', () => ({
-  salonService: {
-    getSalonById: (...args: unknown[]) => mockGetSalonById(...args),
-  },
-}));
-
-vi.mock('@/lib/security/abuse-detection', () => ({
-  abuseDetectionService: {
-    shouldBlockAction: (...args: unknown[]) => mockShouldBlockAction(...args),
-  },
-}));
-
-vi.mock('@/lib/booking-retry', () => ({
-  withBookingRetry: (opts: { fn: () => Promise<unknown> }) => mockWithBookingRetry(opts),
-}));
-
-vi.mock('@/lib/security/nonce-store', () => ({
-  checkNonce: (...args: unknown[]) => mockCheckNonce(...args),
-  storeNonce: (...args: unknown[]) => mockStoreNonce(...args),
-}));
-
-vi.mock('@/lib/supabase/server', () => ({
-  requireSupabaseAdmin: () => ({
-    rpc: (...args: unknown[]) => mockRpc(...args),
-  }),
-}));
-
-vi.mock('@/lib/utils/validation', () => ({
-  validateCreateBooking: (x: unknown) => x,
-}));
-
-vi.mock('@/lib/security/input-filter', () => ({
-  filterFields: (body: unknown) => body,
-  validateStringLength: () => true,
-}));
-
-vi.mock('@/lib/supabase/server-auth', () => ({
-  getServerUser: vi.fn().mockResolvedValue(null),
-}));
-
-vi.mock('@/lib/utils/security', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/utils/security')>();
+vi.mock('@cusown/shared/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@cusown/shared/server')>();
   return {
     ...actual,
+    bookingRateLimitEnhanced: (...args: unknown[]) => mockBookingRateLimitEnhanced(...args),
+    bookingService: {
+      ...actual.bookingService,
+      runLazyExpireIfNeeded: (...args: unknown[]) => mockRunLazyExpireIfNeeded(...args),
+      prepareCreateBookingParams: (...args: unknown[]) => mockPrepareCreateBookingParams(...args),
+    },
+    slotService: {
+      ...actual.slotService,
+      getSlotById: (...args: unknown[]) => mockGetSlotById(...args),
+    },
+    businessHoursService: {
+      ...actual.businessHoursService,
+      validateSlot: (...args: unknown[]) => mockValidateSlot(...args),
+    },
+    salonService: {
+      ...actual.salonService,
+      getSalonById: (...args: unknown[]) => mockGetSalonById(...args),
+    },
+    abuseDetectionService: {
+      ...actual.abuseDetectionService,
+      shouldBlockAction: (...args: unknown[]) => mockShouldBlockAction(...args),
+    },
+    withBookingRetry: (opts: { fn: () => Promise<unknown> }) => mockWithBookingRetry(opts),
+    checkNonce: (...args: unknown[]) => mockCheckNonce(...args),
+    storeNonce: (...args: unknown[]) => mockStoreNonce(...args),
+    requireSupabaseAdmin: () => ({
+      rpc: (...args: unknown[]) => mockRpc(...args),
+    }),
+    validateCreateBooking: (x: unknown) => x,
+    filterFields: (body: unknown) => body,
+    validateStringLength: () => true,
+    getServerUser: (...args: unknown[]) => mockGetServerUser(...args),
     getClientIp: () => '127.0.0.1',
     isValidUUID: (s: string) => /^[0-9a-f-]{36}$/i.test(s),
   };
@@ -200,7 +170,10 @@ describe('POST /api/bookings', () => {
   });
 
   it('returns 400 when business hours validation fails', async () => {
-    mockValidateSlot.mockResolvedValue({ valid: false, reason: 'Outside business hours' });
+    mockValidateSlot.mockResolvedValue({
+      valid: false,
+      reason: 'Outside business hours',
+    });
     const { POST } = await import('@/app/api/bookings/route');
     const req = new NextRequest('http://localhost/api/bookings', {
       method: 'POST',
@@ -213,7 +186,9 @@ describe('POST /api/bookings', () => {
 
   it('returns 429 when rate limit responds', async () => {
     mockBookingRateLimitEnhanced.mockResolvedValue(
-      new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 })
+      new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+      })
     );
     const { POST } = await import('@/app/api/bookings/route');
     const req = new NextRequest('http://localhost/api/bookings', {

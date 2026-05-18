@@ -12,11 +12,11 @@
  * - Retry: deadlock/serialization codes 40P01/40001 treated as retryable.
  */
 
-import { createBookingSchema } from '../../types';
-import { validateCoordinates } from '../../lib/utils/geo';
-import { bookingStateMachine } from '../../lib/state/booking-state-machine';
-import { slotStateMachine } from '../../lib/state/slot-state-machine';
-import { BOOKING_RETRY_MAX_ATTEMPTS, BOOKING_RETRY_BACKOFF_MS } from '../../config/constants';
+import { createBookingSchema } from '@/types';
+import { validateCoordinates } from '@/lib/utils/geo';
+import { bookingStateMachine } from '@/lib/state/booking-state-machine';
+import { slotStateMachine } from '@/lib/state/slot-state-machine';
+import { BOOKING_RETRY_MAX_ATTEMPTS, BOOKING_RETRY_BACKOFF_MS } from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

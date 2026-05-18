@@ -4,8 +4,8 @@
  * State transition enforcement, cancellation window constants, error message mapping.
  */
 
-import { bookingStateMachine } from '../../lib/state/booking-state-machine';
-import { ERROR_MESSAGES } from '../../config/constants';
+import { bookingStateMachine } from '@/lib/state/booking-state-machine';
+import { ERROR_MESSAGES } from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

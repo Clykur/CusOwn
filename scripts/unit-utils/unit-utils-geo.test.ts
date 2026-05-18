@@ -7,7 +7,7 @@ import {
   haversineDistance,
   parseAndValidateCoordinates,
   validateCoordinates,
-} from '../../lib/utils/geo';
+} from '@/lib/utils/geo';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import path from 'path';
-import { EXIT_LINT, MSG } from '../../config/quality/local-quality.constants';
+import { EXIT_LINT, MSG } from '@/config/quality/local-quality.constants';
 
 const root = path.resolve(__dirname, '..');
 

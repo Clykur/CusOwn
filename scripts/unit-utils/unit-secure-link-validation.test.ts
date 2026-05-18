@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { validateOwnerActionLink } from '../../lib/utils/secure-link-validation.server';
+import { validateOwnerActionLink } from '@/lib/utils/secure-link-validation.server';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

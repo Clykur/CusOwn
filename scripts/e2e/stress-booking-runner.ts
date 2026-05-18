@@ -103,7 +103,13 @@ async function getConnectionPoolStats(): Promise<DbPoolStats | null> {
     const waiting = Number(raw.waiting) || 0;
     const maxConn = Number(raw.max_connections) || 1;
     const poolUsagePct = maxConn > 0 ? ((active + idle) / maxConn) * 100 : 0;
-    return { active, idle, waiting, max_connections: maxConn, pool_usage_pct: poolUsagePct };
+    return {
+      active,
+      idle,
+      waiting,
+      max_connections: maxConn,
+      pool_usage_pct: poolUsagePct,
+    };
   } catch {
     return null;
   }

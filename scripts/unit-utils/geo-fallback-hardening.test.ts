@@ -5,10 +5,10 @@ import {
   METRICS_DISCOVERY_FALLBACK_RPC,
   GEO_CIRCUIT_BREAKER_THRESHOLD,
   GEO_DEGRADATION_COOLDOWN_MS,
-} from '../../config/constants';
-import { queryDiscoveryFallback } from '../../lib/db/discovery-fallback';
-import type { DiscoveryFallbackRow } from '../../lib/db/discovery-fallback';
-import type { DiscoveryFallbackReason } from '../../app/api/businesses/search/route';
+} from '@/config/constants';
+import { queryDiscoveryFallback } from '@/lib/db/discovery-fallback';
+import type { DiscoveryFallbackRow } from '@/lib/db/discovery-fallback';
+import type { DiscoveryFallbackReason } from '@/app/api/businesses/search/route';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

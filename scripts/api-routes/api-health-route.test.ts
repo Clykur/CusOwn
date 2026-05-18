@@ -17,13 +17,18 @@ export async function runApiHealthRouteTests(): Promise<void> {
   await runAsyncTest(
     'GET /api/health returns 200 and success response with health data',
     async () => {
-      const { GET } = await import('../../app/api/health/route');
-      const req = new NextRequest('http://localhost/api/health', { method: 'GET' });
+      const { GET } = await import('@/app/api/health/route');
+      const req = new NextRequest('http://localhost/api/health', {
+        method: 'GET',
+      });
       const res = await GET(req);
       assert(res.status === 200, `Expected 200, got ${res.status}`);
       const body = (await res.json()) as {
         success?: boolean;
-        data?: { status?: string; checks?: { database?: string; timestamp?: string } };
+        data?: {
+          status?: string;
+          checks?: { database?: string; timestamp?: string };
+        };
       };
       assert(body.success === true, 'Expected success true');
       assert(body.data != null, 'Expected data');
@@ -44,8 +49,10 @@ export async function runApiRoutingHealthRouteTests(): Promise<void> {
   await runAsyncTest(
     'GET /api/routing/health returns 200 and status ok with routing data',
     async () => {
-      const { GET } = await import('../../app/api/routing/health/route');
-      const req = new NextRequest('http://localhost/api/routing/health', { method: 'GET' });
+      const { GET } = await import('@/app/api/routing/health/route');
+      const req = new NextRequest('http://localhost/api/routing/health', {
+        method: 'GET',
+      });
       const res = await GET(req);
       assert(res.status === 200, `Expected 200, got ${res.status}`);
       const body = (await res.json()) as { status?: string; routing?: unknown };
@@ -59,7 +66,7 @@ export async function runApiOpenApiRouteTests(): Promise<void> {
   console.log('\n--- API: GET /api/openapi ---\n');
 
   await runAsyncTest('GET /api/openapi returns 200 and YAML content-type', async () => {
-    const { GET } = await import('../../app/api/openapi/route');
+    const { GET } = await import('@/app/api/openapi/route');
     const res = await GET();
     assert(res.status === 200, `Expected 200, got ${res.status}`);
     const ct = res.headers.get('content-type') ?? '';
@@ -77,11 +84,16 @@ export async function runApiCsrfTokenRouteTests(): Promise<void> {
   console.log('\n--- API: GET /api/csrf-token ---\n');
 
   await runAsyncTest('GET /api/csrf-token returns 200 and success with token', async () => {
-    const { GET } = await import('../../app/api/csrf-token/route');
-    const req = new NextRequest('http://localhost/api/csrf-token', { method: 'GET' });
+    const { GET } = await import('@/app/api/csrf-token/route');
+    const req = new NextRequest('http://localhost/api/csrf-token', {
+      method: 'GET',
+    });
     const res = await GET(req);
     assert(res.status === 200, `Expected 200, got ${res.status}`);
-    const body = (await res.json()) as { success?: boolean; data?: { token?: string } };
+    const body = (await res.json()) as {
+      success?: boolean;
+      data?: { token?: string };
+    };
     assert(body.success === true, 'Expected success true');
     assert(body.data != null, 'Expected data');
     assert(typeof body.data?.token === 'string', 'Expected data.token string');
@@ -89,7 +101,7 @@ export async function runApiCsrfTokenRouteTests(): Promise<void> {
   });
 
   await runAsyncTest('GET /api/csrf-token returns same token when cookie present', async () => {
-    const { GET } = await import('../../app/api/csrf-token/route');
+    const { GET } = await import('@/app/api/csrf-token/route');
     const token = 'existing-csrf-token-value';
     const req = new NextRequest('http://localhost/api/csrf-token', {
       method: 'GET',
@@ -97,7 +109,10 @@ export async function runApiCsrfTokenRouteTests(): Promise<void> {
     });
     const res = await GET(req);
     assert(res.status === 200, `Expected 200, got ${res.status}`);
-    const body = (await res.json()) as { success?: boolean; data?: { token?: string } };
+    const body = (await res.json()) as {
+      success?: boolean;
+      data?: { token?: string };
+    };
     assert(body.success === true, 'Expected success true');
     assert(body.data?.token === token, `Expected token from cookie, got ${body.data?.token}`);
   });

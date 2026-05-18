@@ -40,7 +40,7 @@ const { mockFrom } = vi.hoisted(() => {
 });
 
 vi.mock('@/lib/supabase/server', () => ({
-  supabaseAdmin: { from: mockFrom },
+  requireSupabaseAdmin: () => ({ from: mockFrom }),
 }));
 
 vi.mock('@/lib/security/audit-pii-redact.security', () => ({
@@ -216,7 +216,9 @@ describe('audit.service', () => {
         is: () => dedupeChain,
         maybeSingle: () => Promise.resolve({ data: null }),
         insert: () => ({
-          select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
+          select: () => ({
+            single: () => Promise.resolve({ data: null, error: null }),
+          }),
         }),
       };
       const insertChain = {
@@ -227,7 +229,9 @@ describe('audit.service', () => {
         is: () => insertChain,
         maybeSingle: () => Promise.resolve({ data: null }),
         insert: () => ({
-          select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }),
+          select: () => ({
+            single: () => Promise.resolve({ data: null, error: null }),
+          }),
         }),
       };
       mockFrom.mockReturnValueOnce(dedupeChain).mockReturnValueOnce(insertChain);

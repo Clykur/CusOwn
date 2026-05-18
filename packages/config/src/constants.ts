@@ -1,0 +1,1100 @@
+export const SLOT_DURATIONS = [15, 30, 45, 60] as const;
+
+export const BOOKING_STATUS = {
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
+} as const;
+
+export const SLOT_STATUS = {
+  AVAILABLE: 'available',
+  RESERVED: 'reserved',
+  BOOKED: 'booked',
+} as const;
+
+export const DEFAULT_SLOT_DURATION = 30;
+
+/** Default concurrent bookings (chairs). DB column `concurrent_booking_capacity` overrides when present. */
+export const DEFAULT_CONCURRENT_BOOKING_CAPACITY = 1;
+
+/** Upper bound for owner-editable concurrent booking capacity (chairs/stations). */
+export const MAX_CONCURRENT_BOOKING_CAPACITY = 50;
+
+/** Extra minutes per service after duration (prep/cleanup); summed with each service when computing total booking length. */
+export const DEFAULT_SERVICE_BOOKING_BUFFER_MINUTES = 0;
+
+/** Bounds for computed booking duration (multi-service + buffer). */
+export const MIN_BOOKING_DURATION_MINUTES = 1;
+export const MAX_BOOKING_DURATION_MINUTES = 480;
+
+// Generate slots for 7 days initially (matches lazy generation window)
+export const DAYS_TO_GENERATE_SLOTS = 7;
+
+/** Slot hold TTL bounds (minutes). Reservation expiry must be within this range for production. */
+export const SLOT_HOLD_TTL_MIN_MINUTES = 5;
+export const SLOT_HOLD_TTL_MAX_MINUTES = 15;
+
+// Number of days ahead to generate slots when lazy loading
+export const SLOT_GENERATION_WINDOW_DAYS = 7;
+
+/** Public booking path for QR; no auth. */
+export const BOOKING_LINK_PREFIX = '/book/';
+
+/** Fallback when /api/business-categories is unavailable. Real list comes from DB. */
+export const BUSINESS_CATEGORIES_FALLBACK: { value: string; label: string }[] = [
+  { value: 'salon', label: 'Salon' },
+];
+
+export const API_ROUTES = {
+  SALONS: '/api/salons',
+  SLOTS: '/api/slots',
+  BOOKINGS: '/api/bookings',
+  BUSINESS_CATEGORIES: '/api/business-categories',
+  /** Public booking: business by slug (no auth, no owner data). */
+  BOOK_BUSINESS: (slug: string) => `/api/book/business/${encodeURIComponent(slug)}`,
+  /** Store pending booking before redirect to login; read on /book/complete. */
+  BOOK_SET_PENDING: '/api/book/set-pending',
+  /** Complete pending booking after login (auth required). */
+  BOOK_COMPLETE: '/api/book/complete',
+  /** Media: profile image upload (owner/customer). */
+  MEDIA_PROFILE: '/api/media/profile',
+  /** Media: business images (owner). */
+  MEDIA_BUSINESS: (businessId: string) => `/api/media/business/${businessId}`,
+  /** Media: signed URL for display. */
+  MEDIA_SIGNED_URL: '/api/media/signed-url',
+} as const;
+
+export const ROUTES = {
+  HOME: '/',
+  SETUP: '/setup',
+  BOOKING: '/b',
+  ACCEPT: '/accept',
+  REJECT: '/reject',
+  DASHBOARD: '/dashboard',
+} as const;
+
+export const WHATSAPP_MESSAGE_TEMPLATES = {
+  BOOKING_REQUEST: (customerName: string, date: string, time: string, bookingId: string) =>
+    `📅 *NEW BOOKING REQUEST*\n\n` +
+    `Hello! I would like to book an appointment.\n\n` +
+    `*Customer Details:*\n` +
+    `Name: *${customerName}*\n\n` +
+    `*Appointment Details:*\n` +
+    `📆 Date: *${date}*\n` +
+    `🕐 Time: *${time}*\n\n` +
+    `Booking ID: \`${bookingId}\``,
+  CONFIRMATION: (
+    customerName: string,
+    date: string,
+    time: string,
+    salonName: string,
+    address: string,
+    mapsLink: string
+  ) =>
+    `✅ *APPOINTMENT CONFIRMED*\n\n` +
+    `Dear *${customerName}*,\n\n` +
+    `Your appointment has been confirmed!\n\n` +
+    `*Appointment Details:*\n` +
+    `📆 Date: *${date}*\n` +
+    `🕐 Time: *${time}*\n` +
+    `🏢 Salon: *${salonName}*\n\n` +
+    `*Location:*\n` +
+    `📍 ${address}\n\n` +
+    `🗺️ *Get Directions:*\n` +
+    `${mapsLink}\n\n` +
+    `We look forward to seeing you!\n` +
+    `Thank you! 🙏`,
+  REJECTION: (customerName: string, bookingLink: string) =>
+    `❌ *SLOT UNAVAILABLE*\n\n` +
+    `Dear *${customerName}*,\n\n` +
+    `We apologize, but the requested time slot is not available.\n\n` +
+    `Please select another time slot from our available options:\n\n` +
+    `🔗 *Book New Slot:*\n` +
+    `${bookingLink}\n\n` +
+    `Thank you for your understanding.`,
+} as const;
+
+/** Mobile/phone: exactly 10 digits (no extra digits allowed). */
+export const PHONE_DIGITS = 10;
+
+export const VALIDATION = {
+  WHATSAPP_NUMBER_MIN_LENGTH: PHONE_DIGITS,
+  WHATSAPP_NUMBER_MAX_LENGTH: PHONE_DIGITS,
+  SALON_NAME_MIN_LENGTH: 2,
+  SALON_NAME_MAX_LENGTH: 100,
+  OWNER_NAME_MIN_LENGTH: 2,
+  OWNER_NAME_MAX_LENGTH: 100,
+  ADDRESS_MIN_LENGTH: 5,
+  ADDRESS_MAX_LENGTH: 500,
+  REVIEW_COMMENT_MAX_LENGTH: 2000,
+  REVIEW_RATING_MIN: 1,
+  REVIEW_RATING_MAX: 5,
+  ADMIN_DELETION_REASON_MIN_LENGTH: 10,
+} as const;
+
+export const RATING_MESSAGES: Record<number, string> = {
+  1: 'We’re sorry to hear that',
+  2: 'Could have been better',
+  3: 'Thanks for your feedback',
+  4: 'Glad you liked it',
+  5: 'Awesome, thank you!',
+} as const;
+/** Simple email format for input validation (local + @ + domain). */
+export const EMAIL_REGEX =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+export const ERROR_MESSAGES = {
+  SALON_NAME_REQUIRED: 'Salon name is required',
+  SALON_NAME_INVALID: `Salon name must be between ${VALIDATION.SALON_NAME_MIN_LENGTH} and ${VALIDATION.SALON_NAME_MAX_LENGTH} characters`,
+  OWNER_NAME_REQUIRED: 'Owner name is required',
+  OWNER_NAME_INVALID: `Owner name must be between ${VALIDATION.OWNER_NAME_MIN_LENGTH} and ${VALIDATION.OWNER_NAME_MAX_LENGTH} characters`,
+  WHATSAPP_NUMBER_REQUIRED: 'WhatsApp number is required',
+  WHATSAPP_NUMBER_INVALID: `Please enter a valid 10-digit mobile number (${PHONE_DIGITS} digits only)`,
+  ADDRESS_REQUIRED: 'Address is required',
+  ADDRESS_INVALID: `Address must be between ${VALIDATION.ADDRESS_MIN_LENGTH} and ${VALIDATION.ADDRESS_MAX_LENGTH} characters`,
+  OPENING_TIME_REQUIRED: 'Opening time is required',
+  CLOSING_TIME_REQUIRED: 'Closing time is required',
+  SLOT_DURATION_REQUIRED: 'Slot duration is required',
+  SLOT_DURATION_INVALID: 'Invalid slot duration',
+  TIME_INVALID: 'Closing time must be after opening time',
+  SALON_NOT_FOUND: 'Salon not found',
+  BOOKING_LINK_EXISTS: 'Booking link already exists. Please try a different salon name',
+  SLOT_GENERATION_FAILED: 'Failed to generate slots',
+  DATABASE_ERROR: 'Database error occurred',
+  SLOT_NOT_FOUND: 'Slot not found',
+  SLOT_NOT_AVAILABLE: 'This slot is no longer available',
+  SLOT_ALREADY_BOOKED:
+    'This slot is already booked. Another booking for this slot has been confirmed.',
+  BOOKING_NOT_FOUND: 'Booking not found',
+  CUSTOMER_NAME_REQUIRED: 'Customer name is required',
+  CUSTOMER_PHONE_REQUIRED: 'Please enter your phone number',
+  CUSTOMER_PHONE_INVALID: `Please enter a valid 10-digit mobile number (${PHONE_DIGITS} digits only)`,
+  EMAIL_INVALID: 'Please enter a valid email address',
+  BOOKING_ID_REQUIRED: 'Booking ID is required',
+  WHATSAPP_SEND_FAILED: 'Failed to send WhatsApp message',
+  WHATSAPP_NUMBER_EXISTS:
+    'This WhatsApp number is already registered. Please use a different number or contact support if this is your number.',
+  /** Generic message for create-business failures (constraint/DB). Never expose technical or admin details to owner/customer. */
+  CREATE_BUSINESS_FAILED: "We couldn't create the business right now. Please try again.",
+  QR_CODE_GENERATION_FAILED:
+    'Unable to generate QR code. You can access it later from your dashboard.',
+  NETWORK_ERROR:
+    'Unable to connect to the server. Please check your internet connection and try again.',
+  UNEXPECTED_ERROR: 'An unexpected error occurred. Please try again.',
+  LOADING_ERROR: 'Failed to load data. Please refresh the page and try again.',
+  BOOKING_CANNOT_BE_CANCELLED: 'This booking cannot be cancelled',
+  BOOKING_ALREADY_CANCELLED: 'This booking is already cancelled',
+  BOOKING_ALREADY_CONFIRMED: 'Booking already confirmed',
+  BOOKING_ALREADY_REJECTED: 'Booking already rejected',
+  CANCELLATION_TOO_LATE: 'Cancellation must be at least 2 hours before appointment',
+  DOWNTIME_DATE_INVALID: 'Invalid date range for closure',
+  REMINDER_NOT_FOUND: 'Reminder not found',
+  REMINDER_ALREADY_SENT: 'Reminder already sent',
+  RATE_LIMIT_EXCEEDED: 'Too many requests. Please try again later.',
+  UNAUTHORIZED: 'Unauthorized',
+  /** Session or bearer token missing or invalid. */
+  AUTHENTICATION_REQUIRED: 'Authentication required',
+  /** Authenticated user cannot act on this booking’s business (not owner / not allowed role). */
+  BOOKING_MANAGE_ACCESS_DENIED: 'You do not have permission to manage this booking',
+  /** Cron routes when CRON_SECRET is unset in production (should fail at startup; fail-closed if reached). */
+  CRON_AUTH_NOT_CONFIGURED: 'Cron authentication is not configured',
+  IDEMPOTENCY_KEY_REQUIRED: 'Idempotency key required: send x-idempotency-key header',
+  USER_BLOCK_FAILED: 'Failed to block user',
+  USER_UNBLOCK_FAILED: 'Failed to unblock user',
+  USER_DELETE_FAILED: 'Failed to delete user',
+  CANNOT_DELETE_SELF: 'You cannot delete your own account',
+  LEGAL_HOLD_BLOCK: 'Deletion blocked: entity is under legal hold',
+  LAST_ADMIN_BLOCK: 'Cannot delete the last admin',
+  OUTSTANDING_PAYMENTS_BLOCK: 'User has outstanding payments; resolve before deletion',
+  DELETION_REASON_REQUIRED: 'Deletion reason is mandatory',
+  DELETION_REASON_TOO_SHORT: `Deletion reason must be at least ${VALIDATION.ADMIN_DELETION_REASON_MIN_LENGTH} characters`,
+  DELETION_BLOCKED_DEPENDENCIES:
+    'Deletion cannot be completed because related records exist. Resolve or remove dependencies first.',
+  USER_ALREADY_DELETED: 'User account is already deleted',
+  BUSINESS_ALREADY_DELETED: 'Business is already deleted',
+  UNDO_WINDOW_EXPIRED: 'Undo window has expired',
+  SLOT_NO_LONGER_AVAILABLE: 'Slot is no longer available; cannot undo reject',
+  BOOKING_NOT_CONFIRMED: 'Booking is not confirmed',
+  BOOKING_NOT_REJECTED: 'Booking is not rejected',
+  BOOKING_REVERT_FAILED: 'Booking could not be reverted',
+  UNDO_ALREADY_USED: 'Undo can only be used once per booking',
+  MEDIA_FILE_TYPE_INVALID: 'File type is not allowed',
+  MEDIA_FILE_TOO_LARGE: 'File size exceeds the maximum allowed',
+  MEDIA_UPLOAD_FAILED: 'Upload failed. Please try again.',
+  MEDIA_NOT_FOUND: 'Image not found',
+  GEO_INVALID_COORDINATES: 'Invalid latitude or longitude',
+  GEO_INVALID_LATITUDE: 'Latitude must be numeric and between -90 and 90',
+  GEO_INVALID_LONGITUDE: 'Longitude must be numeric and between -180 and 180',
+  GEO_INVALID_RADIUS:
+    'Search radius must be numeric, greater than 0, and not exceed the maximum allowed',
+  GEO_COORDINATES_PAIR_REQUIRED: 'Latitude and longitude must both be provided or both be omitted',
+  VALIDATION_ERROR_CODE: 'VALIDATION_ERROR',
+  GEO_SERVICE_UNAVAILABLE: 'Location service is temporarily unavailable',
+  LOCATION_REQUIRED: 'Location is required',
+  LOCATION_INVALID: 'Invalid location data',
+  MEDIA_BUSINESS_ACCESS_DENIED: 'You do not have access to this business',
+  MEDIA_PROFILE_ACCESS_DENIED: 'You can only update your own profile image',
+  MEDIA_BUSINESS_MAX_IMAGES: 'Maximum number of business images reached',
+  INVALID_INPUT: 'Invalid input provided',
+  FORBIDDEN: 'Access forbidden',
+  NOT_FOUND: 'Resource not found',
+  REVIEW_BOOKING_NOT_CONFIRMED: 'Booking must be confirmed to submit a review',
+  REVIEW_ALREADY_EXISTS: 'Review already exists for this booking',
+  REVIEW_INVALID_RATING: 'Rating must be between 1 and 5',
+  REVIEW_PROFANITY: 'Comment contains inappropriate content',
+  REVIEW_NOT_FOUND: 'Review not found',
+  RESCHEDULE_MAX_EXCEEDED: 'Maximum reschedule count exceeded for this booking',
+} as const;
+
+export const SUCCESS_MESSAGES = {
+  SALON_CREATED: 'Salon created successfully',
+  SLOTS_GENERATED: 'Slots generated successfully',
+  SLOT_RESERVED: 'Slot reserved successfully',
+  SLOT_RELEASED: 'Slot released successfully',
+  BOOKING_CREATED: 'Booking created successfully',
+  BOOKING_CONFIRMED: 'Booking confirmed successfully',
+  BOOKING_REJECTED: 'Booking rejected successfully',
+  BOOKING_CANCELLED: 'Booking cancelled successfully',
+  REMINDER_SENT: 'Reminder sent successfully',
+  USER_BLOCKED: 'User blocked successfully',
+  REVIEW_CREATED: 'Review submitted successfully',
+  REVIEW_VISIBILITY_UPDATED: 'Review visibility updated',
+  USER_UNBLOCKED: 'User unblocked successfully',
+  USER_DELETED: 'User deleted successfully',
+  ACCOUNT_DELETED:
+    'Your account and associated business data have been removed from the platform. For administrative and recovery purposes, your data will be securely stored for up to 30 days before being permanently deleted.',
+  ACCOUNT_RESTORED: 'Account restored successfully',
+  BOOKING_REVERTED_TO_PENDING: 'Booking reverted to pending',
+  MEDIA_UPLOADED: 'Image uploaded successfully',
+  MEDIA_DELETED: 'Image removed successfully',
+  PROFILE_IMAGE_UPDATED: 'Profile image updated successfully',
+  UPDATED_SUCCESSFULLY: 'Updated successfully',
+} as const;
+
+/** Phase 6: Explicit UI state messages for each backend booking state. Use these so UX reflects backend truth. */
+export const UI_BOOKING_STATE = {
+  PENDING: 'Waiting for confirmation',
+  CONFIRMED: 'Your appointment is confirmed!',
+  REJECTED: 'This slot is not available',
+  CANCELLED: 'This booking has been cancelled',
+  /** When status is cancelled and cancelled_by === 'system' (expired). */
+  EXPIRED: 'This request has expired',
+  /** When owner marked as no-show (status remains confirmed). */
+  NO_SHOW: 'Marked as no-show   you did not attend this appointment',
+} as const;
+
+/** Phase 6: Idempotent success copy (e.g. user clicked Accept again on already-confirmed booking). */
+export const UI_IDEMPOTENT = {
+  ALREADY_CONFIRMED: 'This booking is already confirmed.',
+  ALREADY_REJECTED: 'This booking was already declined.',
+} as const;
+
+/** UI behavior hardening: context and clarity copy (no visual redesign). */
+export const UI_CONTEXT = {
+  SECURE_ACTION_LINK: 'You are viewing a secure one-time booking action link.',
+  GO_TO_OWNER_DASHBOARD: 'Go to owner dashboard to manage more bookings',
+  BOOKING_STATUS_SINGLE: 'This page shows a single booking.',
+  DASHBOARD_PURPOSE: 'Booking history and overview.',
+  DEPRECATED_DASHBOARD: 'This dashboard is deprecated. Redirecting…',
+  ROOT_CHECKING_ACCOUNT: 'Checking your account…',
+  ADMIN_CONSOLE: 'Admin Console',
+  YOU_ARE_IN_ADMIN_MODE: 'You are in admin mode',
+  VIEWING_AS_CUSTOMER: 'Customer',
+  VIEWING_AS_OWNER: 'Owner',
+  VIEWING_AS_ADMIN: 'Viewing as: Admin',
+  ROLE_OWNER_HELPER: 'Manages a business and receives bookings.',
+  ROLE_CUSTOMER_HELPER: 'Books services.',
+  ROLE_BOTH_HELPER: 'Does both.',
+  /** Shown when user tries to access owner area but this account is not set up as owner. */
+  ROLE_ACCESS_DENIED_NOT_OWNER:
+    "This account isn't set up as an owner. You can use it as a customer here, or sign in with a different email for the owner flow. One email can be both; you can also use two different emails for the two roles.",
+  /** Shown when user tries to access customer area but this account cannot use customer flow. */
+  ROLE_ACCESS_DENIED_NOT_CUSTOMER:
+    "This account doesn't have customer access. You can continue as owner, or sign in with a different email for the customer flow.",
+  /** Owner: undo accept/reject button label. */
+  UNDO_LABEL: 'Undo',
+  /** Owner: toast after reverting to pending. */
+  REVERTED_TO_PENDING: 'Booking reverted to pending',
+  /** Owner: status label when customer cancelled after accept. */
+  CANCELLED_BY_CUSTOMER: 'Cancelled by customer',
+  /** Owner: label for customer rating on a booking. */
+  LABEL_CUSTOMER_RATING: 'Customer rating',
+  /** Owner: business rating summary (e.g. "4.2 ★ (12 reviews)"). */
+  BUSINESS_RATING_REVIEWS: (avg: string, count: number) => `${avg} ★ (${count} reviews)`,
+  /** Create business: info when owner reuses a WhatsApp number already used for another business. */
+  WHATSAPP_ALREADY_USED_FOR: (businessName: string) =>
+    `This number is already used for "${businessName}". You can use it for this business too.`,
+  /** Owner dashboard: table filters — default is all bookings; filters narrow the list client-side. */
+  OWNER_DASHBOARD_FILTERS_HINT:
+    'All bookings load by default. Narrow by appointment date, status, business, or search.',
+  OWNER_DASHBOARD_APPOINTMENT_FROM: 'Appointment from',
+  OWNER_DASHBOARD_APPOINTMENT_TO: 'Appointment to',
+  OWNER_DASHBOARD_DATE_ALL: 'All dates',
+  OWNER_DASHBOARD_STATUS: 'Status',
+  OWNER_DASHBOARD_STATUS_ALL: 'All statuses',
+  OWNER_DASHBOARD_BUSINESS: 'Business',
+  OWNER_DASHBOARD_BUSINESS_ALL: 'All businesses',
+  OWNER_DASHBOARD_CLEAR_FILTERS: 'Reset filters',
+  OWNER_DASHBOARD_SHOWING_COUNT: (shown: number, total: number) =>
+    `Showing ${shown} of ${total} bookings`,
+  /** Shown after the showing-count line when any filter or search is applied. */
+  OWNER_DASHBOARD_FILTERS_ACTIVE: 'Filters active',
+  OWNER_DASHBOARD_STATUS_OPTION_PENDING: 'Pending',
+  OWNER_DASHBOARD_STATUS_OPTION_CONFIRMED: 'Confirmed',
+  OWNER_DASHBOARD_STATUS_OPTION_REJECTED: 'Rejected',
+  OWNER_DASHBOARD_STATUS_OPTION_CANCELLED: 'Cancelled',
+  OWNER_DASHBOARD_NO_MATCH_FILTERS: 'No bookings match your filters.',
+  OWNER_DASHBOARD_NO_BOOKINGS: 'No bookings yet.',
+  OWNER_DASHBOARD_SEARCH_PLACEHOLDER: 'Search by name, booking ID, phone, business…',
+  /** Mobile pagination summary: noun after total count (lowercase). */
+  OWNER_DASHBOARD_PAGINATION_ITEMS_NOUN: 'bookings',
+  /** Mobile: toolbar icon to expand search. */
+  OWNER_DASHBOARD_MOBILE_OPEN_SEARCH: 'Open search',
+  /** Mobile: toolbar icon to open filters sheet. */
+  OWNER_DASHBOARD_MOBILE_OPEN_FILTERS: 'Open filters',
+  /** Mobile: filters bottom sheet title. */
+  OWNER_DASHBOARD_MOBILE_FILTERS_SHEET_TITLE: 'Filters',
+  /** Mobile: close filters sheet (primary action). */
+  OWNER_DASHBOARD_MOBILE_FILTERS_DONE: 'Done',
+  /** Mobile: dismiss filters overlay. */
+  OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY: 'Close filters',
+  /** Owner analytics: filter field labels and export. */
+  OWNER_ANALYTICS_START_DATE: 'Start date',
+  OWNER_ANALYTICS_END_DATE: 'End date',
+  OWNER_ANALYTICS_QUICK_RANGE: 'Quick range',
+  OWNER_ANALYTICS_EXPORT_CSV: 'Export CSV',
+  OWNER_ANALYTICS_EXPORTING: 'Exporting…',
+  /** Icon-only download: accessible name for CSV export. */
+  OWNER_ANALYTICS_DOWNLOAD_CSV_ARIA: 'Download analytics as CSV',
+  OWNER_ANALYTICS_PRESET_OVERALL: 'Overall',
+  OWNER_ANALYTICS_PRESET_TODAY: 'Today',
+  OWNER_ANALYTICS_PRESET_7D: '7 Days',
+  OWNER_ANALYTICS_PRESET_30D: '30 Days',
+  OWNER_ANALYTICS_PRESET_90D: '90 Days',
+  /** Analytics filters sheet: short hint under title. */
+  OWNER_ANALYTICS_FILTERS_HINT:
+    'Choose a business, date range, or quick preset. Download uses the selected range.',
+  OWNER_ANALYTICS_PAGE_TITLE: 'Analytics',
+  OWNER_ANALYTICS_PAGE_SUBTITLE: 'Track business performance, growth, and key trends.',
+  /** Analytics dashboard section headings (mobile layout grouping). */
+  OWNER_ANALYTICS_SECTION_KPIS: 'Overview',
+  OWNER_ANALYTICS_SECTION_TRENDS: 'Trends',
+  OWNER_ANALYTICS_SECTION_STATUS_PEAK: 'Status & peak hours',
+  OWNER_ANALYTICS_SECTION_SERVICES: 'Services',
+  OWNER_ANALYTICS_SERVICE_PERFORMANCE_TITLE: 'Service performance',
+  OWNER_ANALYTICS_SECTION_OPERATIONS: 'Operational health',
+  OWNER_ANALYTICS_OPERATIONAL_INTEL_TITLE: 'Operational intelligence',
+  OWNER_ANALYTICS_SVC_COL_SERVICE: 'Service',
+  OWNER_ANALYTICS_SVC_COL_BOOKINGS: 'Bookings',
+  OWNER_ANALYTICS_SVC_COL_REVENUE: 'Revenue',
+  OWNER_ANALYTICS_SVC_COL_AVG: 'Avg revenue',
+  OWNER_ANALYTICS_SVC_COL_CONV: 'Conversion',
+  /** Profile page: subsection heading — contact fields. */
+  PROFILE_SECTION_CONTACT: 'Contact',
+  /** Profile page: subsection heading — account metadata. */
+  PROFILE_SECTION_ACCOUNT: 'Account',
+  /** Profile page: initials avatar `aria-label` when name and email are missing. */
+  PROFILE_INITIALS_ARIA_FALLBACK: 'Your account',
+  /** Auth login (/auth/login): role-specific headings. */
+  AUTH_LOGIN_HEADING_OWNER: 'Sign in to create your business',
+  AUTH_LOGIN_DESC_OWNER:
+    'Create your booking page and start accepting appointments from customers.',
+  AUTH_LOGIN_HEADING_CUSTOMER: 'Sign in to book appointments',
+  AUTH_LOGIN_DESC_CUSTOMER: 'Access your bookings and book new appointments in one place.',
+  AUTH_LOGIN_HEADING_DEFAULT: 'Sign in to continue',
+  AUTH_LOGIN_DESC_DEFAULT: 'Sign in with Google to access your account.',
+  AUTH_LOGIN_CTA_GOOGLE: 'Continue with Google',
+  AUTH_LOGIN_TERMS_NOTICE: 'By signing in, you agree to our Terms of Service and Privacy Policy.',
+  AUTH_LOGIN_BACK_HOME: 'Back to home',
+} as const;
+
+/** Owner dashboard: mobile card list page size (desktop table is unpaginated). */
+export const OWNER_DASHBOARD_MOBILE_BOOKINGS_PER_PAGE = 10;
+
+/** Customer dashboard: favourite salons list — cards/table page size. */
+export const CUSTOMER_DASHBOARD_SALONS_PER_PAGE = 10;
+
+/** Customer explore salons (/customer/categories/salon) — pagination page size. */
+export const CUSTOMER_EXPLORE_SALONS_PER_PAGE = 10;
+
+/**
+ * Tailwind classes for primary screen titles (customer & owner shells and page headers).
+ */
+export const APP_SCREEN_TITLE_CLASSNAME =
+  'text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl';
+
+/** Customer-area imports (alias of APP_SCREEN_TITLE_CLASSNAME). */
+export const CUSTOMER_SCREEN_TITLE_CLASSNAME = APP_SCREEN_TITLE_CLASSNAME;
+
+/** Owner-area imports (alias of APP_SCREEN_TITLE_CLASSNAME). */
+export const OWNER_SCREEN_TITLE_CLASSNAME = APP_SCREEN_TITLE_CLASSNAME;
+
+/** Customer flow UI – generic, multi-service-ready copy. No category names. */
+export const UI_CUSTOMER = {
+  NAV_MY_ACTIVITY: 'My Activity',
+  NAV_EXPLORE_SERVICES: 'Explore Services',
+  NAV_PROFILE: 'Profile',
+  HEADER_MY_ACTIVITY: 'My Activity',
+  HEADER_MY_ACTIVITY_SUB: 'View and manage your appointments',
+  HEADER_EXPLORE_SERVICES: 'Explore Services',
+  HEADER_EXPLORE_SUB: 'Discover services near you',
+  HEADER_BROWSE_SUB: 'Find trusted providers in your area',
+  HEADER_PROFILE: 'My Profile',
+  HEADER_PROFILE_SUB: 'Manage your account and preferences',
+  HEADER_BOOKING_DETAILS: 'Appointment Details',
+  HEADER_BOOKING_DETAILS_SUB: 'View your appointment status',
+  STAT_TOTAL_APPOINTMENTS: 'Total Appointments',
+  STAT_UPCOMING: 'Upcoming',
+  STAT_COMPLETED: 'Completed',
+  SECTION_APPOINTMENTS: 'Your Favourite Salons',
+  /** Dashboard salon row/card field labels. */
+  DASHBOARD_SALON_FIELD_LOCATION: 'Location',
+  DASHBOARD_SALON_FIELD_OWNER: 'Owner',
+  DASHBOARD_SALON_FIELD_PHONE: 'Phone',
+  /** Pagination summary on customer dashboard salon list. */
+  DASHBOARD_PAGINATION_ITEMS_NOUN: 'salons',
+  /** Customer dashboard table (desktop). */
+  DASHBOARD_TABLE_COL_SALON: 'Salon name',
+  DASHBOARD_TABLE_COL_LOCATION: 'Location',
+  DASHBOARD_TABLE_COL_OWNER: 'Owner name',
+  DASHBOARD_TABLE_COL_PHONE: 'Phone number',
+  DASHBOARD_TABLE_COL_ACTIONS: 'Actions',
+  /** Deleted / inactive salon on customer dashboard. */
+  SALON_UNAVAILABLE: 'Unavailable',
+  EMPTY_ACTIVITY: "You don't have any appointments yet.",
+  CTA_EXPLORE_SERVICES: 'Explore Services',
+  DISCOVER_HEADING: 'Discover Services Near You',
+  DISCOVER_SUB: 'Choose a service to get started',
+  CATEGORY_CTA: 'View Providers',
+  SEARCH_PLACEHOLDER: 'Search by name or location',
+  RESULTS_COUNT: 'results found',
+  RESULT_COUNT: 'result found',
+  EMPTY_NO_MATCH: "We couldn't find any matches.",
+  EMPTY_TRY_FILTERS: 'Adjust filters or try a different search.',
+  CTA_ADJUST_FILTERS: 'Adjust filters',
+  PROVIDER_FALLBACK: 'Provider',
+  LABEL_BOOKING_ID: 'Appointment ID',
+  VIEW_DETAILS: 'View Details',
+  LABEL_YOUR_RATING: 'Your rating',
+  LABEL_NOT_RATED: 'Not rated',
+  LABEL_BUSINESS_RATING: 'Business rating',
+  RATE_YOUR_VISIT: 'Rate your visit',
+  SUBMIT_RATING: 'Submit rating',
+  SUBMITTING_RATING: 'Submitting...',
+  RATING_SUBMIT_FAILED: 'Failed to submit rating',
+  ADD_COMMENT_OPTIONAL: 'Add a comment (optional)',
+  REBOOK: 'Re-Book',
+  BREADCRUMB_BACK_EXPLORE: 'Back to Explore Services',
+  BOOK_PAGE_SUB: 'Book your appointment',
+  BOOKING_SENT_HEADING: 'Booking Request Sent!',
+  BOOKING_SENT_ID_LABEL: 'Your booking ID is:',
+  BOOKING_SENT_WHATSAPP_HINT:
+    'Click the button below to send your booking request to the salon owner on WhatsApp',
+  CTA_OPEN_WHATSAPP: 'Open WhatsApp',
+  CTA_VIEW_BOOKING_STATUS: 'View Booking Status',
+  BOOKING_SENT_CONFIRM_HINT:
+    'The salon owner will confirm your appointment and send you a confirmation message',
+  LABEL_YOUR_NAME: 'Your Name',
+  LABEL_PHONE_NUMBER: 'Phone Number',
+  LABEL_SELECT_DATE: 'Select Date',
+  LABEL_SELECT_TIME: 'Select Time',
+  LABEL_SELECT_SERVICE: 'Select Service',
+  PLACEHOLDER_NAME: 'John Doe',
+  PLACEHOLDER_PHONE: '10 digits',
+  /** Data URI for default avatar when no profile image (avoids 404 on missing /default-avatar.png). */
+  DEFAULT_AVATAR_DATA_URI:
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Ccircle fill='%23e5e7eb' cx='24' cy='24' r='24'/%3E%3Ccircle fill='%239ca3af' cx='24' cy='20' r='8'/%3E%3Cpath fill='%239ca3af' d='M12 40c0-6.6 5.4-12 12-12s12 5.4 12 12'/%3E%3C/svg%3E",
+  SLOT_VERIFYING: 'Verifying...',
+  SLOT_FULL: 'Full',
+  SUBMIT_BOOKING: 'Send Booking Request',
+  SUBMIT_BOOKING_LOADING: 'Creating Booking...',
+  /** Shown when unauthenticated user submits; we redirect to login to complete booking. */
+  SIGN_IN_TO_COMPLETE_BOOKING: 'Sign in to complete your booking',
+  SLOTS_NONE: 'No slots available for this date',
+  SLOT_NO_LONGER_AVAILABLE: 'Your selected slot is no longer available. Please select another.',
+  /** Customer salon detail (/customer/salon/[id]): gallery & history. */
+  SALON_DETAILS_SHOP_PHOTOS: 'Shop photos',
+  /** Breadcrumb when salon name not yet loaded. */
+  SALON_DETAILS_BREADCRUMB_FALLBACK: 'Salon details',
+  SALON_DETAILS_BOOKING_HISTORY: 'Booking history',
+  SALON_DETAILS_NO_PHOTOS: 'No shop photos yet.',
+  SALON_DETAILS_NO_BOOKINGS: "You don't have any bookings at this salon yet.",
+  SALON_HISTORY_FIELD_BOOKING_REF: 'Booking ID',
+  SALON_HISTORY_FIELD_DATE: 'Date',
+  SALON_HISTORY_FIELD_SLOT: 'Time',
+  SALON_HISTORY_FIELD_RATING: 'Rating',
+  SALON_HISTORY_STATUS_EXPIRED: 'Expired',
+  SALON_HISTORY_STATUS_CONFIRMED: 'Confirmed',
+  SALON_HISTORY_STATUS_PENDING: 'Pending',
+  SALON_HISTORY_STATUS_REJECTED: 'Rejected',
+  SALON_HISTORY_STATUS_CANCELLED: 'Cancelled',
+  /** Customer explore salons (/customer/categories/salon) — mobile toolbar & sheet. */
+  EXPLORE_MOBILE_OPEN_SEARCH: 'Open search',
+  EXPLORE_MOBILE_OPEN_FILTERS: 'Open filters and location',
+  EXPLORE_FILTERS_SHEET_TITLE: 'Filters',
+  EXPLORE_FILTERS_SHEET_HINT: 'Search salons, pick a location, or use your current position.',
+  EXPLORE_FILTER_LOCATION_LABEL: 'Locations',
+  EXPLORE_ALL_LOCATIONS: 'All locations',
+  EXPLORE_USE_MY_LOCATION: 'Use my location',
+  EXPLORE_FILTERS_DONE: 'Done',
+  EXPLORE_MOBILE_CLOSE_SHEET: 'Close',
+} as const;
+
+/** Contextual error messages (no internal details). */
+export const UI_ERROR_CONTEXT = {
+  BOOKING_PAGE: 'This slot may no longer be available.',
+  DASHBOARD_PAGE: 'Something went wrong. Try refreshing or return to dashboard.',
+  ACCEPT_REJECT_PAGE: 'This link may have expired or already been used.',
+  GENERIC: 'Something went wrong. Try again.',
+} as const;
+
+export const SECURE_LINK_RESPONSE_CODE = 'LINK_EXPIRED_OR_INVALID' as const;
+
+export const UI_LINK_EXPIRED = {
+  TITLE: 'Link expired or invalid',
+  MESSAGE: 'This link has expired, has already been used, or is no longer valid.',
+  NEXT_STEP: 'Go to your dashboard to manage bookings, or ask the customer to send a new request.',
+  CTA_HOME: 'Go to home',
+  CTA_DASHBOARD: 'Go to owner dashboard',
+} as const;
+
+/** Booking/reminder/cancellation hours are on env.booking (config/env.ts). */
+
+/** Owner undo: 5 min window. Undo allowed only once per accept/reject and only within this period; after undo or expiry the undo button is hidden. */
+export const UNDO_ACCEPT_REJECT_WINDOW_MINUTES = 5;
+
+/** Service name for structured metrics failure logs. */
+export const METRICS_SERVICE_NAME = 'cusown-api';
+
+/** Phase 3: Metric names for SRE. Alert if GET /api/health checks.cron_expire_bookings_last_run_ts is older than X minutes. */
+export const METRICS_CRON_EXPIRE_BOOKINGS_LAST_RUN = 'cron.expire_bookings.last_run_ts';
+export const METRICS_EXPIRED_BY_CRON = 'bookings.expired_by_cron';
+export const METRICS_EXPIRED_BY_LAZY_HEAL = 'bookings.expired_by_lazy_heal';
+
+/** Phase 4: Lifecycle metrics for dashboards (booking funnel, payment success). */
+export const METRICS_BOOKING_CREATED = 'booking_created';
+export const METRICS_BOOKING_CONFIRMED = 'booking_confirmed';
+export const METRICS_BOOKING_REJECTED = 'booking_rejected';
+export const METRICS_BOOKING_CANCELLED_USER = 'booking_cancelled_user';
+export const METRICS_BOOKING_CANCELLED_SYSTEM = 'booking_cancelled_system';
+export const METRICS_PAYMENT_CREATED = 'payment_created';
+export const METRICS_PAYMENT_SUCCEEDED = 'payment_succeeded';
+export const METRICS_PAYMENT_FAILED = 'payment_failed';
+
+/** Distributed booking: retry on deadlock/serialization (idempotent). */
+export const BOOKING_RETRY_MAX_ATTEMPTS = 3;
+export const BOOKING_RETRY_BACKOFF_MS = [50, 100, 200] as const;
+
+/** Observability: distributed booking metrics. */
+export const METRICS_BOOKING_CONFLICT_TOTAL = 'booking_conflict_total';
+export const METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL = 'observability.booking_attempt_total';
+export const METRICS_OBSERVABILITY_BOOKING_SUCCESS_TOTAL = 'observability.booking_success_total';
+export const METRICS_OBSERVABILITY_CANCELLATION_TOTAL = 'observability.cancellation_total';
+export const METRICS_OBSERVABILITY_SLOT_CONFLICT_TOTAL = 'observability.slot_conflict_total';
+export const METRICS_OBSERVABILITY_CRON_HEALTH_STATUS = 'observability.cron_health_status';
+export const METRICS_BOOKING_DEADLOCK_RETRY_TOTAL = 'booking_deadlock_retry_total';
+export const METRICS_EXPIRED_HOLD_CLEANUP_TOTAL = 'expired_hold_cleanup_total';
+export const METRICS_CRON_LOCK_SKIPPED_TOTAL = 'cron_lock_skipped_total';
+/** Refresh slot_generation lock every 2 min so long runs do not lose lock before TTL (10 min). */
+export const CRON_SLOT_GENERATION_LOCK_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+export const METRICS_INVALID_STATE_TRANSITION_TOTAL = 'invalid_state_transition_total';
+
+/** Fraud detection: risk score 0–100; flag accounts above threshold. */
+export const FRAUD_RISK_FLAG_THRESHOLD = 70;
+export const FRAUD_RISK_WEIGHT_CANCELLATION = 0.4;
+export const FRAUD_RISK_WEIGHT_ATTEMPT_RATE = 0.3;
+export const FRAUD_RISK_WEIGHT_ACCOUNTS_PER_IP = 0.3;
+export const FRAUD_BOOKING_ATTEMPT_RATE_CAP = 10;
+export const FRAUD_ACCOUNTS_PER_IP_CAP = 5;
+export const FRAUD_LOOKBACK_DAYS = 30;
+
+/** Observability: alert thresholds (configurable). */
+export const ALERT_CANCELLATION_RATIO_MAX = 0.5;
+export const ALERT_BOOKING_SUCCESS_RATE_MIN = 0.2;
+export const ALERT_CRON_HEALTH_STALE_MINUTES = 15;
+
+/** Phase 5: Rate limits (security). Booking creation per IP + per user. */
+export const RATE_LIMIT_BOOKING_WINDOW_MS = 60_000;
+export const RATE_LIMIT_BOOKING_MAX_PER_WINDOW = 10;
+/** Reviews: per user per hour. */
+export const RATE_LIMIT_REVIEW_WINDOW_MS = 60 * 60 * 1000;
+export const RATE_LIMIT_REVIEW_MAX_PER_WINDOW = 10;
+
+/** Profanity filter: blocked substrings (lowercase) for review comments. Expand as needed. */
+export const REVIEW_PROFANITY_WORDS: readonly string[] = [
+  'blockedword', // test fixture; add production terms as needed
+] as const;
+/** Phase 5: Admin endpoints   per user + per IP. */
+export const RATE_LIMIT_ADMIN_WINDOW_MS = 60_000;
+export const RATE_LIMIT_ADMIN_MAX_PER_WINDOW = 100;
+/** Media upload: per user + per IP to prevent abuse. */
+export const RATE_LIMIT_MEDIA_UPLOAD_WINDOW_MS = 60_000;
+export const RATE_LIMIT_MEDIA_UPLOAD_MAX_PER_WINDOW = 30;
+
+/** Geo: BigDataCloud free APIs (no API key). Rate limit per IP. */
+export const GEO_RATE_LIMIT_WINDOW_MS = 60_000;
+export const GEO_RATE_LIMIT_MAX_PER_WINDOW = 60;
+export const GEO_BIGDATACLOUD_BASE = 'https://api.bigdatacloud.net/data';
+/** Cache reverse-geocode and IP responses (seconds). */
+export const GEO_CACHE_MAX_AGE_SECONDS = 86400;
+
+/** User location: cookie name (signed, HTTP-only), max age 7 days, consider fresh if younger than this. */
+export const LOCATION_COOKIE_NAME = 'user_location';
+export const LOCATION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const LOCATION_FRESH_DAYS = 7;
+/** BigDataCloud: timeout (ms), max retries. */
+export const GEO_PROVIDER_TIMEOUT_MS = 3000;
+export const GEO_PROVIDER_MAX_RETRIES = 1;
+/** In-memory IP lookup cache: TTL (ms), max entries. */
+export const GEO_IP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+export const GEO_IP_CACHE_MAX_ENTRIES = 5000;
+/** Redis IP geo cache: TTL 24 hours (seconds). */
+export const GEO_IP_REDIS_TTL_SECONDS = 86400;
+/** Redis cache key prefix for IP geolocation. */
+export const GEO_IP_REDIS_PREFIX = 'geo:ip:';
+/** Redis cache for business search: TTL 5 minutes (seconds). */
+export const BUSINESS_SEARCH_REDIS_TTL_SECONDS = 300;
+/** Redis cache key prefix for business search. */
+export const BUSINESS_SEARCH_REDIS_PREFIX = 'search:biz:';
+export const GEO_SERVICE_NAME = 'geo_service';
+export const METRICS_GEO_DEGRADATION = 'geo.service.degradation';
+export const GEO_DEGRADATION_COOLDOWN_MS = 60_000;
+export const GEO_COOLDOWN_KEY = 'geo_provider';
+export const GEO_CIRCUIT_BREAKER_THRESHOLD = 3;
+export const METRICS_DISCOVERY_FALLBACK_GEO = 'discovery.fallback.geo_provider';
+export const METRICS_DISCOVERY_FALLBACK_RPC = 'discovery.fallback.rpc';
+
+/** Nearby/search: max businesses to enrich with routed distance (avoids N parallel routing calls). */
+export const ROUTING_ENRICH_MAX_BUSINESSES = 15;
+
+/** Business discovery: weighted ranking weights (multiplicative score factors). Sum need not equal 1. */
+export const DISCOVERY_WEIGHT_DISTANCE = 0.25;
+export const DISCOVERY_WEIGHT_RATING = 0.25;
+export const DISCOVERY_WEIGHT_AVAILABILITY = 0.2;
+export const DISCOVERY_WEIGHT_POPULARITY = 0.15;
+export const DISCOVERY_WEIGHT_REPEAT_CUSTOMER = 0.15;
+/** Rating scale max for normalization (e.g. 5 = 0–5 stars). */
+export const DISCOVERY_RATING_SCALE_MAX = 5;
+/** Cap for normalizing booking_count_30d to 0–1 (popularity). */
+export const DISCOVERY_POPULARITY_CAP = 100;
+/** Slot availability window (days ahead) for ratio. */
+export const DISCOVERY_SLOT_WINDOW_DAYS = 30;
+export const MAX_SEARCH_RADIUS_KM = 200;
+/** Search: default radius (km), pagination bounds. */
+export const DISCOVERY_DEFAULT_RADIUS_KM = 10;
+export const DISCOVERY_PAGE_MIN = 1;
+export const DISCOVERY_PAGE_MAX = 100;
+export const DISCOVERY_LIMIT_MIN = 1;
+export const DISCOVERY_LIMIT_MAX = 50;
+export const DISCOVERY_DEFAULT_LIMIT = 20;
+
+/** Smart recommendations: weighted scoring (simple sum of normalized components). */
+export const RECOMMENDATION_WEIGHT_PREVIOUSLY_BOOKED = 0.5;
+export const RECOMMENDATION_WEIGHT_FREQUENT_SERVICE = 0.25;
+export const RECOMMENDATION_WEIGHT_NEARBY_POPULAR = 0.25;
+/** Cache results per user (seconds). */
+export const RECOMMENDATION_CACHE_TTL_SECONDS = 300;
+/** Nearby popular: last N days of bookings. */
+export const RECOMMENDATION_NEARBY_DAYS = 30;
+export const RECOMMENDATION_PAGE_MIN = 1;
+export const RECOMMENDATION_PAGE_MAX = 20;
+export const RECOMMENDATION_LIMIT_MIN = 1;
+export const RECOMMENDATION_LIMIT_MAX = 30;
+export const RECOMMENDATION_DEFAULT_LIMIT = 10;
+export const RECOMMENDATION_DEFAULT_RADIUS_KM = 25;
+
+/** Geocoding: default Nominatim API base when NOMINATIM_URL is not set. */
+export const GEO_NOMINATIM_DEFAULT_BASE = 'https://nominatim.openstreetmap.org';
+/** OSM data: Geofabrik download site (documentation / external reference). */
+export const GEO_OSM_DOWNLOAD_REF = 'https://download.geofabrik.de/';
+
+/** Phase 5: Refund/cancellation policy (documentation; no product change). */
+export const REFUND_POLICY_NOTE = 'Refunds follow payment provider policy and business discretion.';
+
+/** Auth observability: every deny must emit these metrics (auth_denied vs auth_missing vs auth_invalid_token). */
+export const METRICS_AUTH_MISSING = 'auth_missing';
+export const METRICS_AUTH_DENIED = 'auth_denied';
+export const METRICS_AUTH_INVALID_TOKEN = 'auth_invalid_token';
+
+/** Admin analytics: max date range (days) and export row limit. */
+export const ADMIN_ANALYTICS_MAX_DAYS = 365;
+export const ADMIN_EXPORT_BOOKINGS_MAX_ROWS = 10_000;
+export const ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT = 20;
+export const ADMIN_DEFAULT_ANALYTICS_DAYS = 30;
+
+/** Admin overview: failed bookings and cron lookback (hours). */
+export const ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS = 24;
+export const ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS = 24;
+
+/** Cron run log: status values. */
+export const CRON_RUN_STATUS_SUCCESS = 'success';
+export const CRON_RUN_STATUS_FAILED = 'failed';
+
+/** Cron job names for run logging (must match route identifiers). */
+export const ACTION_LINK_USAGE_RETENTION_DAYS = 90;
+
+export const RATE_LIMIT_ACTION_LINK_WINDOW_MS = 60_000;
+export const RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW = 30;
+
+export const SECURE_LINK_INVALID_RESPONSE_DELAY_MS = 80;
+
+export const CRON_JOB_NAMES = [
+  'expire-bookings',
+  'expire-payments',
+  'prune-idempotency',
+  'cleanup-reservations',
+  'send-reminders',
+  'trim-metric-timings',
+  'health-check',
+  'purge-soft-deleted-media',
+  'mark-no-show',
+  'cleanup-action-link-usage',
+  'cleanup-geo-cooldown',
+] as const;
+export type CronJobName = (typeof CRON_JOB_NAMES)[number];
+
+/** Auth event types for optional logging. */
+export const AUTH_EVENT_LOGIN_SUCCESS = 'login_success';
+export const AUTH_EVENT_LOGIN_FAILED = 'login_failed';
+export const AUTH_EVENT_LOGOUT = 'logout';
+
+/** Audit: structured action types by domain. Only state-changing or security-relevant events. */
+export const AUDIT_ACTIONS = {
+  BOOKING: [
+    'booking_created',
+    'booking_confirmed',
+    'booking_rejected',
+    'booking_cancelled',
+    'booking_rescheduled',
+    'booking_no_show',
+    'booking_updated',
+    'booking_undo_accept',
+    'booking_undo_reject',
+  ],
+  BUSINESS: ['business_created', 'business_updated', 'business_deleted', 'business_suspended'],
+  USER: [
+    'user_created',
+    'user_updated',
+    'user_deleted',
+    'role_changed',
+    'admin_login',
+    'admin_access_denied',
+    'login_success',
+    'login_failed',
+    'password_reset',
+    'role_upgraded',
+    'profile_image_updated',
+  ],
+  PAYMENT: ['payment_created', 'payment_succeeded', 'payment_failed', 'payment_refunded'],
+  SYSTEM: [
+    'notification_sent',
+    'data_corrected',
+    'data_correction',
+    'system_config_changed',
+    'config_updated',
+    'admin_revenue_export',
+    'cron_failed',
+    'cron_recovered',
+  ],
+  SLOT: ['slot_reserved', 'slot_released', 'slot_booked', 'slots_generated'],
+  MEDIA: ['media_uploaded', 'media_deleted'],
+  DELETION: ['soft_delete', 'restore', 'hard_delete'],
+  REVIEW: ['review_created', 'review_prompt_ignored'],
+  SERVICE: ['service_created', 'service_updated', 'service_deleted'],
+} as const;
+
+export const AUDIT_SEVERITY = {
+  INFO: 'info',
+  WARNING: 'warning',
+  CRITICAL: 'critical',
+} as const;
+export type AuditSeverity = (typeof AUDIT_SEVERITY)[keyof typeof AUDIT_SEVERITY];
+
+export const AUDIT_ENTITY_TYPES = [
+  'business',
+  'user',
+  'booking',
+  'system',
+  'slot',
+  'payment',
+] as const;
+export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
+
+export const AUDIT_STATUS = { SUCCESS: 'success', FAILED: 'failed' } as const;
+export type AuditStatus = (typeof AUDIT_STATUS)[keyof typeof AUDIT_STATUS];
+
+/** Admin audit log filter validation messages (shown as notes, not errors). */
+export const AUDIT_FILTER_NOTES = {
+  INVALID_ACTOR_ID: 'Actor ID must be a valid UUID. Filter not applied.',
+  INVALID_ENTITY_TYPE: 'Invalid entity type. Filter not applied.',
+  INVALID_SEVERITY: 'Invalid severity. Filter not applied.',
+  INVALID_START_TIME: 'Invalid start time. Filter not applied.',
+  INVALID_END_TIME: 'Invalid end time. Filter not applied.',
+  START_AFTER_END: 'Start time must be before end time. Date range not applied.',
+} as const;
+
+/** Design tokens: Tailwind classes for audit severity (badge/pill). */
+export const AUDIT_SEVERITY_STYLE: Record<AuditSeverity, string> = {
+  [AUDIT_SEVERITY.INFO]: 'bg-sky-100 text-sky-800 border-sky-200',
+  [AUDIT_SEVERITY.WARNING]: 'bg-amber-100 text-amber-800 border-amber-200',
+  [AUDIT_SEVERITY.CRITICAL]: 'bg-rose-100 text-rose-800 border-rose-200',
+};
+
+/** Design tokens: Tailwind classes for audit status (badge/pill). */
+export const AUDIT_STATUS_STYLE: Record<AuditStatus, string> = {
+  [AUDIT_STATUS.SUCCESS]: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  [AUDIT_STATUS.FAILED]: 'bg-rose-100 text-rose-800 border-rose-200',
+};
+
+/** Fallback style for unknown severity/status. */
+export const AUDIT_STYLE_NEUTRAL = 'bg-slate-100 text-slate-700 border-slate-200';
+
+export const ADMIN_DELETION_OUTCOME = {
+  SUCCESS: 'success',
+  BLOCKED: 'blocked',
+  ALREADY_DELETED: 'already_deleted',
+} as const;
+
+/** Dedupe: skip insert if same action_type + entity_id + actor_id within this window (ms). */
+export const AUDIT_DEDUPE_WINDOW_MS = 5000;
+
+/** Backend performance: cache TTL and API cache size. */
+export const CACHE_TTL_AUTH_MS = 5 * 60 * 1000; // 5 min auth verification cache
+export const CACHE_TTL_API_DEFAULT_MS = 60 * 1000; // 1 min for mutable GETs
+export const CACHE_TTL_API_LONG_MS = 300 * 1000; // 5 min for stable GETs
+/** Static metadata (e.g. categories): 10 min. */
+export const CACHE_TTL_STATIC_MS = 10 * 60 * 1000;
+/** Booking lookup: short TTL so status updates are visible. */
+export const CACHE_TTL_BOOKING_MS = 30 * 1000;
+/** Prefetch debounce: prevent rapid repeated prefetches. */
+export const PREFETCH_DEBOUNCE_MS = 5000;
+/** Search results: 60 s. */
+export const CACHE_TTL_SEARCH_MS = 60 * 1000;
+export const CACHE_STALE_GRACE_MS = 30 * 1000; // Serve stale up to 30s while revalidating (API)
+export const API_CACHE_MAX_KEYS = 500;
+
+/** Redis cache TTL in seconds (for use with ioredis SETEX). */
+export const REDIS_CACHE_TTL = {
+  /** Public data (categories, public business lists): 5 min */
+  PUBLIC: 300,
+  /** Dashboard stats (owner/admin metrics): 30s for freshness */
+  DASHBOARD: 30,
+  /** Slots availability: 10s (real-time sensitive) */
+  SLOTS: 10,
+  /** Business profiles: 10 min */
+  BUSINESS_PROFILE: 600,
+  /** User profiles/auth data: 5 min */
+  USER_PROFILE: 300,
+  /** Search results: 60s */
+  SEARCH: 60,
+  /** Static metadata (categories, config): 10 min */
+  STATIC: 600,
+  /** Session/auth cache: 5 min */
+  SESSION: 300,
+  /** Booking details: 30s (status changes frequently) */
+  BOOKING: 30,
+} as const;
+
+/** Redis cache key prefixes for namespacing. */
+export const REDIS_CACHE_PREFIX = {
+  BUSINESS: 'business:',
+  SLOTS: 'slots:',
+  BOOKING: 'booking:',
+  USER: 'user:',
+  DASHBOARD: 'dashboard:',
+  SEARCH: 'search:',
+  STATIC: 'static:',
+  SESSION: 'session:',
+  CATEGORIES: 'categories:',
+} as const;
+export const SLOW_REQUEST_MS = 200; // Log and flag requests above this
+export const API_PAGINATION_DEFAULT_LIMIT = 25;
+export const API_PAGINATION_MAX_LIMIT = 100;
+
+/** Max bookings per list response (salon/customer) to avoid oversized payloads and timeouts. */
+export const BOOKING_LIST_MAX_PAGE_SIZE = 500;
+
+/** Client admin cache: TTL, stale grace, max entries (no hardcoded values in components). */
+export const ADMIN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+export const ADMIN_CACHE_STALE_GRACE_MS = 10 * 60 * 1000; // 10 min serve stale
+export const ADMIN_CACHE_MAX_ENTRIES = 10;
+
+/** Token bucket rate limit: capacity and refill per second. */
+export const TOKEN_BUCKET_CAPACITY = 100;
+export const TOKEN_BUCKET_REFILL_PER_SEC = 20;
+export const TOKEN_BUCKET_ADMIN_CAPACITY = 80;
+export const TOKEN_BUCKET_ADMIN_REFILL_PER_SEC = 15;
+export const TOKEN_BUCKET_EXPORT_CAPACITY = 10;
+export const TOKEN_BUCKET_EXPORT_REFILL_PER_SEC = 1;
+/** Auth endpoints (login initiation): stricter to prevent abuse. */
+export const TOKEN_BUCKET_AUTH_CAPACITY = 10;
+export const TOKEN_BUCKET_AUTH_REFILL_PER_SEC = 0.5;
+
+/** Export: rate limit tier (max date range uses ADMIN_ANALYTICS_MAX_DAYS). */
+export const EXPORT_RATE_LIMIT_REQUESTS_PER_MIN = 5;
+
+/** Idempotency: header name and feature flag. */
+export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
+/** Booking create: require this header for idempotent create. */
+export const BOOKING_IDEMPOTENCY_HEADER = 'x-idempotency-key';
+export const IDEMPOTENCY_ENABLED = true;
+
+/** Client retry: single retry with backoff (ms). */
+export const CLIENT_RETRY_BACKOFF_MS = 500;
+/** Admin fetch: max number of retries (0 = no retry, 1 = one retry after first attempt). Never unlimited. */
+export const ADMIN_FETCH_MAX_RETRIES = 1;
+
+/** Client: booking status polling interval (ms). */
+export const BOOKING_STATUS_POLL_INTERVAL_MS = 5000;
+
+/** Admin session: proactive refresh interval so token stays valid. */
+export const ADMIN_SESSION_REFRESH_INTERVAL_MS = 55 * 60 * 1000; // 55 min (before default 1h JWT expiry)
+/** Auth cookie max-age (seconds) so admin can stay logged in 24h. Set JWT expiry to 86400 in Supabase Dashboard for 24h. */
+export const AUTH_COOKIE_MAX_AGE_SECONDS = 86400; // 24 hours
+
+/** Pending role during OAuth: set on login when ?role=, read/cleared in callback only. Never override admin. */
+export const AUTH_PENDING_ROLE_COOKIE = 'cusown_pending_role';
+export const AUTH_PENDING_ROLE_MAX_AGE_SECONDS = 300; // 5 min
+
+/** Pending booking (public book flow): set before redirect to login, read/cleared on /book/complete. */
+export const PENDING_BOOKING_COOKIE = 'cusown_pending_booking';
+export const PENDING_BOOKING_TTL_SECONDS = 600; // 10 min
+
+/** Client: debounce Supabase auth refresh_token requests to avoid 429. */
+export const AUTH_REFRESH_DEBOUNCE_MS = 60_000; // 1 min
+
+/** Media: allowed image MIME types (no executables). */
+export const MEDIA_ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+] as const;
+export type MediaAllowedMimeType = (typeof MEDIA_ALLOWED_MIME_TYPES)[number];
+
+/** Media: max file size in bytes (10 MB). */
+export const MEDIA_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+/** Media: max business images per business. */
+export const MEDIA_MAX_BUSINESS_IMAGES = 20;
+/** Media: entity types for DB. */
+export const MEDIA_ENTITY_TYPES = ['business', 'profile'] as const;
+export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
+
+/** Media: idempotency resource types (must match DB). */
+export const MEDIA_IDEMPOTENCY_RESOURCE_PROFILE = 'media_profile';
+export const MEDIA_IDEMPOTENCY_RESOURCE_BUSINESS = 'media_business';
+
+/** Media: processing status for variants pipeline. */
+export const MEDIA_PROCESSING_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+} as const;
+
+/** Media: security log event types (anomaly detection). */
+export const MEDIA_SECURITY_EVENTS = {
+  UPLOAD_FAILED: 'upload_failed',
+  MIME_MISMATCH: 'mime_mismatch',
+  MAGIC_BYTE_REJECT: 'magic_byte_reject',
+  SIZE_ABUSE: 'size_abuse',
+  DUPLICATE_REJECT: 'duplicate_reject',
+  REPEATED_FAILURES: 'repeated_failures',
+  CIRCUIT_OPEN: 'circuit_open',
+} as const;
+
+/** Media: metrics names for observability. */
+export const METRICS_MEDIA_UPLOAD_SUCCESS = 'media.upload.success';
+export const METRICS_MEDIA_UPLOAD_FAILURE = 'media.upload.failure';
+export const METRICS_MEDIA_UPLOAD_DURATION_MS = 'media.upload.duration_ms';
+export const METRICS_MEDIA_SIGNED_URL_GENERATED = 'media.signed_url.generated';
+export const METRICS_MEDIA_SIGNED_URL_DURATION_MS = 'media.signed_url.duration_ms';
+export const METRICS_MEDIA_STORAGE_LATENCY_MS = 'media.storage.latency_ms';
+export const METRICS_MEDIA_PURGE_COUNT = 'media.purge.count';
+export const METRICS_MEDIA_ORPHAN_CLEANUP_COUNT = 'media.orphan_cleanup.count';
+
+/** Media: circuit breaker   failures in window before opening. */
+export const MEDIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD = 10;
+export const MEDIA_CIRCUIT_BREAKER_WINDOW_MS = 60_000;
+export const MEDIA_CIRCUIT_BREAKER_COOLDOWN_MS = 120_000;
+
+/** Media: signed URL short TTL (seconds) for strict mode. */
+export const MEDIA_SIGNED_URL_TTL_SHORT_SECONDS = 300;
+/** Media: default retention days for soft-deleted before hard purge. */
+export const MEDIA_RETENTION_DAYS_SOFT_DELETED = 30;
+
+/** Media: cache-control for signed URL responses (CDN/client). */
+export const MEDIA_CACHE_CONTROL_HEADER = 'private, max-age=3600, stale-while-revalidate=86400';
+
+/** Role names stored in DB (roles.name) and in user_roles. No "both" - use multiple roles. */
+export const ROLES = ['customer', 'owner', 'admin'] as const;
+export type RoleName = (typeof ROLES)[number];
+
+/** Stable role IDs used by RBAC (must match DB seeds/migrations). */
+export const ROLE_IDS = {
+  owner: '00000000-0000-4000-8000-000000000001',
+  customer: '00000000-0000-4000-8000-000000000002',
+  admin: '00000000-0000-4000-8000-000000000003',
+} as const;
+
+/** Capabilities for layout/route access. Derive from roles; do not check role directly. */
+export const CAPABILITIES = {
+  ACCESS_ADMIN_DASHBOARD: 'access:admin_dashboard',
+  ACCESS_OWNER_DASHBOARD: 'access:owner_dashboard',
+  ACCESS_CUSTOMER_DASHBOARD: 'access:customer_dashboard',
+  ACCESS_SETUP: 'access:setup',
+} as const;
+export type CapabilityName = (typeof CAPABILITIES)[keyof typeof CAPABILITIES];
+
+/** Role → capabilities. Admin has all; owner/customer only their own unless both roles. */
+export const ROLE_CAPABILITIES: Record<RoleName, CapabilityName[]> = {
+  admin: [
+    CAPABILITIES.ACCESS_ADMIN_DASHBOARD,
+    CAPABILITIES.ACCESS_OWNER_DASHBOARD,
+    CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD,
+    CAPABILITIES.ACCESS_SETUP,
+  ],
+  owner: [CAPABILITIES.ACCESS_OWNER_DASHBOARD, CAPABILITIES.ACCESS_SETUP],
+  customer: [CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD],
+};
+
+export const STRESS_TEST_DEFAULT_CONCURRENT_USERS = 20;
+export const STRESS_TEST_DEFAULT_DURATION_SEC = 60;
+export const STRESS_TEST_DEFAULT_REQUESTS_PER_SEC = 10;
+export const STRESS_TEST_DEFAULT_MIN_BUSINESSES = 1;
+export const STRESS_TEST_DEFAULT_MIN_SLOTS = 5;
+export const STRESS_TEST_LOG_INTERVAL_MS = 5000;
+export const STRESS_MONITOR_INTERVAL_MS = 5000;
+export const STRESS_EVENT_LOOP_LAG_THRESHOLD_MS = 500;
+export const STRESS_CPU_LIMIT_PCT = 95;
+export const STRESS_CPU_SUSTAINED_SAMPLES = 3;
+export const STRESS_POOL_EXHAUSTION_PCT = 95;
+
+/** Performance monitoring: Web Vitals thresholds (ms, except CLS which is a score). */
+export const PERF_THRESHOLD_LCP_GOOD_MS = 2500;
+export const PERF_THRESHOLD_LCP_POOR_MS = 4000;
+export const PERF_THRESHOLD_FID_GOOD_MS = 100;
+export const PERF_THRESHOLD_FID_POOR_MS = 300;
+export const PERF_THRESHOLD_CLS_GOOD = 0.1;
+export const PERF_THRESHOLD_CLS_POOR = 0.25;
+export const PERF_THRESHOLD_FCP_GOOD_MS = 1800;
+export const PERF_THRESHOLD_FCP_POOR_MS = 3000;
+export const PERF_THRESHOLD_TTFB_GOOD_MS = 800;
+export const PERF_THRESHOLD_TTFB_POOR_MS = 1800;
+
+/** Performance monitoring: API latency thresholds (ms). */
+export const PERF_THRESHOLD_API_GOOD_MS = 200;
+export const PERF_THRESHOLD_API_POOR_MS = 500;
+export const PERF_THRESHOLD_API_CRITICAL_MS = 2000;
+
+/** Performance monitoring: Hydration thresholds (ms). */
+export const PERF_THRESHOLD_HYDRATION_GOOD_MS = 500;
+export const PERF_THRESHOLD_HYDRATION_POOR_MS = 1500;
+
+/** Performance monitoring: Sample rate in production (0.0-1.0). */
+export const PERF_SAMPLE_RATE_PRODUCTION = 0.1;
+/** Performance monitoring: Batch size before sending metrics. */
+export const PERF_METRICS_BATCH_SIZE = 10;
+/** Performance monitoring: Flush interval (ms). */
+export const PERF_METRICS_FLUSH_INTERVAL_MS = 5000;

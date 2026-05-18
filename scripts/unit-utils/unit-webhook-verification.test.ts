@@ -5,7 +5,7 @@ import {
   verifyRazorpayWebhook,
   verifyStripeWebhook,
   getWebhookSecret,
-} from '../../lib/security/webhook-verification';
+} from '@/lib/security/webhook-verification';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

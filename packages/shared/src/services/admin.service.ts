@@ -1,0 +1,883 @@
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { cronRunService } from './cron-run.service';
+import { adminAnalyticsService } from './admin-analytics.service';
+import {
+  ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS,
+  ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS,
+} from '@cusown/config';
+
+export interface PlatformMetrics {
+  totalBusinesses: number;
+  activeBusinesses: number;
+  suspendedBusinesses: number;
+  totalOwners: number;
+  totalCustomers: number;
+  totalBookings: number;
+  confirmedBookings: number;
+  rejectedBookings: number;
+  pendingBookings: number;
+  cancelledBookings: number;
+  bookingsToday: number;
+  bookingsThisWeek: number;
+  bookingsThisMonth: number;
+  growthRate: {
+    businesses: number;
+    bookings: number;
+    owners: number;
+  };
+}
+
+export interface BusinessWithOwner {
+  owner?: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    user_type: string;
+  } | null;
+  bookingCount?: number;
+  recentBookings?: any[];
+}
+
+export interface AdminOverview {
+  bookingsToday: number;
+  bookingsLast7Days: number;
+  bookingsLast30Days: number;
+  totalUsers: number;
+  totalBusinesses: number;
+  failedBookingsLast24h: number;
+  cronRunsLast24h: number;
+  systemHealth: {
+    status: 'healthy' | 'unhealthy';
+    database: string;
+    cronExpireBookingsOk: boolean;
+    cronExpireBookingsLastRun: string | null;
+  };
+}
+
+export class AdminService {
+  /**
+   * Aggregated overview for admin dashboard: bookings, users, businesses, failed bookings, cron activity, health.
+   */
+  async getAdminOverview(): Promise<AdminOverview> {
+    const metrics = await this.getPlatformMetrics();
+    const systemMetrics = await adminAnalyticsService.getSystemMetrics();
+
+    const since24h = new Date();
+    since24h.setHours(since24h.getHours() - ADMIN_OVERVIEW_FAILED_BOOKINGS_HOURS);
+    const cronSince = new Date();
+    cronSince.setHours(cronSince.getHours() - ADMIN_OVERVIEW_CRON_LOOKBACK_HOURS);
+
+    let failedBookingsLast24h = 0;
+    let cronRunsLast24h = 0;
+
+    try {
+      const supabase = requireSupabaseAdmin();
+      const countOpt = { count: 'exact' as const, head: true };
+      const failedBookingsRes = await supabase
+        .from('bookings')
+        .select('id', countOpt)
+        .eq('status', 'rejected')
+        .gte('updated_at', since24h.toISOString());
+      failedBookingsLast24h = failedBookingsRes?.count ?? 0;
+    } catch {
+      // table or query error; use 0
+    }
+
+    try {
+      const cronRunsResult = await cronRunService.getCronRuns({
+        start_date: cronSince.toISOString(),
+        limit: 1000,
+        offset: 0,
+      });
+      cronRunsLast24h = cronRunsResult.total;
+    } catch {
+      // cron_run_logs may not exist yet; use 0
+    }
+
+    return {
+      bookingsToday: metrics.bookingsToday,
+      bookingsLast7Days: metrics.bookingsThisWeek,
+      bookingsLast30Days: metrics.bookingsThisMonth,
+      totalUsers: metrics.totalOwners + metrics.totalCustomers,
+      totalBusinesses: metrics.totalBusinesses,
+      failedBookingsLast24h,
+      cronRunsLast24h,
+      systemHealth: {
+        status: systemMetrics.cronExpireBookingsOk ? 'healthy' : 'unhealthy',
+        database: 'up',
+        cronExpireBookingsOk: systemMetrics.cronExpireBookingsOk,
+        cronExpireBookingsLastRun: systemMetrics.cronExpireBookingsLastRun,
+      },
+    };
+  }
+
+  async getPlatformMetrics(): Promise<PlatformMetrics> {
+    const supabase = requireSupabaseAdmin();
+    const today = new Date().toISOString().split('T')[0];
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const countOpt = { count: 'exact' as const, head: true };
+    const selectId = 'id';
+
+    const [
+      totalBusinessesRes,
+      activeBusinessesRes,
+      suspendedBusinessesRes,
+      totalOwnersRes,
+      totalCustomersRes,
+      totalBookingsRes,
+      confirmedBookingsRes,
+      rejectedBookingsRes,
+      pendingBookingsRes,
+      cancelledBookingsRes,
+      bookingsTodayRes,
+      bookingsThisWeekRes,
+      bookingsThisMonthRes,
+      businessesLast30Res,
+      businessesPrev30Res,
+      bookingsLast30Res,
+      bookingsPrev30Res,
+      ownersLast30Res,
+      ownersPrev30Res,
+    ] = await Promise.all([
+      supabase.from('businesses').select(selectId, countOpt),
+      supabase.from('businesses').select(selectId, countOpt).eq('suspended', false),
+      supabase.from('businesses').select(selectId, countOpt).eq('suspended', true),
+      supabase
+        .from('user_profiles')
+        .select(selectId, countOpt)
+        .in('user_type', ['owner', 'both', 'admin']),
+      supabase
+        .from('user_profiles')
+        .select(selectId, countOpt)
+        .in('user_type', ['customer', 'both']),
+      supabase.from('bookings').select(selectId, countOpt),
+      supabase.from('bookings').select(selectId, countOpt).eq('status', 'confirmed'),
+      supabase.from('bookings').select(selectId, countOpt).eq('status', 'rejected'),
+      supabase.from('bookings').select(selectId, countOpt).eq('status', 'pending'),
+      supabase.from('bookings').select(selectId, countOpt).eq('status', 'cancelled'),
+      supabase.from('bookings').select(selectId, countOpt).gte('created_at', `${today}T00:00:00Z`),
+      supabase.from('bookings').select(selectId, countOpt).gte('created_at', weekAgo.toISOString()),
+      supabase
+        .from('bookings')
+        .select(selectId, countOpt)
+        .gte('created_at', monthAgo.toISOString()),
+      supabase
+        .from('businesses')
+        .select(selectId, countOpt)
+        .gte('created_at', thirtyDaysAgo.toISOString()),
+      supabase
+        .from('businesses')
+        .select(selectId, countOpt)
+        .gte('created_at', sixtyDaysAgo.toISOString())
+        .lt('created_at', thirtyDaysAgo.toISOString()),
+      supabase
+        .from('bookings')
+        .select(selectId, countOpt)
+        .gte('created_at', thirtyDaysAgo.toISOString()),
+      supabase
+        .from('bookings')
+        .select(selectId, countOpt)
+        .gte('created_at', sixtyDaysAgo.toISOString())
+        .lt('created_at', thirtyDaysAgo.toISOString()),
+      supabase
+        .from('user_profiles')
+        .select(selectId, countOpt)
+        .in('user_type', ['owner', 'both', 'admin'])
+        .gte('created_at', thirtyDaysAgo.toISOString()),
+      supabase
+        .from('user_profiles')
+        .select(selectId, countOpt)
+        .in('user_type', ['owner', 'both', 'admin'])
+        .gte('created_at', sixtyDaysAgo.toISOString())
+        .lt('created_at', thirtyDaysAgo.toISOString()),
+    ]);
+
+    const n = (r: { count?: number | null }) => r?.count ?? 0;
+    const totalBusinesses = n(totalBusinessesRes);
+    const activeBusinesses = n(activeBusinessesRes);
+    const suspendedBusinesses = n(suspendedBusinessesRes);
+    const totalOwners = n(totalOwnersRes);
+    const totalCustomers = n(totalCustomersRes);
+    const totalBookings = n(totalBookingsRes);
+    const confirmedBookings = n(confirmedBookingsRes);
+    const rejectedBookings = n(rejectedBookingsRes);
+    const pendingBookings = n(pendingBookingsRes);
+    const cancelledBookings = n(cancelledBookingsRes);
+    const bookingsToday = n(bookingsTodayRes);
+    const bookingsThisWeek = n(bookingsThisWeekRes);
+    const bookingsThisMonth = n(bookingsThisMonthRes);
+    const businessesLast30 = n(businessesLast30Res);
+    const businessesPrev30 = n(businessesPrev30Res);
+    const bookingsLast30 = n(bookingsLast30Res);
+    const bookingsPrev30 = n(bookingsPrev30Res);
+    const ownersLast30 = n(ownersLast30Res);
+    const ownersPrev30 = n(ownersPrev30Res);
+
+    const calculateGrowthRate = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    return {
+      totalBusinesses,
+      activeBusinesses,
+      suspendedBusinesses,
+      totalOwners,
+      totalCustomers,
+      totalBookings,
+      confirmedBookings,
+      rejectedBookings,
+      pendingBookings,
+      cancelledBookings,
+      bookingsToday,
+      bookingsThisWeek,
+      bookingsThisMonth,
+      growthRate: {
+        businesses: calculateGrowthRate(businessesLast30, businessesPrev30),
+        bookings: calculateGrowthRate(bookingsLast30, bookingsPrev30),
+        owners: calculateGrowthRate(ownersLast30, ownersPrev30),
+      },
+    };
+  }
+
+  async getAllBusinesses(): Promise<BusinessWithOwner[]> {
+    const supabase = requireSupabaseAdmin();
+
+    const { data: businesses, error } = await supabase
+      .from('businesses')
+      .select(
+        'id, owner_user_id, salon_name, booking_link, address, location, suspended, created_at, deleted_at, permanent_deletion_at, deletion_reason'
+      )
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch businesses: ${error.message}`);
+    }
+
+    if (!businesses?.length) return [];
+
+    const businessIds = businesses.map((b) => b.id);
+    const ownerIds = [
+      ...new Set(businesses.map((b) => b.owner_user_id).filter(Boolean)),
+    ] as string[];
+
+    const [profilesRes, bookingCountsRes, recentBookingsRes, authUsersRes] = await Promise.all([
+      ownerIds.length > 0
+        ? supabase.from('user_profiles').select('id, user_type, full_name').in('id', ownerIds)
+        : Promise.resolve({ data: [] }),
+      supabase.from('bookings').select('business_id').in('business_id', businessIds),
+      supabase
+        .from('bookings')
+        .select('business_id, id, customer_name, status, created_at')
+        .in('business_id', businessIds)
+        .order('created_at', { ascending: false })
+        .limit(Math.min(500, businesses.length * 5)),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
+
+    const profileMap = new Map<
+      string,
+      { id: string; user_type: string; full_name: string | null }
+    >();
+    (profilesRes.data || []).forEach((p) => profileMap.set(p.id, p));
+
+    const countByBusiness = new Map<string, number>();
+    (bookingCountsRes.data || []).forEach((r) => {
+      countByBusiness.set(r.business_id, (countByBusiness.get(r.business_id) ?? 0) + 1);
+    });
+
+    const recentByBusiness = new Map<
+      string,
+      {
+        id: string;
+        customer_name: string;
+        status: string;
+        created_at: string;
+      }[]
+    >();
+    (recentBookingsRes.data || []).forEach((r) => {
+      const list = recentByBusiness.get(r.business_id) ?? [];
+      if (list.length < 5)
+        list.push({
+          id: r.id,
+          customer_name: r.customer_name,
+          status: r.status,
+          created_at: r.created_at,
+        });
+      recentByBusiness.set(r.business_id, list);
+    });
+
+    const emailByOwnerId = new Map<string, string>();
+    for (const u of authUsersRes.data?.users ?? []) {
+      if (u.id && u.email) emailByOwnerId.set(u.id, u.email);
+    }
+
+    return businesses.map((business) => {
+      let owner: BusinessWithOwner['owner'] = null;
+      if (business.owner_user_id) {
+        const profile = profileMap.get(business.owner_user_id);
+        if (profile) {
+          owner = {
+            id: profile.id,
+            email: emailByOwnerId.get(business.owner_user_id) ?? '',
+            full_name: profile.full_name,
+            user_type: profile.user_type,
+          };
+        }
+      }
+      return {
+        ...business,
+        owner,
+        bookingCount: countByBusiness.get(business.id) ?? 0,
+        recentBookings: recentByBusiness.get(business.id) ?? [],
+      };
+    });
+  }
+
+  /**
+   * List users for admin auth management: email, role, created_at, last_sign_in_at, status.
+   * Filters: role (user_type), status (active|banned), email (substring).
+   * Optimized to use batch auth user lookup via listUsers.
+   */
+  async getAuthManagementUsers(filters?: {
+    limit?: number;
+    offset?: number;
+    role?: string;
+    status?: 'active' | 'banned';
+    email?: string;
+  }): Promise<{ users: any[]; total: number }> {
+    const supabase = requireSupabaseAdmin();
+    const limit = Math.min(100, Math.max(1, filters?.limit ?? 25));
+    const offset = Math.max(0, filters?.offset ?? 0);
+
+    let profileQuery = supabase
+      .from('user_profiles')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    if (filters?.role) {
+      profileQuery = profileQuery.eq('user_type', filters.role);
+    }
+
+    const [profilesRes, authUsersRes] = await Promise.all([
+      profileQuery.range(offset, offset + limit - 1),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
+
+    if (profilesRes.error) {
+      throw new Error(`Failed to fetch users: ${profilesRes.error.message}`);
+    }
+
+    const profiles = profilesRes.data ?? [];
+    const count = profilesRes.count ?? 0;
+
+    if (!profiles.length) {
+      return { users: [], total: count };
+    }
+
+    const authById = new Map<
+      string,
+      { email: string; last_sign_in_at: string | null; banned: boolean }
+    >();
+    for (const u of authUsersRes.data?.users ?? []) {
+      if (!u.id) continue;
+      const banned =
+        typeof (u as { banned_until?: string }).banned_until === 'string' &&
+        (u as { banned_until: string }).banned_until !== null;
+      authById.set(u.id, {
+        email: u.email ?? '',
+        last_sign_in_at: (u as { last_sign_in_at?: string }).last_sign_in_at ?? null,
+        banned,
+      });
+    }
+
+    let combined = profiles.map((p) => {
+      const auth = authById.get(p.id);
+      return {
+        id: p.id,
+        email: auth?.email ?? '',
+        role: p.user_type,
+        created_at: p.created_at,
+        last_sign_in_at: auth?.last_sign_in_at ?? null,
+        status: auth?.banned ? 'banned' : 'active',
+        full_name: p.full_name,
+        user_type: p.user_type,
+      };
+    });
+
+    if (filters?.status) {
+      combined = combined.filter((u) => u.status === filters.status);
+    }
+    if (filters?.email?.trim()) {
+      const term = filters.email.trim().toLowerCase();
+      combined = combined.filter((u) => u.email.toLowerCase().includes(term));
+    }
+
+    return { users: combined, total: count };
+  }
+
+  async getAllUsers(options?: { limit?: number; offset?: number }): Promise<any[]> {
+    const supabase = requireSupabaseAdmin();
+    const limit = Math.min(100, Math.max(1, options?.limit ?? 50));
+    const offset = Math.max(0, options?.offset ?? 0);
+
+    const { data: profiles, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+
+    if (!profiles?.length) return [];
+
+    const profileIds = profiles.map((p) => p.id);
+
+    const [businessesRes, bookingRowsRes, authUsersRes] = await Promise.all([
+      supabase
+        .from('businesses')
+        .select('id, salon_name, booking_link, owner_user_id')
+        .in('owner_user_id', profileIds),
+      supabase.from('bookings').select('customer_user_id').in('customer_user_id', profileIds),
+      supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
+
+    const businessesByOwner = new Map<string, any[]>();
+    for (const b of businessesRes.data ?? []) {
+      const id = b.owner_user_id;
+      if (!businessesByOwner.has(id)) businessesByOwner.set(id, []);
+      businessesByOwner.get(id)!.push(b);
+    }
+
+    const countByCustomer = new Map<string, number>();
+    for (const id of profileIds) countByCustomer.set(id, 0);
+    for (const row of bookingRowsRes.data ?? []) {
+      const id = row.customer_user_id;
+      if (id != null) countByCustomer.set(id, (countByCustomer.get(id) ?? 0) + 1);
+    }
+
+    const authEmailMap = new Map<string, string>();
+    for (const u of authUsersRes.data?.users ?? []) {
+      if (u.id && u.email) authEmailMap.set(u.id, u.email);
+    }
+
+    return profiles.map((profile) => ({
+      ...profile,
+      email: authEmailMap.get(profile.id) ?? '',
+      businesses: businessesByOwner.get(profile.id) ?? [],
+      bookingCount: countByCustomer.get(profile.id) ?? 0,
+    }));
+  }
+
+  /** Get a single user by id for admin user detail page. */
+  async getAdminUserById(userId: string): Promise<any> {
+    const supabase = requireSupabaseAdmin();
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') throw new Error('User not found');
+      throw new Error(`Failed to fetch user: ${error.message}`);
+    }
+    if (!profile) throw new Error('User not found');
+
+    const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
+    const email = authUser?.user?.email ?? '';
+    const isBanned =
+      typeof (authUser?.user as { banned_until?: string } | undefined)?.banned_until === 'string';
+
+    const { data: ownerBusinesses } = await supabase
+      .from('businesses')
+      .select('id, salon_name, booking_link, owner_user_id')
+      .eq('owner_user_id', profile.id);
+    const { count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_user_id', profile.id);
+
+    return {
+      ...profile,
+      email,
+      is_banned: isBanned,
+      businesses: ownerBusinesses ?? [],
+      bookingCount: count ?? 0,
+    };
+  }
+
+  /** Block user (Supabase Auth ban). Blocked users cannot sign in. */
+  async blockUser(userId: string): Promise<void> {
+    const supabase = requireSupabaseAdmin();
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      ban_duration: '876600h',
+    } as { ban_duration: string });
+    if (error) throw new Error(error.message || 'Failed to block user');
+  }
+
+  /** Unblock user (Supabase Auth unban). */
+  async unblockUser(userId: string): Promise<void> {
+    const supabase = requireSupabaseAdmin();
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      ban_duration: 'none',
+    } as { ban_duration: string });
+    if (error) throw new Error(error.message || 'Failed to unblock user');
+  }
+
+  /** Soft delete user (30-day retention). Cannot delete self. Blocks: legal hold, last admin, outstanding payments. */
+  async deleteUser(
+    userId: string,
+    requestingAdminId: string,
+    options?: { reason?: string; ip?: string | null }
+  ): Promise<void> {
+    if (userId === requestingAdminId) throw new Error('Cannot delete your own account');
+    const supabase = requireSupabaseAdmin();
+    const reason = options?.reason ?? 'Deleted by admin';
+    const { error } = await supabase.rpc('soft_delete_user_account', {
+      p_user_id: userId,
+      p_actor_id: requestingAdminId,
+      p_reason: reason,
+      p_ip_address: options?.ip ?? null,
+      p_override_legal_hold: true,
+    });
+    if (error) throw new Error(error.message || 'Failed to delete user');
+  }
+
+  /** Soft delete a business (30-day retention). Blocks when legal_hold unless override. */
+  async softDeleteBusiness(
+    businessId: string,
+    actorId: string,
+    reason: string,
+    options?: { ip?: string | null; overrideLegalHold?: boolean }
+  ): Promise<{
+    business_id: string;
+    deleted_at: string;
+    permanent_deletion_at: string;
+  }> {
+    const supabase = requireSupabaseAdmin();
+    const { data, error } = await supabase.rpc('soft_delete_business', {
+      p_business_id: businessId,
+      p_actor_id: actorId,
+      p_reason: reason,
+      p_ip_address: options?.ip ?? null,
+      p_override_legal_hold: options?.overrideLegalHold ?? false,
+    });
+    if (error) throw new Error(error.message || 'Failed to delete business');
+    return data;
+  }
+
+  /** Restore a soft-deleted user account (admin only). Must be within 30-day retention period. */
+  async restoreDeletedUser(
+    userId: string,
+    options?: { actorId?: string | null; ip?: string | null }
+  ): Promise<{
+    user_id: string;
+    restored_at: string;
+    businesses_restored: number;
+  }> {
+    const supabase = requireSupabaseAdmin();
+    const { data, error } = await supabase.rpc('restore_deleted_user_account', {
+      p_user_id: userId,
+      p_actor_id: options?.actorId ?? null,
+      p_ip_address: options?.ip ?? null,
+    });
+    if (error) throw new Error(error.message || 'Failed to restore user account');
+    return data;
+  }
+
+  /** Permanently delete expired soft-deleted records. Should be called by scheduled job. */
+  async cleanupExpiredRecords(): Promise<{
+    cleanup_time: string;
+    users_deleted: number;
+    businesses_deleted: number;
+  }> {
+    const supabase = requireSupabaseAdmin();
+    const { data, error } = await supabase.rpc('cleanup_expired_soft_deleted_records');
+    if (error) throw new Error(error.message || 'Failed to cleanup expired records');
+    return data;
+  }
+
+  /** Update admin-editable profile fields (admin_note, user_type). */
+  async updateAdminUserProfile(
+    userId: string,
+    updates: { admin_note?: string | null; user_type?: string }
+  ): Promise<any> {
+    const supabase = requireSupabaseAdmin();
+    const body: Record<string, unknown> = {};
+    if (updates.admin_note !== undefined) body.admin_note = updates.admin_note;
+    if (updates.user_type !== undefined) body.user_type = updates.user_type;
+    if (Object.keys(body).length === 0) return this.getAdminUserById(userId);
+
+    const validTypes = ['owner', 'customer', 'both', 'admin'];
+    if (body.user_type !== undefined && !validTypes.includes(body.user_type as string)) {
+      throw new Error('Invalid user_type');
+    }
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(body)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message || 'Failed to update user');
+    return data;
+  }
+
+  async getAllBookings(filters?: {
+    businessId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]> {
+    const supabase = requireSupabaseAdmin();
+
+    let query = supabase
+      .from('bookings')
+      .select(
+        `
+        *,
+        business:business_id (
+          id,
+          salon_name,
+          owner_name,
+          whatsapp_number,
+          address,
+          location,
+          owner_user_id
+        ),
+        slot:slot_id (
+          id,
+          date,
+          start_time,
+          end_time,
+          status
+        )
+      `
+      )
+      .order('created_at', { ascending: false });
+
+    if (filters?.businessId) {
+      query = query.eq('business_id', filters.businessId);
+    }
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+    if (filters?.offset) {
+      query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to fetch bookings: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async getBookingTrends(days: number = 30): Promise<any[]> {
+    const supabase = requireSupabaseAdmin();
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('created_at, status')
+      .gte('created_at', startDate.toISOString())
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch booking trends: ${error.message}`);
+    }
+
+    if (!bookings) return [];
+
+    // Group by date
+    const trends: {
+      [key: string]: {
+        date: string;
+        total: number;
+        confirmed: number;
+        rejected: number;
+      };
+    } = {};
+
+    bookings.forEach((booking) => {
+      const date = booking.created_at.split('T')[0];
+      if (!trends[date]) {
+        trends[date] = { date, total: 0, confirmed: 0, rejected: 0 };
+      }
+      trends[date].total++;
+      if (booking.status === 'confirmed') trends[date].confirmed++;
+      if (booking.status === 'rejected') trends[date].rejected++;
+    });
+
+    return Object.values(trends).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /**
+   * Paginated bookings for export: id, booking_id, status, created_at, business_id, business name.
+   * Date range and optional business_id filter; index-friendly.
+   */
+  async getBookingsForExport(filters: {
+    startDate: string;
+    endDate: string;
+    businessId?: string;
+    limit: number;
+    offset: number;
+  }): Promise<
+    {
+      id: string;
+      booking_id: string;
+      status: string;
+      created_at: string;
+      business_id: string;
+      business_name: string;
+    }[]
+  > {
+    const supabase = requireSupabaseAdmin();
+    let query = supabase
+      .from('bookings')
+      .select('id, booking_id, status, created_at, business_id')
+      .gte('created_at', filters.startDate)
+      .lte('created_at', filters.endDate)
+      .order('created_at', { ascending: true })
+      .range(filters.offset, filters.offset + filters.limit - 1);
+
+    if (filters.businessId) {
+      query = query.eq('business_id', filters.businessId);
+    }
+
+    const { data: rows, error } = await query;
+    if (error) throw new Error(`Failed to fetch bookings: ${error.message}`);
+    if (!rows?.length) return [];
+
+    const businessIds = [...new Set(rows.map((r) => r.business_id))];
+    const { data: businesses } = await supabase
+      .from('businesses')
+      .select('id, salon_name')
+      .in('id', businessIds);
+    const nameMap = new Map((businesses || []).map((b) => [b.id, b.salon_name ?? '']));
+
+    return rows.map((r) => ({
+      id: r.id,
+      booking_id: r.booking_id,
+      status: r.status,
+      created_at: r.created_at,
+      business_id: r.business_id,
+      business_name: nameMap.get(r.business_id) ?? '',
+    }));
+  }
+
+  /**
+   * Get latest payment (by created_at) per booking for given ids. Returns map booking_id -> { amount_cents, status }.
+   */
+  async getPaymentsByBookingIds(
+    bookingIds: string[]
+  ): Promise<Map<string, { amount_cents: number; status: string }>> {
+    if (bookingIds.length === 0) return new Map();
+    const supabase = requireSupabaseAdmin();
+    const { data: payments, error } = await supabase
+      .from('payments')
+      .select('booking_id, amount_cents, status, created_at')
+      .in('booking_id', bookingIds)
+      .order('created_at', { ascending: false });
+
+    if (error) return new Map();
+    const map = new Map<string, { amount_cents: number; status: string }>();
+    for (const p of payments || []) {
+      if (!map.has(p.booking_id)) {
+        map.set(p.booking_id, {
+          amount_cents: p.amount_cents ?? 0,
+          status: p.status ?? 'unknown',
+        });
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Aggregated admin dashboard overview: combines metrics, trends, revenue, and system health
+   * into a single response to reduce parallel API calls (4 -> 1).
+   */
+  async getFullAdminOverview(days: number = 30): Promise<FullAdminOverview> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const endDate = new Date();
+
+    const dateRange = { startDate, endDate, days };
+
+    const [metrics, trends, revenueMetrics, overview] = await Promise.all([
+      this.getPlatformMetrics(),
+      this.getBookingTrends(days),
+      adminAnalyticsService.getRevenueMetrics(dateRange),
+      this.getAdminOverview(),
+    ]);
+
+    return {
+      metrics,
+      trends,
+      revenueSnapshot: {
+        totalRevenue: revenueMetrics.totalRevenue ?? 0,
+        revenueToday: revenueMetrics.revenueToday ?? 0,
+        revenueWeek: revenueMetrics.revenueWeek ?? 0,
+        revenueMonth: revenueMetrics.revenueMonth ?? 0,
+        paymentSuccessRate: revenueMetrics.paymentSuccessRate ?? 0,
+        failedPayments: revenueMetrics.failedPayments ?? 0,
+      },
+      overviewExtras: {
+        failedBookingsLast24h: overview.failedBookingsLast24h,
+        cronRunsLast24h: overview.cronRunsLast24h,
+        systemHealth: overview.systemHealth,
+      },
+    };
+  }
+}
+
+export interface FullAdminOverview {
+  metrics: PlatformMetrics;
+  trends: Array<{
+    date: string;
+    total: number;
+    confirmed: number;
+    rejected: number;
+  }>;
+  revenueSnapshot: {
+    totalRevenue: number;
+    revenueToday: number;
+    revenueWeek: number;
+    revenueMonth: number;
+    paymentSuccessRate: number;
+    failedPayments: number;
+  };
+  overviewExtras: {
+    failedBookingsLast24h: number;
+    cronRunsLast24h: number;
+    systemHealth: {
+      status: 'healthy' | 'unhealthy';
+      database: string;
+      cronExpireBookingsOk: boolean;
+      cronExpireBookingsLastRun: string | null;
+    };
+  };
+}
+
+export const adminService = new AdminService();

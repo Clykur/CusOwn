@@ -4,7 +4,7 @@
  * validateEnv and salon token shape (coverage).
  */
 
-import { validateEnv, env } from '../../config/env';
+import { validateEnv, env } from '@/config/env';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

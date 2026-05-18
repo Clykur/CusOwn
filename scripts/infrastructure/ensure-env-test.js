@@ -11,9 +11,11 @@ const envTestPath = path.join(process.cwd(), '.env.test');
 if (fs.existsSync(envTestPath)) return;
 
 const placeholder = `# Auto-generated for CI/guard. Replace with real values for local e2e/integration.
+CUSOWN_QUIET_INFRA_LOGS=true
 NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+NEXT_PUBLIC_APP_URL=https://example.com
 SALON_TOKEN_SECRET=test-secret-for-ci
 CRON_SECRET=test-cron-for-ci
 `;

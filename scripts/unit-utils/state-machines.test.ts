@@ -22,9 +22,9 @@ import {
   cleanupTestData,
   simulateUserAction,
 } from '../test-utils';
-import { slotStateMachine } from '../../lib/state/slot-state-machine';
-import { bookingStateMachine } from '../../lib/state/booking-state-machine';
-import { paymentStateMachine } from '../../lib/state/payment-state-machine';
+import { slotStateMachine } from '@/lib/state/slot-state-machine';
+import { bookingStateMachine } from '@/lib/state/booking-state-machine';
+import { paymentStateMachine } from '@/lib/state/payment-state-machine';
 
 async function testStateMachines() {
   const runner = new TestRunner();

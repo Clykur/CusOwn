@@ -4,7 +4,7 @@
  * Validates ORDER BY score DESC, business_id ASC is deterministic.
  */
 
-import { sortByRankingScore } from '../../lib/db/business-discovery-ranking';
+import { sortByRankingScore } from '@/lib/db/business-discovery-ranking';
 import {
   DISCOVERY_WEIGHT_DISTANCE,
   DISCOVERY_WEIGHT_RATING,
@@ -15,7 +15,7 @@ import {
   DISCOVERY_LIMIT_MIN,
   DISCOVERY_LIMIT_MAX,
   DISCOVERY_DEFAULT_LIMIT,
-} from '../../config/constants';
+} from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

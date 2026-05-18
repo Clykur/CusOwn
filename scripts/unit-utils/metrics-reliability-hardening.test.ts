@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 
-import { createSafeMetrics } from '../../lib/monitoring/safe-metrics-core';
-import type { MetricsLike } from '../../lib/monitoring/safe-metrics-core';
-import { METRICS_SERVICE_NAME } from '../../config/constants';
+import { createSafeMetrics } from '@/lib/monitoring/safe-metrics-core';
+import type { MetricsLike } from '@/lib/monitoring/safe-metrics-core';
+import { METRICS_SERVICE_NAME } from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

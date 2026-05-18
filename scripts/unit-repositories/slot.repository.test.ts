@@ -68,7 +68,10 @@ describe('slot.repository', () => {
 
     it('throws when database returns error', async () => {
       const chain = makeChain(
-        Promise.resolve({ data: null, error: { message: 'Connection failed' } })
+        Promise.resolve({
+          data: null,
+          error: { message: 'Connection failed' },
+        })
       );
       mockFrom.mockReturnValueOnce(chain);
       await expect(hasSlotsForDate('b1', '2025-03-15')).rejects.toThrow('Connection failed');
@@ -481,7 +484,11 @@ describe('slot.repository', () => {
               eq: () => ({
                 eq: () => ({
                   select: () => ({
-                    single: () => Promise.resolve({ data: null, error: { code: 'PGRST116' } }),
+                    single: () =>
+                      Promise.resolve({
+                        data: null,
+                        error: { code: 'PGRST116' },
+                      }),
                   }),
                 }),
               }),
@@ -523,7 +530,11 @@ describe('slot.repository', () => {
               eq: () => ({
                 eq: () => ({
                   select: () => ({
-                    single: () => Promise.resolve({ data: null, error: { code: 'PGRST116' } }),
+                    single: () =>
+                      Promise.resolve({
+                        data: null,
+                        error: { code: 'PGRST116' },
+                      }),
                   }),
                 }),
               }),

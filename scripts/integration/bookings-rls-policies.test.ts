@@ -27,7 +27,10 @@ async function createAuthenticatedClient(email: string, password: string) {
   const client = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  const { data, error } = await client.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error || !data.session) {
     throw new Error(`Sign-in failed for ${email}: ${error?.message ?? 'no session'}`);
   }

@@ -4,7 +4,7 @@
  * generateUuidV7 format and uniqueness (no mocks).
  */
 
-import { generateUuidV7, uuidv7 } from '../../lib/uuid';
+import { generateUuidV7, uuidv7 } from '@/lib/uuid';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

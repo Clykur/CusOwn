@@ -4,7 +4,7 @@
  * getISTDate, getISTDateString, toMinutes. Deterministic where applicable.
  */
 
-import { getISTDate, getISTDateString, getISTNowMinutes, toMinutes } from '../../lib/time/ist';
+import { getISTDate, getISTDateString, getISTNowMinutes, toMinutes } from '@/lib/time/ist';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

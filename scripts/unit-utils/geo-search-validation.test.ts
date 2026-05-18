@@ -1,11 +1,11 @@
 #!/usr/bin/env ts-node
 
-import { MAX_SEARCH_RADIUS_KM, ERROR_MESSAGES } from '../../config/constants';
+import { MAX_SEARCH_RADIUS_KM, ERROR_MESSAGES } from '@/config/constants';
 import {
   validateSearchRadius,
   parseAndValidateCoordinates,
   isCoordinatePairConsistent,
-} from '../../lib/utils/geo';
+} from '@/lib/utils/geo';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

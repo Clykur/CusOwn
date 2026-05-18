@@ -13,7 +13,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
     ];
 
     for (const indexName of bookingIndexes) {
-      const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+      const { data, error } = await supabase.rpc('has_index', {
+        p_index_name: indexName,
+      });
       if (error) {
         throw new Error(`has_index error for ${indexName}: ${error.message}`);
       }
@@ -49,7 +51,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
     ];
 
     for (const indexName of discoveryIndexes) {
-      const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+      const { data, error } = await supabase.rpc('has_index', {
+        p_index_name: indexName,
+      });
       if (error) {
         throw new Error(`has_index error for ${indexName}: ${error.message}`);
       }
@@ -85,7 +89,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
     ];
 
     for (const indexName of auditIndexes) {
-      const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+      const { data, error } = await supabase.rpc('has_index', {
+        p_index_name: indexName,
+      });
       if (error) {
         throw new Error(`has_index error for ${indexName}: ${error.message}`);
       }
@@ -123,7 +129,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
         'idx_bookings_partial_pending_confirmed_business_created',
       ];
       for (const indexName of partialIndexes) {
-        const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+        const { data, error } = await supabase.rpc('has_index', {
+          p_index_name: indexName,
+        });
         if (error) throw new Error(`has_index error for ${indexName}: ${error.message}`);
         if (!data) throw new Error(`Expected index not found: ${indexName}`);
       }
@@ -147,7 +155,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
         'idx_businesses_partial_active_pincode',
       ];
       for (const indexName of partialIndexes) {
-        const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+        const { data, error } = await supabase.rpc('has_index', {
+          p_index_name: indexName,
+        });
         if (error) throw new Error(`has_index error for ${indexName}: ${error.message}`);
         if (!data) throw new Error(`Expected index not found: ${indexName}`);
       }
@@ -172,7 +182,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
         'idx_audit_logs_partial_recent_severity',
       ];
       for (const indexName of partialIndexes) {
-        const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+        const { data, error } = await supabase.rpc('has_index', {
+          p_index_name: indexName,
+        });
         if (error) throw new Error(`has_index error for ${indexName}: ${error.message}`);
         if (!data) throw new Error(`Expected index not found: ${indexName}`);
       }
@@ -192,7 +204,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
       'idx_bookings_covering_status_list',
     ];
     for (const indexName of coveringIndexes) {
-      const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+      const { data, error } = await supabase.rpc('has_index', {
+        p_index_name: indexName,
+      });
       if (error) throw new Error(`has_index error for ${indexName}: ${error.message}`);
       if (!data) throw new Error(`Expected index not found: ${indexName}`);
     }
@@ -205,7 +219,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
       'idx_businesses_covering_discovery_pincode',
     ];
     for (const indexName of coveringIndexes) {
-      const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+      const { data, error } = await supabase.rpc('has_index', {
+        p_index_name: indexName,
+      });
       if (error) throw new Error(`has_index error for ${indexName}: ${error.message}`);
       if (!data) throw new Error(`Expected index not found: ${indexName}`);
     }
@@ -218,7 +234,9 @@ async function runDatabaseIndexesTests(): Promise<void> {
       'idx_audit_logs_covering_severity',
     ];
     for (const indexName of coveringIndexes) {
-      const { data, error } = await supabase.rpc('has_index', { p_index_name: indexName });
+      const { data, error } = await supabase.rpc('has_index', {
+        p_index_name: indexName,
+      });
       if (error) throw new Error(`has_index error for ${indexName}: ${error.message}`);
       if (!data) throw new Error(`Expected index not found: ${indexName}`);
     }

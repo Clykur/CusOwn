@@ -4,7 +4,7 @@
  * hashIp: deterministic SHA-256 hex of trimmed IP. No mocks.
  */
 
-import { hashIp } from '../../lib/fraud/ip-hash';
+import { hashIp } from '@/lib/fraud/ip-hash';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

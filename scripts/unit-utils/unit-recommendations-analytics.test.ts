@@ -4,12 +4,12 @@
  * Recommendation weighted scoring; analytics formulas (repeat %, cancellation rate).
  */
 
-import { mergeRecommendationScores } from '../../lib/recommendation/scoring';
+import { mergeRecommendationScores } from '@/lib/recommendation/scoring';
 import {
   RECOMMENDATION_WEIGHT_PREVIOUSLY_BOOKED,
   RECOMMENDATION_WEIGHT_FREQUENT_SERVICE,
   RECOMMENDATION_WEIGHT_NEARBY_POPULAR,
-} from '../../config/constants';
+} from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

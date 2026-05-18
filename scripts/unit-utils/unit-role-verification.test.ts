@@ -12,7 +12,7 @@ import {
   hasCustomerAccess,
   hasAdminAccess,
   type ProfileLike,
-} from '../../lib/utils/role-verification';
+} from '@/lib/utils/role-verification';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

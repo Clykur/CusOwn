@@ -4,18 +4,18 @@
  * Run with: npx ts-node scripts/unit-routing.test.ts
  */
 
-import { WeightedGraph, GraphNode } from '../../lib/routing/graph-data-structures';
+import { WeightedGraph, GraphNode } from '@/lib/routing/graph-data-structures';
 import {
   dijkstra,
   aStar,
   reconstructPath,
   computeTravelTime,
   computeRoute,
-} from '../../lib/routing/shortest-path';
-import { KDTree } from '../../lib/routing/spatial-index';
-import { createTestNetwork, addBusinessNodesToGraph } from '../../lib/routing/road-network-loader';
-import { loadGraphFromOsmPbf } from '../../lib/routing/osm-loader';
-import { RoutingService } from '../../lib/routing/routing-service';
+} from '@/lib/routing/shortest-path';
+import { KDTree } from '@/lib/routing/spatial-index';
+import { createTestNetwork, addBusinessNodesToGraph } from '@/lib/routing/road-network-loader';
+import { loadGraphFromOsmPbf } from '@/lib/routing/osm-loader';
+import { RoutingService } from '@/lib/routing/routing-service';
 
 // stub global fetch so tests don't hit real network
 let originalFetch: typeof fetch;

@@ -34,16 +34,29 @@ const IGNORE_PREFIXES = [
   '.turbo/',
 ];
 
-const ENFORCED_PATH_PREFIXES = ['app/', 'components/', 'lib/', 'services/', 'config/'];
+/** App + shared: security rules (secrets, TODO, debugger). ESLint covers console/process.env in apps. */
+const ENFORCED_PATH_PREFIXES = [
+  'apps/app/app/',
+  'apps/app/components/',
+  'apps/marketing/app/',
+  'apps/marketing/components/',
+  'packages/shared/src/',
+  'packages/config/src/',
+];
+
+/** Stricter policy only in config package (centralized env + marketing URLs). */
+const CONFIG_POLICY_PREFIX = 'packages/config/src/';
 const ENFORCED_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs']);
 
 const ALLOWED_PROCESS_ENV_FILES = new Set([
-  'config/env.ts',
-  'config/env.public.ts',
-  'next.config.js',
+  'packages/config/src/env.ts',
+  'packages/config/src/env.public.ts',
+  'packages/config/src/infra-log-quiet.ts',
+  'apps/app/next.config.js',
+  'apps/marketing/next.config.js',
   'scripts/infrastructure/check-node-version.js',
-  'lib/security/security-headers.ts',
-  'lib/utils/url.ts',
+  'packages/shared/src/lib/security/security-headers.ts',
+  'packages/shared/src/lib/utils/url.ts',
 ]);
 
 const ALLOWED_URL_HOSTS = new Set([
@@ -68,6 +81,8 @@ const ALLOWED_URL_HOSTS = new Set([
   'download.geofabrik.de', // OSM data docs (config/constants.ts GEO_OSM_DOWNLOAD_REF)
   'videos.pexels.com', // Marketing landing hero video (config/marketing/cusown-landing.ts)
   'images.unsplash.com', // Marketing product preview images (config/marketing/cusown-landing.ts)
+  'player.vimeo.com', // Marketing hero / embed (config/marketing/cusown-landing.ts)
+  'cusown.clykur.com', // Product / app base URL references (packages/shared URL helpers)
 ]);
 
 const RULES = [
@@ -149,6 +164,11 @@ function isEnforcedSourceFile(filePath) {
   return ENFORCED_EXTENSIONS.has(ext);
 }
 
+/** console.log / process.env / hardcoded-URL policy is enforced only under packages/config (monorepo). */
+function isConfigPolicyFile(filePath) {
+  return filePath.startsWith(CONFIG_POLICY_PREFIX) && isEnforcedSourceFile(filePath);
+}
+
 function getFileContent(filePath) {
   if (MODE === 'staged') {
     const staged = readGitFileFromIndex(filePath);
@@ -163,7 +183,7 @@ function getFileContent(filePath) {
 }
 
 function validateHardcodedUrls(filePath, line, lineNumber, failures) {
-  if (!isEnforcedSourceFile(filePath)) return;
+  if (!isConfigPolicyFile(filePath)) return;
   const matches = line.match(/https?:\/\/[^\s'"`)\]}]+/g);
   if (!matches) return;
 
@@ -192,7 +212,7 @@ function validateHardcodedUrls(filePath, line, lineNumber, failures) {
 function validateProcessEnvUsage(filePath, line, lineNumber, failures) {
   if (!line.includes('process.env')) return;
   if (ALLOWED_PROCESS_ENV_FILES.has(filePath)) return;
-  if (!isEnforcedSourceFile(filePath)) return;
+  if (!isConfigPolicyFile(filePath)) return;
   failures.push({
     filePath,
     lineNumber,
@@ -211,6 +231,11 @@ function scanFile(filePath, content, failures) {
 
     for (const rule of RULES) {
       if (!rule.regex.test(line)) continue;
+
+      // Monorepo: console policy only in packages/config (apps/shared use ESLint + structured logs).
+      if (rule.name === 'console-log' && !isConfigPolicyFile(filePath)) {
+        continue;
+      }
 
       // Allow explicit dev-only logs (still removed from production by Next compiler config).
       if (

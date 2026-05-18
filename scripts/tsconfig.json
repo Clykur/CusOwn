@@ -13,7 +13,19 @@
     "types": ["node"],
     "baseUrl": "..",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/lib/*": ["./packages/shared/src/lib/*"],
+      "@/config/*": ["./packages/config/src/*"],
+      "@/services/*": ["./packages/shared/src/services/*"],
+      "@/repositories/*": ["./packages/shared/src/repositories/*"],
+      "@/types": ["./packages/shared/src/types/index.ts"],
+      "@/types/*": ["./packages/shared/src/types/*"],
+      "@/proxy": ["./apps/app/proxy.ts"],
+      "@/app/*": ["./apps/app/app/*"],
+      "@cusown/shared": ["./packages/shared/src/index.ts"],
+      "@cusown/shared/server": ["./packages/shared/src/server.ts"],
+      "@cusown/config": ["./packages/config/src/index.ts"],
+      "@cusown/config/*": ["./packages/config/src/*"]
     }
   },
   "ts-node": {
@@ -23,6 +35,7 @@
     }
   },
   "include": [
+    "types/**/*.d.ts",
     "*.ts",
     "unit-utils/**/*.ts",
     "api-routes/**/*.ts",

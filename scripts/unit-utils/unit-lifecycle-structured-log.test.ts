@@ -5,7 +5,7 @@ import {
   logPaymentLifecycle,
   type BookingLifecycleAction,
   type PaymentLifecycleAction,
-} from '../../lib/monitoring/lifecycle-structured-log';
+} from '@/lib/monitoring/lifecycle-structured-log';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

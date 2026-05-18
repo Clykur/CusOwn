@@ -104,7 +104,11 @@ describe('service.service', () => {
           select: () => ({
             in: () => ({
               eq: () => ({
-                eq: () => Promise.resolve({ data: null, error: { message: 'DB error' } }),
+                eq: () =>
+                  Promise.resolve({
+                    data: null,
+                    error: { message: 'DB error' },
+                  }),
               }),
             }),
           }),

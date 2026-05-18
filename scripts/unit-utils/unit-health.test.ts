@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { checkHealth, checkMediaHealth } from '../../lib/monitoring/health';
+import { checkHealth, checkMediaHealth } from '@/lib/monitoring/health';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

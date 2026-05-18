@@ -12,7 +12,7 @@ import {
   filterUserProfileUpdateFields,
   validateStringLength,
   validateEnum,
-} from '../../lib/security/input-filter';
+} from '@/lib/security/input-filter';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

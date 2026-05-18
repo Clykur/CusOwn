@@ -46,7 +46,9 @@ describe('GET /api/business-categories', () => {
     const redisCached = [{ value: 'salon', label: 'Salon' }];
     mockGetApiRedisCache.mockResolvedValue(redisCached);
     const { GET } = await import('@/app/api/business-categories/route');
-    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success?: boolean; data?: unknown };
@@ -60,7 +62,9 @@ describe('GET /api/business-categories', () => {
     const cached = [{ value: 'salon', label: 'Salon' }];
     mockGetCachedApiResponse.mockReturnValue({ data: cached });
     const { GET } = await import('@/app/api/business-categories/route');
-    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success?: boolean; data?: unknown };
@@ -76,7 +80,9 @@ describe('GET /api/business-categories', () => {
     ];
     mockGetBusinessCategories.mockResolvedValue(categories);
     const { GET } = await import('@/app/api/business-categories/route');
-    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { success?: boolean; data?: unknown };
@@ -87,7 +93,9 @@ describe('GET /api/business-categories', () => {
   it('response structure is consistent', async () => {
     mockGetBusinessCategories.mockResolvedValue([]);
     const { GET } = await import('@/app/api/business-categories/route');
-    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
+    });
     const res = await GET(req);
     const body = await res.json();
     expect(body).toHaveProperty('success', true);
@@ -98,7 +106,9 @@ describe('GET /api/business-categories', () => {
   it('returns 500 and error when downstream service throws', async () => {
     mockGetBusinessCategories.mockRejectedValue(new Error('DB connection failed'));
     const { GET } = await import('@/app/api/business-categories/route');
-    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(500);
     const body = (await res.json()) as { success?: boolean; error?: string };
@@ -110,7 +120,9 @@ describe('GET /api/business-categories', () => {
   it('returns 500 with generic message when error is not Error instance', async () => {
     mockGetBusinessCategories.mockRejectedValue('string error');
     const { GET } = await import('@/app/api/business-categories/route');
-    const req = new NextRequest('http://localhost/api/business-categories', { method: 'GET' });
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
+    });
     const res = await GET(req);
     expect(res.status).toBe(500);
     const body = (await res.json()) as { success?: boolean; error?: string };

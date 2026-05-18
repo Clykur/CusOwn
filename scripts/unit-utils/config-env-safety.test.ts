@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { TestRunner, simulateUserAction } from '../test-utils';
-import { env, validateEnv } from '../../config/env';
+import { env, validateEnv } from '@/config/env';
 
 async function testConfigEnvSafety() {
   const runner = new TestRunner();

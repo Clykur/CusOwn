@@ -4,11 +4,8 @@
  * resolveContentTypeFromMagicBytes, validateMagicBytes. Pure; no mocks.
  */
 
-import {
-  resolveContentTypeFromMagicBytes,
-  validateMagicBytes,
-} from '../../lib/validation/magic-bytes';
-import { ERROR_MESSAGES } from '../../config/constants';
+import { resolveContentTypeFromMagicBytes, validateMagicBytes } from '@/lib/validation/magic-bytes';
+import { ERROR_MESSAGES } from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

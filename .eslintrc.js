@@ -1,1 +1,1 @@
-module.exports = require('./config/quality/eslint.config.js');
+module.exports = require('./packages/config/src/quality/eslint.config.js');

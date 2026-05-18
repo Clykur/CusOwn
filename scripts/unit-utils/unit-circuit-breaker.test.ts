@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { CircuitBreaker, CircuitState } from '../../lib/resilience/circuit-breaker';
+import { CircuitBreaker, CircuitState } from '@/lib/resilience/circuit-breaker';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

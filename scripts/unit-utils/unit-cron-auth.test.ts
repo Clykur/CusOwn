@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
 
 import { NextRequest } from 'next/server';
-import { validateCronSecret } from '../../lib/security/cron-auth';
-import { env } from '../../config/env';
+import { validateCronSecret } from '@/lib/security/cron-auth';
+import { env } from '@/config/env';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

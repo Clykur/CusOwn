@@ -19,7 +19,9 @@ describe('rate-limit middleware', () => {
   describe('rateLimit', () => {
     it('returns null when under max requests', async () => {
       const middleware = rateLimit({ windowMs: 60000, maxRequests: 5 });
-      const req = new NextRequest('http://localhost/api/test', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/test', {
+        method: 'GET',
+      });
       for (let i = 0; i < 3; i++) {
         const res = await middleware(req);
         expect(res).toBeNull();
@@ -28,7 +30,9 @@ describe('rate-limit middleware', () => {
 
     it('returns 429 when over max requests in same window', async () => {
       const middleware = rateLimit({ windowMs: 60000, maxRequests: 2 });
-      const req = new NextRequest('http://localhost/api/test', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/test', {
+        method: 'GET',
+      });
       await middleware(req);
       await middleware(req);
       const res = await middleware(req);
@@ -53,7 +57,9 @@ describe('rate-limit middleware', () => {
 
   describe('apiRateLimit', () => {
     it('returns null for first request', async () => {
-      const req = new NextRequest('http://localhost/api/health', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/health', {
+        method: 'GET',
+      });
       const res = await apiRateLimit(req);
       expect(res).toBeNull();
     });
@@ -61,7 +67,9 @@ describe('rate-limit middleware', () => {
 
   describe('bookingRateLimit', () => {
     it('returns null for first request', async () => {
-      const req = new NextRequest('http://localhost/api/bookings', { method: 'POST' });
+      const req = new NextRequest('http://localhost/api/bookings', {
+        method: 'POST',
+      });
       const res = await bookingRateLimit(req);
       expect(res).toBeNull();
     });

@@ -40,13 +40,13 @@ All fixed files now use this pattern:
 
 ```typescript
 async function getUserProfileSafe(userId: string): Promise<any> {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Server-side: use server-auth
-    const { getServerUserProfile } = await import('@/lib/supabase/server-auth');
+    const { getServerUserProfile } = await import("@/lib/supabase/server-auth");
     return getServerUserProfile(userId);
   } else {
     // Client-side: use client auth
-    const { getUserProfile } = await import('@/lib/supabase/auth');
+    const { getUserProfile } = await import("@/lib/supabase/auth");
     return getUserProfile(userId);
   }
 }

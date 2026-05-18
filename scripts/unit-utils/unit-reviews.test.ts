@@ -4,8 +4,8 @@
  * Duplicate prevention, non-confirmed booking rejection, profanity, aggregate flow.
  */
 
-import { containsProfanity } from '../../lib/content/profanity-filter';
-import { ERROR_MESSAGES, VALIDATION, REVIEW_PROFANITY_WORDS } from '../../config/constants';
+import { containsProfanity } from '@/lib/content/profanity-filter';
+import { ERROR_MESSAGES, VALIDATION, REVIEW_PROFANITY_WORDS } from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

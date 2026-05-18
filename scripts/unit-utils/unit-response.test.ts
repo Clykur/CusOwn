@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { successResponse, errorResponse } from '../../lib/utils/response';
+import { successResponse, errorResponse } from '@/lib/utils/response';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -19,7 +19,10 @@ export async function runUnitResponseTests(): Promise<void> {
     async () => {
       const res = successResponse({ id: '1' });
       assert(res.status === 200, `Expected 200, got ${res.status}`);
-      const body = (await res.json()) as { success?: boolean; data?: { id?: string } };
+      const body = (await res.json()) as {
+        success?: boolean;
+        data?: { id?: string };
+      };
       assert(body.success === true, 'Expected success true');
       assert(body.data?.id === '1', 'Expected data.id');
     }

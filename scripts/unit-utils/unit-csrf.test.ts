@@ -10,7 +10,7 @@ import {
   validateCSRFToken,
   setCSRFToken,
   csrfProtection,
-} from '../../lib/security/csrf';
+} from '@/lib/security/csrf';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

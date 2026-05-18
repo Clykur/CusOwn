@@ -8,7 +8,7 @@ import {
   validateTimeRange,
   validateCreateSalon,
   validateCreateBooking,
-} from '../../lib/utils/validation';
+} from '@/lib/utils/validation';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

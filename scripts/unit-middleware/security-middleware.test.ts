@@ -19,7 +19,7 @@ vi.mock('@/lib/security/csrf', () => ({
   csrfProtection: (...args: unknown[]) => mockCsrfProtection(...args),
 }));
 
-vi.mock('@/lib/security/input-sanitizer', () => ({
+vi.mock('@/lib/security/input-sanitizer.server', () => ({
   sanitizeRequestBody: (...args: unknown[]) => mockSanitizeRequestBody(...args),
 }));
 
@@ -32,14 +32,18 @@ describe('security-middleware', () => {
 
   describe('securityMiddleware', () => {
     it('returns null for non-API path', async () => {
-      const req = new NextRequest('http://localhost/dashboard', { method: 'GET' });
+      const req = new NextRequest('http://localhost/dashboard', {
+        method: 'GET',
+      });
       const res = await securityMiddleware(req);
       expect(res).toBeNull();
       expect(mockTokenBucketRateLimit).not.toHaveBeenCalled();
     });
 
     it('calls tokenBucketRateLimit for API path', async () => {
-      const req = new NextRequest('http://localhost/api/health', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/health', {
+        method: 'GET',
+      });
       await securityMiddleware(req);
       expect(mockTokenBucketRateLimit).toHaveBeenCalledWith(req);
     });
@@ -49,27 +53,35 @@ describe('security-middleware', () => {
         status: 429,
       });
       mockTokenBucketRateLimit.mockResolvedValue(rateLimitRes);
-      const req = new NextRequest('http://localhost/api/bookings', { method: 'POST' });
+      const req = new NextRequest('http://localhost/api/bookings', {
+        method: 'POST',
+      });
       const res = await securityMiddleware(req);
       expect(res).toBe(rateLimitRes);
       expect(mockCsrfProtection).not.toHaveBeenCalled();
     });
 
     it('skips CSRF for exempt path /api/bookings', async () => {
-      const req = new NextRequest('http://localhost/api/bookings', { method: 'POST' });
+      const req = new NextRequest('http://localhost/api/bookings', {
+        method: 'POST',
+      });
       const res = await securityMiddleware(req);
       expect(res).toBeNull();
       expect(mockCsrfProtection).not.toHaveBeenCalled();
     });
 
     it('skips CSRF for exempt path /api/cron/health-check', async () => {
-      const req = new NextRequest('http://localhost/api/cron/health-check', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/cron/health-check', {
+        method: 'GET',
+      });
       await securityMiddleware(req);
       expect(mockCsrfProtection).not.toHaveBeenCalled();
     });
 
     it('calls csrfProtection for non-exempt API path', async () => {
-      const req = new NextRequest('http://localhost/api/admin/users', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/admin/users', {
+        method: 'GET',
+      });
       await securityMiddleware(req);
       expect(mockCsrfProtection).toHaveBeenCalledWith(req);
     });
@@ -77,7 +89,9 @@ describe('security-middleware', () => {
 
   describe('sanitizeRequest', () => {
     it('returns null for GET request', async () => {
-      const req = new NextRequest('http://localhost/api/test', { method: 'GET' });
+      const req = new NextRequest('http://localhost/api/test', {
+        method: 'GET',
+      });
       const out = await sanitizeRequest(req);
       expect(out).toBeNull();
       expect(mockSanitizeRequestBody).not.toHaveBeenCalled();

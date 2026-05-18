@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { redactPiiForAudit } from '../../lib/security/audit-pii-redact.security';
+import { redactPiiForAudit } from '@/lib/security/audit-pii-redact.security';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

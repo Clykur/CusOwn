@@ -71,42 +71,60 @@ _Metrics from this repository only. Product-led: every number reflects shipped s
 
 ## Tech stack
 
-| Layer     | Technology                                                                                               |
-| --------- | -------------------------------------------------------------------------------------------------------- |
-| Framework | Next.js 15 (App Router)                                                                                  |
-| Backend   | Supabase (Postgres, Auth, Service Role)                                                                  |
-| Language  | TypeScript                                                                                               |
-| API       | Route handlers in `app/api/**/route.ts`; `successResponse` / `errorResponse` from `@/lib/utils/response` |
-| State     | State machines in `lib/state/` (booking, payment, slot); Zustand on client where needed                  |
-| Styling   | Tailwind CSS                                                                                             |
-| Tests     | Vitest, ts-node for scripts, unit + integration + security + CRUD suites                                 |
+| Layer         | Technology                                                                                               |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| Monorepo      | Turbo, npm workspaces                                                                                    |
+| Framework     | Next.js 15 (App Router)                                                                                  |
+| Backend       | Supabase (Postgres, Auth, SSR)                                                                           |
+| Language      | TypeScript                                                                                               |
+| Shared Logic  | `@cusown/shared` package (services, repositories, lib)                                                   |
+| Config        | `@cusown/config` package (constants, env, flags)                                                         |
+| Tests         | Vitest, ts-node unit suites                                                                              |
 
 ---
 
 ## Repository structure
 
+The project is a **Turbo monorepo** managed with **npm workspaces**.
+
 ```
 CusOwn/
-├── app/                    # Next.js App Router (pages, layouts, API routes)
-│   ├── api/                # REST API route handlers
-│   ├── (dashboard)/        # Dashboard layouts: admin, owner, customer
-│   ├── customer/           # Customer-facing pages (browse, book)
-│   ├── auth/               # Login, callback
-│   ├── select-role/        # Role selection after sign-in
-│   └── page.tsx            # Landing page
-├── components/             # React components (UI, admin, booking, customer)
-├── config/                 # Constants, env, policies (constants.ts, env.ts, *.policy.ts)
-├── lib/                    # Shared lib: auth, security, state, utils, realtime, prefetch
-├── services/               # Business logic (booking, audit, payment)
-├── repositories/           # Data access (slot, booking, etc.)
-├── middleware.ts           # Next.js middleware (auth, redirects)
-├── scripts/                # Tests, e2e, integration, security, infrastructure
+├── apps/
+│   ├── app/                # Core Booking Platform (Next.js 15)
+│   │   ├── app/            # App Router (pages, layouts, API routes)
+│   │   ├── components/     # App-specific UI components
+│   │   └── public/         # App-specific static assets
+│   └── marketing/          # Marketing Website (Next.js 15)
+├── packages/
+│   ├── shared/             # Shared logic, UI components, services, and types
+│   │   └── src/            # Shared source code (lib, services, repositories)
+│   ├── config/             # Centralized constants, env, and feature flags
+│   └── typescript-config/  # Shared TypeScript configurations
+├── scripts/                # Utility scripts (database, CI, security, tests)
 │   ├── api-routes/         # API unit tests
 │   ├── integration/        # Integration & DB tests
 │   ├── security/           # Security test suites
-│   ├── e2e/                # E2E / journey tests
-│   └── infrastructure/     # CI/guard scripts (ensure-env-test, run-detect-secrets, etc.)
-└── .github/workflows/      # CI/CD (ci.yml = main pipeline)
+│   └── infrastructure/     # CI/guard scripts (env validation, security scans)
+└── .github/workflows/      # CI/CD pipeline definitions
+```
+
+```mermaid
+flowchart LR
+  subgraph Apps
+    APP[apps/app]
+    MKT[apps/marketing]
+  end
+  subgraph Packages
+    SHR[packages/shared]
+    CFG[packages/config]
+    TSC[packages/typescript-config]
+  end
+  APP --> SHR
+  MKT --> SHR
+  SHR --> CFG
+  APP --> CFG
+  APP --> TSC
+  SHR --> TSC
 ```
 
 ```mermaid
@@ -288,83 +306,45 @@ npm ci
 
 ## Command reference
 
-Use these commands locally. CI runs the same checks via the workflow above.
+Use these commands from the root directory. Turbo will orchestrate the tasks across all workspaces.
 
-### Development
+### Development & Build
 
-| Command                | Description                                               |
-| ---------------------- | --------------------------------------------------------- |
-| `npm run dev`          | Start Next.js dev server (predev runs node version check) |
-| `npm run dev:clean`    | Clean caches + `npm run dev`                              |
-| `npm run dev:fresh`    | `npm run clean` + `npm run dev`                           |
-| `npm run build`        | Production build                                          |
-| `npm run build:strict` | Strict production build into `.next` (used in CI)         |
-| `npm run build:fresh`  | Clean artifacts + strict build                            |
-| `npm run start`        | Run production server                                     |
-| `npm run clean`        | Remove `.next`, `.next-build`, coverage artifacts         |
-| `npm run clean:all`    | Same as `clean`                                           |
+| Command             | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| `npm run dev`       | Start development servers for all apps via Turbo          |
+| `npm run build`     | Build all applications and packages                       |
+| `npm run start`     | Start production servers                                  |
+| `npm run clean`     | Remove build artifacts (.next, dist, etc.)                |
 
-### Lint, typecheck, format
+### Quality & Testing
 
-| Command                | Description                                                                         |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| `npm run lint`         | Next.js ESLint                                                                      |
-| `npm run lint:strict`  | ESLint on app, components, lib, services, repositories, middleware (max-warnings=0) |
-| `npm run typecheck`    | `tsc --noEmit` with typecheck config                                                |
-| `npm run format:check` | Prettier check (no write) on app, components, lib, config                           |
-| `npm run format`       | Prettier format (write)                                                             |
+| Command               | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `npm run lint`        | Run ESLint across the entire project                        |
+| `npm run typecheck`   | Run TypeScript type checking across all workspaces          |
+| `npm run test`        | Run all test suites using Turbo                             |
+| `npm run format`      | Format all code using Prettier                              |
+| `npm run format:check`| Verify code formatting without making changes               |
 
-### Tests
+### Security & Auditing
 
-| Command                               | Description                                                           |
-| ------------------------------------- | --------------------------------------------------------------------- |
-| `npm run test:unit`                   | ts-node unit suite with `.env.test`                                   |
-| `npm run test:unit:vitest`            | Vitest unit tests + coverage (thresholds in `vitest.unit.config.mts`) |
-| `npm run test:crud`                   | CRUD: unit-repositories + database-migrations (used in CI)            |
-| `npm run test:integration`            | Vitest: unit-database + integration                                   |
-| `npm run test:api-routes`             | Vitest API route tests                                                |
-| `npm run test:database-migrations`    | DB migration / schema tests                                           |
-| `npm run test:phase4` … `test:phase9` | Phase-specific security/e2e suites                                    |
-| `npm run test:all`                    | Full scripted test run (`scripts/run-all-tests.sh`)                   |
+| Command                  | Description                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `npm run security-check` | Full guard: lint, typecheck, test, and build               |
+| `npm run guard:all`      | Comprehensive quality gate (used before pushing)           |
+| `npm run security:audit` | Audit dependencies for security vulnerabilities            |
 
-### Security
+### Workspace Specifics
 
-| Command                            | Description                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------- |
-| `npm run security-check`           | Pre-push check: package-lock present, no dangerous patterns in app/lib/components |
-| `npm run security:audit`           | `npm audit` (high, omit dev)                                                      |
-| `npm run security:deps`            | Same as audit                                                                     |
-| `npm run security:gitleaks`        | Secret scan (detect-secrets; requires Python + detect-secrets)                    |
-| `npm run security:gitleaks:staged` | Secret scan on staged files only                                                  |
-| `npm run security:custom:repo`     | Custom security/quality validation (repo-wide)                                    |
-| `npm run security:custom:staged`   | Custom validation on staged files                                                 |
-
-### Quality
-
-| Command                       | Description                                            |
-| ----------------------------- | ------------------------------------------------------ |
-| `npm run quality:depcheck`    | Unused dependencies (depcheck)                         |
-| `npm run quality:ts-prune`    | Unused exports (ts-prune)                              |
-| `npm run quality:bundle-size` | Fail if `.next` bundle exceeds limit (run after build) |
-| `npm run quality:license`     | License check (production deps)                        |
-
-### One-command guard (pre-push / local CI)
-
-| Command             | Description                                                                                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run guard:all` | Full guard: .env.test, lockfile, lint, typecheck, secret scan, security custom, security-check, audit, deps, unit tests (ts-node + Vitest), quality gates, build. Use before pushing. |
-
-### Git hooks (Husky)
-
-| Command                    | Description                                                                               |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| `npm run precommit:strict` | Lint-staged + lint:strict + typecheck + security:gitleaks:staged + security:custom:staged |
-| `npm run prepush:strict`   | Same as `guard:all`                                                                       |
+To run commands for a specific workspace, use the `--workspace` (or `-w`) flag:
+- `npm run dev -w @cusown/app`
+- `npm run build -w @cusown/shared`
 
 ### Config & env
 
 | Command                                          | Description                                                                                         |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | `npm run verify-env`                             | Check required env vars (use with `.env.test`: `npx dotenv-cli -e .env.test -- npm run verify-env`) |
 | `node scripts/infrastructure/ensure-env-test.js` | Create `.env.test` with placeholders if missing                                                     |
 
@@ -388,18 +368,17 @@ Use these commands locally. CI runs the same checks via the workflow above.
 
 ## Key paths for development
 
-| Purpose               | Path                                                                  |
-| --------------------- | --------------------------------------------------------------------- |
-| API responses         | `lib/utils/response.ts` (`successResponse`, `errorResponse`)          |
-| Constants / messages  | `config/constants.ts`, `config/env.ts`                                |
-| Booking state machine | `lib/state/` (booking, slot, payment)                                 |
-| Booking service       | `services/booking.service.ts`                                         |
-| Audit / security      | `services/audit.service.ts`, `lib/security/`, `lib/utils/security.ts` |
-| Slot/booking data     | `repositories/slot.repository.ts`, booking repositories               |
-| Customer booking UI   | `app/customer/`, `components/booking/` (e.g. public-booking-page)     |
-| Admin dashboard       | `app/(dashboard)/admin/`                                              |
-| CI pipeline           | `.github/workflows/ci.yml`                                            |
-| Local guard           | `scripts/infrastructure/run-enterprise-guard.js`                      |
+| Purpose               | Path                                                                          |
+| --------------------- | ----------------------------------------------------------------------------- |
+| Shared logic / Utils  | `packages/shared/src/lib/`                                                    |
+| Shared Services       | `packages/shared/src/services/`                                               |
+| Shared Repositories   | `packages/shared/src/repositories/`                                           |
+| Central Config        | `packages/config/src/` (constants, env)                                       |
+| Main App UI           | `apps/app/app/`, `apps/app/components/`                                       |
+| API Handlers (App)    | `apps/app/app/api/`                                                           |
+| Marketing Site        | `apps/marketing/app/`                                                         |
+| CI Pipeline           | `.github/workflows/ci.yml`                                                    |
+| Local Quality Guard   | `scripts/infrastructure/run-quality-gate.js`                                  |
 
 ---
 

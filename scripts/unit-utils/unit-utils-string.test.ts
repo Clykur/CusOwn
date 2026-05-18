@@ -10,7 +10,7 @@ import {
   formatTime,
   formatDate,
   formatPhoneNumber,
-} from '../../lib/utils/string';
+} from '@/lib/utils/string';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

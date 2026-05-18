@@ -1,0 +1,1005 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  API_ROUTES,
+  ERROR_MESSAGES,
+  OWNER_SCREEN_TITLE_CLASSNAME,
+  VALIDATION,
+  DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+} from '@cusown/config';
+import { MediaListItem, Slot } from '@cusown/shared';
+import { useSlotUpdates } from '@cusown/shared/client';
+import { useVisibilityRefresh } from '@cusown/shared/client';
+import { logError } from '@cusown/shared';
+import { getCSRFToken } from '@cusown/shared';
+import { supabaseAuth } from '@cusown/shared';
+import { batchFetchSignedUrls } from '@cusown/shared';
+import { getCachedReviews } from '@cusown/shared';
+import { Toast } from '@/components/ui/toast';
+import DateFilter from '@/components/owner/date-filter';
+import { type EditBusinessFormData } from '@/components/owner/edit-business-modal';
+import { MODAL_IDS } from '@cusown/shared/client';
+import { useOwnerBusinessStore, useUIStore } from '@cusown/shared/client';
+import Breadcrumb from '@/components/ui/breadcrumb';
+import { OwnerSalonDetailLoadingBody } from '@/components/ui/skeleton';
+import { cn } from '@cusown/shared';
+
+const ReviewSummary = dynamic(() => import('@/components/owner/review-summary'), { ssr: false });
+const QRCodeSection = dynamic(() => import('@/components/owner/qr-code-section'));
+const BusinessDetailsCard = dynamic(() => import('@/components/owner/business-details-card'));
+const EditBusinessModal = dynamic(() => import('@/components/owner/edit-business-modal'), {
+  ssr: false,
+});
+
+const ServicesSection = dynamic(() => import('@/components/owner/services-management'), {
+  ssr: false,
+});
+
+const ShopPhotosSection = dynamic(() => import('@/components/owner/shop-photos-section'), {
+  ssr: false,
+});
+const SlotsKanbanBoard = dynamic(() => import('@/components/owner/slots-kanban-board'));
+const DowntimeManagement = dynamic(() => import('@/components/owner/downtime-management'));
+
+type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
+interface UploadQueueItem {
+  file: File;
+  status: UploadStatus;
+}
+
+export default function OwnerBusinessPage() {
+  const params = useParams();
+  const router = useRouter();
+  const routeId = typeof params?.id === 'string' ? params.id : '';
+
+  const salon = useOwnerBusinessStore((state) => state.salon);
+  const setSalon = useOwnerBusinessStore((state) => state.setSalon);
+  const updateSalon = useOwnerBusinessStore((state) => state.updateSalon);
+  const slots = useOwnerBusinessStore((state) => state.slots);
+  const setSlots = useOwnerBusinessStore((state) => state.setSlots);
+  const selectedDate = useOwnerBusinessStore((state) => state.selectedDate);
+  const setSelectedDate = useOwnerBusinessStore((state) => state.setSelectedDate);
+  const activeTab = useOwnerBusinessStore((state) => state.activeTab);
+  const setActiveTab = useOwnerBusinessStore((state) => state.setActiveTab);
+  const isLoading = useOwnerBusinessStore((state) => state.isLoading);
+  const setIsLoading = useOwnerBusinessStore((state) => state.setIsLoading);
+  const error = useOwnerBusinessStore((state) => state.error);
+  const setError = useOwnerBusinessStore((state) => state.setError);
+  const holidays = useOwnerBusinessStore((state) => state.holidays);
+  const setHolidays = useOwnerBusinessStore((state) => state.setHolidays);
+  const addHoliday = useOwnerBusinessStore((state) => state.addHoliday);
+  const removeHoliday = useOwnerBusinessStore((state) => state.removeHoliday);
+  const closures = useOwnerBusinessStore((state) => state.closures);
+  const setClosures = useOwnerBusinessStore((state) => state.setClosures);
+  const addClosure = useOwnerBusinessStore((state) => state.addClosure);
+  const removeClosure = useOwnerBusinessStore((state) => state.removeClosure);
+  const shopPhotos = useOwnerBusinessStore((state) => state.shopPhotos);
+  const setShopPhotos = useOwnerBusinessStore((state) => state.setShopPhotos);
+  const removeShopPhoto = useOwnerBusinessStore((state) => state.removeShopPhoto);
+  const photosLoading = useOwnerBusinessStore((state) => state.photosLoading);
+  const setPhotosLoading = useOwnerBusinessStore((state) => state.setPhotosLoading);
+  const uploadingPhotos = useOwnerBusinessStore((state) => state.uploadingPhotos);
+  const setUploadingPhotos = useOwnerBusinessStore((state) => state.setUploadingPhotos);
+  const deletingPhotoIds = useOwnerBusinessStore((state) => state.deletingPhotoIds);
+  const addDeletingPhotoId = useOwnerBusinessStore((state) => state.addDeletingPhotoId);
+  const removeDeletingPhotoId = useOwnerBusinessStore((state) => state.removeDeletingPhotoId);
+  const reviewData = useOwnerBusinessStore((state) => state.reviewData);
+  const setReviewData = useOwnerBusinessStore((state) => state.setReviewData);
+  const reset = useOwnerBusinessStore((state) => state.reset);
+
+  const showToast = useUIStore((state) => state.showToast);
+  const toasts = useUIStore((state) => state.toasts);
+  const dismissToast = useUIStore((state) => state.dismissToast);
+  const openModal = useUIStore((state) => state.openModal);
+  const closeModal = useUIStore((state) => state.closeModal);
+  const isModalOpen = useUIStore((state) => state.isModalOpen);
+
+  const [newHolidayDate, setNewHolidayDate] = useState('');
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [newClosureStart, setNewClosureStart] = useState('');
+  const [newClosureEnd, setNewClosureEnd] = useState('');
+  const [newClosureReason, setNewClosureReason] = useState('');
+
+  const [editForm, setEditForm] = useState<EditBusinessFormData>({
+    salon_name: '',
+    owner_name: '',
+    whatsapp_number: '',
+    opening_time: '',
+    closing_time: '',
+    slot_duration: 30,
+    concurrent_booking_capacity: DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+    address: '',
+    location: '',
+    city: '',
+    area: '',
+    pincode: '',
+    latitude: '',
+    longitude: '',
+    address_line1: '',
+    address_line2: '',
+    state: '',
+    country: '',
+    postal_code: '',
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
+
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  useEffect(() => {
+    getCSRFToken().catch(console.error);
+    return () => {
+      reset();
+    };
+  }, [reset]);
+
+  const handleVisibilityRefresh = useCallback(async () => {
+    if (!salon) return;
+    const date = selectedDate || new Date().toISOString().split('T')[0];
+    setSelectedDate(date);
+  }, [salon, selectedDate, setSelectedDate]);
+
+  useVisibilityRefresh({
+    onRefresh: handleVisibilityRefresh,
+    enabled: !!salon,
+    throttleMs: 5000,
+    staleThresholdMs: 30000,
+    refreshOnFocus: true,
+  });
+
+  useEffect(() => {
+    if (!routeId) return;
+    let cancelled = false;
+
+    const fetchAllData = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        let url = `${API_ROUTES.SALONS}/${routeId}`;
+        if (token) url += `?token=${encodeURIComponent(token)}`;
+
+        const headers: HeadersInit = {};
+        if (supabaseAuth) {
+          const {
+            data: { session },
+          } = await supabaseAuth.auth.getSession();
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+
+        const response = await fetch(url, { headers, credentials: 'include' });
+        const result = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            window.location.href = '/auth/login';
+            return;
+          }
+          if (response.status === 403) {
+            window.location.href = '/owner/dashboard';
+            return;
+          }
+          if (
+            response.status === 403 &&
+            !token &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(routeId)
+          ) {
+            try {
+              const { getSecureOwnerDashboardUrlClient } = await import('@cusown/shared');
+              const secureUrl = await getSecureOwnerDashboardUrlClient(routeId);
+              window.location.href = secureUrl;
+              return;
+            } catch (urlError) {
+              console.error('Failed to generate secure URL:', urlError);
+            }
+          }
+          throw new Error(result.error || 'Salon not found');
+        }
+
+        if (!result.success || !result.data || cancelled) return;
+
+        const salonData = result.data;
+        setSalon(salonData);
+
+        const parallelFetches: Promise<void>[] = [];
+
+        if (!salonData.qr_code) {
+          parallelFetches.push(
+            fetch(`${API_ROUTES.SALONS}/${routeId}/qr`)
+              .then((res) => res.json())
+              .then((qrResult) => {
+                if (!cancelled && qrResult.success && qrResult.data?.qr_code) {
+                  updateSalon({ qr_code: qrResult.data.qr_code });
+                }
+              })
+              .catch((err) => logError(err, 'QR Code Fetch'))
+          );
+        }
+
+        parallelFetches.push(
+          getCachedReviews(salonData.id).then((reviewResult) => {
+            if (cancelled || !reviewResult) return;
+            const reviews = reviewResult.reviews || [];
+            const rating_counts: Record<number, number> = {
+              1: 0,
+              2: 0,
+              3: 0,
+              4: 0,
+              5: 0,
+            };
+            reviews.forEach((review) => {
+              const rating = Number(review.rating);
+              if (rating_counts[rating] !== undefined) rating_counts[rating]++;
+            });
+            setReviewData({
+              rating_avg: reviewResult.rating_avg || 0,
+              review_count: reviewResult.review_count || 0,
+              rating_counts,
+            });
+          })
+        );
+
+        const date = selectedDate || new Date().toISOString().split('T')[0];
+        parallelFetches.push(
+          fetch(`${API_ROUTES.SLOTS}?salon_id=${salonData.id}&date=${date}`, {
+            headers,
+            credentials: 'include',
+          })
+            .then((res) => res.json())
+            .then((slotsResult) => {
+              if (cancelled) return;
+              if (slotsResult.success) {
+                const normalizedSlots = Array.isArray(slotsResult.data)
+                  ? slotsResult.data
+                  : Array.isArray(slotsResult.data?.slots)
+                    ? slotsResult.data.slots
+                    : [];
+                setSlots(normalizedSlots);
+              }
+            })
+            .catch((err) => logError(err, 'Slots Fetch'))
+        );
+
+        parallelFetches.push(
+          Promise.all([
+            fetch(`/api/businesses/${salonData.id}/downtime/holidays`, {
+              credentials: 'include',
+            }),
+            fetch(`/api/businesses/${salonData.id}/downtime/closures`, {
+              credentials: 'include',
+            }),
+          ])
+            .then(async ([holidaysRes, closuresRes]) => {
+              if (cancelled) return;
+              const [holidaysData, closuresData] = await Promise.all([
+                holidaysRes.json(),
+                closuresRes.json(),
+              ]);
+              if (holidaysData.success) setHolidays(holidaysData.data || []);
+              if (closuresData.success) setClosures(closuresData.data || []);
+            })
+            .catch((err) => console.error('Failed to fetch downtime:', err))
+        );
+
+        parallelFetches.push(
+          fetch(API_ROUTES.MEDIA_BUSINESS(salonData.id), {
+            credentials: 'include',
+          })
+            .then((res) => res.json())
+            .then(async (mediaResult) => {
+              if (cancelled) return;
+              if (!mediaResult?.success) {
+                setShopPhotos([]);
+                return;
+              }
+              const items: MediaListItem[] = Array.isArray(mediaResult?.data?.items)
+                ? mediaResult.data.items
+                : [];
+              if (items.length === 0) {
+                setShopPhotos([]);
+                return;
+              }
+              const mediaIds = items.map((item) => item.id);
+              const urlMap = await batchFetchSignedUrls(mediaIds);
+              if (cancelled) return;
+              const withUrls = items
+                .map((item) => {
+                  const url = urlMap.get(item.id);
+                  return url ? { id: item.id, url } : null;
+                })
+                .filter((p): p is { id: string; url: string } => Boolean(p));
+              setShopPhotos(withUrls);
+            })
+            .catch((err) => {
+              logError(err, 'Photos Fetch');
+              setShopPhotos([]);
+            })
+            .finally(() => {
+              if (!cancelled) setPhotosLoading(false);
+            })
+        );
+
+        await Promise.allSettled(parallelFetches);
+      } catch (err) {
+        if (!cancelled) {
+          logError(err, 'Salon Fetch');
+          setError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    fetchAllData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    routeId,
+    selectedDate,
+    setSalon,
+    updateSalon,
+    setError,
+    setIsLoading,
+    setSlots,
+    setHolidays,
+    setClosures,
+    setShopPhotos,
+    setPhotosLoading,
+    setReviewData,
+  ]);
+
+  const initialDateRef = useRef<string | null>(null);
+
+  const fetchSlots = useCallback(async () => {
+    if (!salon) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    try {
+      const date = selectedDate || new Date().toISOString().split('T')[0];
+      const headers: HeadersInit = {};
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const response = await fetch(`${API_ROUTES.SLOTS}?salon_id=${salon.id}&date=${date}`, {
+        headers,
+        credentials: 'include',
+      });
+      const result = await response.json();
+      if (result.success) {
+        const normalizedSlots = Array.isArray(result.data)
+          ? result.data
+          : Array.isArray(result.data?.slots)
+            ? result.data.slots
+            : [];
+        setSlots(normalizedSlots);
+      }
+    } catch (err) {
+      logError(err, 'Slots Fetch');
+    }
+  }, [salon, selectedDate, setSlots]);
+
+  useEffect(() => {
+    if (!salon) return;
+    const currentDate = selectedDate || new Date().toISOString().split('T')[0];
+    if (initialDateRef.current === null) {
+      initialDateRef.current = currentDate;
+      return;
+    }
+    if (initialDateRef.current !== currentDate) {
+      initialDateRef.current = currentDate;
+      fetchSlots();
+    }
+  }, [salon, selectedDate, fetchSlots]);
+
+  const slotsDate = selectedDate || new Date().toISOString().split('T')[0];
+  const slotsRef = useRef<Slot[]>(slots);
+  slotsRef.current = slots;
+
+  const handleRealtimeSlotsUpdate = useCallback(
+    (nextSlots: Slot[]) => {
+      const currentSlots = slotsRef.current;
+      const currentById = new Map(currentSlots.map((s) => [s.id, s]));
+      let hasChanges = false;
+
+      for (const slot of nextSlots) {
+        const existing = currentById.get(slot.id);
+        if (
+          !existing ||
+          existing.status !== slot.status ||
+          existing.updated_at !== slot.updated_at
+        ) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      if (!hasChanges && nextSlots.length === currentSlots.length) return;
+
+      setSlots(nextSlots);
+    },
+    [setSlots]
+  );
+
+  useSlotUpdates({
+    businessId: salon?.id ?? null,
+    date: salon ? slotsDate : null,
+    slots,
+    onSlotsUpdate: handleRealtimeSlotsUpdate,
+    enabled: !!salon && activeTab === 'slots',
+    skipInitialRefetch: slots.length > 0,
+  });
+
+  const memoizedSlots = useMemo(() => slots, [slots]);
+
+  const loadBusinessPhotos = useCallback(
+    async (businessId: string) => {
+      setPhotosLoading(true);
+      setPhotoError(null);
+      try {
+        const res = await fetch(API_ROUTES.MEDIA_BUSINESS(businessId), {
+          credentials: 'include',
+        });
+        const result = await res.json();
+        if (!res.ok || !result?.success)
+          throw new Error(result?.error || ERROR_MESSAGES.LOADING_ERROR);
+        const items: MediaListItem[] = Array.isArray(result?.data?.items) ? result.data.items : [];
+        if (items.length === 0) {
+          setShopPhotos([]);
+          return;
+        }
+        const mediaIds = items.map((item) => item.id);
+        const urlMap = await batchFetchSignedUrls(mediaIds);
+        const withUrls = items
+          .map((item) => {
+            const url = urlMap.get(item.id);
+            return url ? { id: item.id, url } : null;
+          })
+          .filter((p): p is { id: string; url: string } => Boolean(p));
+        setShopPhotos(withUrls);
+      } catch (err) {
+        setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.LOADING_ERROR);
+        setShopPhotos([]);
+      } finally {
+        setPhotosLoading(false);
+      }
+    },
+    [setPhotosLoading, setShopPhotos]
+  );
+
+  const handleFileSelect = (files: File[]) => {
+    setSelectedFiles(files);
+    setUploadQueue(files.map((file) => ({ file, status: 'pending' })));
+  };
+
+  const handleRemoveSelectedFile = (idx: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleUploadPhotos = async () => {
+    if (!salon?.id || uploadingPhotos || selectedFiles.length === 0) return;
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    for (const file of selectedFiles) {
+      if (!ALLOWED.has(file.type)) {
+        setPhotoError('Only JPG, PNG, and WEBP images are allowed.');
+        return;
+      }
+      if (file.size > MAX_SIZE) {
+        setPhotoError('Each image must be 5 MB or smaller.');
+        return;
+      }
+    }
+    setUploadingPhotos(true);
+    setPhotoError(null);
+    try {
+      const csrfToken = await getCSRFToken();
+      const authHeaders: Record<string, string> = {};
+      if (csrfToken) authHeaders['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadRes = await fetch(API_ROUTES.MEDIA_BUSINESS(salon.id), {
+          method: 'POST',
+          credentials: 'include',
+          headers: authHeaders,
+          body: formData,
+        });
+        const uploadResult = await uploadRes.json();
+        if (!uploadRes.ok || !uploadResult?.success) {
+          throw new Error(
+            uploadResult?.error || uploadResult?.message || ERROR_MESSAGES.MEDIA_UPLOAD_FAILED
+          );
+        }
+      }
+      setSelectedFiles([]);
+      const fileInput = document.getElementById('shop-photo-input') as HTMLInputElement | null;
+      if (fileInput) fileInput.value = '';
+      await loadBusinessPhotos(salon.id);
+      showToast('Photos uploaded successfully', 'success');
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.MEDIA_UPLOAD_FAILED);
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!salon?.id) return;
+    if (!window.confirm('Delete this photo?')) return;
+    const previousPhotos = shopPhotos;
+    addDeletingPhotoId(photoId);
+    setPhotoError(null);
+    removeShopPhoto(photoId);
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const deleteRes = await fetch(`/api/media/${encodeURIComponent(photoId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers,
+      });
+      const deleteResult = await deleteRes.json();
+      if (!deleteRes.ok || !deleteResult?.success) {
+        throw new Error(
+          deleteResult?.error || deleteResult?.message || ERROR_MESSAGES.UNEXPECTED_ERROR
+        );
+      }
+    } catch (err) {
+      setShopPhotos(previousPhotos);
+      setPhotoError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+    } finally {
+      removeDeletingPhotoId(photoId);
+    }
+  };
+
+  const handleAddHoliday = async () => {
+    if (!newHolidayDate || !salon) return;
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const response = await fetch(`/api/owner/businesses/${salon.id}/holidays`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          holiday_date: newHolidayDate,
+          holiday_name: newHolidayName,
+        }),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setNewHolidayDate('');
+        setNewHolidayName('');
+        const newItem = result.data || {
+          id: crypto.randomUUID(),
+          holiday_date: newHolidayDate,
+          holiday_name: newHolidayName,
+          created_at: new Date().toISOString(),
+        };
+        addHoliday(newItem);
+      }
+    } catch {
+      alert('Failed to add holiday');
+    }
+  };
+
+  const handleAddClosure = async () => {
+    if (!newClosureStart || !newClosureEnd || !salon) return;
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const response = await fetch(`/api/owner/businesses/${salon.id}/closures`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          start_date: newClosureStart,
+          end_date: newClosureEnd,
+          reason: newClosureReason,
+        }),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        const savedStart = newClosureStart;
+        const savedEnd = newClosureEnd;
+        const savedReason = newClosureReason;
+        setNewClosureStart('');
+        setNewClosureEnd('');
+        setNewClosureReason('');
+        const newItem = result.data || {
+          id: crypto.randomUUID(),
+          start_date: savedStart,
+          end_date: savedEnd,
+          reason: savedReason,
+          created_at: new Date().toISOString(),
+        };
+        addClosure(newItem);
+      }
+    } catch {
+      alert('Failed to add closure');
+    }
+  };
+
+  const handleRemoveHoliday = async (holidayId: string) => {
+    if (!salon?.id) return;
+    if (!window.confirm('Remove this holiday?')) return;
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch(
+        `/api/owner/businesses/${salon.id}/holidays/${encodeURIComponent(holidayId)}`,
+        { method: 'DELETE', credentials: 'include', headers }
+      );
+      if (res.ok) {
+        removeHoliday(holidayId);
+        showToast('Holiday removed', 'success');
+      } else {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || ERROR_MESSAGES.UNEXPECTED_ERROR, 'error');
+      }
+    } catch {
+      showToast('Failed to remove holiday', 'error');
+    }
+  };
+
+  const handleRemoveClosure = async (closureId: string) => {
+    if (!salon?.id) return;
+    if (!window.confirm('Remove this closure?')) return;
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      if (supabaseAuth) {
+        const {
+          data: { session },
+        } = await supabaseAuth.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch(
+        `/api/owner/businesses/${salon.id}/closures/${encodeURIComponent(closureId)}`,
+        { method: 'DELETE', credentials: 'include', headers }
+      );
+      if (res.ok) {
+        removeClosure(closureId);
+        showToast('Closure removed', 'success');
+      } else {
+        const j = await res.json().catch(() => ({}));
+        showToast(j.error || ERROR_MESSAGES.UNEXPECTED_ERROR, 'error');
+      }
+    } catch {
+      showToast('Failed to remove closure', 'error');
+    }
+  };
+
+  const openEditModal = () => {
+    if (!salon) return;
+    setEditForm({
+      salon_name: salon.salon_name,
+      owner_name: salon.owner_name,
+      whatsapp_number: salon.whatsapp_number
+        .replace(/\D/g, '')
+        .slice(0, VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH),
+      opening_time: salon.opening_time?.substring(0, 5) ?? '10:00',
+      closing_time: salon.closing_time?.substring(0, 5) ?? '21:00',
+      slot_duration: salon.slot_duration ?? 30,
+      concurrent_booking_capacity:
+        salon.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+      address: salon.address ?? '',
+      location: salon.location ?? '',
+      city: salon.city ?? '',
+      area: salon.area ?? '',
+      pincode: salon.pincode ?? '',
+      latitude: salon.latitude != null ? String(salon.latitude) : '',
+      longitude: salon.longitude != null ? String(salon.longitude) : '',
+      address_line1: salon.address_line1 ?? '',
+      address_line2: salon.address_line2 ?? '',
+      state: salon.state ?? '',
+      country: salon.country ?? '',
+      postal_code: salon.postal_code ?? '',
+    });
+    setEditError(null);
+    openModal(MODAL_IDS.EDIT_BUSINESS);
+  };
+
+  const handleEditSave = async () => {
+    if (!salon || !routeId) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const latTrim = editForm.latitude.trim();
+      const lngTrim = editForm.longitude.trim();
+      const body: Record<string, unknown> = {
+        salon_name: editForm.salon_name.trim(),
+        owner_name: editForm.owner_name.trim(),
+        whatsapp_number: editForm.whatsapp_number,
+        opening_time:
+          editForm.opening_time.length === 5
+            ? `${editForm.opening_time}:00`
+            : editForm.opening_time,
+        closing_time:
+          editForm.closing_time.length === 5
+            ? `${editForm.closing_time}:00`
+            : editForm.closing_time,
+        slot_duration: editForm.slot_duration,
+        concurrent_booking_capacity: editForm.concurrent_booking_capacity,
+        address: editForm.address.trim(),
+        location: editForm.location.trim(),
+        city: editForm.city.trim(),
+        area: editForm.area.trim(),
+        pincode: editForm.pincode.trim(),
+        address_line1: editForm.address_line1.trim(),
+        address_line2: editForm.address_line2.trim(),
+        state: editForm.state.trim(),
+        country: editForm.country.trim(),
+        postal_code: editForm.postal_code.trim(),
+      };
+      if (latTrim !== '') body.latitude = Number(latTrim);
+      if (lngTrim !== '') body.longitude = Number(lngTrim);
+
+      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(routeId)}`, {
+        method: 'PATCH',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setEditError(json.error || ERROR_MESSAGES.UNEXPECTED_ERROR);
+        return;
+      }
+      if (json.success && json.data) {
+        setSalon(json.data);
+        closeModal(MODAL_IDS.EDIT_BUSINESS);
+        showToast('Business updated successfully', 'success');
+      }
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : ERROR_MESSAGES.UNEXPECTED_ERROR);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!salon || !routeId) return;
+    if (!window.confirm('Are you sure you want to delete this business? This cannot be undone.'))
+      return;
+    setDeleteSaving(true);
+    try {
+      const csrfToken = await getCSRFToken();
+      const headers: Record<string, string> = {};
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+      const res = await fetch(`/api/owner/businesses/${encodeURIComponent(routeId)}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        router.push('/owner/businesses?deleted=1');
+        return;
+      }
+      setError(json.error || 'Failed to delete business');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete business');
+    } finally {
+      setDeleteSaving(false);
+    }
+  };
+
+  const breadcrumbItems = useMemo(
+    () => [
+      { label: 'Businesses', href: '/owner/businesses' },
+      {
+        label: salon?.salon_name || 'Business Details',
+        href: `/owner/${routeId}`,
+      },
+    ],
+    [routeId, salon?.salon_name]
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full flex-col gap-5 pb-24 max-md:pb-28 md:gap-6">
+        <Breadcrumb
+          className="max-md:mb-4 max-md:text-xs max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5"
+          items={[
+            { label: 'Businesses', href: '/owner/businesses' },
+            { label: 'Loading...', href: `/owner/${routeId}` },
+          ]}
+        />
+        <OwnerSalonDetailLoadingBody />
+      </div>
+    );
+  }
+
+  if (error || !salon) {
+    return (
+      <div className="flex w-full flex-col gap-4 pb-24 md:gap-6">
+        <Breadcrumb
+          className="max-md:mb-4 max-md:text-xs max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5"
+          items={[
+            { label: 'Businesses', href: '/owner/businesses' },
+            { label: 'Business Details', href: `/owner/${routeId}` },
+          ]}
+        />
+        <div className="rounded-xl border border-slate-200/90 bg-white p-6 text-center shadow-sm max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none md:rounded-lg md:p-8 md:shadow-none">
+          <h2 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-3 md:mb-4')}>Access Denied</h2>
+          <p className="mb-6 text-sm text-slate-600 max-md:text-xs md:mb-8 md:text-base">
+            Invalid booking link or salon not found.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-5 pb-24 max-md:pb-28 md:gap-6">
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => dismissToast(toast.id)}
+          duration={toast.duration}
+        />
+      ))}
+
+      <Breadcrumb
+        className="max-md:mb-4 max-md:text-xs max-md:[&_svg]:h-3.5 max-md:[&_svg]:w-3.5"
+        items={breadcrumbItems}
+      />
+
+      <div className="space-y-1">
+        <h1 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'truncate')}>{salon.salon_name}</h1>
+      </div>
+
+      <BusinessDetailsCard
+        salon={salon}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+        deleteSaving={deleteSaving}
+      />
+
+      <EditBusinessModal
+        isOpen={isModalOpen(MODAL_IDS.EDIT_BUSINESS)}
+        editForm={editForm}
+        editError={editError}
+        editSaving={editSaving}
+        onFormChange={setEditForm}
+        onSave={handleEditSave}
+        onClose={() => closeModal(MODAL_IDS.EDIT_BUSINESS)}
+      />
+
+      {salon && <ServicesSection businessId={salon.id} />}
+      <QRCodeSection qrCode={salon.qr_code} bookingLink={salon.booking_link} />
+
+      <ShopPhotosSection
+        photos={shopPhotos}
+        selectedFiles={selectedFiles}
+        photosLoading={photosLoading}
+        uploadingPhotos={uploadingPhotos}
+        photoError={photoError}
+        deletingPhotoIds={deletingPhotoIds}
+        uploadQueue={uploadQueue}
+        onFileSelect={handleFileSelect}
+        onRemoveSelectedFile={handleRemoveSelectedFile}
+        onUpload={handleUploadPhotos}
+        onDeletePhoto={handleDeletePhoto}
+      />
+
+      <div
+        className={cn(
+          'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]',
+          'md:rounded-lg md:shadow-none md:ring-0'
+        )}
+      >
+        <div className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-slate-100 p-1.5 max-md:rounded-t-2xl md:rounded-none">
+          <button
+            type="button"
+            onClick={() => setActiveTab('slots')}
+            className={`flex-shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 max-md:text-xs md:px-4 md:py-3 md:text-base ${
+              activeTab === 'slots'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Slots
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('downtime')}
+            className={`flex-shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 max-md:text-xs md:px-4 md:py-3 md:text-base ${
+              activeTab === 'downtime'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Downtime
+          </button>
+        </div>
+
+        <div className="p-4 md:p-4 lg:p-6">
+          <div className="mb-4 md:mb-6">
+            <label className="mb-2 block text-xs font-medium text-gray-700 md:text-sm">
+              Select Date
+            </label>
+            <div className="w-full sm:w-64 lg:w-72">
+              <DateFilter value={selectedDate} onChange={setSelectedDate} />
+            </div>
+          </div>
+
+          {activeTab === 'slots' ? (
+            <SlotsKanbanBoard slots={memoizedSlots} />
+          ) : activeTab === 'downtime' ? (
+            <DowntimeManagement
+              holidays={holidays}
+              closures={closures}
+              newHolidayDate={newHolidayDate}
+              newHolidayName={newHolidayName}
+              newClosureStart={newClosureStart}
+              newClosureEnd={newClosureEnd}
+              newClosureReason={newClosureReason}
+              onHolidayDateChange={setNewHolidayDate}
+              onHolidayNameChange={setNewHolidayName}
+              onClosureStartChange={setNewClosureStart}
+              onClosureEndChange={setNewClosureEnd}
+              onClosureReasonChange={setNewClosureReason}
+              onAddHoliday={handleAddHoliday}
+              onAddClosure={handleAddClosure}
+              onRemoveHoliday={handleRemoveHoliday}
+              onRemoveClosure={handleRemoveClosure}
+            />
+          ) : (
+            <div className="w-full">
+              <p className="text-sm text-gray-600">
+                Analytics has moved to the Owner Dashboard (Analytics tab).
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <ReviewSummary reviewData={reviewData} />
+    </div>
+  );
+}

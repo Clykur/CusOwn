@@ -7,19 +7,19 @@
 import {
   PHASE1_PAYMENT_BOOKING_POLICY,
   PHASE1_SCOPE_LOCKED,
-} from '../../config/policies/booking-invariants.policy';
+} from '@/config/policies/booking-invariants.policy';
 import {
   PHASE2_PAYMENT_HANDLERS_DO_NOT_MODIFY_BOOKING,
   PHASE2_SCOPE_LOCKED,
-} from '../../config/policies/payment-audit-replay.policy';
+} from '@/config/policies/payment-audit-replay.policy';
 import {
   PHASE3_LAZY_EXPIRE_SOURCE_CRON,
   PHASE3_LAZY_EXPIRE_SOURCE_LAZY_HEAL,
   PHASE3_SCOPE_LOCKED,
-} from '../../config/policies/cron-self-heal-metrics.policy';
-import { PHASE4_SCOPE_LOCKED } from '../../config/policies/observability-lifecycle.policy';
-import { PHASE5_SCOPE_LOCKED } from '../../config/policies/security-compliance.policy';
-import { PHASE6_SCOPE_LOCKED } from '../../config/policies/ux-release-safety.policy';
+} from '@/config/policies/cron-self-heal-metrics.policy';
+import { PHASE4_SCOPE_LOCKED } from '@/config/policies/observability-lifecycle.policy';
+import { PHASE5_SCOPE_LOCKED } from '@/config/policies/security-compliance.policy';
+import { PHASE6_SCOPE_LOCKED } from '@/config/policies/ux-release-safety.policy';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

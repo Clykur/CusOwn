@@ -1,8 +1,5 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { vitestAliases } from './vitest-aliases.mts';
 
 /**
  * Unit-only Vitest config for CI. Excludes integration and e2e (require live DB).
@@ -39,15 +36,15 @@ export default defineConfig({
       // Only measure coverage for API routes that have full unit-test coverage (target 100%).
       // Additional routes/services can be added to include as their tests reach full coverage.
       include: [
-        'app/api/admin/users/route.ts',
-        'app/api/auth/session/route.ts',
-        'app/api/business-categories/route.ts',
-        'app/api/cron/health-check/route.ts',
-        'lib/utils/day-of-week.ts',
-        'lib/utils/analytics-chart-format.ts',
-        'lib/uuid.ts',
-        'lib/utils/business-schedule-validation.ts',
-        'lib/utils/date-range-admin.ts',
+        'apps/app/app/api/admin/users/route.ts',
+        'apps/app/app/api/auth/session/route.ts',
+        'apps/app/app/api/business-categories/route.ts',
+        'apps/app/app/api/cron/health-check/route.ts',
+        'packages/shared/src/lib/utils/day-of-week.ts',
+        'packages/shared/src/lib/utils/analytics-chart-format.ts',
+        'packages/shared/src/lib/uuid.ts',
+        'packages/shared/src/lib/utils/business-schedule-validation.ts',
+        'packages/shared/src/lib/utils/date-range-admin.ts',
       ],
       exclude: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**', '**/.next/**'],
       thresholds: {
@@ -59,8 +56,6 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
-    },
+    alias: vitestAliases,
   },
 });

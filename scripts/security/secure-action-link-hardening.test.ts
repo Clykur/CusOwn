@@ -47,9 +47,15 @@ export async function runSecureActionLinkHardeningTests(): Promise<void> {
       keyPrefix: 'test_secure_link_rate_limit',
     });
     const url = 'http://localhost/api/bookings/123?token=abc';
-    const req1 = new NextRequest(url, { headers: { 'x-forwarded-for': '10.0.0.99' } });
-    const req2 = new NextRequest(url, { headers: { 'x-forwarded-for': '10.0.0.99' } });
-    const req3 = new NextRequest(url, { headers: { 'x-forwarded-for': '10.0.0.99' } });
+    const req1 = new NextRequest(url, {
+      headers: { 'x-forwarded-for': '10.0.0.99' },
+    });
+    const req2 = new NextRequest(url, {
+      headers: { 'x-forwarded-for': '10.0.0.99' },
+    });
+    const req3 = new NextRequest(url, {
+      headers: { 'x-forwarded-for': '10.0.0.99' },
+    });
     const r1 = await limiter(req1);
     const r2 = await limiter(req2);
     const r3 = await limiter(req3);
@@ -66,8 +72,12 @@ export async function runSecureActionLinkHardeningTests(): Promise<void> {
       keyPrefix: 'test_secure_link_rate_limit_ip',
     });
     const url = 'http://localhost/api/bookings/123?token=abc';
-    const reqA = new NextRequest(url, { headers: { 'x-forwarded-for': '10.0.0.1' } });
-    const reqB = new NextRequest(url, { headers: { 'x-forwarded-for': '10.0.0.2' } });
+    const reqA = new NextRequest(url, {
+      headers: { 'x-forwarded-for': '10.0.0.1' },
+    });
+    const reqB = new NextRequest(url, {
+      headers: { 'x-forwarded-for': '10.0.0.2' },
+    });
     const rA = await limiter(reqA);
     const rB = await limiter(reqB);
     assert(rA === null, 'first IP should not be rate limited');

@@ -87,7 +87,10 @@ async function simulateServiceOutage(runner: TestRunner) {
     const res = await fetch(`${apiBase}/api/payments/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ simulate_outage: true, booking_id: data.booking_id }),
+      body: JSON.stringify({
+        simulate_outage: true,
+        booking_id: data.booking_id,
+      }),
     }).catch((e) => {
       console.error('verify request failed (expected in outage simulation):', e);
       return null as any;

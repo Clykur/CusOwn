@@ -4,7 +4,7 @@
  * ROUTES constants, getAdminDashboardUrl, getOwnerDashboardUrl. No window/fetch.
  */
 
-import { ROUTES, getAdminDashboardUrl, getOwnerDashboardUrl } from '../../lib/utils/navigation';
+import { ROUTES, getAdminDashboardUrl, getOwnerDashboardUrl } from '@/lib/utils/navigation';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

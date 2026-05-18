@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { hashToken } from '../../lib/utils/token-hash.server';
+import { hashToken } from '@/lib/utils/token-hash.server';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

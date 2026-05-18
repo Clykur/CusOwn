@@ -423,7 +423,7 @@ async function testPaymentSafety() {
       // Then trying to complete it
       // For now, we verify the state machine prevents it
 
-      const { paymentStateMachine } = require('../lib/state/payment-state-machine');
+      const { paymentStateMachine } = await import('@/lib/state/payment-state-machine');
 
       if (paymentStateMachine.canTransition('expired', 'verify')) {
         throw new Error('State machine incorrectly allows expired → completed');

@@ -4,7 +4,7 @@
  * withRequestContext, getCorrelationId. Uses Node AsyncLocalStorage.
  */
 
-import { withRequestContext, getCorrelationId } from '../../lib/monitoring/request-context';
+import { withRequestContext, getCorrelationId } from '@/lib/monitoring/request-context';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

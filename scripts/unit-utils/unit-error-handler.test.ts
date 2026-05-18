@@ -4,8 +4,8 @@
  * Pure: getUserFriendlyError, handleApiError. logError has side effects; test it does not throw.
  */
 
-import { getUserFriendlyError, handleApiError, logError } from '../../lib/utils/error-handler';
-import { ERROR_MESSAGES } from '../../config/constants';
+import { getUserFriendlyError, handleApiError, logError } from '@/lib/utils/error-handler';
+import { ERROR_MESSAGES } from '@/config/constants';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -142,7 +142,9 @@ export async function runUnitErrorHandlerAsyncTests(): Promise<void> {
   });
 
   runAsyncTest('handleApiError uses data.error when present', async () => {
-    const res = new Response(JSON.stringify({ error: 'Custom API error' }), { status: 400 });
+    const res = new Response(JSON.stringify({ error: 'Custom API error' }), {
+      status: 400,
+    });
     const out = await handleApiError(res);
     assert(out === 'Custom API error', `Expected API error text, got '${out}'`);
   });

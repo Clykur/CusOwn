@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 
-import { retry } from '../../lib/resilience/retry';
+import { retry } from '@/lib/resilience/retry';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

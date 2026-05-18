@@ -6,9 +6,8 @@
  */
 
 import { createHmac } from 'crypto';
+import { isValidUUID, sanitizeInput } from '@/lib/utils/security';
 import {
-  isValidUUID,
-  sanitizeInput,
   generateResourceToken,
   validateResourceToken,
   generateSalonToken,
@@ -16,7 +15,7 @@ import {
   getSecureResourceUrl,
   getSecureSalonUrl,
   validateBookingAccess,
-} from '../../lib/utils/security';
+} from '@/lib/utils/security.server';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

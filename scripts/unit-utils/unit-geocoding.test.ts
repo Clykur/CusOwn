@@ -4,7 +4,7 @@
  * Run with: npx ts-node scripts/unit-geocoding.test.ts
  */
 
-import { NominatimService } from '../../lib/geocoding/nominatim-service';
+import { NominatimService } from '@/lib/geocoding/nominatim-service';
 
 // simple assert helpers
 function assert(condition: boolean, message: string) {
@@ -31,7 +31,11 @@ async function run() {
     if (url.includes('reverse?')) {
       return {
         ok: true,
-        json: async () => ({ lat: '40.0', lon: '-74.0', display_name: 'Test Reverse' }),
+        json: async () => ({
+          lat: '40.0',
+          lon: '-74.0',
+          display_name: 'Test Reverse',
+        }),
       } as any;
     }
     return { ok: false, status: 404 } as any;

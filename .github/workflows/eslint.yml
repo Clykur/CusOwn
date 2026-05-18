@@ -38,7 +38,7 @@ jobs:
       - name: Run ESLint
         run: |
           set +e
-          npx eslint app components lib services repositories proxy.ts \
+          npx eslint . \
             --config .eslintrc.js \
             --max-warnings 0 \
             -f @microsoft/eslint-formatter-sarif \

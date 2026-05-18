@@ -14,8 +14,8 @@ import {
   sanitizeDate,
   sanitizeTime,
   sanitizeObject,
-  sanitizeRequestBody,
-} from '../../lib/security/input-sanitizer';
+} from '@/lib/security/input-sanitizer';
+import { sanitizeRequestBody } from '@/lib/security/input-sanitizer.server';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);

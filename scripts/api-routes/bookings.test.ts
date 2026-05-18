@@ -66,8 +66,12 @@ describe('GET /api/bookings/[id]', () => {
 
   it('returns 404 for invalid (non-UUID) id', async () => {
     const { GET } = await import('@/app/api/bookings/[id]/route');
-    const req = new NextRequest('http://localhost/api/bookings/not-a-uuid', { method: 'GET' });
-    const res = await GET(req, { params: Promise.resolve({ id: 'not-a-uuid' }) });
+    const req = new NextRequest('http://localhost/api/bookings/not-a-uuid', {
+      method: 'GET',
+    });
+    const res = await GET(req, {
+      params: Promise.resolve({ id: 'not-a-uuid' }),
+    });
     expect(res.status).toBe(404);
     const body = (await res.json()) as { success?: boolean; error?: string };
     expect(body.success).toBe(false);
@@ -157,7 +161,10 @@ describe('GET /api/bookings/[id]', () => {
       status: 'confirmed',
     };
     mockGetBookingByUuidWithDetails.mockResolvedValue(booking);
-    mockGetAuthContext.mockResolvedValue({ user: { id: 'user-1' }, profile: null });
+    mockGetAuthContext.mockResolvedValue({
+      user: { id: 'user-1' },
+      profile: null,
+    });
     mockGetUserBusinesses.mockResolvedValue([]);
     const { GET } = await import('@/app/api/bookings/[id]/route');
     const req = new NextRequest(
