@@ -84,7 +84,7 @@ export class DashboardService {
    */
   async getOwnerDashboard(
     ownerId: string,
-    options?: { fromDate?: string; toDate?: string }
+    options?: { fromDate?: string; toDate?: string; businessId?: string }
   ): Promise<OwnerDashboardData> {
     const cacheKey = this.buildOwnerCacheKey(ownerId, options);
 
@@ -169,13 +169,14 @@ export class DashboardService {
    */
   private buildOwnerCacheKey(
     ownerId: string,
-    options?: { fromDate?: string; toDate?: string }
+    options?: { fromDate?: string; toDate?: string; businessId?: string }
   ): string {
     const base = `${CACHE_PREFIX.OWNER_DASHBOARD}${ownerId}`;
+    const biz = options?.businessId || 'all';
     if (options?.fromDate || options?.toDate) {
-      return `${base}:${options.fromDate || 'any'}:${options.toDate || 'any'}`;
+      return `${base}:${biz}:${options.fromDate || 'any'}:${options.toDate || 'any'}`;
     }
-    return `${base}:all`;
+    return `${base}:${biz}:all`;
   }
 
   /**
@@ -183,7 +184,7 @@ export class DashboardService {
    */
   private async fetchOwnerDashboardData(
     ownerId: string,
-    options?: { fromDate?: string; toDate?: string }
+    options?: { fromDate?: string; toDate?: string; businessId?: string }
   ): Promise<OwnerDashboardData> {
     const supabase = requireSupabaseAdmin();
 
@@ -193,7 +194,16 @@ export class DashboardService {
       return this.emptyOwnerDashboard();
     }
 
-    const businessIds = businesses.map((b) => b.id);
+    let businessIds = businesses.map((b) => b.id);
+
+    // Apply business filter if provided
+    if (options?.businessId && options.businessId !== 'all') {
+      businessIds = businessIds.filter((id) => id === options.businessId);
+      if (businessIds.length === 0) {
+        return this.emptyOwnerDashboard();
+      }
+    }
+
     const todayStr = getISTDateString();
 
     // ---------------------------
@@ -217,17 +227,47 @@ export class DashboardService {
 
       // Direct date filtering on created_at
       if (options?.fromDate) {
-        query = query.gte('created_at', options.fromDate);
+        query = query.gte('created_at', `${options.fromDate}T00:00:00`);
       }
+
       if (options?.toDate) {
-        query = query.lte('created_at', options.toDate);
+        query = query.lte('created_at', `${options.toDate}T23:59:59`);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        console.error('[DASHBOARD] Pagination page', pageCount, 'error:', error);
-        break;
+        console.error('[DASHBOARD QUERY ERROR]', error);
+
+        // fallback without undo_used_at
+        const fallbackQuery = supabase
+          .from('bookings')
+          .select(
+            'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at'
+          )
+          .in('business_id', businessIds)
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        const fallback = await fallbackQuery;
+
+        if (fallback.error) {
+          console.error('[DASHBOARD FALLBACK ERROR]', fallback.error);
+          break;
+        }
+
+        if (!fallback.data?.length) {
+          break;
+        }
+
+        allBookings.push(...fallback.data);
+
+        if (fallback.data.length < pageSize) {
+          break;
+        }
+
+        from += pageSize;
+        continue;
       }
 
       if (!data || data.length === 0) {
@@ -246,6 +286,30 @@ export class DashboardService {
     // ---------------------------
     // RELATED DATA
     // ---------------------------
+    const customerUserIds = [
+      ...new Set(allBookings.map((b) => b.customer_user_id).filter(Boolean)),
+    ];
+    console.log('[DASHBOARD BOOKINGS FOUND]', allBookings.length);
+    let customerProfiles: any[] = [];
+    if (customerUserIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, profile_media:profile_media_id(id, bucket_name, storage_path)')
+        .in('id', customerUserIds);
+
+      if (profilesError) {
+        console.error('[DASHBOARD] Customer profiles batch query error:', profilesError);
+      } else {
+        customerProfiles = profiles || [];
+      }
+    }
+
+    const profileMap = new Map(customerProfiles.map((p) => [p.id, p]));
+    allBookings = allBookings.map((b) => ({
+      ...b,
+      customer_profile: b.customer_user_id ? profileMap.get(b.customer_user_id) || null : null,
+    }));
+
     const bookingSlotIds = [...new Set(allBookings.map((b) => b.slot_id).filter(Boolean))];
 
     let slots: Slot[] = [];

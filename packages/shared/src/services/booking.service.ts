@@ -133,19 +133,24 @@ export class BookingService {
 
     const { data } = await supabaseAdmin
       .from('booking_services')
-      .select('booking_id, service_id, services(name)')
+      .select('booking_id, service_id, price_cents, services(name, price_cents)')
       .in('booking_id', bookingIds);
 
     if (!data || data.length === 0) return new Map();
 
-    const serviceMap = new Map<string, { id: string; name: string }[]>();
+    const serviceMap = new Map<string, { id: string; name: string; price_cents: number }[]>();
 
     data.forEach((item: any) => {
       const name = item.services?.name;
       if (!name) return;
 
+      const priceCents =
+        item.price_cents !== null && item.price_cents !== undefined
+          ? item.price_cents
+          : (item.services?.price_cents ?? 0);
+
       const existing = serviceMap.get(item.booking_id) ?? [];
-      existing.push({ id: item.service_id, name });
+      existing.push({ id: item.service_id, name, price_cents: priceCents });
       serviceMap.set(item.booking_id, existing);
     });
 
@@ -251,7 +256,7 @@ export class BookingService {
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
+        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at, total_price_cents'
       )
       .eq('booking_id', bookingId)
       .single();
@@ -292,7 +297,7 @@ export class BookingService {
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
+        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at, total_price_cents'
       )
       .eq('id', id)
       .single();
@@ -304,7 +309,25 @@ export class BookingService {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    return data;
+    const bookingData = data as any;
+
+    if (bookingData && bookingData.customer_user_id) {
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, full_name, profile_media:profile_media_id(id, bucket_name, storage_path)')
+        .eq('id', bookingData.customer_user_id)
+        .single();
+
+      if (!profileError && profile) {
+        bookingData.customer_profile = profile;
+      } else {
+        bookingData.customer_profile = null;
+      }
+    } else if (bookingData) {
+      bookingData.customer_profile = null;
+    }
+
+    return bookingData;
   }
 
   async getBookingByUuidWithDetails(id: string): Promise<BookingWithDetails | null> {
@@ -326,7 +349,8 @@ export class BookingService {
       salon: salon || undefined,
       slot: slot || undefined,
       review: reviewMap.get(booking.id) ?? undefined,
-      service_name: serviceMap.get(booking.id) ?? undefined,
+      service_name: serviceMap.get(booking.id)?.[0]?.name ?? undefined,
+      services: serviceMap.get(booking.id) ?? [],
     };
   }
 
@@ -588,9 +612,9 @@ export class BookingService {
   }
 
   private static BOOKING_SELECT =
-    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at';
+    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at, total_price_cents';
   private static BOOKING_SELECT_WITHOUT_UNDO =
-    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at';
+    'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, reschedule_count, late_cancellation, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, total_price_cents';
 
   /**
    * Batch-fetch bookings with details by UUIDs. Used to avoid N+1 in expireOldBookings.
@@ -1057,7 +1081,7 @@ export class BookingService {
     const { data: bookings, error } = await supabaseAdmin
       .from('bookings')
       .select(
-        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at'
+        'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, rescheduled_from_booking_id, rescheduled_at, rescheduled_by, reschedule_reason, no_show, no_show_marked_at, no_show_marked_by, created_at, updated_at, undo_used_at, total_price_cents'
       )
       .eq('customer_user_id', customerUserId)
       .order('created_at', { ascending: false })
@@ -1096,7 +1120,7 @@ export class BookingService {
 
       supabaseAdmin
         .from('booking_services')
-        .select('booking_id, service_id, services(name)')
+        .select('booking_id, service_id, price_cents, services(name, price_cents)')
         .in(
           'booking_id',
           list.map((b: { id: string }) => b.id)
@@ -1109,12 +1133,18 @@ export class BookingService {
     salonList.forEach((s) => salonMap.set(s.id, s));
     const slotMap = new Map<string, Slot>();
     slotList.forEach((s) => slotMap.set(s.id, s));
-    const serviceMap = new Map<string, { id: string; name: string }[]>();
+    const serviceMap = new Map<string, { id: string; name: string; price_cents: number }[]>();
     (services.data || []).forEach((item: any) => {
       const name = item.services?.name;
       if (!name) return;
+
+      const priceCents =
+        item.price_cents !== null && item.price_cents !== undefined
+          ? item.price_cents
+          : (item.services?.price_cents ?? 0);
+
       const existing = serviceMap.get(item.booking_id) ?? [];
-      existing.push({ id: item.service_id, name });
+      existing.push({ id: item.service_id, name, price_cents: priceCents });
       serviceMap.set(item.booking_id, existing);
     });
     const bookingsWithDetails: BookingWithDetails[] = list.map((booking: Booking) => ({

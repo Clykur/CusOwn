@@ -27,6 +27,18 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    if (token) {
+      try {
+        await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+      } catch (err) {
+        console.error('[PROXY] Failed to set session from Bearer token:', err);
+      }
+    }
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

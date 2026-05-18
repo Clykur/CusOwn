@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { env, isQuietInfraLogs, isSupabaseConfigured } from '@cusown/config';
+import { env } from '@cusown/config';
 
 /**
  * Server-side Supabase admin client
@@ -23,15 +23,12 @@ const createSupabaseAdmin = (): SupabaseClient | null => {
     return null;
   }
 
-  const quiet = isQuietInfraLogs() || !isSupabaseConfigured();
-  if (url.includes('placeholder.supabase.co') && !quiet) {
+  if (url.includes('placeholder.supabase.co')) {
     console.warn('[SUPABASE] ⚠️  Using placeholder URL. API calls will fail.');
   }
 
   try {
-    if (!quiet) {
-      console.log(`[SUPABASE] Initializing admin client with URL: ${url}`);
-    }
+    console.log(`[SUPABASE] Initializing admin client with URL: ${url}`);
     return createClient(url, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -46,14 +43,25 @@ const createSupabaseAdmin = (): SupabaseClient | null => {
   }
 };
 
+const globalForSupabase = globalThis as unknown as {
+  supabaseAdminInstance: SupabaseClient | null;
+};
+
 // Initialize immediately but safely
-try {
-  supabaseAdminInstance = createSupabaseAdmin();
-} catch (error) {
-  // If initialization fails, set to null
-  supabaseAdminInstance = null;
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Supabase admin client initialization failed:', error);
+if (globalForSupabase.supabaseAdminInstance) {
+  supabaseAdminInstance = globalForSupabase.supabaseAdminInstance;
+} else {
+  try {
+    supabaseAdminInstance = createSupabaseAdmin();
+    if (process.env.NODE_ENV !== 'production' && supabaseAdminInstance) {
+      globalForSupabase.supabaseAdminInstance = supabaseAdminInstance;
+    }
+  } catch (error) {
+    // If initialization fails, set to null
+    supabaseAdminInstance = null;
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Supabase admin client initialization failed:', error);
+    }
   }
 }
 
@@ -64,6 +72,9 @@ try {
 export const requireSupabaseAdmin = (): SupabaseClient => {
   if (!supabaseAdminInstance) {
     supabaseAdminInstance = createSupabaseAdmin();
+    if (process.env.NODE_ENV !== 'production' && supabaseAdminInstance) {
+      globalForSupabase.supabaseAdminInstance = supabaseAdminInstance;
+    }
   }
 
   if (!supabaseAdminInstance) {
