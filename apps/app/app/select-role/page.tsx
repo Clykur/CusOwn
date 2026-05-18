@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { getServerSessionClient } from '@cusown/shared';
 import { isAdmin } from '@cusown/shared';
 import { ROUTES, getOwnerDashboardUrl } from '@cusown/shared';
-import { UI_CONTEXT } from '@cusown/config';
+import { UI_CONTEXT } from '@cusown/config/constants';
 
 const ROLE_ACCESS_ERRORS = {
   not_owner: UI_CONTEXT.ROLE_ACCESS_DENIED_NOT_OWNER,
