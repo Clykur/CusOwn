@@ -51,6 +51,7 @@ const ENFORCED_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs
 const ALLOWED_PROCESS_ENV_FILES = new Set([
   'packages/config/src/env.ts',
   'packages/config/src/env.public.ts',
+  'packages/config/src/infra-log-quiet.ts',
   'apps/app/next.config.js',
   'apps/marketing/next.config.js',
   'scripts/infrastructure/check-node-version.js',
