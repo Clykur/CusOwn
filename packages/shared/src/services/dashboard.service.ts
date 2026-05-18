@@ -219,7 +219,7 @@ export class DashboardService {
       let query = supabase
         .from('bookings')
         .select(
-          'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at'
+          'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, undo_used_at, total_price_cents, total_duration_minutes'
         )
         .in('business_id', businessIds)
         .order('created_at', { ascending: false })
@@ -243,7 +243,7 @@ export class DashboardService {
         const fallbackQuery = supabase
           .from('bookings')
           .select(
-            'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at'
+            'id, business_id, slot_id, customer_name, customer_phone, booking_id, status, cancelled_by, cancellation_reason, cancelled_at, customer_user_id, no_show, no_show_marked_at, created_at, updated_at, total_price_cents, total_duration_minutes'
           )
           .in('business_id', businessIds)
           .order('created_at', { ascending: false })
@@ -344,6 +344,35 @@ export class DashboardService {
       }));
     }
 
+    let bookingServices: any[] = [];
+    if (bookingIds.length > 0) {
+      const { data, error } = await supabase
+        .from('booking_services')
+        .select('booking_id, service_id, price_cents, services(name, price_cents, duration_minutes)')
+        .in('booking_id', bookingIds);
+
+      if (!error && data) {
+        bookingServices = data;
+      } else if (error) {
+        console.error('[Dashboard] booking_services error:', error);
+      }
+    }
+
+    const servicesMap = new Map<string, any[]>();
+    bookingServices.forEach((bs) => {
+      const existing = servicesMap.get(bs.booking_id) || [];
+      existing.push({
+        id: bs.service_id,
+        price_cents: bs.price_cents,
+        service: bs.services ? {
+          name: bs.services.name,
+          price_cents: bs.services.price_cents,
+          duration_minutes: bs.services.duration_minutes
+        } : null
+      });
+      servicesMap.set(bs.booking_id, existing);
+    });
+
     // ---------------------------
     // MAP + ENRICH
     // ---------------------------
@@ -356,6 +385,7 @@ export class DashboardService {
       slot: slotMap.get(b.slot_id),
       salon: businessMap.get(b.business_id),
       review: reviewMap.get(b.id),
+      services: servicesMap.get(b.id) || [],
     }));
 
     // ---------------------------
