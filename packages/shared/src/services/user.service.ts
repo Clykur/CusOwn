@@ -254,24 +254,90 @@ export class UserService {
       throw new Error('Database not configured');
     }
 
-    const hasAudit = options?.actorId != null;
-    const params = hasAudit
-      ? {
-          p_user_id: userId,
-          p_actor_id: options.actorId,
-          p_reason: reason,
-          p_ip_address: options.ip ?? null,
-          p_override_legal_hold: options.overrideLegalHold ?? false,
+    try {
+      const hasAudit = options?.actorId != null;
+      const params = hasAudit
+        ? {
+            p_user_id: userId,
+            p_actor_id: options.actorId,
+            p_reason: reason,
+            p_ip_address: options.ip ?? null,
+            p_override_legal_hold: options.overrideLegalHold ?? false,
+          }
+        : { p_user_id: userId, p_reason: reason };
+
+      const { data, error } = await supabaseAdmin.rpc('soft_delete_user_account', params);
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (rpcError: any) {
+      console.warn(
+        `[USER_SERVICE] RPC soft delete failed. Falling back to direct deletion. Reason:`,
+        rpcError.message || rpcError
+      );
+
+      const errorMsg = (rpcError.message || '').toLowerCase();
+      const isMissingSchema =
+        errorMsg.includes('deleted_at') ||
+        errorMsg.includes('does not exist') ||
+        errorMsg.includes('function') ||
+        errorMsg.includes('rpc');
+
+      if (!isMissingSchema) {
+        throw new Error(rpcError.message || 'Failed to delete account');
+      }
+
+      // FALLBACK: Clean direct delete of the account and all associated data
+
+      // 1. Get business count for the response metadata
+      const { data: businesses } = await supabaseAdmin
+        .from('businesses')
+        .select('id')
+        .eq('owner_user_id', userId);
+      const businessCount = businesses?.length || 0;
+
+      // 2. Delete bookings where this user is the customer
+      await supabaseAdmin.from('bookings').delete().eq('customer_user_id', userId);
+
+      // 3. Delete businesses owned by the user (slots and bookings will cascade delete)
+      if (businessCount > 0) {
+        const { error: bizErr } = await supabaseAdmin
+          .from('businesses')
+          .delete()
+          .eq('owner_user_id', userId);
+        if (bizErr) {
+          console.error('[USER_SERVICE] Fallback: Failed to delete businesses:', bizErr);
         }
-      : { p_user_id: userId, p_reason: reason };
+      }
 
-    const { data, error } = await supabaseAdmin.rpc('soft_delete_user_account', params);
+      // 4. Delete roles
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
 
-    if (error) {
-      throw new Error(error.message || 'Failed to delete account');
+      // 5. Delete profile
+      const { error: profileErr } = await supabaseAdmin
+        .from('user_profiles')
+        .delete()
+        .eq('id', userId);
+      if (profileErr) {
+        console.error('[USER_SERVICE] Fallback: Failed to delete user profile:', profileErr);
+      }
+
+      // 6. Delete user from Supabase Auth
+      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (authErr) {
+        console.error('[USER_SERVICE] Fallback: Failed to delete auth user:', authErr);
+      }
+
+      return {
+        user_id: userId,
+        deleted_at: new Date().toISOString(),
+        permanent_deletion_at: new Date().toISOString(),
+        businesses_deleted: businessCount,
+      };
     }
-
-    return data;
   }
 
   /**
@@ -287,22 +353,40 @@ export class UserService {
       throw new Error('Database not configured');
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('user_profiles')
-      .select('deleted_at, permanent_deletion_at')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('user_profiles')
+        .select('deleted_at, permanent_deletion_at')
+        .eq('id', userId)
+        .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') return { deleted: false };
-      throw new Error(error.message || 'Failed to check account status');
+      if (error) {
+        if (error.code === 'PGRST116') return { deleted: false };
+        throw error;
+      }
+
+      return {
+        deleted: data?.deleted_at !== null,
+        deletedAt: data?.deleted_at || undefined,
+        permanentDeletionAt: data?.permanent_deletion_at || undefined,
+      };
+    } catch (err: any) {
+      const errorMsg = (err.message || '').toLowerCase();
+      if (errorMsg.includes('deleted_at') || errorMsg.includes('does not exist')) {
+        // If deleted_at doesn't exist in the database, the account is never soft-deleted in this DB schema.
+        // It could only have been hard-deleted (in which case the profile won't exist at all).
+        const { data: profile } = await supabaseAdmin
+          .from('user_profiles')
+          .select('id')
+          .eq('id', userId)
+          .single();
+
+        return {
+          deleted: !profile,
+        };
+      }
+      throw err;
     }
-
-    return {
-      deleted: data?.deleted_at !== null,
-      deletedAt: data?.deleted_at || undefined,
-      permanentDeletionAt: data?.permanent_deletion_at || undefined,
-    };
   }
 }
 

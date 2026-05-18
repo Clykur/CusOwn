@@ -222,6 +222,15 @@ export type BookingWithDetails = Booking & {
   service_name?: string;
   services?: { id: string; name: string }[];
   review?: BookingReview;
+  customer_profile?: {
+    id: string;
+    full_name: string | null;
+    profile_media?: {
+      id: string;
+      bucket_name: string;
+      storage_path: string;
+    } | null;
+  } | null;
 };
 
 export type ApiResponse<T = unknown> = {

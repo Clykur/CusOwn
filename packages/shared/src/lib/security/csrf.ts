@@ -37,6 +37,12 @@ export const validateCSRFToken = async (request: NextRequest): Promise<boolean> 
     return true;
   }
 
+  // Bypass CSRF for Bearer token authenticated requests (mobile/API clients)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return true;
+  }
+
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
   const headerToken = request.headers.get(CSRF_TOKEN_HEADER);
 
@@ -61,6 +67,12 @@ export const csrfProtection = async (request: NextRequest): Promise<NextResponse
   }
 
   if (!STATE_CHANGING_METHODS.has(request.method)) {
+    return null;
+  }
+
+  // Bypass CSRF protection entirely for Bearer token authenticated requests (mobile/API clients)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
     return null;
   }
 

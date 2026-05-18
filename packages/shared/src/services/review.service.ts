@@ -16,6 +16,7 @@ export type ReviewListItem = {
   comment: string | null;
   is_hidden: boolean;
   created_at: string;
+  customer_name?: string;
 };
 
 export type ListReviewsResult = {
@@ -72,7 +73,24 @@ export async function listReviewsByBusiness(
 
   const { data: rows, error } = await supabase
     .from('reviews')
-    .select('id, booking_id, business_id, user_id, rating, comment, is_hidden, created_at')
+    .select(
+      `
+      id,
+      booking_id,
+      business_id,
+      user_id,
+      rating,
+      comment,
+      is_hidden,
+      created_at,
+      bookings (
+        customer_name
+      ),
+      user_profiles (
+        full_name
+      )
+    `
+    )
     .eq('business_id', businessId)
     .eq('is_hidden', false)
     .order('created_at', { ascending: false })
@@ -82,11 +100,31 @@ export async function listReviewsByBusiness(
     return { reviews: [], total: 0, page, limit, has_more: false };
   }
 
-  const reviews = (rows ?? []) as ReviewListItem[];
-  const hasMore = reviews.length === limit;
-  const total = hasMore ? offset + reviews.length + 1 : offset + reviews.length;
+  const mappedReviews = (rows ?? []).map((row: any) => {
+    let name = 'Client';
+    if (row.user_profiles?.full_name) {
+      name = row.user_profiles.full_name;
+    } else if (row.bookings?.customer_name) {
+      name = row.bookings.customer_name;
+    }
 
-  const userIds = [...new Set(reviews.map((r) => r.user_id).filter(Boolean))] as string[];
+    return {
+      id: row.id,
+      booking_id: row.booking_id,
+      business_id: row.business_id,
+      user_id: row.user_id,
+      rating: row.rating,
+      comment: row.comment,
+      is_hidden: row.is_hidden,
+      created_at: row.created_at,
+      customer_name: name,
+    };
+  });
+
+  const hasMore = mappedReviews.length === limit;
+  const total = hasMore ? offset + mappedReviews.length + 1 : offset + mappedReviews.length;
+
+  const userIds = [...new Set(mappedReviews.map((r) => r.user_id).filter(Boolean))] as string[];
   let deletedIds = new Set<string>();
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
@@ -100,10 +138,14 @@ export async function listReviewsByBusiness(
     );
   }
 
-  const anonymized = reviews.map((r) => ({
-    ...r,
-    user_id: r.user_id && deletedIds.has(r.user_id) ? null : r.user_id,
-  }));
+  const anonymized = mappedReviews.map((r) => {
+    const isAnonymized = r.user_id && deletedIds.has(r.user_id);
+    return {
+      ...r,
+      user_id: isAnonymized ? null : r.user_id,
+      customer_name: isAnonymized ? 'Client' : r.customer_name,
+    };
+  });
 
   return {
     reviews: anonymized,

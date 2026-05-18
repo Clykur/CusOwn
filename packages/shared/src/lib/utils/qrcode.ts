@@ -1,5 +1,5 @@
-import { getBookingUrl } from './url.server';
 import { NextRequest } from 'next/server';
+import { BOOKING_LINK_PREFIX } from '@cusown/config';
 
 /**
  * Generate QR code data URL for a booking link
@@ -32,12 +32,14 @@ export const generateQRCodeDataUrl = async (bookingUrl: string): Promise<string>
  * Generate QR code for a booking link
  * Returns base64 encoded image string
  * @param bookingLink - The booking link identifier
- * @param request - Optional NextRequest for proper URL generation (production vs dev)
+ * @param _request - Optional NextRequest for proper URL generation (production vs dev)
  */
 export const generateQRCodeForBookingLink = async (
   bookingLink: string,
-  request?: NextRequest
+  _request?: NextRequest
 ): Promise<string> => {
-  const bookingUrl = getBookingUrl(bookingLink, request);
+  // Always use the production URL for the QR code instead of localhost/development
+  const productionBaseUrl = 'https://cusown.clykur.com';
+  const bookingUrl = `${productionBaseUrl}${BOOKING_LINK_PREFIX}${bookingLink}`;
   return generateQRCodeDataUrl(bookingUrl);
 };
