@@ -1,8 +1,0 @@
-{
-  "github": {
-    "enabled": false
-  },
-  "framework": "nextjs",
-  "buildCommand": "npm run build:strict",
-  "outputDirectory": ".next"
-}
