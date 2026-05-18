@@ -5,9 +5,8 @@ import { Suspense } from 'react';
 import { AnalyticsClient } from '@/components/analytics-client';
 import { PerformanceMonitor } from '@/components/performance-monitor';
 import { AuthFlowDebug } from '@/components/auth/auth-flow-debug';
-import { publicEnv } from '@cusown/config';
+import { publicEnv } from '@cusown/config/env.public';
 import './globals.css';
-import '@cusown/shared';
 
 const isDev = publicEnv.nodeEnv === 'development';
 
