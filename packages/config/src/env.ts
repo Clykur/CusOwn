@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isQuietInfraLogs } from './infra-log-quiet';
 
 const optionalUrl = z
   .string()
@@ -85,9 +86,11 @@ const nextPublicSupabaseUrlSchema = IS_PRODUCTION
       .preprocess(trimmedOrUndefined, z.union([z.string().url(), z.undefined()]))
       .transform((val) => {
         if (val) return val;
-        console.warn(
-          '[env] NEXT_PUBLIC_SUPABASE_URL is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
-        );
+        if (!isQuietInfraLogs()) {
+          console.warn(
+            '[env] NEXT_PUBLIC_SUPABASE_URL is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
+          );
+        }
         return DEV_SUPABASE_URL;
       });
 
@@ -105,9 +108,11 @@ const nextPublicSupabaseAnonKeySchema = IS_PRODUCTION
       .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
       .transform((val) => {
         if (val) return val;
-        console.warn(
-          '[env] NEXT_PUBLIC_SUPABASE_ANON_KEY is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
-        );
+        if (!isQuietInfraLogs()) {
+          console.warn(
+            '[env] NEXT_PUBLIC_SUPABASE_ANON_KEY is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
+          );
+        }
         return DEV_SUPABASE_ANON_KEY;
       });
 
@@ -130,9 +135,11 @@ const supabaseServiceRoleKeySchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
         .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
         .transform((val) => {
           if (val) return val;
-          console.warn(
-            '[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.'
-          );
+          if (!isQuietInfraLogs()) {
+            console.warn(
+              '[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.'
+            );
+          }
           return DEV_SUPABASE_SERVICE_ROLE_KEY;
         });
 
@@ -156,9 +163,11 @@ const salonTokenSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
         .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
         .transform((val) => {
           if (val) return val;
-          console.warn(
-            '[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.'
-          );
+          if (!isQuietInfraLogs()) {
+            console.warn(
+              '[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.'
+            );
+          }
           return DEV_SALON_TOKEN_FALLBACK;
         });
 
@@ -177,9 +186,11 @@ const cronSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
         .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
         .transform((val) => {
           if (val) return val;
-          console.warn(
-            '[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.'
-          );
+          if (!isQuietInfraLogs()) {
+            console.warn(
+              '[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.'
+            );
+          }
           return '';
         });
 
@@ -392,7 +403,7 @@ function assertValidProductionSupabaseEnv(): void {
 }
 
 function warnDevIfSupabaseLooksLikePlaceholders(): void {
-  if (IS_PRODUCTION) return;
+  if (IS_PRODUCTION || isQuietInfraLogs()) return;
   const checks: { key: string; value: string }[] = [
     { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
     { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },

@@ -1,0 +1,13 @@
+{
+  "extends": "./apps/app/tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "**/.next/**",
+    "**/*.archived.ts",
+    "**/*.archived.tsx",
+    "**/* 2.ts",
+    "**/* 3.ts",
+    "**/* 4.ts"
+  ]
+}

@@ -5,7 +5,7 @@
  */
 
 import Redis from 'ioredis';
-import { env } from '@cusown/config';
+import { env, isQuietInfraLogs } from '@cusown/config';
 
 let redisInstance: Redis | null = null;
 let connectionAttempted = false;
@@ -19,10 +19,12 @@ function createRedisClient(): Redis | null {
   if (!redisUrl || !redisEnabled) {
     if (!redisDisabledLogged) {
       redisDisabledLogged = true;
-      const reason = !redisEnabled ? 'REDIS_ENABLED=false' : 'REDIS_URL is not set';
-      console.warn(
-        `[Redis] Caching unavailable (${reason}). API rate-limit/cache layers degrade without Redis; set REDIS_URL and REDIS_ENABLED=true for production caching.`
-      );
+      if (!isQuietInfraLogs()) {
+        const reason = !redisEnabled ? 'REDIS_ENABLED=false' : 'REDIS_URL is not set';
+        console.warn(
+          `[Redis] Caching unavailable (${reason}). API rate-limit/cache layers degrade without Redis; set REDIS_URL and REDIS_ENABLED=true for production caching.`
+        );
+      }
     }
     return null;
   }

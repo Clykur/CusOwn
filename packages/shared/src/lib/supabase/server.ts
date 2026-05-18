@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { env } from '@cusown/config';
+import { env, isQuietInfraLogs, isSupabaseConfigured } from '@cusown/config';
 
 /**
  * Server-side Supabase admin client
@@ -23,12 +23,15 @@ const createSupabaseAdmin = (): SupabaseClient | null => {
     return null;
   }
 
-  if (url.includes('placeholder.supabase.co')) {
+  const quiet = isQuietInfraLogs() || !isSupabaseConfigured();
+  if (url.includes('placeholder.supabase.co') && !quiet) {
     console.warn('[SUPABASE] ⚠️  Using placeholder URL. API calls will fail.');
   }
 
   try {
-    console.log(`[SUPABASE] Initializing admin client with URL: ${url}`);
+    if (!quiet) {
+      console.log(`[SUPABASE] Initializing admin client with URL: ${url}`);
+    }
     return createClient(url, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,

@@ -11,9 +11,9 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '../..');
 const bin = path.join(root, 'node_modules', '.bin', 'ts-prune');
-// Output lines look like: "app/page.tsx:26 - default"
+// Output lines look like: "apps/app/app/page.tsx:26 - default"
 const ignore =
-  '^(?:(?:app|components)/|config/policies/|instrumentation\\.ts|proxy\\.ts|tailwind\\.config\\.ts|middleware\\.ts)';
+  '^(?:(?:apps/app/(?:app|components)/)|packages/(?:shared|config)/src/|apps/app/(?:proxy|tailwind\\.config)\\.ts|instrumentation\\.ts)';
 
 const result = spawnSync(bin, ['--project', 'tsconfig.typecheck.json', '--ignore', ignore], {
   cwd: root,

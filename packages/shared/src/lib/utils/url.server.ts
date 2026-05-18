@@ -17,11 +17,10 @@ export const getBaseUrl = (request?: NextRequest): string => {
   if (origin && !isLocalhost(origin)) return origin;
 
   const host = request.headers.get('host');
-  if (host && !isLocalhost(host)) {
-    const protocol =
-      request.headers.get('x-forwarded-proto') ||
-      request.headers.get('x-forwarded-protocol') ||
-      'https';
+  if (host) {
+    const forwarded =
+      request.headers.get('x-forwarded-proto') || request.headers.get('x-forwarded-protocol');
+    const protocol = forwarded || (isLocalhost(host) ? 'http' : 'https');
     return `${protocol}://${host}`;
   }
 
