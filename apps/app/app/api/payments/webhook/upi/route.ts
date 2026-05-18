@@ -8,7 +8,7 @@ import {
 } from "@cusown/shared/server";
 import { createHash } from "crypto";
 import { env } from "@cusown/config";
-import { requireSupabaseAdmin } from "@cusown/shared/server";
+import { requireSupabaseAdmin, sanitizeForLog } from "@cusown/shared/server";
 
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
 
@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
       request.headers.get("x-upi-signature") ||
       request.headers.get("x-webhook-signature");
     if (!signature) {
-      console.warn(`[WEBHOOK] Missing signature from IP: ${clientIP}`);
+      console.warn(
+        `[WEBHOOK] Missing signature from IP: ${sanitizeForLog(clientIP)}`,
+      );
       return errorResponse("Missing signature", 401);
     }
 
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     if (!verifyUPIWebhookSignature(body, signature, secret)) {
       console.warn(
-        `[SECURITY] Invalid UPI webhook signature from IP: ${clientIP}`,
+        `[SECURITY] Invalid UPI webhook signature from IP: ${sanitizeForLog(clientIP)}`,
       );
       return errorResponse("Invalid signature", 401);
     }
@@ -55,9 +57,8 @@ export async function POST(request: NextRequest) {
     const payment =
       await paymentService.getPaymentByTransactionId(transactionId);
     if (!payment) {
-      const safeTransactionId = String(transactionId).replace(/[\r\n]/g, "");
       console.warn(
-        `[WEBHOOK] Payment not found for transaction: ${safeTransactionId}`,
+        `[WEBHOOK] Payment not found for transaction (length: ${sanitizeForLog(transactionId).length})`,
       );
       return errorResponse("Payment not found", 404);
     }
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Webhook processing failed";
-    console.error("[WEBHOOK] Error:", error);
+    console.error(`[WEBHOOK] Error: ${sanitizeForLog(error)}`);
     return errorResponse(message, 500);
   }
 }

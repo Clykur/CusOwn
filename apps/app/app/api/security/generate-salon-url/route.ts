@@ -3,6 +3,7 @@ import { getSecureSalonUrl, isValidUUID } from "@cusown/shared/server";
 import { env } from "@cusown/config";
 import { successResponse, errorResponse } from "@cusown/shared/server";
 import { enhancedRateLimit } from "@cusown/shared/server";
+import { sanitizeForLog } from "@cusown/shared/server";
 
 // Rate limit: 50 requests per minute per IP
 const strictRateLimit = enhancedRateLimit({
@@ -12,35 +13,43 @@ const strictRateLimit = enhancedRateLimit({
   keyPrefix: "secure_url_gen",
 });
 
+/** Safe salon id prefix for logs (call only after isValidUUID). */
+function salonIdLogPrefix(salonId: string): string {
+  const safe = sanitizeForLog(salonId);
+  return safe.length > 8 ? `${safe.slice(0, 8)}...` : safe || "(empty)";
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   console.log("[URL_GEN] Starting secure URL generation request");
 
   try {
-    // Apply rate limiting
-    console.log("[URL_GEN] Checking rate limits...");
     const rateLimitResponse = await strictRateLimit(request);
     if (rateLimitResponse) {
       console.warn("[URL_GEN] Rate limit exceeded");
       return rateLimitResponse;
     }
-    console.log("[URL_GEN] Rate limit check passed");
 
-    // Parse request body
-    console.log("[URL_GEN] Parsing request body...");
-    let body;
+    let body: unknown;
     try {
       body = await request.json();
-      console.log("[URL_GEN] Request body parsed successfully");
     } catch (parseError) {
-      console.error("[URL_GEN] Failed to parse request body:", parseError);
+      console.error(
+        `[URL_GEN] Failed to parse request body: ${sanitizeForLog(parseError)}`,
+      );
       return errorResponse("Invalid request body", 400);
     }
 
-    const { salonId } = body;
+    const salonId =
+      body &&
+      typeof body === "object" &&
+      body !== null &&
+      "salonId" in body
+        ? (body as { salonId: unknown }).salonId
+        : undefined;
+
     console.log(
-      "[URL_GEN] Received salonId:",
-      salonId ? "provided" : "missing",
+      `[URL_GEN] Received salonId: ${salonId === undefined ? "missing" : "provided"}`,
     );
 
     if (!salonId || typeof salonId !== "string") {
@@ -50,51 +59,41 @@ export async function POST(request: NextRequest) {
       return errorResponse("Salon ID is required", 400);
     }
 
-    console.log("[URL_GEN] Validating UUID format...");
     if (!isValidUUID(salonId)) {
       console.error(
-        "[URL_GEN] Validation failed: Invalid UUID format for salonId",
+        `[URL_GEN] Validation failed: Invalid UUID format for salonId (input length: ${salonId.length})`,
       );
       return errorResponse("Invalid salon ID format", 400);
     }
-    console.log("[URL_GEN] UUID format validation passed");
 
-    // Generate secure URL
-    console.log(
-      "[URL_GEN] Generating secure URL for salon:",
-      salonId.substring(0, 8) + "...",
-    );
+    const idPrefix = salonIdLogPrefix(salonId);
+    console.log(`[URL_GEN] Generating secure URL for salon: ${idPrefix}`);
+
     let secureUrl: string;
     try {
       secureUrl = getSecureSalonUrl(salonId);
-      console.log(
-        "[URL_GEN] Secure URL generated:",
-        secureUrl.substring(0, 50) + "...",
-      );
     } catch (urlError) {
-      console.error("[URL_GEN] Error in getSecureSalonUrl:", urlError);
+      console.error(
+        `[URL_GEN] Error in getSecureSalonUrl: ${sanitizeForLog(urlError)}`,
+      );
       throw urlError;
     }
 
-    // Process URL path
-    console.log("[URL_GEN] Processing URL path...");
-    const urlPath = secureUrl.replace(/^https?:\/\/[^/]+/, ""); // Remove base URL if present
-    console.log("[URL_GEN] URL path:", urlPath.substring(0, 80) + "...");
+    const urlPath = secureUrl.replace(/^https?:\/\/[^/]+/, "");
+    const safePathPreview = sanitizeForLog(urlPath).slice(0, 80);
+    console.log(`[URL_GEN] URL path: ${safePathPreview}...`);
 
-    // Extract and validate token
-    console.log("[URL_GEN] Extracting token from URL...");
     let urlObj: URL;
     let token: string | null;
     try {
       urlObj = new URL(urlPath, "http://localhost");
       token = urlObj.searchParams.get("token");
-      console.log("[URL_GEN] Token extracted, length:", token?.length || 0);
+      console.log(
+        `[URL_GEN] Token extracted, length: ${token?.length ?? 0}`,
+      );
     } catch (urlParseError) {
       console.error(
-        "[URL_GEN] Failed to parse URL:",
-        urlParseError,
-        "URL:",
-        urlPath,
+        `[URL_GEN] Failed to parse URL: ${sanitizeForLog(urlParseError)} path=${safePathPreview}`,
       );
       throw urlParseError;
     }
@@ -105,38 +104,29 @@ export async function POST(request: NextRequest) {
     }
 
     if (token.length !== 64) {
-      console.error("[URL_GEN] Token validation failed: Invalid token length", {
-        expected: 64,
-        actual: token.length,
-        tokenPreview: token.substring(0, 20) + "...",
-      });
+      console.error(
+        `[URL_GEN] Token validation failed: invalid length (expected 64, actual ${token.length})`,
+      );
       return errorResponse("Failed to generate secure token", 500);
     }
-    console.log("[URL_GEN] Token validation passed, length:", token.length);
 
     const ttlMs = (env.security.signedUrlTtlSeconds ?? 86400) * 1000;
     const expiresAt = new Date(Date.now() + ttlMs);
-    console.log("[URL_GEN] Token expires at:", expiresAt.toISOString());
 
     const duration = Date.now() - startTime;
     console.log(
-      `[URL_GEN] Successfully generated secure URL in ${duration}ms for salon: ${salonId.substring(0, 8)}...`,
+      `[URL_GEN] Successfully generated secure URL in ${duration}ms for salon: ${idPrefix}`,
     );
 
     return successResponse({
       url: urlPath,
       expiresAt: expiresAt.toISOString(),
-      // Note: Tokens are valid for 24 hours
     });
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(
-      `[URL_GEN] Error generating secure salon URL after ${duration}ms:`,
-      error,
+      `[URL_GEN] Error generating secure salon URL after ${duration}ms: ${sanitizeForLog(error)}`,
     );
-    if (error instanceof Error) {
-      console.error("[URL_GEN] Error stack:", error.stack);
-    }
     return errorResponse("Failed to generate secure URL", 500);
   }
 }

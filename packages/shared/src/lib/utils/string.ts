@@ -1,11 +1,28 @@
+/** Cap slug source length to avoid ReDoS on pathological user input. */
+const MAX_SLUG_SOURCE_LENGTH = 500;
+
+/** O(n) trim of a single repeated edge character (no polynomial regex). */
+function trimEdgeChar(value: string, char: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value[start] === char) start += 1;
+  while (end > start && value[end - 1] === char) end -= 1;
+  return value.slice(start, end);
+}
+
 export const generateSlug = (text: string): string => {
-  return text
+  const source =
+    text.length > MAX_SLUG_SOURCE_LENGTH
+      ? text.slice(0, MAX_SLUG_SOURCE_LENGTH)
+      : text;
+
+  const slug = source
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+/, "")
-    .replace(/-+$/, "");
+    .replace(/[\s_-]+/g, "-");
+
+  return trimEdgeChar(slug, "-");
 };
 
 export const generateUniqueId = (): string => {

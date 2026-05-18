@@ -8,15 +8,7 @@ import { WeightedGraph } from "./graph-data-structures";
 import { KDTree } from "./spatial-index";
 import { computeRoute, computeTravelTime } from "./shortest-path";
 import { haversineDistance, assertValidCoordinates } from "../utils/geo";
-
-/** Sanitize a value for logging to prevent log injection (strip newlines/control chars). */
-function sanitizeLogValue(value: unknown): string {
-  const str = value instanceof Error ? value.message : String(value);
-  return str
-    .replace(/[\r\n]+/g, " ")
-    .replace(/[\u0000-\u001F\u007F]+/g, " ")
-    .trim();
-}
+import { sanitizeForLog } from "../utils/sanitize-for-log";
 
 /**
  * Parse and validate OSRM base URL to prevent SSRF via misconfiguration.
@@ -220,8 +212,7 @@ export class RoutingService {
       } catch (err) {
         this.stats.osrmFailures++;
         console.error(
-          "OSRM routing failed, falling back:",
-          sanitizeLogValue(err),
+          `OSRM routing failed, falling back: ${sanitizeForLog(err)}`,
         );
       }
     }
@@ -426,7 +417,7 @@ export class RoutingService {
       }
       return null;
     } catch (err) {
-      console.error("OSRM error:", sanitizeLogValue(err));
+      console.error(`OSRM error: ${sanitizeForLog(err)}`);
       return null;
     }
   }

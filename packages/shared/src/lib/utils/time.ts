@@ -1,3 +1,5 @@
+import { sanitizeForLog } from "./sanitize-for-log";
+
 export const timeToMinutes = (time: string): number => {
   if (!time) return 0;
   const parts = time.split(":");
@@ -25,12 +27,6 @@ export const isTimeBefore = (time1: string, time2: string): boolean => {
   return timeToMinutes(time1) < timeToMinutes(time2);
 };
 
-const sanitizeForLog = (value: unknown): string => {
-  return String(value ?? "")
-    .replace(/[\u0000-\u001F\u007F]+/g, " ")
-    .trim();
-};
-
 export const normalizeTime = (time: string): string => {
   if (!time) return time;
   const parts = time.split(":");
@@ -39,7 +35,9 @@ export const normalizeTime = (time: string): string => {
   } else if (parts.length === 2) {
     return time + ":00";
   } else {
-    console.error("Invalid time format:", sanitizeForLog(time));
+    // CWE-117: never log raw user-controlled time (strip line breaks, then control chars)
+    const timeForLog = String(time).replace(/[\r\n]/g, "");
+    console.error(`Invalid time format: ${sanitizeForLog(timeForLog)}`);
     return time;
   }
 };

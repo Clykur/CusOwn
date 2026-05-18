@@ -42,6 +42,8 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../../'),
 
   images: {
+    /** No local files via /_next/image; remotePatterns only (Image Optimizer DoS mitigation). */
+    localPatterns: [],
     remotePatterns: [
       {
         protocol: 'https',

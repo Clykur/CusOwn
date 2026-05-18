@@ -6,6 +6,7 @@ import {
   parseAndValidateCoordinates,
   boundingBox,
   validateRadius,
+  sanitizeForLog,
 } from "@cusown/shared/server";
 import { ERROR_MESSAGES, ROUTING_ENRICH_MAX_BUSINESSES } from "@cusown/config";
 
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(businessesWithDistanceFinal);
   } catch (error) {
-    console.error(`[API:${ROUTE}] Error:`, error);
+    console.error(`[API:${ROUTE}] Error: ${sanitizeForLog(error)}`);
     return errorResponse(ERROR_MESSAGES.DATABASE_ERROR, 500);
   }
 }

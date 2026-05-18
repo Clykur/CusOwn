@@ -3,6 +3,7 @@ import { getClientIp } from "@cusown/shared/server";
 import { successResponse, errorResponse } from "@cusown/shared/server";
 import { paymentService } from "@cusown/shared/server";
 import { verifyRazorpayWebhook, getWebhookSecret } from "@cusown/shared/server";
+import { sanitizeForLog } from "@cusown/shared/server";
 import { createHash } from "crypto";
 
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (!verifyRazorpayWebhook(body, signature, secret)) {
       console.warn(
-        `[SECURITY] Invalid Razorpay webhook signature from IP: ${clientIP}`,
+        `[SECURITY] Invalid Razorpay webhook signature from IP: ${sanitizeForLog(clientIP)}`,
       );
       return errorResponse("Invalid signature", 401);
     }
@@ -62,7 +63,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!payment) {
-      console.warn(`[WEBHOOK] Payment not found: ${providerPaymentId}`);
+      console.warn(
+        `[WEBHOOK] Payment not found (provider payment id length: ${sanitizeForLog(providerPaymentId).length})`,
+      );
       return errorResponse("Payment not found", 404);
     }
 
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Webhook processing failed";
-    console.error("[WEBHOOK] Error:", error);
+    console.error(`[WEBHOOK] Error: ${sanitizeForLog(error)}`);
     return errorResponse(message, 500);
   }
 }

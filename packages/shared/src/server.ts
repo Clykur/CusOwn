@@ -118,6 +118,14 @@ export * from "./lib/monitoring/lifecycle-structured-log";
 export * from "./lib/monitoring/health";
 export * from "./lib/utils/pagination";
 export { isValidUUID } from "./lib/utils/security";
+export { sanitizeForLog } from "./lib/utils/sanitize-for-log";
+export {
+  parsePaymentVerifyRequest,
+  extractValidPaymentSignature,
+  requirePaymentVerifyRequest,
+  PaymentVerifyClientError,
+} from "./lib/security/payment-verify-request.server";
+export { runPaymentVerifyApi } from "./lib/security/payment-verify-handler.server";
 
 // Re-exports for build stability
 export * from "./services/recommendation.service";
