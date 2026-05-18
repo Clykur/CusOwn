@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
-import { UI_ERROR_CONTEXT } from "@cusown/config";
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { UI_ERROR_CONTEXT } from '@cusown/config';
 
 export default function AppError({
   error,
@@ -19,11 +19,11 @@ export default function AppError({
 
   const getContextMessage = () => {
     if (!pathname) return UI_ERROR_CONTEXT.GENERIC;
-    if (pathname.startsWith("/booking") || pathname.startsWith("/b/"))
+    if (pathname.startsWith('/booking') || pathname.startsWith('/b/'))
       return UI_ERROR_CONTEXT.BOOKING_PAGE;
-    if (pathname.startsWith("/accept") || pathname.startsWith("/reject"))
+    if (pathname.startsWith('/accept') || pathname.startsWith('/reject'))
       return UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE;
-    if (pathname.includes("dashboard")) return UI_ERROR_CONTEXT.DASHBOARD_PAGE;
+    if (pathname.includes('dashboard')) return UI_ERROR_CONTEXT.DASHBOARD_PAGE;
     return UI_ERROR_CONTEXT.GENERIC;
   };
 
@@ -32,9 +32,7 @@ export default function AppError({
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Something went wrong
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
         <p className="text-gray-600 mb-8">{message}</p>
         <div className="flex flex-col gap-3">
           <button

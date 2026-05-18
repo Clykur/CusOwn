@@ -3,7 +3,7 @@
  * Tracks SSR to hydration time, component mount times, and Time to Interactive.
  */
 
-import { recordMetric } from "./performance";
+import { recordMetric } from './performance';
 
 interface HydrationMark {
   componentName: string;
@@ -17,12 +17,12 @@ let pageHydrationEnd: number | null = null;
 let navigationStart: number | null = null;
 
 export function markNavigationStart(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   navigationStart = performance.now();
 }
 
 export function markHydrationStart(componentName?: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   const now = performance.now();
 
@@ -40,7 +40,7 @@ export function markHydrationStart(componentName?: string): void {
 }
 
 export function markHydrationEnd(componentName?: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   const now = performance.now();
 
@@ -50,10 +50,10 @@ export function markHydrationEnd(componentName?: string): void {
       const hydrationTime = now - pageHydrationStart;
 
       recordMetric({
-        name: "page-hydration",
-        type: "hydration",
+        name: 'page-hydration',
+        type: 'hydration',
         value: hydrationTime,
-        unit: "ms",
+        unit: 'ms',
         metadata: {
           navigationStart,
           hydrationStart: pageHydrationStart,
@@ -71,9 +71,9 @@ export function markHydrationEnd(componentName?: string): void {
 
     recordMetric({
       name: componentName,
-      type: "hydration",
+      type: 'hydration',
       value: duration,
-      unit: "ms",
+      unit: 'ms',
       metadata: {
         startTime: mark.startTime,
         endTime: mark.endTime,
@@ -82,11 +82,8 @@ export function markHydrationEnd(componentName?: string): void {
   }
 }
 
-export function measureComponentRender(
-  componentName: string,
-  renderFn: () => void,
-): void {
-  if (typeof window === "undefined") {
+export function measureComponentRender(componentName: string, renderFn: () => void): void {
+  if (typeof window === 'undefined') {
     renderFn();
     return;
   }
@@ -97,18 +94,16 @@ export function measureComponentRender(
 
   recordMetric({
     name: componentName,
-    type: "render",
+    type: 'render',
     value: duration,
-    unit: "ms",
+    unit: 'ms',
   });
 }
 
 export function getTimeToInteractive(): number | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
-  const navigation = performance.getEntriesByType(
-    "navigation",
-  )[0] as PerformanceNavigationTiming;
+  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
   if (!navigation) return null;
 
   return navigation.domInteractive - navigation.startTime;
@@ -125,11 +120,9 @@ export function getNavigationTimings(): {
   domContentLoaded: number;
   loadComplete: number;
 } | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
-  const navigation = performance.getEntriesByType(
-    "navigation",
-  )[0] as PerformanceNavigationTiming;
+  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
   if (!navigation) return null;
 
   return {
@@ -143,14 +136,13 @@ export function getNavigationTimings(): {
     responseTime: navigation.responseEnd - navigation.responseStart,
     domParsing: navigation.domInteractive - navigation.responseEnd,
     domInteractive: navigation.domInteractive - navigation.startTime,
-    domContentLoaded:
-      navigation.domContentLoadedEventEnd - navigation.startTime,
+    domContentLoaded: navigation.domContentLoadedEventEnd - navigation.startTime,
     loadComplete: navigation.loadEventEnd - navigation.startTime,
   };
 }
 
 export function recordNavigationTimings(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   const timings = getNavigationTimings();
   if (!timings) return;
@@ -159,9 +151,9 @@ export function recordNavigationTimings(): void {
     if (value > 0) {
       recordMetric({
         name,
-        type: "navigation",
+        type: 'navigation',
         value,
-        unit: "ms",
+        unit: 'ms',
       });
     }
   });

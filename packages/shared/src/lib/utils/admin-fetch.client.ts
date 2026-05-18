@@ -1,11 +1,8 @@
-"use client";
+'use client';
 
-import {
-  CLIENT_RETRY_BACKOFF_MS,
-  ADMIN_FETCH_MAX_RETRIES,
-} from "@cusown/config";
-import { clearAllAdminCache } from "../cache/admin-cache";
-import { ROUTES } from "./navigation";
+import { CLIENT_RETRY_BACKOFF_MS, ADMIN_FETCH_MAX_RETRIES } from '@cusown/config';
+import { clearAllAdminCache } from '../cache/admin-cache';
+import { ROUTES } from './navigation';
 
 export interface AdminFetchOptions extends RequestInit {
   /** Optional; when omitted, auth uses cookies (credentials: 'include'). */
@@ -24,18 +21,11 @@ const inFlight = new Map<string, Promise<Response>>();
  * Admin API fetch with in-flight deduplication and bounded retries on 5xx (except 502/503).
  * Retries are capped by ADMIN_FETCH_MAX_RETRIES (never unlimited). On 401: clear cache and redirect.
  */
-export async function adminFetch(
-  url: string,
-  options: AdminFetchOptions = {},
-): Promise<Response> {
-  const {
-    token,
-    loginPath = ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD),
-    ...init
-  } = options;
+export async function adminFetch(url: string, options: AdminFetchOptions = {}): Promise<Response> {
+  const { token, loginPath = ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD), ...init } = options;
   const headers = new Headers(init.headers);
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-  const credentials = init.credentials ?? "include";
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const credentials = init.credentials ?? 'include';
 
   const key = url;
   const existing = inFlight.get(key);
@@ -54,9 +44,8 @@ export async function adminFetch(
     let res = await doFetch();
     const sameUrl =
       res.url === url ||
-      (typeof window !== "undefined" &&
-        new URL(res.url).pathname ===
-          new URL(url, window.location.origin).pathname);
+      (typeof window !== 'undefined' &&
+        new URL(res.url).pathname === new URL(url, window.location.origin).pathname);
     const shouldRetry =
       sameUrl &&
       res.status >= 500 &&
@@ -69,7 +58,7 @@ export async function adminFetch(
       res = await doFetch();
       if (res.status < 500 || NO_RETRY_STATUSES.includes(res.status)) break;
     }
-    if (res.status === 401 && typeof window !== "undefined") {
+    if (res.status === 401 && typeof window !== 'undefined') {
       clearAllAdminCache();
       window.location.href = loginPath;
     }

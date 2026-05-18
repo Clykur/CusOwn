@@ -1,14 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   bookingService,
   successResponse,
   errorResponse,
   requireCustomer,
   setCacheHeaders,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/customer/bookings";
+const ROUTE = 'GET /api/customer/bookings';
 
 /**
  * GET /api/customer/bookings
@@ -30,8 +30,7 @@ export async function GET(request: NextRequest) {
     setCacheHeaders(response, 30, 60);
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

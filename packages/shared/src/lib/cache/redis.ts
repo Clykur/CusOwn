@@ -4,8 +4,8 @@
  * Only one instance per server process.
  */
 
-import Redis from "ioredis";
-import { env } from "@cusown/config";
+import Redis from 'ioredis';
+import { env } from '@cusown/config';
 
 let redisInstance: Redis | null = null;
 let connectionAttempted = false;
@@ -19,11 +19,9 @@ function createRedisClient(): Redis | null {
   if (!redisUrl || !redisEnabled) {
     if (!redisDisabledLogged) {
       redisDisabledLogged = true;
-      const reason = !redisEnabled
-        ? "REDIS_ENABLED=false"
-        : "REDIS_URL is not set";
+      const reason = !redisEnabled ? 'REDIS_ENABLED=false' : 'REDIS_URL is not set';
       console.warn(
-        `[Redis] Caching unavailable (${reason}). API rate-limit/cache layers degrade without Redis; set REDIS_URL and REDIS_ENABLED=true for production caching.`,
+        `[Redis] Caching unavailable (${reason}). API rate-limit/cache layers degrade without Redis; set REDIS_URL and REDIS_ENABLED=true for production caching.`
       );
     }
     return null;
@@ -37,7 +35,7 @@ function createRedisClient(): Redis | null {
       retryStrategy: (times: number) => {
         if (times > 3) {
           console.error(
-            "[Redis] Max retries exceeded; connection will stay down until reconnect. Check REDIS_URL and network.",
+            '[Redis] Max retries exceeded; connection will stay down until reconnect. Check REDIS_URL and network.'
           );
           return null;
         }
@@ -45,30 +43,30 @@ function createRedisClient(): Redis | null {
         return delay;
       },
       reconnectOnError: (err: Error) => {
-        const targetErrors = ["READONLY", "ECONNRESET", "ECONNREFUSED"];
+        const targetErrors = ['READONLY', 'ECONNRESET', 'ECONNREFUSED'];
         return targetErrors.some((e) => err.message.includes(e));
       },
     });
 
-    client.on("error", (err: Error) => {
-      console.error("[Redis] Connection error:", err.message);
+    client.on('error', (err: Error) => {
+      console.error('[Redis] Connection error:', err.message);
     });
 
-    client.on("connect", () => {
+    client.on('connect', () => {
       // Connection established
     });
 
-    client.on("reconnecting", () => {
+    client.on('reconnecting', () => {
       // Attempting reconnection
     });
 
-    client.on("close", () => {
+    client.on('close', () => {
       // Connection closed
     });
 
     return client;
   } catch (err) {
-    console.error("[Redis] Failed to create client:", err);
+    console.error('[Redis] Failed to create client:', err);
     return null;
   }
 }
@@ -101,24 +99,24 @@ export async function isRedisAvailable(): Promise<boolean> {
 
   try {
     const status = client.status;
-    if (status === "ready") return true;
+    if (status === 'ready') return true;
 
-    if (status === "wait" || status === "connecting") {
+    if (status === 'wait' || status === 'connecting') {
       await client.connect();
-      if (client.status === "ready") return true;
+      if (client.status === 'ready') return true;
     }
 
     if (!redisUnavailableLogged) {
       redisUnavailableLogged = true;
       console.error(
-        `[Redis] Not ready for PING (status=${client.status}). Caching and health check will report redis=down until connection succeeds.`,
+        `[Redis] Not ready for PING (status=${client.status}). Caching and health check will report redis=down until connection succeeds.`
       );
     }
     return false;
   } catch (err) {
     if (!redisUnavailableLogged) {
       redisUnavailableLogged = true;
-      console.error("[Redis] Availability check failed (connect/PING):", err);
+      console.error('[Redis] Availability check failed (connect/PING):', err);
     }
     return false;
   }

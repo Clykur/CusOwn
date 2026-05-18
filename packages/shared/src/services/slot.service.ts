@@ -1,4 +1,4 @@
-import { Slot } from "../types";
+import { Slot } from '../types';
 import {
   ERROR_MESSAGES,
   DAYS_TO_GENERATE_SLOTS,
@@ -7,13 +7,9 @@ import {
   DEFAULT_CONCURRENT_BOOKING_CAPACITY,
   MAX_BOOKING_DURATION_MINUTES,
   MIN_BOOKING_DURATION_MINUTES,
-} from "@cusown/config";
-import { downtimeService } from "./downtime.service";
-import {
-  slotTemplateCache,
-  slotPoolManager,
-  dateSlotOptimizer,
-} from "./slot-optimizer.service";
+} from '@cusown/config';
+import { downtimeService } from './downtime.service';
+import { slotTemplateCache, slotPoolManager, dateSlotOptimizer } from './slot-optimizer.service';
 import {
   hasSlotsForDate,
   getExtendedOccupancyMinuteIntervalsForDate,
@@ -26,32 +22,24 @@ import {
   setSlotReserved,
   releaseSlotReserved,
   setSlotBooked,
-} from "../repositories/slot.repository";
-import {
-  generateTimeSlots,
-  normalizeTime,
-  timeToMinutes,
-} from "../lib/utils/time";
+} from '../repositories/slot.repository';
+import { generateTimeSlots, normalizeTime, timeToMinutes } from '../lib/utils/time';
 import {
   canScheduleWithinCapacity,
   overlapsAnyBlocked,
   type MinuteInterval,
-} from "../lib/slot-capacity-timeline";
-import { slotStateMachine } from "../lib/state/slot-state-machine";
-import {
-  emitSlotReserved,
-  emitSlotBooked,
-  emitSlotReleased,
-} from "../lib/events/slot-events";
-import { safeMetrics } from "../lib/monitoring/safe-metrics";
-import { auditService } from "./audit.service";
+} from '../lib/slot-capacity-timeline';
+import { slotStateMachine } from '../lib/state/slot-state-machine';
+import { emitSlotReserved, emitSlotBooked, emitSlotReleased } from '../lib/events/slot-events';
+import { safeMetrics } from '../lib/monitoring/safe-metrics';
+import { auditService } from './audit.service';
 import {
   buildQueryCacheKey,
   withQueryCache,
   invalidateSlotsCache,
   QUERY_CACHE_TTL,
   QUERY_CACHE_PREFIX,
-} from "../lib/cache/query-cache";
+} from '../lib/cache/query-cache';
 
 type SalonTimeConfig = {
   opening_time: string;
@@ -74,32 +62,23 @@ export type AvailableSlotsOptions = {
 };
 
 export class SlotService {
-  async generateInitialSlots(
-    salonId: string,
-    config: SalonTimeConfig,
-  ): Promise<void> {
+  async generateInitialSlots(salonId: string, config: SalonTimeConfig): Promise<void> {
     const today = new Date();
-    const slotsToCreate: Array<Omit<Slot, "id" | "created_at">> = [];
+    const slotsToCreate: Array<Omit<Slot, 'id' | 'created_at'>> = [];
 
     for (let i = 0; i < DAYS_TO_GENERATE_SLOTS; i++) {
       const targetDate = new Date(today);
       targetDate.setDate(today.getDate() + i);
-      const dateString = targetDate.toISOString().split("T")[0];
+      const dateString = targetDate.toISOString().split('T')[0];
 
-      const isClosed = await downtimeService.isBusinessClosed(
-        salonId,
-        dateString,
-      );
+      const isClosed = await downtimeService.isBusinessClosed(salonId, dateString);
       if (isClosed) {
         continue;
       }
 
       const dayOfWeek = targetDate.getDay();
-      const specialHours =
-        await downtimeService.getBusinessSpecialHours(salonId);
-      const daySpecialHours = specialHours.find(
-        (sh) => sh.day_of_week === dayOfWeek,
-      );
+      const specialHours = await downtimeService.getBusinessSpecialHours(salonId);
+      const daySpecialHours = specialHours.find((sh) => sh.day_of_week === dayOfWeek);
 
       let openingTime = config.opening_time;
       let closingTime = config.closing_time;
@@ -148,11 +127,11 @@ export class SlotService {
   async generateSlotsForDate(
     salonId: string,
     date: string,
-    config: SalonTimeConfig,
+    config: SalonTimeConfig
   ): Promise<void> {
     if (!config.opening_time || !config.closing_time || !config.slot_duration) {
       throw new Error(
-        "Invalid slot generation configuration: missing opening_time, closing_time, or slot_duration",
+        'Invalid slot generation configuration: missing opening_time, closing_time, or slot_duration'
       );
     }
 
@@ -166,11 +145,9 @@ export class SlotService {
       return;
     }
 
-    const dayOfWeek = new Date(date + "T00:00:00").getDay();
+    const dayOfWeek = new Date(date + 'T00:00:00').getDay();
     const specialHours = await downtimeService.getBusinessSpecialHours(salonId);
-    const daySpecialHours = specialHours.find(
-      (sh) => sh.day_of_week === dayOfWeek,
-    );
+    const daySpecialHours = specialHours.find((sh) => sh.day_of_week === dayOfWeek);
 
     let openingTime = config.opening_time;
     let closingTime = config.closing_time;
@@ -198,15 +175,13 @@ export class SlotService {
       return;
     }
 
-    const slotsToCreate: Array<Omit<Slot, "id" | "created_at">> = timeSlots.map(
-      (timeSlot) => ({
-        business_id: salonId,
-        date,
-        start_time: timeSlot.start,
-        end_time: timeSlot.end,
-        status: SLOT_STATUS.AVAILABLE,
-      }),
-    );
+    const slotsToCreate: Array<Omit<Slot, 'id' | 'created_at'>> = timeSlots.map((timeSlot) => ({
+      business_id: salonId,
+      date,
+      start_time: timeSlot.start,
+      end_time: timeSlot.end,
+      status: SLOT_STATUS.AVAILABLE,
+    }));
 
     await insertSlots(slotsToCreate);
   }
@@ -215,33 +190,20 @@ export class SlotService {
     salonId: string,
     date: string,
     salonConfig?: SalonTimeConfig,
-    options?: AvailableSlotsOptions,
+    options?: AvailableSlotsOptions
   ): Promise<Slot[]> {
     const startTime = Date.now();
-    const normalizedDate = date.includes("T") ? date.split("T")[0] : date;
+    const normalizedDate = date.includes('T') ? date.split('T')[0] : date;
 
     // Build cache key for slot availability
-    const cacheKey = buildQueryCacheKey(
-      `${QUERY_CACHE_PREFIX.SLOTS}${salonId}:`,
-      normalizedDate,
-      {
-        skipCleanup: options?.skipCleanup,
-      },
-    );
+    const cacheKey = buildQueryCacheKey(`${QUERY_CACHE_PREFIX.SLOTS}${salonId}:`, normalizedDate, {
+      skipCleanup: options?.skipCleanup,
+    });
 
-    return withQueryCache(
-      cacheKey,
-      QUERY_CACHE_TTL.SLOT_AVAILABILITY,
-      async () => {
-        return this._getAvailableSlotsUncached(
-          salonId,
-          normalizedDate,
-          salonConfig,
-          options,
-        );
-      },
-    ).finally(() => {
-      safeMetrics.recordTiming("slots.fetch", Date.now() - startTime);
+    return withQueryCache(cacheKey, QUERY_CACHE_TTL.SLOT_AVAILABILITY, async () => {
+      return this._getAvailableSlotsUncached(salonId, normalizedDate, salonConfig, options);
+    }).finally(() => {
+      safeMetrics.recordTiming('slots.fetch', Date.now() - startTime);
     });
   }
 
@@ -249,7 +211,7 @@ export class SlotService {
     salonId: string,
     normalizedDate: string,
     salonConfig?: SalonTimeConfig,
-    options?: AvailableSlotsOptions,
+    options?: AvailableSlotsOptions
   ): Promise<Slot[]> {
     const now = new Date();
     const nowIso = now.toISOString();
@@ -262,14 +224,14 @@ export class SlotService {
         salonConfig,
         async (bid, d, cfg) => {
           await this.generateSlotsForDate(bid, d, cfg);
-        },
+        }
       );
 
       const missingDates = await dateSlotOptimizer.getMissingDates(
         salonId,
         normalizedDate,
         SLOT_GENERATION_WINDOW_DAYS,
-        async (bid, d): Promise<boolean> => hasSlotsForDate(bid, d),
+        async (bid, d): Promise<boolean> => hasSlotsForDate(bid, d)
       );
 
       if (missingDates.length > 0) {
@@ -278,19 +240,11 @@ export class SlotService {
           date: d,
           config: salonConfig,
         }));
-        await slotPoolManager.batchGenerateSlots(
-          generationRequests,
-          async (bid, d, cfg) => {
-            await slotPoolManager.queueGeneration(
-              bid,
-              d,
-              cfg,
-              async (b, dt, c) => {
-                await this.generateSlotsForDate(b, dt, c);
-              },
-            );
-          },
-        );
+        await slotPoolManager.batchGenerateSlots(generationRequests, async (bid, d, cfg) => {
+          await slotPoolManager.queueGeneration(bid, d, cfg, async (b, dt, c) => {
+            await this.generateSlotsForDate(b, dt, c);
+          });
+        });
       }
     }
 
@@ -301,25 +255,19 @@ export class SlotService {
     const grid = generateTimeSlots(
       salonConfig.opening_time,
       salonConfig.closing_time,
-      salonConfig.slot_duration,
+      salonConfig.slot_duration
     );
     if (grid.length === 0) {
       return [];
     }
 
-    const requested =
-      options?.requestedDurationMinutes ?? salonConfig.slot_duration;
+    const requested = options?.requestedDurationMinutes ?? salonConfig.slot_duration;
     const duration = Math.floor(requested);
-    if (
-      duration < MIN_BOOKING_DURATION_MINUTES ||
-      duration > MAX_BOOKING_DURATION_MINUTES
-    ) {
+    if (duration < MIN_BOOKING_DURATION_MINUTES || duration > MAX_BOOKING_DURATION_MINUTES) {
       return [];
     }
 
-    const capacity =
-      salonConfig.concurrent_booking_capacity ??
-      DEFAULT_CONCURRENT_BOOKING_CAPACITY;
+    const capacity = salonConfig.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY;
 
     const openMin = timeToMinutes(normalizeTime(salonConfig.opening_time));
     const closeMin = timeToMinutes(normalizeTime(salonConfig.closing_time));
@@ -330,16 +278,14 @@ export class SlotService {
     const occupancy = await getExtendedOccupancyMinuteIntervalsForDate(
       salonId,
       normalizedDate,
-      nowIso,
+      nowIso
     );
 
     const blocked = options?.blockedIntervalsMin ?? [];
     const todayStr = options?.todayDateStringIST;
     const nowMinIst = options?.nowMinutesIST;
     const isTodayFiltered =
-      todayStr !== undefined &&
-      nowMinIst !== undefined &&
-      normalizedDate === todayStr;
+      todayStr !== undefined && nowMinIst !== undefined && normalizedDate === todayStr;
 
     const passingGridCells: Array<{ start: string; end: string }> = [];
 
@@ -356,14 +302,7 @@ export class SlotService {
       if (isTodayFiltered && startMin <= nowMinIst!) {
         continue;
       }
-      if (
-        !canScheduleWithinCapacity(
-          occupancy,
-          startMin,
-          appointmentEnd,
-          capacity,
-        )
-      ) {
+      if (!canScheduleWithinCapacity(occupancy, startMin, appointmentEnd, capacity)) {
         continue;
       }
       passingGridCells.push({ start: cell.start, end: cell.end });
@@ -371,27 +310,15 @@ export class SlotService {
 
     if (passingGridCells.length === 0) {
       if (!options?.skipCleanup) {
-        await releaseExpiredReservationsForBusinessDate(
-          salonId,
-          normalizedDate,
-          nowIso,
-        );
+        await releaseExpiredReservationsForBusinessDate(salonId, normalizedDate, nowIso);
       }
       return [];
     }
 
-    let slotRows = await getSlotsByIntervals(
-      salonId,
-      normalizedDate,
-      passingGridCells,
-    );
+    let slotRows = await getSlotsByIntervals(salonId, normalizedDate, passingGridCells);
 
     if (!options?.skipCleanup) {
-      await releaseExpiredReservationsForBusinessDate(
-        salonId,
-        normalizedDate,
-        nowIso,
-      );
+      await releaseExpiredReservationsForBusinessDate(salonId, normalizedDate, nowIso);
     }
 
     const processedSlots: Slot[] = [];
@@ -414,7 +341,7 @@ export class SlotService {
 
   async updateSlotStatus(
     slotId: string,
-    status: (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS],
+    status: (typeof SLOT_STATUS)[keyof typeof SLOT_STATUS]
   ): Promise<void> {
     const slot = await getSlotById(slotId);
     if (!slot) {
@@ -427,7 +354,7 @@ export class SlotService {
     const slot = await getSlotById(slotId);
     if (!slot) return false;
 
-    if (!slotStateMachine.canTransition(slot.status, "reserve")) {
+    if (!slotStateMachine.canTransition(slot.status, 'reserve')) {
       return false;
     }
 
@@ -437,20 +364,14 @@ export class SlotService {
       if (reservedUntil > now) return false;
     }
 
-    const { env } = await import("@cusown/config");
+    const { env } = await import('@cusown/config');
     const reservedUntil = new Date();
-    reservedUntil.setMinutes(
-      reservedUntil.getMinutes() + env.payment.slotExpiryMinutes,
-    );
+    reservedUntil.setMinutes(reservedUntil.getMinutes() + env.payment.slotExpiryMinutes);
 
-    const updated = await setSlotReserved(
-      slotId,
-      slot.business_id,
-      reservedUntil.toISOString(),
-    );
+    const updated = await setSlotReserved(slotId, slot.business_id, reservedUntil.toISOString());
     if (!updated) return false;
 
-    const nextState = slotStateMachine.getNextState(slot.status, "reserve");
+    const nextState = slotStateMachine.getNextState(slot.status, 'reserve');
     if (nextState !== SLOT_STATUS.RESERVED) {
       await updateSlotStatus(slotId, slot.business_id, {
         status: slot.status,
@@ -467,7 +388,7 @@ export class SlotService {
     }
 
     try {
-      await auditService.createAuditLog(null, "slot_reserved", "slot", {
+      await auditService.createAuditLog(null, 'slot_reserved', 'slot', {
         entityId: slotId,
         description: `Slot reserved until ${reservedUntil.toISOString()}`,
       });
@@ -480,15 +401,13 @@ export class SlotService {
     const slot = await getSlotById(slotId);
     if (!slot) return;
 
-    if (!slotStateMachine.canTransition(slot.status, "release")) {
+    if (!slotStateMachine.canTransition(slot.status, 'release')) {
       throw new Error(`Cannot release slot from ${slot.status} state`);
     }
 
-    const nextState = slotStateMachine.getNextState(slot.status, "release");
+    const nextState = slotStateMachine.getNextState(slot.status, 'release');
     if (nextState !== SLOT_STATUS.AVAILABLE) {
-      throw new Error(
-        `Invalid state transition: ${slot.status} -> ${nextState}`,
-      );
+      throw new Error(`Invalid state transition: ${slot.status} -> ${nextState}`);
     }
 
     await releaseSlotReserved(slotId, slot.business_id);
@@ -499,7 +418,7 @@ export class SlotService {
       // Invalidate slots cache after release
       void invalidateSlotsCache(slot.business_id, slot.date);
       try {
-        await auditService.createAuditLog(null, "slot_released", "slot", {
+        await auditService.createAuditLog(null, 'slot_released', 'slot', {
           entityId: slotId,
           description: `Slot released from ${slot.status} to available`,
         });
@@ -518,15 +437,13 @@ export class SlotService {
       throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
     }
 
-    if (!slotStateMachine.canTransition(slot.status, "book")) {
+    if (!slotStateMachine.canTransition(slot.status, 'book')) {
       throw new Error(`Cannot book slot from ${slot.status} state`);
     }
 
-    const nextState = slotStateMachine.getNextState(slot.status, "book");
+    const nextState = slotStateMachine.getNextState(slot.status, 'book');
     if (nextState !== SLOT_STATUS.BOOKED) {
-      throw new Error(
-        `Invalid state transition: ${slot.status} -> ${nextState}`,
-      );
+      throw new Error(`Invalid state transition: ${slot.status} -> ${nextState}`);
     }
 
     await setSlotBooked(slotId, slot.business_id);
@@ -537,7 +454,7 @@ export class SlotService {
       // Invalidate slots cache after booking
       void invalidateSlotsCache(slot.business_id, slot.date);
       try {
-        await auditService.createAuditLog(null, "slot_booked", "slot", {
+        await auditService.createAuditLog(null, 'slot_booked', 'slot', {
           entityId: slotId,
           description: `Slot booked from ${slot.status}`,
         });

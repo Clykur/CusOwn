@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useCallback } from "react";
-import { throttle } from "../realtime/realtime-utils";
+import { useEffect, useRef, useCallback } from 'react';
+import { throttle } from '../realtime/realtime-utils';
 
 const DEFAULT_THROTTLE_MS = 5000;
 const DEFAULT_STALE_THRESHOLD_MS = 30000;
@@ -53,7 +53,7 @@ export function useVisibilityRefresh(options: UseVisibilityRefreshOptions): {
   }, [onRefresh]);
 
   const throttledRefresh = useRef(
-    throttle(doRefresh, throttleMs, { leading: true, trailing: false }),
+    throttle(doRefresh, throttleMs, { leading: true, trailing: false })
   );
 
   useEffect(() => {
@@ -70,8 +70,7 @@ export function useVisibilityRefresh(options: UseVisibilityRefreshOptions): {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         const lastRefresh = lastRefreshAtRef.current;
-        const isStale =
-          !lastRefresh || Date.now() - lastRefresh > staleThresholdMs;
+        const isStale = !lastRefresh || Date.now() - lastRefresh > staleThresholdMs;
 
         if (isStale) {
           throttledRefresh.current();
@@ -82,8 +81,7 @@ export function useVisibilityRefresh(options: UseVisibilityRefreshOptions): {
     const handleFocus = () => {
       if (refreshOnFocus && !document.hidden) {
         const lastRefresh = lastRefreshAtRef.current;
-        const isStale =
-          !lastRefresh || Date.now() - lastRefresh > staleThresholdMs;
+        const isStale = !lastRefresh || Date.now() - lastRefresh > staleThresholdMs;
 
         if (isStale) {
           throttledRefresh.current();
@@ -91,15 +89,15 @@ export function useVisibilityRefresh(options: UseVisibilityRefreshOptions): {
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     if (refreshOnFocus) {
-      window.addEventListener("focus", handleFocus);
+      window.addEventListener('focus', handleFocus);
     }
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (refreshOnFocus) {
-        window.removeEventListener("focus", handleFocus);
+        window.removeEventListener('focus', handleFocus);
       }
       throttledRefresh.current.cancel();
     };
@@ -110,8 +108,7 @@ export function useVisibilityRefresh(options: UseVisibilityRefreshOptions): {
   }, [doRefresh]);
 
   const isStale =
-    !lastRefreshAtRef.current ||
-    Date.now() - lastRefreshAtRef.current > staleThresholdMs;
+    !lastRefreshAtRef.current || Date.now() - lastRefreshAtRef.current > staleThresholdMs;
 
   return {
     lastRefreshAt: lastRefreshAtRef.current,

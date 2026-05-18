@@ -3,9 +3,9 @@
  * Handles: record-event
  */
 
-import { Worker, Job } from "bullmq";
-import { getQueueConnection, isQueueAvailable } from "../connection";
-import { QUEUE_NAMES, AnalyticsJobData } from "../queue";
+import { Worker, Job } from 'bullmq';
+import { getQueueConnection, isQueueAvailable } from '../connection';
+import { QUEUE_NAMES, AnalyticsJobData } from '../queue';
 
 let analyticsWorker: Worker<AnalyticsJobData> | null = null;
 
@@ -17,7 +17,7 @@ async function processAnalyticsJob(job: Job<AnalyticsJobData>): Promise<void> {
 
   // Dynamically import to avoid circular dependencies
   const { bookingEventsAnalyticsService } =
-    await import("../../../services/booking-events-analytics.service");
+    await import('../../../services/booking-events-analytics.service');
 
   await bookingEventsAnalyticsService.recordEvent({
     bookingId,
@@ -55,19 +55,19 @@ export function startAnalyticsWorker(): Worker<AnalyticsJobData> | null {
         max: 50,
         duration: 1000, // Max 50 jobs per second
       },
-    },
+    }
   );
 
-  analyticsWorker.on("failed", (job, err) => {
+  analyticsWorker.on('failed', (job, err) => {
     const { bookingId, eventType } = job?.data ?? {};
     console.error(
-      `[Analytics Worker] Job failed bullmq_job_id=${job?.id ?? "?"} booking_id=${bookingId ?? "?"} eventType=${eventType ?? "?"}:`,
-      err?.message ?? err,
+      `[Analytics Worker] Job failed bullmq_job_id=${job?.id ?? '?'} booking_id=${bookingId ?? '?'} eventType=${eventType ?? '?'}:`,
+      err?.message ?? err
     );
   });
 
-  analyticsWorker.on("error", (err) => {
-    console.error("[Analytics Worker] Error:", err);
+  analyticsWorker.on('error', (err) => {
+    console.error('[Analytics Worker] Error:', err);
   });
 
   return analyticsWorker;

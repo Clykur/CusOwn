@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { UI_CONTEXT } from "@cusown/config";
+import { UI_CONTEXT } from '@cusown/config';
 
 function statusMeta(value: number, warningAt: number, criticalAt: number) {
   if (value >= criticalAt)
     return {
-      label: "Critical",
-      cls: "bg-rose-50 text-rose-700 border-rose-200",
+      label: 'Critical',
+      cls: 'bg-rose-50 text-rose-700 border-rose-200',
     };
   if (value >= warningAt)
     return {
-      label: "Warning",
-      cls: "bg-amber-50 text-amber-700 border-amber-200",
+      label: 'Warning',
+      cls: 'bg-amber-50 text-amber-700 border-amber-200',
     };
   return {
-    label: "Healthy",
-    cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    label: 'Healthy',
+    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
 }
 
@@ -35,54 +35,53 @@ export default function OperationalHealthPanel({
 }) {
   const cards = [
     {
-      title: "Failed Bookings (24h)",
+      title: 'Failed Bookings (24h)',
       value: insights.failedBookings,
       status: statusMeta(insights.failedBookings, 3, 8),
     },
     {
-      title: "Cron Status",
-      value: insights.cronHealthy ? "OK" : "Issue",
+      title: 'Cron Status',
+      value: insights.cronHealthy ? 'OK' : 'Issue',
       status: insights.cronHealthy
         ? {
-            label: "Healthy",
-            cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+            label: 'Healthy',
+            cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
           }
         : {
-            label: "Critical",
-            cls: "bg-rose-50 text-rose-700 border-rose-200",
+            label: 'Critical',
+            cls: 'bg-rose-50 text-rose-700 border-rose-200',
           },
     },
     {
-      title: "System Errors",
+      title: 'System Errors',
       value: insights.systemErrors,
       status: statusMeta(insights.systemErrors, 1, 4),
     },
     {
-      title: "Upcoming (24h)",
+      title: 'Upcoming (24h)',
       value: insights.upcoming,
       status: statusMeta(insights.upcoming, 20, 40),
     },
     {
-      title: "Repeat Customers",
+      title: 'Repeat Customers',
       value: insights.repeatCustomers,
       status: {
-        label: "Healthy",
-        cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        label: 'Healthy',
+        cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       },
     },
     {
-      title: "Customer Growth Trend",
-      value:
-        insights.customerGrowth == null ? "—" : `${insights.customerGrowth}%`,
+      title: 'Customer Growth Trend',
+      value: insights.customerGrowth == null ? '—' : `${insights.customerGrowth}%`,
       status:
         (insights.customerGrowth ?? 0) >= 0
           ? {
-              label: "Healthy",
-              cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+              label: 'Healthy',
+              cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             }
           : {
-              label: "Warning",
-              cls: "bg-amber-50 text-amber-700 border-amber-200",
+              label: 'Warning',
+              cls: 'bg-amber-50 text-amber-700 border-amber-200',
             },
     },
   ];
@@ -95,8 +94,7 @@ export default function OperationalHealthPanel({
             {UI_CONTEXT.OWNER_ANALYTICS_OPERATIONAL_INTEL_TITLE}
           </h3>
           <span className="text-xs text-slate-500">
-            Last updated{" "}
-            {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : "—"}
+            Last updated {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}
           </span>
         </div>
       </div>

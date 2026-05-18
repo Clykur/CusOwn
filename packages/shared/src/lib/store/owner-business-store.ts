@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { Salon, Slot } from "../../types";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { Salon, Slot } from '../../types';
 
 interface Holiday {
   id: string;
@@ -32,7 +32,7 @@ interface OwnerBusinessState {
   salon: Salon | null;
   slots: Slot[];
   selectedDate: string;
-  activeTab: "slots" | "downtime";
+  activeTab: 'slots' | 'downtime';
 
   holidays: Holiday[];
   closures: Closure[];
@@ -52,7 +52,7 @@ interface OwnerBusinessState {
   setSlots: (slots: Slot[]) => void;
   updateSlot: (slotId: string, updates: Partial<Slot>) => void;
   setSelectedDate: (date: string) => void;
-  setActiveTab: (tab: "slots" | "downtime") => void;
+  setActiveTab: (tab: 'slots' | 'downtime') => void;
 
   setHolidays: (holidays: Holiday[]) => void;
   addHoliday: (holiday: Holiday) => void;
@@ -76,13 +76,13 @@ interface OwnerBusinessState {
   reset: () => void;
 }
 
-const getInitialDate = () => new Date().toISOString().split("T")[0];
+const getInitialDate = () => new Date().toISOString().split('T')[0];
 
 const initialState = {
   salon: null,
   slots: [],
   selectedDate: getInitialDate(),
-  activeTab: "slots" as const,
+  activeTab: 'slots' as const,
   holidays: [],
   closures: [],
   shopPhotos: [],
@@ -110,9 +110,7 @@ export const useOwnerBusinessStore = create<OwnerBusinessState>()(
 
       updateSlot: (slotId, updates) =>
         set((state) => ({
-          slots: state.slots.map((s) =>
-            s.id === slotId ? { ...s, ...updates } : s,
-          ),
+          slots: state.slots.map((s) => (s.id === slotId ? { ...s, ...updates } : s)),
         })),
 
       setSelectedDate: (selectedDate) => set({ selectedDate }),
@@ -121,8 +119,7 @@ export const useOwnerBusinessStore = create<OwnerBusinessState>()(
 
       setHolidays: (holidays) => set({ holidays }),
 
-      addHoliday: (holiday) =>
-        set((state) => ({ holidays: [...state.holidays, holiday] })),
+      addHoliday: (holiday) => set((state) => ({ holidays: [...state.holidays, holiday] })),
 
       removeHoliday: (holidayId) =>
         set((state) => ({
@@ -131,8 +128,7 @@ export const useOwnerBusinessStore = create<OwnerBusinessState>()(
 
       setClosures: (closures) => set({ closures }),
 
-      addClosure: (closure) =>
-        set((state) => ({ closures: [...state.closures, closure] })),
+      addClosure: (closure) => set((state) => ({ closures: [...state.closures, closure] })),
 
       removeClosure: (closureId) =>
         set((state) => ({
@@ -141,8 +137,7 @@ export const useOwnerBusinessStore = create<OwnerBusinessState>()(
 
       setShopPhotos: (shopPhotos) => set({ shopPhotos }),
 
-      addShopPhoto: (photo) =>
-        set((state) => ({ shopPhotos: [...state.shopPhotos, photo] })),
+      addShopPhoto: (photo) => set((state) => ({ shopPhotos: [...state.shopPhotos, photo] })),
 
       removeShopPhoto: (photoId) =>
         set((state) => ({
@@ -174,13 +169,13 @@ export const useOwnerBusinessStore = create<OwnerBusinessState>()(
       reset: () => set({ ...initialState, selectedDate: getInitialDate() }),
     }),
     {
-      name: "owner-business-store",
+      name: 'owner-business-store',
       partialize: (state) => ({
         selectedDate: state.selectedDate,
         activeTab: state.activeTab,
       }),
-    },
-  ),
+    }
+  )
 );
 
 export type { Holiday, Closure, ReviewData, ShopPhoto, OwnerBusinessState };

@@ -7,7 +7,7 @@ import {
   MEDIA_CIRCUIT_BREAKER_FAILURE_THRESHOLD,
   MEDIA_CIRCUIT_BREAKER_WINDOW_MS,
   MEDIA_CIRCUIT_BREAKER_COOLDOWN_MS,
-} from "@cusown/config";
+} from '@cusown/config';
 
 interface CircuitState {
   failures: number;

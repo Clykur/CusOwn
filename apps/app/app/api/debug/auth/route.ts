@@ -1,8 +1,8 @@
-import { NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { env } from "@cusown/config";
-import { requireSupabaseAdmin } from "@cusown/shared/server";
-import { successResponse } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { env } from '@cusown/config';
+import { requireSupabaseAdmin } from '@cusown/shared/server';
+import { successResponse } from '@cusown/shared/server';
 
 /**
  * Debug endpoint to check authentication status
@@ -27,20 +27,16 @@ export async function GET(request: NextRequest) {
       hasSupabaseUrl: !!env.supabase.url,
       hasAnonKey: !!env.supabase.anonKey,
       hasServiceKey: !!env.supabase.serviceRoleKey,
-      supabaseUrl: env.supabase.url
-        ? `${env.supabase.url.substring(0, 20)}...`
-        : "missing",
+      supabaseUrl: env.supabase.url ? `${env.supabase.url.substring(0, 20)}...` : 'missing',
     };
 
     // Check Authorization header
-    const authHeader = request.headers.get("authorization");
-    debugInfo.headers.authorization = authHeader
-      ? `${authHeader.substring(0, 20)}...`
-      : "missing";
+    const authHeader = request.headers.get('authorization');
+    debugInfo.headers.authorization = authHeader ? `${authHeader.substring(0, 20)}...` : 'missing';
 
-    if (authHeader?.startsWith("Bearer ")) {
+    if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      debugInfo.authMethods.push("Bearer token found in header");
+      debugInfo.authMethods.push('Bearer token found in header');
 
       try {
         if (supabaseAdmin) {
@@ -49,11 +45,9 @@ export async function GET(request: NextRequest) {
             error,
           } = await supabaseAdmin.auth.getUser(token);
           if (error) {
-            debugInfo.errors.push(
-              `Bearer token validation error: ${error.message}`,
-            );
+            debugInfo.errors.push(`Bearer token validation error: ${error.message}`);
           } else if (user) {
-            debugInfo.authMethods.push("Bearer token validated successfully");
+            debugInfo.authMethods.push('Bearer token validated successfully');
             debugInfo.user = {
               id: user.id,
               email: user.email,
@@ -63,7 +57,7 @@ export async function GET(request: NextRequest) {
         }
       } catch (error) {
         debugInfo.errors.push(
-          `Bearer token check failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Bearer token check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
       }
     }
@@ -71,23 +65,21 @@ export async function GET(request: NextRequest) {
     // Check cookies
     try {
       const cookieStore = await cookies();
-      const projectRef = env.supabase.url.split("//")[1]?.split(".")[0] || "";
+      const projectRef = env.supabase.url.split('//')[1]?.split('.')[0] || '';
       const accessTokenKey = `sb-${projectRef}-auth-token`;
-      const sessionAccessToken = cookieStore.get("sb-access-token")?.value;
+      const sessionAccessToken = cookieStore.get('sb-access-token')?.value;
       const supabaseToken = cookieStore.get(accessTokenKey)?.value;
 
       debugInfo.cookies = {
-        "sb-access-token": sessionAccessToken
+        'sb-access-token': sessionAccessToken
           ? `${sessionAccessToken.substring(0, 20)}...`
-          : "missing",
-        [accessTokenKey]: supabaseToken
-          ? `${supabaseToken.substring(0, 20)}...`
-          : "missing",
+          : 'missing',
+        [accessTokenKey]: supabaseToken ? `${supabaseToken.substring(0, 20)}...` : 'missing',
         allCookies: Array.from(cookieStore.getAll().map((c) => c.name)),
       };
 
       if (sessionAccessToken) {
-        debugInfo.authMethods.push("sb-access-token cookie found");
+        debugInfo.authMethods.push('sb-access-token cookie found');
         try {
           if (supabaseAdmin) {
             const {
@@ -95,13 +87,9 @@ export async function GET(request: NextRequest) {
               error,
             } = await supabaseAdmin.auth.getUser(sessionAccessToken);
             if (error) {
-              debugInfo.errors.push(
-                `Session cookie validation error: ${error.message}`,
-              );
+              debugInfo.errors.push(`Session cookie validation error: ${error.message}`);
             } else if (user) {
-              debugInfo.authMethods.push(
-                "Session cookie validated successfully",
-              );
+              debugInfo.authMethods.push('Session cookie validated successfully');
               if (!debugInfo.user) {
                 debugInfo.user = {
                   id: user.id,
@@ -113,7 +101,7 @@ export async function GET(request: NextRequest) {
           }
         } catch (error) {
           debugInfo.errors.push(
-            `Session cookie check failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+            `Session cookie check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
           );
         }
       }
@@ -127,13 +115,9 @@ export async function GET(request: NextRequest) {
               error,
             } = await supabaseAdmin.auth.getUser(supabaseToken);
             if (error) {
-              debugInfo.errors.push(
-                `Supabase cookie validation error: ${error.message}`,
-              );
+              debugInfo.errors.push(`Supabase cookie validation error: ${error.message}`);
             } else if (user) {
-              debugInfo.authMethods.push(
-                "Supabase cookie validated successfully",
-              );
+              debugInfo.authMethods.push('Supabase cookie validated successfully');
               if (!debugInfo.user) {
                 debugInfo.user = {
                   id: user.id,
@@ -145,13 +129,13 @@ export async function GET(request: NextRequest) {
           }
         } catch (error) {
           debugInfo.errors.push(
-            `Supabase cookie check failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+            `Supabase cookie check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
           );
         }
       }
     } catch (cookieError) {
       debugInfo.errors.push(
-        `Cookie check failed: ${cookieError instanceof Error ? cookieError.message : "Unknown error"}`,
+        `Cookie check failed: ${cookieError instanceof Error ? cookieError.message : 'Unknown error'}`
       );
     }
 
@@ -159,9 +143,9 @@ export async function GET(request: NextRequest) {
     if (debugInfo.user && supabaseAdmin) {
       try {
         const { data: profile, error: profileError } = await supabaseAdmin
-          .from("user_profiles")
-          .select("*")
-          .eq("id", debugInfo.user.id)
+          .from('user_profiles')
+          .select('*')
+          .eq('id', debugInfo.user.id)
           .single();
 
         if (profileError) {
@@ -170,12 +154,12 @@ export async function GET(request: NextRequest) {
           debugInfo.user.profile = {
             user_type: profile?.user_type,
             full_name: profile?.full_name,
-            is_admin: profile?.user_type === "admin",
+            is_admin: profile?.user_type === 'admin',
           };
         }
       } catch (error) {
         debugInfo.errors.push(
-          `Profile check failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Profile check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
       }
     }
@@ -188,18 +172,15 @@ export async function GET(request: NextRequest) {
       authMethodUsed:
         debugInfo.authMethods.length > 0
           ? debugInfo.authMethods[debugInfo.authMethods.length - 1]
-          : "none",
+          : 'none',
       hasErrors: debugInfo.errors.length > 0,
     };
 
-    return successResponse(debugInfo, "Debug information retrieved");
+    return successResponse(debugInfo, 'Debug information retrieved');
   } catch (error) {
     debugInfo.errors.push(
-      `Debug endpoint error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Debug endpoint error: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
-    return successResponse(
-      debugInfo,
-      "Debug information retrieved (with errors)",
-    );
+    return successResponse(debugInfo, 'Debug information retrieved (with errors)');
   }
 }

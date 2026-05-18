@@ -1,5 +1,5 @@
-import { env } from "@cusown/config";
-import { generateQRCodeDataUrl } from "./qrcode";
+import { env } from '@cusown/config';
+import { generateQRCodeDataUrl } from './qrcode';
 
 export interface UPIPaymentParams {
   amountCents: number;
@@ -17,11 +17,11 @@ export function generateUPIPaymentLink(params: UPIPaymentParams): string {
   const merchantName = env.payment.upiMerchantName;
 
   if (!merchantVpa) {
-    throw new Error("UPI merchant VPA not configured");
+    throw new Error('UPI merchant VPA not configured');
   }
 
   const transactionNote = encodeURIComponent(
-    `Booking ${bookingId.substring(0, 8)} - ${customerName}`,
+    `Booking ${bookingId.substring(0, 8)} - ${customerName}`
   );
 
   const upiLink = `upi://pay?pa=${merchantVpa}&pn=${encodeURIComponent(merchantName)}&am=${amountRupees}&cu=INR&tn=${transactionNote}&tr=${transactionId}`;
@@ -45,26 +45,23 @@ export function generatePaymentId(): string {
   return `PAY${timestamp}${random}`;
 }
 
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export function verifyUPIWebhookSignature(
   payload: string,
   signature: string,
-  secret: string,
+  secret: string
 ): boolean {
   if (!secret) {
     return false;
   }
 
   try {
-    const hmac = createHmac("sha256", secret);
+    const hmac = createHmac('sha256', secret);
     hmac.update(payload);
-    const expectedSignature = hmac.digest("hex");
+    const expectedSignature = hmac.digest('hex');
 
-    return timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature),
-    );
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
   } catch {
     return false;
   }
@@ -73,12 +70,12 @@ export function verifyUPIWebhookSignature(
 export function parseUPIWebhookPayload(body: any): {
   transactionId: string;
   amountCents: number;
-  status: "success" | "failed";
+  status: 'success' | 'failed';
   upiAppUsed?: string;
   paymentReference?: string;
 } | null {
   try {
-    if (typeof body !== "object" || body === null) {
+    if (typeof body !== 'object' || body === null) {
       return null;
     }
 
@@ -86,27 +83,24 @@ export function parseUPIWebhookPayload(body: any): {
     const amount = body.amount || body.amount_cents;
     const status = body.status || body.payment_status;
     const upiAppUsed = body.upi_app || body.upiApp || body.app_name;
-    const paymentReference =
-      body.payment_reference || body.reference_id || body.ref_id;
+    const paymentReference = body.payment_reference || body.reference_id || body.ref_id;
 
     if (!transactionId || !amount || !status) {
       return null;
     }
 
     const amountCents =
-      typeof amount === "number"
-        ? Math.round(amount * 100)
-        : parseInt(String(amount), 10);
+      typeof amount === 'number' ? Math.round(amount * 100) : parseInt(String(amount), 10);
 
     const normalizedStatus = status.toLowerCase();
-    if (normalizedStatus !== "success" && normalizedStatus !== "failed") {
+    if (normalizedStatus !== 'success' && normalizedStatus !== 'failed') {
       return null;
     }
 
     return {
       transactionId: String(transactionId),
       amountCents,
-      status: normalizedStatus as "success" | "failed",
+      status: normalizedStatus as 'success' | 'failed',
       upiAppUsed: upiAppUsed ? String(upiAppUsed) : undefined,
       paymentReference: paymentReference ? String(paymentReference) : undefined,
     };

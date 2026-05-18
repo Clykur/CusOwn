@@ -1,35 +1,34 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState, memo } from "react";
-import { createPortal } from "react-dom";
-import { Download, ListFilter, Loader2, X } from "lucide-react";
-import FilterDropdown from "@/components/analytics/FilterDropdown";
-import DateFilter from "@/components/owner/date-filter";
-import { UI_CONTEXT } from "@cusown/config";
-import { cn } from "@cusown/shared";
+import { useCallback, useEffect, useMemo, useState, memo } from 'react';
+import { createPortal } from 'react-dom';
+import { Download, ListFilter, Loader2, X } from 'lucide-react';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
+import DateFilter from '@/components/owner/date-filter';
+import { UI_CONTEXT } from '@cusown/config';
+import { cn } from '@cusown/shared';
 
 function toDateInputValue(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return date.toISOString().split('T')[0];
 }
 
 const FILTER_TOKENS = {
-  label:
-    "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500",
+  label: 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500',
 };
 
 /** Mobile: small, borderless ghost controls; md+: slightly larger with borders where needed. */
-const ANALYTICS_TOOLBAR_ICON = "h-[18px] w-[18px] shrink-0 md:h-5 md:w-5";
+const ANALYTICS_TOOLBAR_ICON = 'h-[18px] w-[18px] shrink-0 md:h-5 md:w-5';
 
 const analyticsToolbarBtnFilter = cn(
-  "inline-flex shrink-0 items-center justify-center rounded-lg transition disabled:cursor-not-allowed",
-  "h-8 w-8 border-0 bg-transparent text-slate-700 shadow-none hover:bg-slate-100/90 active:bg-slate-200/80",
-  "md:h-9 md:w-9 md:border md:border-slate-200 md:bg-white md:text-slate-800 md:shadow-sm md:hover:bg-slate-50",
+  'inline-flex shrink-0 items-center justify-center rounded-lg transition disabled:cursor-not-allowed',
+  'h-8 w-8 border-0 bg-transparent text-slate-700 shadow-none hover:bg-slate-100/90 active:bg-slate-200/80',
+  'md:h-9 md:w-9 md:border md:border-slate-200 md:bg-white md:text-slate-800 md:shadow-sm md:hover:bg-slate-50'
 );
 
 const analyticsToolbarBtnDownload = cn(
-  "inline-flex shrink-0 items-center justify-center rounded-lg transition disabled:cursor-not-allowed",
-  "h-8 w-8 border-0 bg-transparent text-slate-900 shadow-none hover:bg-slate-100/90 active:bg-slate-200/80",
-  "md:h-9 md:w-9 md:bg-slate-900 md:text-white md:shadow-sm md:hover:bg-slate-800",
+  'inline-flex shrink-0 items-center justify-center rounded-lg transition disabled:cursor-not-allowed',
+  'h-8 w-8 border-0 bg-transparent text-slate-900 shadow-none hover:bg-slate-100/90 active:bg-slate-200/80',
+  'md:h-9 md:w-9 md:bg-slate-900 md:text-white md:shadow-sm md:hover:bg-slate-800'
 );
 
 export function AnalyticsMobileToolbar({
@@ -57,16 +56,9 @@ export function AnalyticsMobileToolbar({
         }
       >
         {exporting ? (
-          <Loader2
-            className={cn(ANALYTICS_TOOLBAR_ICON, "animate-spin")}
-            aria-hidden="true"
-          />
+          <Loader2 className={cn(ANALYTICS_TOOLBAR_ICON, 'animate-spin')} aria-hidden="true" />
         ) : (
-          <Download
-            className={ANALYTICS_TOOLBAR_ICON}
-            strokeWidth={1.75}
-            aria-hidden="true"
-          />
+          <Download className={ANALYTICS_TOOLBAR_ICON} strokeWidth={1.75} aria-hidden="true" />
         )}
       </button>
       <button
@@ -74,16 +66,11 @@ export function AnalyticsMobileToolbar({
         onClick={onOpenFilters}
         className={cn(
           analyticsToolbarBtnFilter,
-          hasActiveFilters &&
-            "bg-slate-200/60 md:border-slate-900/40 md:bg-slate-50",
+          hasActiveFilters && 'bg-slate-200/60 md:border-slate-900/40 md:bg-slate-50'
         )}
         aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_OPEN_FILTERS}
       >
-        <ListFilter
-          className={ANALYTICS_TOOLBAR_ICON}
-          strokeWidth={1.75}
-          aria-hidden="true"
-        />
+        <ListFilter className={ANALYTICS_TOOLBAR_ICON} strokeWidth={1.75} aria-hidden="true" />
       </button>
     </div>
   );
@@ -120,21 +107,21 @@ function AnalyticsFiltersFields({
   applyOverallRange,
 }: Omit<
   AnalyticsFiltersProps,
-  "filterSheetOpen" | "onFilterSheetOpenChange" | "onHasActiveFiltersChange"
+  'filterSheetOpen' | 'onFilterSheetOpenChange' | 'onHasActiveFiltersChange'
 > & {
-  variant: "desktop" | "sheet";
+  variant: 'desktop' | 'sheet';
   selectedPreset: string;
   applyPreset: (days: number) => void;
   applyOverallRange: () => void;
 }) {
-  const dropdownLayout = variant === "sheet" ? "inline" : "popover";
-  const showExport = variant === "desktop";
+  const dropdownLayout = variant === 'sheet' ? 'inline' : 'popover';
+  const showExport = variant === 'desktop';
   const businessOptions = useMemo(
     () => [
       {
-        value: "all",
+        value: 'all',
         label: UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL,
-        checked: selectedBusinessId === "all",
+        checked: selectedBusinessId === 'all',
       },
       ...businesses.map((business) => ({
         value: business.id,
@@ -142,65 +129,65 @@ function AnalyticsFiltersFields({
         checked: business.id === selectedBusinessId,
       })),
     ],
-    [businesses, selectedBusinessId],
+    [businesses, selectedBusinessId]
   );
 
   const quickRangeOptions = useMemo(
     () => [
       {
-        value: "all",
+        value: 'all',
         label: UI_CONTEXT.OWNER_ANALYTICS_PRESET_OVERALL,
-        checked: selectedPreset === "all",
+        checked: selectedPreset === 'all',
       },
       {
-        value: "1",
+        value: '1',
         label: UI_CONTEXT.OWNER_ANALYTICS_PRESET_TODAY,
-        checked: selectedPreset === "1",
+        checked: selectedPreset === '1',
       },
       {
-        value: "7",
+        value: '7',
         label: UI_CONTEXT.OWNER_ANALYTICS_PRESET_7D,
-        checked: selectedPreset === "7",
+        checked: selectedPreset === '7',
       },
       {
-        value: "30",
+        value: '30',
         label: UI_CONTEXT.OWNER_ANALYTICS_PRESET_30D,
-        checked: selectedPreset === "30",
+        checked: selectedPreset === '30',
       },
       {
-        value: "90",
+        value: '90',
         label: UI_CONTEXT.OWNER_ANALYTICS_PRESET_90D,
-        checked: selectedPreset === "90",
+        checked: selectedPreset === '90',
       },
     ],
-    [selectedPreset],
+    [selectedPreset]
   );
 
   const handleBusinessToggle = useCallback(
     (value: string, checked: boolean) => {
       if (checked) onBusinessChange(value);
     },
-    [onBusinessChange],
+    [onBusinessChange]
   );
 
   const handleQuickRangeToggle = useCallback(
     (value: string, checked: boolean) => {
       if (!checked) return;
 
-      if (value === "all") {
+      if (value === 'all') {
         applyOverallRange();
         return;
       }
 
       applyPreset(Number(value));
     },
-    [applyOverallRange, applyPreset],
+    [applyOverallRange, applyPreset]
   );
 
   const outerClass =
-    variant === "desktop"
-      ? "flex flex-col gap-4 rounded-xl bg-slate-100/60 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6"
-      : "flex flex-col gap-4";
+    variant === 'desktop'
+      ? 'flex flex-col gap-4 rounded-xl bg-slate-100/60 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6'
+      : 'flex flex-col gap-4';
 
   return (
     <div className={outerClass}>
@@ -214,16 +201,12 @@ function AnalyticsFiltersFields({
       </div>
 
       <div className="w-full sm:w-[260px] xl:flex-1">
-        <label className={FILTER_TOKENS.label}>
-          {UI_CONTEXT.OWNER_ANALYTICS_START_DATE}
-        </label>
+        <label className={FILTER_TOKENS.label}>{UI_CONTEXT.OWNER_ANALYTICS_START_DATE}</label>
         <DateFilter value={startDate} onChange={setStartDate} />
       </div>
 
       <div className="w-full sm:w-[260px] xl:flex-1">
-        <label className={FILTER_TOKENS.label}>
-          {UI_CONTEXT.OWNER_ANALYTICS_END_DATE}
-        </label>
+        <label className={FILTER_TOKENS.label}>{UI_CONTEXT.OWNER_ANALYTICS_END_DATE}</label>
         <DateFilter value={endDate} onChange={setEndDate} />
       </div>
 
@@ -250,16 +233,9 @@ function AnalyticsFiltersFields({
             }
           >
             {exporting ? (
-              <Loader2
-                className={cn(ANALYTICS_TOOLBAR_ICON, "animate-spin")}
-                aria-hidden="true"
-              />
+              <Loader2 className={cn(ANALYTICS_TOOLBAR_ICON, 'animate-spin')} aria-hidden="true" />
             ) : (
-              <Download
-                className={ANALYTICS_TOOLBAR_ICON}
-                strokeWidth={1.75}
-                aria-hidden="true"
-              />
+              <Download className={ANALYTICS_TOOLBAR_ICON} strokeWidth={1.75} aria-hidden="true" />
             )}
           </button>
         </div>
@@ -282,7 +258,7 @@ function AnalyticsFiltersComponent({
   onFilterSheetOpenChange,
   onHasActiveFiltersChange,
 }: AnalyticsFiltersProps) {
-  const [selectedPreset, setSelectedPreset] = useState<string>("30");
+  const [selectedPreset, setSelectedPreset] = useState<string>('30');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -292,25 +268,23 @@ function AnalyticsFiltersComponent({
   useEffect(() => {
     if (!filterSheetOpen) return;
     const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFilterSheetOpenChange(false);
+      if (e.key === 'Escape') onFilterSheetOpenChange(false);
     };
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, [filterSheetOpen, onFilterSheetOpenChange]);
 
   const overallStartDate = useMemo(() => {
     if (businesses.length === 0) return toDateInputValue(new Date());
 
-    if (selectedBusinessId === "all") {
+    if (selectedBusinessId === 'all') {
       const timestamps = businesses
-        .map((business) =>
-          business.created_at ? new Date(business.created_at).getTime() : NaN,
-        )
+        .map((business) => (business.created_at ? new Date(business.created_at).getTime() : NaN))
         .filter((value) => Number.isFinite(value));
 
       if (timestamps.length === 0) return toDateInputValue(new Date());
@@ -318,9 +292,7 @@ function AnalyticsFiltersComponent({
       return toDateInputValue(new Date(Math.min(...timestamps)));
     }
 
-    const selectedBusiness = businesses.find(
-      (business) => business.id === selectedBusinessId,
-    );
+    const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId);
 
     if (!selectedBusiness?.created_at) return toDateInputValue(new Date());
 
@@ -337,17 +309,17 @@ function AnalyticsFiltersComponent({
       setEndDate(toDateInputValue(end));
       setSelectedPreset(String(days));
     },
-    [setStartDate, setEndDate],
+    [setStartDate, setEndDate]
   );
 
   const applyOverallRange = useCallback(() => {
     setStartDate(overallStartDate);
     setEndDate(toDateInputValue(new Date()));
-    setSelectedPreset("all");
+    setSelectedPreset('all');
   }, [overallStartDate, setStartDate, setEndDate]);
 
   useEffect(() => {
-    if (selectedPreset !== "all") return;
+    if (selectedPreset !== 'all') return;
     setStartDate(overallStartDate);
     setEndDate(toDateInputValue(new Date()));
   }, [overallStartDate, selectedPreset, setEndDate, setStartDate]);
@@ -359,16 +331,9 @@ function AnalyticsFiltersComponent({
     const defaultStart = toDateInputValue(start);
     const defaultEnd = toDateInputValue(end);
     const dateChanged = startDate !== defaultStart || endDate !== defaultEnd;
-    const businessChanged =
-      businesses.length > 1 && selectedBusinessId !== "all";
-    return dateChanged || businessChanged || selectedPreset !== "30";
-  }, [
-    startDate,
-    endDate,
-    businesses.length,
-    selectedBusinessId,
-    selectedPreset,
-  ]);
+    const businessChanged = businesses.length > 1 && selectedBusinessId !== 'all';
+    return dateChanged || businessChanged || selectedPreset !== '30';
+  }, [startDate, endDate, businesses.length, selectedBusinessId, selectedPreset]);
 
   useEffect(() => {
     onHasActiveFiltersChange?.(hasActiveFilters);
@@ -407,9 +372,7 @@ function AnalyticsFiltersComponent({
             <button
               type="button"
               className="absolute inset-0 bg-black/40"
-              aria-label={
-                UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY
-              }
+              aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
               onClick={() => onFilterSheetOpenChange(false)}
             />
             <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-6 pt-4 shadow-xl">
@@ -424,9 +387,7 @@ function AnalyticsFiltersComponent({
                   type="button"
                   onClick={() => onFilterSheetOpenChange(false)}
                   className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
-                  aria-label={
-                    UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY
-                  }
+                  aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
                 </button>
@@ -444,7 +405,7 @@ function AnalyticsFiltersComponent({
               </button>
             </div>
           </div>,
-          document.body,
+          document.body
         )}
     </div>
   );

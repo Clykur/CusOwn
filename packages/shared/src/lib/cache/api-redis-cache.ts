@@ -4,10 +4,10 @@
  * Falls back gracefully if Redis is unavailable.
  */
 
-import { getCache, setCache } from "./cache";
-import { env } from "@cusown/config";
+import { getCache, setCache } from './cache';
+import { env } from '@cusown/config';
 
-const isDev = env.nodeEnv === "development";
+const isDev = env.nodeEnv === 'development';
 
 /** API-specific TTL values (in seconds) */
 export const API_REDIS_TTL = {
@@ -21,7 +21,7 @@ export const API_REDIS_TTL = {
 } as const;
 
 /** Cache key prefix for API responses */
-const API_CACHE_PREFIX = "api:";
+const API_CACHE_PREFIX = 'api:';
 
 /**
  * Build a cache key from request URL including query params.
@@ -31,9 +31,7 @@ export function buildApiRedisKey(request: Request): string {
   const url = new URL(request.url);
   const path = url.pathname;
   const params = url.searchParams.toString();
-  return params
-    ? `${API_CACHE_PREFIX}${path}?${params}`
-    : `${API_CACHE_PREFIX}${path}`;
+  return params ? `${API_CACHE_PREFIX}${path}?${params}` : `${API_CACHE_PREFIX}${path}`;
 }
 
 /**
@@ -41,7 +39,7 @@ export function buildApiRedisKey(request: Request): string {
  */
 export function buildApiRedisKeyFromPath(
   path: string,
-  params?: Record<string, string | number | boolean | undefined>,
+  params?: Record<string, string | number | boolean | undefined>
 ): string {
   if (!params || Object.keys(params).length === 0) {
     return `${API_CACHE_PREFIX}${path}`;
@@ -80,7 +78,7 @@ export async function getApiRedisCache<T>(cacheKey: string): Promise<T | null> {
 export async function setApiRedisCache<T>(
   cacheKey: string,
   data: T,
-  ttlSeconds: number,
+  ttlSeconds: number
 ): Promise<void> {
   try {
     await setCache(cacheKey, data, ttlSeconds);
@@ -98,7 +96,7 @@ export async function setApiRedisCache<T>(
 export async function withApiRedisCache<T>(
   cacheKey: string,
   ttlSeconds: number,
-  handler: () => Promise<T>,
+  handler: () => Promise<T>
 ): Promise<{ data: T; fromCache: boolean }> {
   const cached = await getApiRedisCache<T>(cacheKey);
   if (cached !== null) {

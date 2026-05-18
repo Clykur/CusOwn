@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { ReactNode } from "react";
+import { ReactNode } from 'react';
 
 /** Sticky strip for analytics: optional summary + filters (no inner card shell). */
 export default function AnalyticsHeader({

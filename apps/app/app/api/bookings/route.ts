@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   bookingService,
   whatsappService,
@@ -23,14 +23,14 @@ import {
   computeAndStoreRisk,
   hashIp,
   requireSupabaseAdmin,
-} from "@cusown/shared/server";
+} from '@cusown/shared/server';
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
   METRICS_BOOKING_CREATED,
   METRICS_OBSERVABILITY_BOOKING_ATTEMPT_TOTAL,
-} from "@cusown/config";
-import type { BookingWithDetails } from "@cusown/shared/server";
+} from '@cusown/config';
+import type { BookingWithDetails } from '@cusown/shared/server';
 
 const IDEMPOTENCY_TTL_HOURS = 24;
 
@@ -46,14 +46,9 @@ export async function POST(request: NextRequest) {
       headerMap[key.toLowerCase()] = value;
     });
 
-    const idempotencyKey =
-      headerMap["x-idempotency-key"] || headerMap["idempotency-key"];
+    const idempotencyKey = headerMap['x-idempotency-key'] || headerMap['idempotency-key'];
 
-    if (
-      !idempotencyKey ||
-      idempotencyKey.trim().length === 0 ||
-      idempotencyKey.length > 512
-    ) {
+    if (!idempotencyKey || idempotencyKey.trim().length === 0 || idempotencyKey.length > 512) {
       return errorResponse(ERROR_MESSAGES.IDEMPOTENCY_KEY_REQUIRED, 400);
     }
 
@@ -65,17 +60,17 @@ export async function POST(request: NextRequest) {
     // ----------------------------
     // NONCE CHECK
     // ----------------------------
-    const requestId = request.headers.get("x-request-id");
+    const requestId = request.headers.get('x-request-id');
     const serverUser = await getServerUser(request);
     const customerUserId = serverUser?.id || null;
 
     if (requestId) {
       if (!isValidUUID(requestId)) {
-        return errorResponse("Invalid request ID", 400);
+        return errorResponse('Invalid request ID', 400);
       }
 
       const nonceExists = await checkNonce(requestId);
-      if (nonceExists) return errorResponse("Duplicate request", 409);
+      if (nonceExists) return errorResponse('Duplicate request', 409);
 
       await storeNonce(requestId, customerUserId, clientIP);
     }
@@ -86,30 +81,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const date = body.date;
 
-    const { filterFields, validateStringLength } =
-      await import("@cusown/shared/server");
+    const { filterFields, validateStringLength } = await import('@cusown/shared/server');
 
     const filteredBody = filterFields(body, [
-      "salon_id",
-      "slot_id",
-      "customer_name",
-      "customer_phone",
-      "service_ids",
-      "date",
+      'salon_id',
+      'slot_id',
+      'customer_name',
+      'customer_phone',
+      'service_ids',
+      'date',
     ] as (keyof typeof body)[]);
 
     const validatedData = validateCreateBooking(filteredBody);
 
     if (!isValidUUID(validatedData.salon_id)) {
-      return errorResponse("Invalid salon ID", 400);
+      return errorResponse('Invalid salon ID', 400);
     }
 
     if (!validateStringLength(validatedData.customer_name, 200)) {
-      return errorResponse("Customer name too long", 400);
+      return errorResponse('Customer name too long', 400);
     }
 
     if (!validateStringLength(validatedData.customer_phone, 20)) {
-      return errorResponse("Customer phone too long", 400);
+      return errorResponse('Customer phone too long', 400);
     }
 
     // ----------------------------
@@ -132,41 +126,39 @@ export async function POST(request: NextRequest) {
     }
 
     if (slotData.business_id !== validatedData.salon_id) {
-      return errorResponse("Slot does not belong to salon", 400);
+      return errorResponse('Slot does not belong to salon', 400);
     }
     // ----------------------------
     // BUSINESS HOURS VALIDATION (FIXED)
     // ----------------------------
-    const { businessHoursService } = await import("@cusown/shared/server");
+    const { businessHoursService } = await import('@cusown/shared/server');
 
     const slotValidation = await businessHoursService.validateSlot(
       validatedData.salon_id,
       slotData.date,
       slotData.start_time,
-      slotData.end_time,
+      slotData.end_time
     );
 
     if (!slotValidation.valid) {
-      return errorResponse(slotValidation.reason || "Invalid slot", 400);
+      return errorResponse(slotValidation.reason || 'Invalid slot', 400);
     }
     // ----------------------------
     // DATE CHECK
     // ----------------------------
     if (!date) {
-      return errorResponse("Date required for booking", 400);
+      return errorResponse('Date required for booking', 400);
     }
 
     // ----------------------------
     // PREPARE PARAMS
     // ----------------------------
-    const serviceIds = Array.isArray(filteredBody.service_ids)
-      ? filteredBody.service_ids
-      : [];
+    const serviceIds = Array.isArray(filteredBody.service_ids) ? filteredBody.service_ids : [];
 
     const params = await bookingService.prepareCreateBookingParams(
       validatedData,
       customerUserId,
-      serviceIds,
+      serviceIds
     );
 
     // ----------------------------
@@ -175,11 +167,11 @@ export async function POST(request: NextRequest) {
     const abuseCheck = await abuseDetectionService.shouldBlockAction(
       customerUserId,
       clientIP,
-      "booking",
+      'booking'
     );
 
     if (abuseCheck.blocked) {
-      return errorResponse(abuseCheck.reason || "Action blocked", 429);
+      return errorResponse(abuseCheck.reason || 'Action blocked', 429);
     }
 
     // ----------------------------
@@ -191,7 +183,7 @@ export async function POST(request: NextRequest) {
     // CREATE BOOKING
     // ----------------------------
     const { data: result, error: rpcError } = await supabase.rpc(
-      "create_booking_idempotent_reserve",
+      'create_booking_idempotent_reserve',
       {
         p_key: idempotencyKey,
         p_ttl_hours: IDEMPOTENCY_TTL_HOURS,
@@ -205,7 +197,7 @@ export async function POST(request: NextRequest) {
         p_total_price_cents: params.p_total_price_cents,
         p_services_count: params.p_services_count,
         p_service_data: params.p_service_data,
-      },
+      }
     );
 
     if (rpcError) throw rpcError;
@@ -216,9 +208,7 @@ export async function POST(request: NextRequest) {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    const booking = await bookingService.getBookingByUuidWithDetails(
-      row.booking_id,
-    );
+    const booking = await bookingService.getBookingByUuidWithDetails(row.booking_id);
     if (!booking) throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
 
     const slot = (await slotService.getSlotById(params.p_slot_id)) || undefined;
@@ -244,7 +234,7 @@ export async function POST(request: NextRequest) {
     const whatsapp = whatsappService.generateBookingRequestMessage(
       bookingWithDetails,
       salon,
-      request,
+      request
     );
 
     const bookingStatusUrl = getBookingStatusUrl(booking.booking_id, request);
@@ -256,15 +246,14 @@ export async function POST(request: NextRequest) {
         message: whatsapp.message,
         booking_status_url: bookingStatusUrl,
       },
-      SUCCESS_MESSAGES.BOOKING_CREATED,
+      SUCCESS_MESSAGES.BOOKING_CREATED
     );
 
     setNoCacheHeaders(response);
 
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
 
     return errorResponse(message, 400);
   }

@@ -1,22 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
-import { env } from "@cusown/config";
-import { createSecureSetAll } from "@cusown/shared/lib/auth/cookie-adapter.server";
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { env } from '@cusown/config';
+import { createSecureSetAll } from '@cusown/shared/lib/auth/cookie-adapter.server';
 
-import { userService } from "@cusown/shared/services/user.service";
+import { userService } from '@cusown/shared/services/user.service';
 
-import { getOAuthRedirect } from "@cusown/shared/lib/auth/getOAuthRedirect";
-import { ROUTES } from "@cusown/shared";
-import {
-  AUTH_COOKIE_MAX_AGE_SECONDS,
-  AUTH_PENDING_ROLE_COOKIE,
-  ROLE_IDS,
-} from "@cusown/config";
-import { requireSupabaseAdmin } from "@cusown/shared/lib/supabase/server";
+import { getOAuthRedirect } from '@cusown/shared/lib/auth/getOAuthRedirect';
+import { ROUTES } from '@cusown/shared';
+import { AUTH_COOKIE_MAX_AGE_SECONDS, AUTH_PENDING_ROLE_COOKIE, ROLE_IDS } from '@cusown/config';
+import { requireSupabaseAdmin } from '@cusown/shared/lib/supabase/server';
 
-const IS_SECURE_COOKIE_DEFAULT = new URL(env.app.baseUrl).protocol === "https:";
-const ALLOWED_ROLES = new Set(["owner", "customer"]);
+const IS_SECURE_COOKIE_DEFAULT = new URL(env.app.baseUrl).protocol === 'https:';
+const ALLOWED_ROLES = new Set(['owner', 'customer']);
 
 // --- FIX (CodeQL): OAuth authorization codes are alphanumeric + hyphens/underscores,
 // typically 20–256 chars. We extract a strictly validated string here rather than
@@ -26,11 +22,11 @@ const ALLOWED_ROLES = new Set(["owner", "customer"]);
 const OAUTH_CODE_RE = /^[A-Za-z0-9\-_.~]{10,500}$/;
 
 function extractValidOAuthCode(raw: string | null): string | null {
-  if (typeof raw !== "string") return null;
+  if (typeof raw !== 'string') return null;
   return OAUTH_CODE_RE.test(raw) ? raw : null;
 }
 
-type SelectableRole = "owner" | "customer";
+type SelectableRole = 'owner' | 'customer';
 
 function toSelectableRole(value: string | null): SelectableRole | null {
   if (!value) return null;
@@ -38,66 +34,57 @@ function toSelectableRole(value: string | null): SelectableRole | null {
   return ALLOWED_ROLES.has(normalized) ? (normalized as SelectableRole) : null;
 }
 
-function toUserType(
-  roleNames: string[],
-): "admin" | "owner" | "customer" | "both" {
-  const hasAdmin = roleNames.includes("admin");
-  if (hasAdmin) return "admin";
-  const hasOwner = roleNames.includes("owner");
-  const hasCustomer = roleNames.includes("customer");
-  if (hasOwner && hasCustomer) return "both";
-  if (hasOwner) return "owner";
-  return "customer";
+function toUserType(roleNames: string[]): 'admin' | 'owner' | 'customer' | 'both' {
+  const hasAdmin = roleNames.includes('admin');
+  if (hasAdmin) return 'admin';
+  const hasOwner = roleNames.includes('owner');
+  const hasCustomer = roleNames.includes('customer');
+  if (hasOwner && hasCustomer) return 'both';
+  if (hasOwner) return 'owner';
+  return 'customer';
 }
 
 async function ensureUserHasSelectedRole(
   userId: string,
   role: SelectableRole,
-  currentUserType: "admin" | "owner" | "customer" | "both" | null,
-): Promise<"admin" | "owner" | "customer" | "both" | null> {
+  currentUserType: 'admin' | 'owner' | 'customer' | 'both' | null
+): Promise<'admin' | 'owner' | 'customer' | 'both' | null> {
   const supabaseAdmin = requireSupabaseAdmin();
-  if (currentUserType === "admin" || !supabaseAdmin) return currentUserType;
+  if (currentUserType === 'admin' || !supabaseAdmin) return currentUserType;
 
   const alreadyHasRole =
-    (role === "owner" &&
-      (currentUserType === "owner" || currentUserType === "both")) ||
-    (role === "customer" &&
-      (currentUserType === "customer" || currentUserType === "both"));
+    (role === 'owner' && (currentUserType === 'owner' || currentUserType === 'both')) ||
+    (role === 'customer' && (currentUserType === 'customer' || currentUserType === 'both'));
   if (alreadyHasRole) return currentUserType;
 
-  const { error: roleInsertError } = await supabaseAdmin
-    .from("user_roles")
-    .upsert(
-      {
-        user_id: userId,
-        role_id: ROLE_IDS[role],
-      },
-      {
-        onConflict: "user_id,role_id",
-        ignoreDuplicates: true,
-      },
-    );
+  const { error: roleInsertError } = await supabaseAdmin.from('user_roles').upsert(
+    {
+      user_id: userId,
+      role_id: ROLE_IDS[role],
+    },
+    {
+      onConflict: 'user_id,role_id',
+      ignoreDuplicates: true,
+    }
+  );
 
   if (roleInsertError) {
-    console.warn(
-      "[AUTH] callback: role upsert failed, continuing with existing type",
-      {
-        userId: userId.substring(0, 8) + "...",
-        role,
-        error: roleInsertError.message,
-      },
-    );
+    console.warn('[AUTH] callback: role upsert failed, continuing with existing type', {
+      userId: userId.substring(0, 8) + '...',
+      role,
+      error: roleInsertError.message,
+    });
     return currentUserType;
   }
 
   const { data: roleRows, error: rolesError } = await supabaseAdmin
-    .from("user_roles")
-    .select("roles(name)")
-    .eq("user_id", userId);
+    .from('user_roles')
+    .select('roles(name)')
+    .eq('user_id', userId);
 
   if (rolesError) {
-    console.warn("[AUTH] callback: failed to load user roles after upsert", {
-      userId: userId.substring(0, 8) + "...",
+    console.warn('[AUTH] callback: failed to load user roles after upsert', {
+      userId: userId.substring(0, 8) + '...',
       role,
       error: rolesError.message,
     });
@@ -110,36 +97,30 @@ async function ensureUserHasSelectedRole(
       if (Array.isArray(joined)) return joined[0]?.name;
       return joined?.name;
     })
-    .filter((name): name is string => typeof name === "string");
+    .filter((name): name is string => typeof name === 'string');
 
   const nextUserType = toUserType(roleNames);
 
-  const { error: profileError } = await supabaseAdmin
-    .from("user_profiles")
-    .upsert(
-      {
-        id: userId,
-        user_type: nextUserType,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "id" },
-    );
+  const { error: profileError } = await supabaseAdmin.from('user_profiles').upsert(
+    {
+      id: userId,
+      user_type: nextUserType,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'id' }
+  );
 
   if (profileError) {
-    console.warn(
-      "[AUTH] callback: failed to sync user profile after role upsert",
-      {
-        userId: userId.substring(0, 8) + "...",
-        role,
-        error: profileError.message,
-      },
-    );
+    console.warn('[AUTH] callback: failed to sync user profile after role upsert', {
+      userId: userId.substring(0, 8) + '...',
+      role,
+      error: profileError.message,
+    });
     return currentUserType;
   }
 
   try {
-    const { invalidateProfileCache } =
-      await import("@cusown/shared/lib/cache/auth-cache");
+    const { invalidateProfileCache } = await import('@cusown/shared/lib/cache/auth-cache');
     invalidateProfileCache(userId);
   } catch {
     // best-effort
@@ -157,7 +138,7 @@ export async function GET(request: NextRequest) {
 
   // Ensure we never accidentally redirect to a different origin during OAuth callback.
   // This prevents infinite redirect loops when host/port/proto differ between hops.
-  const baseUrlFromRequest = getOAuthRedirect("/auth/callback", request);
+  const baseUrlFromRequest = getOAuthRedirect('/auth/callback', request);
   const baseUrl = `${new URL(baseUrlFromRequest).origin}/`;
 
   // --- FIX (CodeQL): Use extractValidOAuthCode() so the value passed to
@@ -165,40 +146,38 @@ export async function GET(request: NextRequest) {
   // user-controlled boolean. CodeQL can now see a clear trust boundary:
   // - null  → the request is invalid; redirect away without touching auth APIs
   // - string → structurally valid code; safe to hand off to Supabase
-  const code = extractValidOAuthCode(requestUrl.searchParams.get("code"));
+  const code = extractValidOAuthCode(requestUrl.searchParams.get('code'));
 
   if (code === null) {
     // No valid code present — check for an OAuth error from the provider.
-    const errDesc = requestUrl.searchParams.get("error_description");
-    const err = requestUrl.searchParams.get("error");
+    const errDesc = requestUrl.searchParams.get('error_description');
+    const err = requestUrl.searchParams.get('error');
 
     if (errDesc || err) {
       // Sanitize before reflecting into the redirect URL.
       const safeError =
-        typeof errDesc === "string" && errDesc.length <= 300
+        typeof errDesc === 'string' && errDesc.length <= 300
           ? errDesc
-          : typeof err === "string"
+          : typeof err === 'string'
             ? err
-            : "auth_failed";
+            : 'auth_failed';
 
       const msg = encodeURIComponent(safeError);
-      return NextResponse.redirect(
-        new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl),
-      );
+      return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
     }
 
     return NextResponse.redirect(new URL(ROUTES.HOME, baseUrl));
   }
 
   // `code` is now a structurally validated string — safe to use below.
-  console.info("[AUTH] callback: GET", {
+  console.info('[AUTH] callback: GET', {
     hasCode: true,
     error: null,
   });
 
   const cookieStore = await cookies();
   const pendingRoleFromCookie = toSelectableRole(
-    cookieStore.get(AUTH_PENDING_ROLE_COOKIE)?.value ?? null,
+    cookieStore.get(AUTH_PENDING_ROLE_COOKIE)?.value ?? null
   );
   const selectedRole = pendingRoleFromCookie;
 
@@ -224,7 +203,7 @@ export async function GET(request: NextRequest) {
             name: string;
             value: string;
             options?: Record<string, unknown>;
-          }[],
+          }[]
         );
       },
     },
@@ -233,46 +212,40 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.session || !data.user) {
-    console.info("[AUTH] callback: negative — exchangeCodeForSession failed", {
+    console.info('[AUTH] callback: negative — exchangeCodeForSession failed', {
       error: error?.message ?? null,
       hasSession: !!data?.session,
       hasUser: !!data?.user,
     });
     try {
-      const { authEventsService } =
-        await import("@cusown/shared/services/auth-events.service");
-      const { getClientIp } =
-        await import("@cusown/shared/lib/security/client-ip.security");
-      authEventsService.insert("login_failed", {
+      const { authEventsService } = await import('@cusown/shared/services/auth-events.service');
+      const { getClientIp } = await import('@cusown/shared/lib/security/client-ip.security');
+      authEventsService.insert('login_failed', {
         ip: getClientIp(request),
-        userAgent: request.headers.get("user-agent") ?? undefined,
+        userAgent: request.headers.get('user-agent') ?? undefined,
       });
     } catch {
       // optional logging
     }
-    const msg = encodeURIComponent(error?.message || "auth_failed");
-    return NextResponse.redirect(
-      new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl),
-    );
+    const msg = encodeURIComponent(error?.message || 'auth_failed');
+    return NextResponse.redirect(new URL(`${ROUTES.AUTH_LOGIN()}?error=${msg}`, baseUrl));
   }
 
   try {
-    const { authEventsService } =
-      await import("@cusown/shared/services/auth-events.service");
-    const { getClientIp } =
-      await import("@cusown/shared/lib/security/client-ip.security");
-    authEventsService.insert("login_success", {
+    const { authEventsService } = await import('@cusown/shared/services/auth-events.service');
+    const { getClientIp } = await import('@cusown/shared/lib/security/client-ip.security');
+    authEventsService.insert('login_success', {
       userId: data.user.id,
       email: data.user.email ?? undefined,
       ip: getClientIp(request),
-      userAgent: request.headers.get("user-agent") ?? undefined,
+      userAgent: request.headers.get('user-agent') ?? undefined,
     });
   } catch {
     // optional logging
   }
 
-  console.info("[AUTH] callback: positive — session exchanged", {
-    userId: data.user.id.substring(0, 8) + "...",
+  console.info('[AUTH] callback: positive — session exchanged', {
+    userId: data.user.id.substring(0, 8) + '...',
   });
 
   let profile: Awaited<ReturnType<typeof userService.getUserProfile>> = null;
@@ -283,10 +256,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const fullName =
-      data.user.user_metadata?.full_name ??
-      data.user.email?.split("@")[0] ??
-      null;
+    const fullName = data.user.user_metadata?.full_name ?? data.user.email?.split('@')[0] ?? null;
 
     if (!profile) {
       profile = await userService.upsertUserProfile(data.user.id, {
@@ -297,8 +267,7 @@ export async function GET(request: NextRequest) {
     // profile upsert is best-effort; continue with DB state checks below
   }
 
-  let latestProfile: Awaited<ReturnType<typeof userService.getUserProfile>> =
-    null;
+  let latestProfile: Awaited<ReturnType<typeof userService.getUserProfile>> = null;
   let hasBusiness = false;
   try {
     [latestProfile, hasBusiness] = await Promise.all([
@@ -316,88 +285,62 @@ export async function GET(request: NextRequest) {
     ? await ensureUserHasSelectedRole(data.user.id, selectedRole, userType)
     : userType;
 
-  if (selectedRole === "owner" && roleUserType !== "admin") {
-    const target = hasBusiness
-      ? ROUTES.OWNER_DASHBOARD_BASE
-      : ROUTES.OWNER_SETUP;
-    console.info("[AUTH] callback: positive — redirect selected owner path", {
-      userId: data.user.id.substring(0, 8) + "...",
-      target: hasBusiness ? "owner_dashboard" : "owner_onboarding",
+  if (selectedRole === 'owner' && roleUserType !== 'admin') {
+    const target = hasBusiness ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.OWNER_SETUP;
+    console.info('[AUTH] callback: positive — redirect selected owner path', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: hasBusiness ? 'owner_dashboard' : 'owner_onboarding',
     });
-    return redirectToSuccess(
-      target,
-      baseUrl,
-      cookiesToForward,
-      true,
-      roleUserType,
-    );
+    return redirectToSuccess(target, baseUrl, cookiesToForward, true, roleUserType);
   }
 
-  if (selectedRole === "customer" && roleUserType !== "admin") {
-    console.info(
-      "[AUTH] callback: positive — redirect selected customer path",
-      {
-        userId: data.user.id.substring(0, 8) + "...",
-        target: "customer_dashboard",
-      },
-    );
+  if (selectedRole === 'customer' && roleUserType !== 'admin') {
+    console.info('[AUTH] callback: positive — redirect selected customer path', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: 'customer_dashboard',
+    });
     return redirectToSuccess(
       ROUTES.CUSTOMER_DASHBOARD,
       baseUrl,
       cookiesToForward,
       true,
-      roleUserType,
+      roleUserType
     );
   }
 
-  if (roleUserType === "admin") {
-    console.info("[AUTH] callback: positive — redirect admin", {
-      userId: data.user.id.substring(0, 8) + "...",
-      target: "admin_dashboard",
+  if (roleUserType === 'admin') {
+    console.info('[AUTH] callback: positive — redirect admin', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: 'admin_dashboard',
     });
-    void import("@cusown/shared/services/audit.service").then(
-      ({ auditService }) =>
-        auditService.createAuditLog(data.user.id, "admin_login", "user", {
-          entityId: data.user.id,
-          actorRole: "admin",
-        }),
+    void import('@cusown/shared/services/audit.service').then(({ auditService }) =>
+      auditService.createAuditLog(data.user.id, 'admin_login', 'user', {
+        entityId: data.user.id,
+        actorRole: 'admin',
+      })
     );
-    return redirectToSuccess(
-      ROUTES.ADMIN_DASHBOARD,
-      baseUrl,
-      cookiesToForward,
-      true,
-      roleUserType,
-    );
+    return redirectToSuccess(ROUTES.ADMIN_DASHBOARD, baseUrl, cookiesToForward, true, roleUserType);
   }
 
-  if (roleUserType === "owner" || roleUserType === "both") {
-    const target = hasBusiness
-      ? ROUTES.OWNER_DASHBOARD_BASE
-      : ROUTES.OWNER_SETUP;
-    console.info("[AUTH] callback: positive — redirect owner path", {
-      userId: data.user.id.substring(0, 8) + "...",
-      target: hasBusiness ? "owner_dashboard" : "owner_onboarding",
+  if (roleUserType === 'owner' || roleUserType === 'both') {
+    const target = hasBusiness ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.OWNER_SETUP;
+    console.info('[AUTH] callback: positive — redirect owner path', {
+      userId: data.user.id.substring(0, 8) + '...',
+      target: hasBusiness ? 'owner_dashboard' : 'owner_onboarding',
     });
-    return redirectToSuccess(
-      target,
-      baseUrl,
-      cookiesToForward,
-      true,
-      roleUserType,
-    );
+    return redirectToSuccess(target, baseUrl, cookiesToForward, true, roleUserType);
   }
 
-  console.info("[AUTH] callback: positive — redirect customer (default)", {
-    userId: data.user.id.substring(0, 8) + "...",
-    target: "customer_dashboard",
+  console.info('[AUTH] callback: positive — redirect customer (default)', {
+    userId: data.user.id.substring(0, 8) + '...',
+    target: 'customer_dashboard',
   });
   return redirectToSuccess(
     ROUTES.CUSTOMER_DASHBOARD,
     baseUrl,
     cookiesToForward,
     true,
-    roleUserType,
+    roleUserType
   );
 }
 
@@ -413,9 +356,9 @@ function redirectToSuccess(
     options?: Record<string, unknown>;
   }[] = [],
   clearPendingRole = false,
-  userType: string | null = null,
+  userType: string | null = null
 ): NextResponse {
-  const to = path.startsWith("/") ? path : `/${path}`;
+  const to = path.startsWith('/') ? path : `/${path}`;
   const redirectUrl = new URL(to, baseUrl);
 
   const res = NextResponse.redirect(redirectUrl, { status: 302 });
@@ -423,33 +366,30 @@ function redirectToSuccess(
   for (const { name, value, options } of sessionCookies) {
     const opts = (options || {}) as Record<string, unknown>;
     res.cookies.set(name as string, value, {
-      path: (opts.path as string) ?? "/",
+      path: (opts.path as string) ?? '/',
       maxAge: (opts.maxAge as number) ?? AUTH_COOKIE_MAX_AGE_SECONDS,
-      sameSite: (opts.sameSite as "lax" | "strict" | "none") ?? "lax",
-      secure:
-        opts.secure !== undefined
-          ? (opts.secure as boolean)
-          : IS_SECURE_COOKIE_DEFAULT,
+      sameSite: (opts.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
+      secure: opts.secure !== undefined ? (opts.secure as boolean) : IS_SECURE_COOKIE_DEFAULT,
       httpOnly: opts.httpOnly !== undefined ? (opts.httpOnly as boolean) : true,
       ...(opts.expires ? { expires: opts.expires as Date } : {}),
     });
   }
 
   if (clearPendingRole) {
-    res.cookies.set(AUTH_PENDING_ROLE_COOKIE, "", {
-      path: "/",
+    res.cookies.set(AUTH_PENDING_ROLE_COOKIE, '', {
+      path: '/',
       maxAge: 0,
-      sameSite: "lax",
+      sameSite: 'lax',
       secure: IS_SECURE_COOKIE_DEFAULT,
       httpOnly: true,
     });
   }
 
   if (userType) {
-    res.cookies.set("cusown_user_role", userType, {
-      path: "/",
+    res.cookies.set('cusown_user_role', userType, {
+      path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
-      sameSite: "lax",
+      sameSite: 'lax',
       secure: IS_SECURE_COOKIE_DEFAULT,
       httpOnly: false, // Must be accessible via JS for useLogoNavigation
     });

@@ -1,5 +1,5 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 export type BusinessHoliday = {
   id: string;
@@ -36,11 +36,11 @@ export class DowntimeService {
   async addHoliday(
     businessId: string,
     holidayDate: string,
-    holidayName?: string,
+    holidayName?: string
   ): Promise<BusinessHoliday> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("business_holidays")
+      .from('business_holidays')
       .insert({
         business_id: businessId,
         holiday_date: holidayDate,
@@ -60,10 +60,7 @@ export class DowntimeService {
 
   async removeHoliday(holidayId: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
-    const { error } = await supabaseAdmin
-      .from("business_holidays")
-      .delete()
-      .eq("id", holidayId);
+    const { error } = await supabaseAdmin.from('business_holidays').delete().eq('id', holidayId);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -71,17 +68,14 @@ export class DowntimeService {
   }
 
   /** Delete a holiday only if it belongs to the business (idempotent no-op when no row). */
-  async removeHolidayForBusiness(
-    holidayId: string,
-    businessId: string,
-  ): Promise<boolean> {
+  async removeHolidayForBusiness(holidayId: string, businessId: string): Promise<boolean> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("business_holidays")
+      .from('business_holidays')
       .delete()
-      .eq("id", holidayId)
-      .eq("business_id", businessId)
-      .select("id");
+      .eq('id', holidayId)
+      .eq('business_id', businessId)
+      .select('id');
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -89,17 +83,14 @@ export class DowntimeService {
     return Array.isArray(data) && data.length > 0;
   }
 
-  async removeClosureForBusiness(
-    closureId: string,
-    businessId: string,
-  ): Promise<boolean> {
+  async removeClosureForBusiness(closureId: string, businessId: string): Promise<boolean> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("business_closures")
+      .from('business_closures')
       .delete()
-      .eq("id", closureId)
-      .eq("business_id", businessId)
-      .select("id");
+      .eq('id', closureId)
+      .eq('business_id', businessId)
+      .select('id');
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -110,10 +101,10 @@ export class DowntimeService {
   async getBusinessHolidays(businessId: string): Promise<BusinessHoliday[]> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("business_holidays")
-      .select("*")
-      .eq("business_id", businessId)
-      .order("holiday_date", { ascending: true });
+      .from('business_holidays')
+      .select('*')
+      .eq('business_id', businessId)
+      .order('holiday_date', { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -125,7 +116,7 @@ export class DowntimeService {
     businessId: string,
     startDate: string,
     endDate: string,
-    reason?: string,
+    reason?: string
   ): Promise<BusinessClosure> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (new Date(endDate) < new Date(startDate)) {
@@ -133,7 +124,7 @@ export class DowntimeService {
     }
 
     const { data, error } = await supabaseAdmin
-      .from("business_closures")
+      .from('business_closures')
       .insert({
         business_id: businessId,
         start_date: startDate,
@@ -154,10 +145,7 @@ export class DowntimeService {
 
   async removeClosure(closureId: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
-    const { error } = await supabaseAdmin
-      .from("business_closures")
-      .delete()
-      .eq("id", closureId);
+    const { error } = await supabaseAdmin.from('business_closures').delete().eq('id', closureId);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -167,10 +155,10 @@ export class DowntimeService {
   async getBusinessClosures(businessId: string): Promise<BusinessClosure[]> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("business_closures")
-      .select("*")
-      .eq("business_id", businessId)
-      .order("start_date", { ascending: true });
+      .from('business_closures')
+      .select('*')
+      .eq('business_id', businessId)
+      .order('start_date', { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -183,7 +171,7 @@ export class DowntimeService {
     dayOfWeek: number,
     openingTime?: string,
     closingTime?: string,
-    isClosed: boolean = false,
+    isClosed: boolean = false
   ): Promise<BusinessSpecialHours> {
     return this.upsertSpecialHoursRow(businessId, dayOfWeek, {
       opening_time: openingTime ?? null,
@@ -204,7 +192,7 @@ export class DowntimeService {
       is_closed?: boolean;
       break_start_time?: string | null;
       break_end_time?: string | null;
-    },
+    }
   ): Promise<BusinessSpecialHours> {
     const supabaseAdmin = requireSupabaseAdmin();
     const payload: Record<string, unknown> = {
@@ -221,7 +209,7 @@ export class DowntimeService {
       payload.break_end_time = row.break_end_time;
     }
     const { data, error } = await supabaseAdmin
-      .from("business_special_hours")
+      .from('business_special_hours')
       .upsert(payload)
       .select()
       .single();
@@ -247,7 +235,7 @@ export class DowntimeService {
       is_closed: boolean;
       break_start_time?: string | null;
       break_end_time?: string | null;
-    }>,
+    }>
   ): Promise<void> {
     for (const r of rows) {
       await this.upsertSpecialHoursRow(businessId, r.day_of_week, {
@@ -260,15 +248,13 @@ export class DowntimeService {
     }
   }
 
-  async getBusinessSpecialHours(
-    businessId: string,
-  ): Promise<BusinessSpecialHours[]> {
+  async getBusinessSpecialHours(businessId: string): Promise<BusinessSpecialHours[]> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("business_special_hours")
-      .select("*")
-      .eq("business_id", businessId)
-      .order("day_of_week", { ascending: true });
+      .from('business_special_hours')
+      .select('*')
+      .eq('business_id', businessId)
+      .order('day_of_week', { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -293,9 +279,7 @@ export class DowntimeService {
 
     const dayOfWeek = checkDate.getDay();
     const specialHours = await this.getBusinessSpecialHours(businessId);
-    const daySpecialHours = specialHours.find(
-      (sh) => sh.day_of_week === dayOfWeek,
-    );
+    const daySpecialHours = specialHours.find((sh) => sh.day_of_week === dayOfWeek);
     if (daySpecialHours?.is_closed) return true;
 
     return false;

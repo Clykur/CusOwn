@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { supabaseAuth } from "@cusown/shared";
-import { fetchUserState } from "@cusown/shared";
+import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { supabaseAuth } from '@cusown/shared';
+import { fetchUserState } from '@cusown/shared';
 
 export default function NotFound() {
   const router = useRouter();
@@ -20,45 +20,45 @@ export default function NotFound() {
 
       // Not logged in → public home
       if (!userId) {
-        router.push("/");
+        router.push('/');
         return;
       }
 
       const state = await fetchUserState();
 
-      const onOwnerRoute = pathname?.startsWith("/owner");
-      const onCustomerRoute = pathname?.startsWith("/customer");
+      const onOwnerRoute = pathname?.startsWith('/owner');
+      const onCustomerRoute = pathname?.startsWith('/customer');
 
       // If user has both roles
       if (state?.canAccessOwnerDashboard && state?.canAccessCustomerDashboard) {
         if (onOwnerRoute) {
-          router.push("/owner/dashboard");
+          router.push('/owner/dashboard');
         } else if (onCustomerRoute) {
-          router.push("/customer/dashboard");
+          router.push('/customer/dashboard');
         } else {
           // default priority
-          router.push("/owner/dashboard");
+          router.push('/owner/dashboard');
         }
         return;
       }
 
       // Owner only
       if (state?.canAccessOwnerDashboard) {
-        router.push("/owner/dashboard");
+        router.push('/owner/dashboard');
         return;
       }
 
       // Customer only
       if (state?.canAccessCustomerDashboard) {
-        router.push("/customer/dashboard");
+        router.push('/customer/dashboard');
         return;
       }
 
       // Fallback
-      router.push("/");
+      router.push('/');
     } catch (err) {
-      console.error("Navigation error:", err);
-      router.push("/");
+      console.error('Navigation error:', err);
+      router.push('/');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export default function NotFound() {
           disabled={loading}
           className="inline-block bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-60"
         >
-          {loading ? "Redirecting..." : "Go Home"}
+          {loading ? 'Redirecting...' : 'Go Home'}
         </button>
       </div>
     </div>

@@ -3,8 +3,8 @@
  * Uses Supabase Storage API; no private URLs exposed.
  */
 
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ADMIN_DEFAULT_ANALYTICS_DAYS } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ADMIN_DEFAULT_ANALYTICS_DAYS } from '@cusown/config';
 
 export interface StorageOverview {
   totalFiles: number;
@@ -14,8 +14,7 @@ export interface StorageOverview {
   uploadTrend: { date: string; count: number }[];
 }
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isUuid(str: string): boolean {
   return UUID_REGEX.test(str);
@@ -24,8 +23,7 @@ function isUuid(str: string): boolean {
 export class StorageOverviewService {
   async getStorageOverview(): Promise<StorageOverview> {
     const supabase = requireSupabaseAdmin();
-    const { data: buckets, error: bucketsError } =
-      await supabase.storage.listBuckets();
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
 
     if (bucketsError || !buckets?.length) {
       return {
@@ -55,7 +53,7 @@ export class StorageOverviewService {
       while (hasMore) {
         const { data: files, error } = await supabase.storage
           .from(bucketName)
-          .list("", { limit, offset });
+          .list('', { limit, offset });
 
         if (error) {
           break;
@@ -65,21 +63,20 @@ export class StorageOverviewService {
         }
 
         for (const file of files) {
-          if (file.name && !file.name.endsWith("/")) {
+          if (file.name && !file.name.endsWith('/')) {
             bucketCount++;
             totalFiles++;
             const meta = file.metadata as Record<string, unknown> | undefined;
-            const size = typeof meta?.size === "number" ? meta.size : 0;
+            const size = typeof meta?.size === 'number' ? meta.size : 0;
             totalSizeBytes += size;
-            const firstSegment = file.name.split("/")[0];
+            const firstSegment = file.name.split('/')[0];
             if (firstSegment && isUuid(firstSegment)) {
-              filesPerBusiness[firstSegment] =
-                (filesPerBusiness[firstSegment] ?? 0) + 1;
+              filesPerBusiness[firstSegment] = (filesPerBusiness[firstSegment] ?? 0) + 1;
             }
             const created = (file as { created_at?: string }).created_at;
             if (created) {
-              const date = created.split("T")[0];
-              if (date >= trendStart.toISOString().split("T")[0]) {
+              const date = created.split('T')[0];
+              if (date >= trendStart.toISOString().split('T')[0]) {
                 createdCountByDate[date] = (createdCountByDate[date] ?? 0) + 1;
               }
             }
@@ -91,8 +88,7 @@ export class StorageOverviewService {
       }
 
       if (bucketCount > 0) {
-        filesPerBucket[bucketName] =
-          (filesPerBucket[bucketName] ?? 0) + bucketCount;
+        filesPerBucket[bucketName] = (filesPerBucket[bucketName] ?? 0) + bucketCount;
       }
     }
 

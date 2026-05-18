@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import SummaryCardSkeleton from "@/components/customer/summary-card.skeleton";
+import SummaryCardSkeleton from '@/components/customer/summary-card.skeleton';
 
 /**
  * Customer dashboard in-page initial load: stat row + appointments section placeholder.
@@ -15,10 +15,7 @@ export function CustomerDashboardInitialLoadSkeleton() {
         <SummaryCardSkeleton />
       </div>
       <div>
-        <div
-          className="h-7 w-40 bg-slate-200 rounded mb-4 animate-pulse"
-          aria-hidden
-        />
+        <div className="h-7 w-40 bg-slate-200 rounded mb-4 animate-pulse" aria-hidden />
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           <div className="animate-pulse space-y-3">
             <div className="h-10 bg-slate-100 rounded w-full" aria-hidden />

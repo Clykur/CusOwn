@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useRef, memo } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { BookingWithDetails } from "@cusown/shared";
+import { useRef, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { BookingWithDetails } from '@cusown/shared';
 
 interface VirtualizedBookingListProps {
   bookings: BookingWithDetails[];
@@ -18,8 +18,8 @@ function VirtualizedBookingListInner({
   renderItem,
   itemHeight = 160,
   maxHeight = 600,
-  emptyMessage = "No bookings found",
-  className = "",
+  emptyMessage = 'No bookings found',
+  className = '',
 }: VirtualizedBookingListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -39,16 +39,12 @@ function VirtualizedBookingListInner({
   }
 
   return (
-    <div
-      ref={parentRef}
-      className={`overflow-auto ${className}`}
-      style={{ maxHeight }}
-    >
+    <div ref={parentRef} className={`overflow-auto ${className}`} style={{ maxHeight }}>
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
-          width: "100%",
-          position: "relative",
+          width: '100%',
+          position: 'relative',
         }}
       >
         {virtualizer.getVirtualItems().map((virtualRow) => {
@@ -57,10 +53,10 @@ function VirtualizedBookingListInner({
             <div
               key={booking.id}
               style={{
-                position: "absolute",
+                position: 'absolute',
                 top: 0,
                 left: 0,
-                width: "100%",
+                width: '100%',
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
@@ -89,7 +85,7 @@ function VirtualizedBookingTableInner({
   renderRow,
   rowHeight = 72,
   maxHeight = 500,
-  emptyMessage = "No bookings found",
+  emptyMessage = 'No bookings found',
   headers,
 }: VirtualizedBookingTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -118,8 +114,8 @@ function VirtualizedBookingTableInner({
         <div
           style={{
             height: `${virtualizer.getTotalSize()}px`,
-            width: "100%",
-            position: "relative",
+            width: '100%',
+            position: 'relative',
           }}
         >
           <table className="min-w-full">
@@ -131,14 +127,14 @@ function VirtualizedBookingTableInner({
                     key={booking.id}
                     className="hover:bg-gray-50 transition-colors"
                     style={{
-                      position: "absolute",
+                      position: 'absolute',
                       top: 0,
                       left: 0,
-                      width: "100%",
+                      width: '100%',
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
-                      display: "table",
-                      tableLayout: "fixed",
+                      display: 'table',
+                      tableLayout: 'fixed',
                     }}
                   >
                     {renderRow(booking, virtualRow.index)}

@@ -1,5 +1,5 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 export interface NotificationPreferences {
   emailEnabled: boolean;
@@ -11,7 +11,7 @@ export interface NotificationPreferences {
 
 export interface SendNotificationInput {
   bookingId: string;
-  notificationType: "whatsapp" | "email" | "sms";
+  notificationType: 'whatsapp' | 'email' | 'sms';
   message: string;
   recipient: string;
 }
@@ -19,20 +19,18 @@ export interface SendNotificationInput {
 export class NotificationService {
   async getNotificationPreferences(
     userId?: string,
-    customerPhone?: string,
+    customerPhone?: string
   ): Promise<NotificationPreferences | null> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const NOTIFICATION_PREFS_SELECT =
-      "user_id, customer_phone, email_enabled, sms_enabled, whatsapp_enabled, email_address, phone_number, updated_at";
-    let query = supabaseAdmin
-      .from("notification_preferences")
-      .select(NOTIFICATION_PREFS_SELECT);
+      'user_id, customer_phone, email_enabled, sms_enabled, whatsapp_enabled, email_address, phone_number, updated_at';
+    let query = supabaseAdmin.from('notification_preferences').select(NOTIFICATION_PREFS_SELECT);
 
     if (userId) {
-      query = query.eq("user_id", userId);
+      query = query.eq('user_id', userId);
     } else if (customerPhone) {
-      query = query.eq("customer_phone", customerPhone);
+      query = query.eq('customer_phone', customerPhone);
     } else {
       return null;
     }
@@ -40,7 +38,7 @@ export class NotificationService {
     const { data, error } = await query.single();
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -58,20 +56,16 @@ export class NotificationService {
   async updateNotificationPreferences(
     userId?: string,
     customerPhone?: string,
-    preferences: Partial<NotificationPreferences> = {},
+    preferences: Partial<NotificationPreferences> = {}
   ): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
 
-    const existing = await this.getNotificationPreferences(
-      userId,
-      customerPhone,
-    );
+    const existing = await this.getNotificationPreferences(userId, customerPhone);
 
     const updateData: any = {
       email_enabled: preferences.emailEnabled ?? existing?.emailEnabled ?? true,
       sms_enabled: preferences.smsEnabled ?? existing?.smsEnabled ?? true,
-      whatsapp_enabled:
-        preferences.whatsappEnabled ?? existing?.whatsappEnabled ?? true,
+      whatsapp_enabled: preferences.whatsappEnabled ?? existing?.whatsappEnabled ?? true,
       updated_at: new Date().toISOString(),
     };
 
@@ -83,14 +77,12 @@ export class NotificationService {
     }
 
     if (existing) {
-      let query = supabaseAdmin
-        .from("notification_preferences")
-        .update(updateData);
+      let query = supabaseAdmin.from('notification_preferences').update(updateData);
 
       if (userId) {
-        query = query.eq("user_id", userId);
+        query = query.eq('user_id', userId);
       } else if (customerPhone) {
-        query = query.eq("customer_phone", customerPhone);
+        query = query.eq('customer_phone', customerPhone);
       }
 
       const { error } = await query;
@@ -104,9 +96,7 @@ export class NotificationService {
         customer_phone: customerPhone || null,
       };
 
-      const { error } = await supabaseAdmin
-        .from("notification_preferences")
-        .insert(insertData);
+      const { error } = await supabaseAdmin.from('notification_preferences').insert(insertData);
       if (error) {
         throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
       }
@@ -116,25 +106,25 @@ export class NotificationService {
   async sendNotification(input: SendNotificationInput): Promise<any> {
     const supabaseAdmin = requireSupabaseAdmin();
 
-    let status = "pending";
+    let status = 'pending';
     let sentAt: string | null = null;
     let errorMessage: string | null = null;
 
     try {
-      if (input.notificationType === "whatsapp") {
-        status = "sent";
+      if (input.notificationType === 'whatsapp') {
+        status = 'sent';
         sentAt = new Date().toISOString();
       } else {
-        status = "failed";
-        errorMessage = "Email and SMS are not configured";
+        status = 'failed';
+        errorMessage = 'Email and SMS are not configured';
       }
     } catch (error) {
-      status = "failed";
-      errorMessage = error instanceof Error ? error.message : "Unknown error";
+      status = 'failed';
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
 
     const { data, error } = await supabaseAdmin
-      .from("notification_history")
+      .from('notification_history')
       .insert({
         booking_id: input.bookingId,
         notification_type: input.notificationType,
@@ -144,9 +134,7 @@ export class NotificationService {
         error_message: errorMessage,
         sent_at: sentAt,
       })
-      .select(
-        "id, booking_id, notification_type, recipient, status, sent_at, created_at",
-      )
+      .select('id, booking_id, notification_type, recipient, status, sent_at, created_at')
       .single();
 
     if (error) {
@@ -160,12 +148,12 @@ export class NotificationService {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("notification_history")
+      .from('notification_history')
       .select(
-        "id, booking_id, notification_type, recipient, status, message, error_message, sent_at, created_at",
+        'id, booking_id, notification_type, recipient, status, message, error_message, sent_at, created_at'
       )
-      .eq("booking_id", bookingId)
-      .order("created_at", { ascending: false });
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -176,26 +164,20 @@ export class NotificationService {
 
   async sendBookingNotification(
     bookingId: string,
-    notificationType: "whatsapp" | "email" | "sms",
+    notificationType: 'whatsapp' | 'email' | 'sms',
     message: string,
-    recipient: string,
+    recipient: string
   ): Promise<any> {
-    const preferences = await this.getNotificationPreferences(
-      undefined,
-      recipient,
-    );
+    const preferences = await this.getNotificationPreferences(undefined, recipient);
 
-    if (
-      notificationType === "whatsapp" &&
-      preferences?.whatsappEnabled === false
-    ) {
-      throw new Error("WhatsApp notifications are disabled");
+    if (notificationType === 'whatsapp' && preferences?.whatsappEnabled === false) {
+      throw new Error('WhatsApp notifications are disabled');
     }
-    if (notificationType === "email" && preferences?.emailEnabled === false) {
-      throw new Error("Email notifications are disabled");
+    if (notificationType === 'email' && preferences?.emailEnabled === false) {
+      throw new Error('Email notifications are disabled');
     }
-    if (notificationType === "sms" && preferences?.smsEnabled === false) {
-      throw new Error("SMS notifications are disabled");
+    if (notificationType === 'sms' && preferences?.smsEnabled === false) {
+      throw new Error('SMS notifications are disabled');
     }
 
     let result;
@@ -207,11 +189,11 @@ export class NotificationService {
         recipient,
       });
     } catch (error) {
-      if (notificationType === "whatsapp") {
+      if (notificationType === 'whatsapp') {
         const fallbackType = preferences?.emailEnabled
-          ? "email"
+          ? 'email'
           : preferences?.smsEnabled
-            ? "sms"
+            ? 'sms'
             : null;
         if (fallbackType) {
           try {

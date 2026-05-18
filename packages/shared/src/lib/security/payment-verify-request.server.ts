@@ -1,4 +1,4 @@
-import { isValidUUID } from "../utils/security";
+import { isValidUUID } from '../utils/security';
 
 /** Razorpay/UPI HMAC-SHA256 hex digest length. */
 const PAYMENT_SIGNATURE_HEX_RE = /^[0-9a-fA-F]{64}$/;
@@ -32,14 +32,14 @@ export type PaymentVerifyRequestParseResult =
   | PaymentVerifyRequestParseSuccess;
 
 function extractValidPaymentId(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
+  if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   if (isValidUUID(trimmed)) return trimmed;
   return PAYMENT_PUBLIC_ID_RE.test(trimmed) ? trimmed : null;
 }
 
 function extractValidTransactionId(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
+  if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   return TRANSACTION_ID_RE.test(trimmed) ? trimmed : null;
 }
@@ -54,32 +54,28 @@ export class PaymentVerifyClientError extends Error {
 
   constructor(status: number, message: string) {
     super(message);
-    this.name = "PaymentVerifyClientError";
+    this.name = 'PaymentVerifyClientError';
     this.status = status;
   }
 }
 
-export function parsePaymentVerifyRequest(
-  body: unknown,
-): PaymentVerifyRequestParseResult {
+export function parsePaymentVerifyRequest(body: unknown): PaymentVerifyRequestParseResult {
   const payload =
-    body && typeof body === "object" && body !== null
-      ? (body as Record<string, unknown>)
-      : {};
+    body && typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
 
   const paymentId = extractValidPaymentId(payload.payment_id);
   if (paymentId === null) {
-    return { ok: false, status: 400, error: "Payment ID required" };
+    return { ok: false, status: 400, error: 'Payment ID required' };
   }
 
   const transactionId = extractValidTransactionId(payload.transaction_id);
   if (transactionId === null) {
-    return { ok: false, status: 400, error: "Transaction ID required" };
+    return { ok: false, status: 400, error: 'Transaction ID required' };
   }
 
   const signatureField = payload.signature;
-  if (signatureField !== undefined && typeof signatureField !== "string") {
-    return { ok: false, status: 400, error: "Invalid signature format" };
+  if (signatureField !== undefined && typeof signatureField !== 'string') {
+    return { ok: false, status: 400, error: 'Invalid signature format' };
   }
 
   return {
@@ -90,7 +86,7 @@ export function parsePaymentVerifyRequest(
 
 /** Returns a structurally valid signature string, or null. */
 export function extractValidPaymentSignature(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
+  if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   return PAYMENT_SIGNATURE_HEX_RE.test(trimmed) ? trimmed : null;
 }
@@ -99,9 +95,7 @@ export function extractValidPaymentSignature(raw: unknown): string | null {
  * Validates body and returns trusted ids, or throws PaymentVerifyClientError.
  * Route handlers should use this instead of branching on user-controlled fields.
  */
-export function requirePaymentVerifyRequest(
-  body: unknown,
-): PaymentVerifyRequestInput {
+export function requirePaymentVerifyRequest(body: unknown): PaymentVerifyRequestInput {
   const parsed = parsePaymentVerifyRequest(body);
   if (!parsed.ok) {
     throw new PaymentVerifyClientError(parsed.status, parsed.error);

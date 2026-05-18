@@ -3,10 +3,10 @@
  * Uses sharp when available. Prevents GPS/metadata leaks and polyglot content.
  */
 
-import sharp from "sharp";
-import { env } from "@cusown/config";
-import { MEDIA_ALLOWED_MIME_TYPES } from "@cusown/config";
-import { resolveContentTypeFromMagicBytes } from "../validation/magic-bytes";
+import sharp from 'sharp';
+import { env } from '@cusown/config';
+import { MEDIA_ALLOWED_MIME_TYPES } from '@cusown/config';
+import { resolveContentTypeFromMagicBytes } from '../validation/magic-bytes';
 
 const ALLOWED_SET = new Set(MEDIA_ALLOWED_MIME_TYPES);
 
@@ -23,9 +23,9 @@ export interface ProcessedImageResult {
  */
 export async function stripExifAndRecompress(
   input: Buffer,
-  declaredContentType: string,
+  declaredContentType: string
 ): Promise<ProcessedImageResult> {
-  const base = declaredContentType.split(";")[0].trim().toLowerCase();
+  const base = declaredContentType.split(';')[0].trim().toLowerCase();
   if (!ALLOWED_SET.has(base as (typeof MEDIA_ALLOWED_MIME_TYPES)[number])) {
     return { buffer: input, contentType: base };
   }
@@ -38,15 +38,15 @@ export async function stripExifAndRecompress(
     const meta = await pipeline.metadata();
     pipeline = pipeline.rotate();
     const format =
-      base === "image/jpeg"
-        ? "jpeg"
-        : base === "image/png"
-          ? "png"
-          : base === "image/webp"
-            ? "webp"
-            : "gif";
+      base === 'image/jpeg'
+        ? 'jpeg'
+        : base === 'image/png'
+          ? 'png'
+          : base === 'image/webp'
+            ? 'webp'
+            : 'gif';
     const out = await pipeline
-      .toFormat(format as "jpeg" | "png" | "webp" | "gif", {
+      .toFormat(format as 'jpeg' | 'png' | 'webp' | 'gif', {
         quality: 85,
         effort: 4,
       })

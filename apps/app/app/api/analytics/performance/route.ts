@@ -3,10 +3,10 @@
  * Stores metrics for analysis and regression detection.
  */
 
-import { NextRequest } from "next/server";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { logStructured } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { logStructured } from '@cusown/shared/server';
 
 interface PerformancePayload {
   sessionId: string;
@@ -22,7 +22,7 @@ interface PerformancePayload {
     baseline: number;
     current: number;
     degradation: number;
-    severity: "warning" | "critical";
+    severity: 'warning' | 'critical';
   }>;
 }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (body.regressions && body.regressions.length > 0) {
       body.regressions.forEach((regression) => {
         logStructured(
-          regression.severity === "critical" ? "error" : "warn",
+          regression.severity === 'critical' ? 'error' : 'warn',
           `Performance regression detected: ${regression.metric}`,
           {
             metric: regression.metric,
@@ -57,17 +57,17 @@ export async function POST(request: NextRequest) {
             deploymentVersion: body.deploymentVersion,
             url: body.url,
             sessionId: body.sessionId,
-          },
+          }
         );
       });
     }
 
     const hasSlowVitals = Object.entries(body.webVitals || {}).some(
-      ([, data]) => data.rating === "poor",
+      ([, data]) => data.rating === 'poor'
     );
 
     if (hasSlowVitals) {
-      logStructured("warn", "Poor Web Vitals detected", {
+      logStructured('warn', 'Poor Web Vitals detected', {
         webVitals: JSON.stringify(body.webVitals),
         url: body.url,
         sessionId: body.sessionId,
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
 
     return successResponse({ received: true });
   } catch (error) {
-    logStructured("error", "Failed to process performance data", {
-      error: error instanceof Error ? error.message : "Unknown error",
+    logStructured('error', 'Failed to process performance data', {
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
 
     return errorResponse(ERROR_MESSAGES.DATABASE_ERROR, 500);
@@ -95,24 +95,21 @@ export async function GET() {
     totalReports: recentData.length,
     regressions: recentData.flatMap((d) => d.regressions || []),
     webVitals: calculateAggregatedVitals(recentData),
-    apiLatency: calculateAggregatedLatency(recentData, "apiLatency"),
-    routeTransitions: calculateAggregatedLatency(
-      recentData,
-      "routeTransitions",
-    ),
+    apiLatency: calculateAggregatedLatency(recentData, 'apiLatency'),
+    routeTransitions: calculateAggregatedLatency(recentData, 'routeTransitions'),
   };
 
   return successResponse(stats);
 }
 
-const ALLOWED_WEB_VITALS = new Set(["CLS", "FCP", "FID", "INP", "LCP", "TTFB"]);
+const ALLOWED_WEB_VITALS = new Set(['CLS', 'FCP', 'FID', 'INP', 'LCP', 'TTFB']);
 
 function isAllowedVitalName(name: string): boolean {
   return ALLOWED_WEB_VITALS.has(name);
 }
 
 function calculateAggregatedVitals(
-  data: PerformancePayload[],
+  data: PerformancePayload[]
 ): Record<string, { avg: number; p95: number; poor: number }> {
   const vitals: Record<string, number[]> = {};
   const ratings: Record<string, string[]> = {};
@@ -138,9 +135,8 @@ function calculateAggregatedVitals(
 
     const sorted = [...values].sort((a, b) => a - b);
     const avg = sorted.reduce((a, b) => a + b, 0) / sorted.length;
-    const p95 =
-      sorted[Math.floor(sorted.length * 0.95)] || sorted[sorted.length - 1];
-    const poor = ratings[name].filter((r) => r === "poor").length;
+    const p95 = sorted[Math.floor(sorted.length * 0.95)] || sorted[sorted.length - 1];
+    const poor = ratings[name].filter((r) => r === 'poor').length;
 
     result[name] = {
       avg: Math.round(avg * 100) / 100,
@@ -154,7 +150,7 @@ function calculateAggregatedVitals(
 
 function calculateAggregatedLatency(
   data: PerformancePayload[],
-  key: "apiLatency" | "routeTransitions",
+  key: 'apiLatency' | 'routeTransitions'
 ): { avg: number; p95: number } {
   const avgValues = data
     .map((d) => d[key]?.avg)

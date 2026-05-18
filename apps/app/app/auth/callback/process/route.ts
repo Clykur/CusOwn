@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Back-compat route.
@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
-  const redirect = new URL("/auth/callback", url.origin);
+  const redirect = new URL('/auth/callback', url.origin);
   redirect.search = url.search; // keep code/role/redirect_to/etc.
   return NextResponse.redirect(redirect);
 }

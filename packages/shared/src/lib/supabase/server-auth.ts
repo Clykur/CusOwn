@@ -1,21 +1,21 @@
-import { env } from "@cusown/config";
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
-import { createSecureSetAll } from "../auth/cookie-adapter.server";
+import { env } from '@cusown/config';
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
+import { createSecureSetAll } from '../auth/cookie-adapter.server';
 import {
   getCachedProfile,
   setCachedProfile,
   getCachedAuthUser,
   setCachedAuthUser,
-} from "../cache/auth-cache";
+} from '../cache/auth-cache';
 
 // Lazy import cookies to avoid bundling in client
-let cookiesModule: typeof import("next/headers") | null = null;
+let cookiesModule: typeof import('next/headers') | null = null;
 const getCookies = async () => {
-  if (typeof window !== "undefined") {
-    throw new Error("createServerClient can only be used server-side");
+  if (typeof window !== 'undefined') {
+    throw new Error('createServerClient can only be used server-side');
   }
   if (!cookiesModule) {
-    cookiesModule = await import("next/headers");
+    cookiesModule = await import('next/headers');
   }
   return cookiesModule.cookies();
 };
@@ -23,11 +23,11 @@ const getCookies = async () => {
 // Lazy import supabaseAdmin to avoid bundling in client
 let supabaseAdminInstance: any = null;
 const getSupabaseAdmin = async () => {
-  if (typeof window !== "undefined") {
-    throw new Error("Supabase admin can only be used server-side");
+  if (typeof window !== 'undefined') {
+    throw new Error('Supabase admin can only be used server-side');
   }
   if (!supabaseAdminInstance) {
-    const { requireSupabaseAdmin } = await import("./server");
+    const { requireSupabaseAdmin } = await import('./server');
     supabaseAdminInstance = requireSupabaseAdmin();
   }
   return supabaseAdminInstance;
@@ -66,7 +66,7 @@ export const createServerClient = async () => {
             name: string;
             value: string;
             options?: Record<string, unknown>;
-          }[],
+          }[]
         );
       },
     },
@@ -79,13 +79,11 @@ export const createServerClient = async () => {
 };
 
 /** Parse Cookie header into array of { name, value } for Supabase SSR. */
-function parseCookieHeader(
-  cookieHeader: string | null,
-): { name: string; value: string }[] {
+function parseCookieHeader(cookieHeader: string | null): { name: string; value: string }[] {
   if (!cookieHeader || !cookieHeader.trim()) return [];
-  return cookieHeader.split(";").map((part) => {
-    const eq = part.trim().indexOf("=");
-    if (eq <= 0) return { name: part.trim(), value: "" };
+  return cookieHeader.split(';').map((part) => {
+    const eq = part.trim().indexOf('=');
+    if (eq <= 0) return { name: part.trim(), value: '' };
     return {
       name: part.trim().slice(0, eq).trim(),
       value: part
@@ -126,23 +124,21 @@ export const getServerUser = async (request?: Request) => {
     const supabaseAdmin = await getSupabaseAdmin();
     if (!supabaseAdmin) return null;
 
-    const timeout = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), 5000),
-    );
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
 
     const authCheck = async () => {
       try {
         // Try Authorization header first; then cookie fallback (see cookie block below).
         // Empty "Authorization: Bearer " (no token after trim) is invalid — do not attempt validation.
         if (request) {
-          const authHeader = request.headers.get("authorization");
+          const authHeader = request.headers.get('authorization');
 
-          if (authHeader?.startsWith("Bearer ")) {
+          if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.substring(7).trim();
             if (!token) {
               // Bearer present but empty: fall through to cookies
             } else {
-              const { hashToken } = await import("../utils/token-hash.server");
+              const { hashToken } = await import('../utils/token-hash.server');
               const tokenHash = hashToken(token);
               const cached = getCachedAuthUser(tokenHash);
               if (cached) {
@@ -166,11 +162,9 @@ export const getServerUser = async (request?: Request) => {
 
         // Prefer Cookie header; fallback to x-middleware-cookie (middleware forwards it so layouts see it).
         const cookieHeader =
-          request?.headers.get("cookie") ??
-          request?.headers.get("x-middleware-cookie") ??
-          null;
+          request?.headers.get('cookie') ?? request?.headers.get('x-middleware-cookie') ?? null;
         const hasCookieHeader = !!(cookieHeader && cookieHeader.length > 0);
-        if (env.nodeEnv === "development" && request) {
+        if (env.nodeEnv === 'development' && request) {
         }
         const supabase = hasCookieHeader
           ? createServerClientFromCookieHeader(cookieHeader)
@@ -182,12 +176,12 @@ export const getServerUser = async (request?: Request) => {
         } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("[AUTH] getSession error:", sessionError.message);
+          console.error('[AUTH] getSession error:', sessionError.message);
           return null;
         }
 
         if (!session?.access_token) {
-          console.warn("[AUTH] No session or access_token found");
+          console.warn('[AUTH] No session or access_token found');
           return null;
         }
 
@@ -197,10 +191,7 @@ export const getServerUser = async (request?: Request) => {
         } = await supabaseAdmin.auth.getUser(session.access_token);
 
         if (userError) {
-          console.error(
-            "[AUTH] supabaseAdmin.auth.getUser error:",
-            userError.message,
-          );
+          console.error('[AUTH] supabaseAdmin.auth.getUser error:', userError.message);
           return null;
         }
         if (!userError && user) {
@@ -233,9 +224,7 @@ export type ServerUserProfileResult = {
  * Get user profile on server
  * Uses admin client to bypass RLS policies. Results cached for CACHE_TTL_AUTH_MS.
  */
-export const getServerUserProfile = async (
-  userId: string,
-): Promise<ServerUserProfileResult> => {
+export const getServerUserProfile = async (userId: string): Promise<ServerUserProfileResult> => {
   const cached = getCachedProfile(userId);
   if (cached !== null) {
     return cached as ServerUserProfileResult;
@@ -248,11 +237,9 @@ export const getServerUserProfile = async (
 
   try {
     const { data, error } = await supabaseAdmin
-      .from("user_profiles")
-      .select(
-        "id, user_type, full_name, profile_media_id, created_at, updated_at",
-      )
-      .eq("id", userId)
+      .from('user_profiles')
+      .select('id, user_type, full_name, profile_media_id, created_at, updated_at')
+      .eq('id', userId)
       .single();
 
     if (error) {

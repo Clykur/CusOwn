@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { adminFetch } from "@cusown/shared";
-import { AdminSectionWrapper } from "@/components/admin/admin-section-wrapper";
-import FilterDropdown from "@/components/analytics/FilterDropdown";
-import { ROUTES } from "@cusown/shared";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { adminFetch } from '@cusown/shared';
+import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
+import { ROUTES } from '@cusown/shared';
 
 interface AuthUser {
   id: string;
@@ -32,9 +32,9 @@ export function AdminAuthManagementTab() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState("");
-  const [status, setStatus] = useState("");
-  const [emailSearch, setEmailSearch] = useState("");
+  const [role, setRole] = useState('');
+  const [status, setStatus] = useState('');
+  const [emailSearch, setEmailSearch] = useState('');
   const [page, setPage] = useState(1);
   const [events, setEvents] = useState<AuthEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -43,28 +43,25 @@ export function AdminAuthManagementTab() {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams();
-    params.set("limit", String(PAGE_SIZE));
-    params.set("offset", String((page - 1) * PAGE_SIZE));
-    if (role) params.set("role", role);
-    if (status) params.set("status", status);
-    if (emailSearch.trim()) params.set("email", emailSearch.trim());
+    params.set('limit', String(PAGE_SIZE));
+    params.set('offset', String((page - 1) * PAGE_SIZE));
+    if (role) params.set('role', role);
+    if (status) params.set('status', status);
+    if (emailSearch.trim()) params.set('email', emailSearch.trim());
     try {
-      const res = await adminFetch(
-        `/api/admin/auth/users?${params.toString()}`,
-        {
-          credentials: "include",
-        },
-      );
+      const res = await adminFetch(`/api/admin/auth/users?${params.toString()}`, {
+        credentials: 'include',
+      });
       const data = await res.json();
       if (!data.success) {
-        setError(data.error || "Failed to load users");
+        setError(data.error || 'Failed to load users');
         return;
       }
       const result = data.data as { users: AuthUser[]; total: number };
       setUsers(result.users ?? []);
       setTotal(result.total ?? 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
       setLoading(false);
     }
@@ -73,8 +70,8 @@ export function AdminAuthManagementTab() {
   const fetchEvents = useCallback(async () => {
     setEventsLoading(true);
     try {
-      const res = await adminFetch("/api/admin/auth-events?limit=50", {
-        credentials: "include",
+      const res = await adminFetch('/api/admin/auth-events?limit=50', {
+        credentials: 'include',
       });
       const data = await res.json();
       if (data.success && data.data?.events) {
@@ -99,37 +96,32 @@ export function AdminAuthManagementTab() {
 
   const roleOptions = useMemo(
     () => [
-      { value: "", label: "All roles", checked: role === "" },
-      { value: "admin", label: "Admin", checked: role === "admin" },
-      { value: "owner", label: "Owner", checked: role === "owner" },
-      { value: "customer", label: "Customer", checked: role === "customer" },
-      { value: "both", label: "Both", checked: role === "both" },
+      { value: '', label: 'All roles', checked: role === '' },
+      { value: 'admin', label: 'Admin', checked: role === 'admin' },
+      { value: 'owner', label: 'Owner', checked: role === 'owner' },
+      { value: 'customer', label: 'Customer', checked: role === 'customer' },
+      { value: 'both', label: 'Both', checked: role === 'both' },
     ],
-    [role],
+    [role]
   );
 
   const statusOptions = useMemo(
     () => [
-      { value: "", label: "All statuses", checked: status === "" },
-      { value: "active", label: "Active", checked: status === "active" },
-      { value: "banned", label: "Banned", checked: status === "banned" },
+      { value: '', label: 'All statuses', checked: status === '' },
+      { value: 'active', label: 'Active', checked: status === 'active' },
+      { value: 'banned', label: 'Banned', checked: status === 'banned' },
     ],
-    [status],
+    [status]
   );
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-          Auth Management
-        </h1>
+        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Auth Management</h1>
         <p className="mt-0.5 text-sm text-slate-500">Users and auth events</p>
       </div>
 
-      <AdminSectionWrapper
-        title="Recent auth events"
-        subtitle="Login and logout activity"
-      >
+      <AdminSectionWrapper title="Recent auth events" subtitle="Login and logout activity">
         {eventsLoading && events.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 py-8 text-center text-sm text-slate-500">
             Loading…
@@ -168,10 +160,7 @@ export function AdminAuthManagementTab() {
         )}
       </AdminSectionWrapper>
 
-      <AdminSectionWrapper
-        title="User list"
-        subtitle="Filter by role, status, or email"
-      >
+      <AdminSectionWrapper title="User list" subtitle="Filter by role, status, or email">
         <div className="mb-4 flex flex-wrap gap-4">
           <input
             type="search"
@@ -250,32 +239,24 @@ export function AdminAuthManagementTab() {
               <tbody className="divide-y divide-slate-100 bg-white">
                 {users.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50/80">
-                    <td className="px-4 py-3 text-sm text-slate-900">
-                      {u.email || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {u.role}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-900">{u.email || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{u.role}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                          u.status === "active"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-amber-100 text-amber-800"
+                          u.status === 'active'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
                         }`}
                       >
                         {u.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {u.created_at
-                        ? new Date(u.created_at).toLocaleDateString()
-                        : "—"}
+                      {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {u.last_sign_in_at
-                        ? new Date(u.last_sign_in_at).toLocaleString()
-                        : "—"}
+                      {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button

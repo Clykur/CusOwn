@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   bookingService,
   whatsappService,
@@ -14,15 +14,12 @@ import {
   isAdminProfile,
   logAuthDeny,
   logStructured,
-} from "@cusown/shared/server";
-import { SUCCESS_MESSAGES, ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "POST /api/bookings/[id]/cancel";
+const ROUTE = 'POST /api/bookings/[id]/cancel';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -35,23 +32,18 @@ export async function POST(
 
     const body = await request.json().catch(() => ({}));
 
-    const { filterFields, validateStringLength } =
-      await import("@cusown/shared/server");
-    const allowedFields: (keyof typeof body)[] = ["reason", "cancelled_by"];
+    const { filterFields, validateStringLength } = await import('@cusown/shared/server');
+    const allowedFields: (keyof typeof body)[] = ['reason', 'cancelled_by'];
     const filteredBody = filterFields(body, allowedFields);
 
     const { reason, cancelled_by } = filteredBody;
 
-    if (
-      cancelled_by !== undefined &&
-      cancelled_by !== "customer" &&
-      cancelled_by !== "owner"
-    ) {
-      return errorResponse("Invalid cancellation type", 400);
+    if (cancelled_by !== undefined && cancelled_by !== 'customer' && cancelled_by !== 'owner') {
+      return errorResponse('Invalid cancellation type', 400);
     }
 
     if (reason !== undefined && !validateStringLength(reason, 500)) {
-      return errorResponse("Cancellation reason is too long", 400);
+      return errorResponse('Cancellation reason is too long', 400);
     }
 
     const booking = await bookingService.getBookingByUuid(id);
@@ -63,102 +55,86 @@ export async function POST(
     const user = ctx?.user ?? null;
 
     let isAuthorized = false;
-    let cancelMethod: "customer" | "owner";
+    let cancelMethod: 'customer' | 'owner';
 
-    if (cancelled_by === "owner") {
+    if (cancelled_by === 'owner') {
       if (!user) {
-        logAuthDeny({ route: ROUTE, reason: "auth_missing", resource: id });
-        return errorResponse("Authentication required", 401);
+        logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
+        return errorResponse('Authentication required', 401);
       }
       const userBusinesses = await userService.getUserBusinesses(user.id);
-      const hasAccess = userBusinesses.some(
-        (b) => b.id === booking.business_id,
-      );
+      const hasAccess = userBusinesses.some((b) => b.id === booking.business_id);
       if (!hasAccess && !isAdminProfile(ctx!.profile)) {
         logAuthDeny({
           user_id: user.id,
           route: ROUTE,
-          reason: "auth_denied",
-          role: (ctx!.profile as any)?.user_type ?? "unknown",
+          reason: 'auth_denied',
+          role: (ctx!.profile as any)?.user_type ?? 'unknown',
           resource: id,
         });
-        return errorResponse("Access denied", 403);
+        return errorResponse('Access denied', 403);
       }
       isAuthorized = true;
-      cancelMethod = "owner";
+      cancelMethod = 'owner';
     } else if (user) {
       const isCustomer = booking.customer_user_id === user.id;
       if (!isCustomer) {
         logAuthDeny({
           user_id: user.id,
           route: ROUTE,
-          reason: "auth_denied",
+          reason: 'auth_denied',
           resource: id,
         });
-        return errorResponse("Access denied", 403);
+        return errorResponse('Access denied', 403);
       }
       isAuthorized = true;
-      cancelMethod = "customer";
+      cancelMethod = 'customer';
     } else if (!booking.customer_user_id) {
       isAuthorized = true;
-      cancelMethod = "customer";
+      cancelMethod = 'customer';
     } else {
-      logAuthDeny({ route: ROUTE, reason: "auth_missing", resource: id });
-      return errorResponse("Authentication required", 401);
+      logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
+      return errorResponse('Authentication required', 401);
     }
 
     if (!isAuthorized) {
-      return errorResponse("Access denied", 403);
+      return errorResponse('Access denied', 403);
     }
 
     // Idempotency: already cancelled → return 200 with current state (same result as success)
-    if (booking.status === "cancelled") {
+    if (booking.status === 'cancelled') {
       invalidateBookingCache(id);
-      const response = successResponse(
-        booking,
-        SUCCESS_MESSAGES.BOOKING_CANCELLED,
-      );
+      const response = successResponse(booking, SUCCESS_MESSAGES.BOOKING_CANCELLED);
       setNoCacheHeaders(response);
       return response;
     }
 
     let cancelledBooking;
-    if (cancelMethod === "owner") {
+    if (cancelMethod === 'owner') {
       cancelledBooking = await bookingService.cancelBookingByOwner(id, reason);
     } else {
-      cancelledBooking = await bookingService.cancelBookingByCustomer(
-        id,
-        reason,
-      );
+      cancelledBooking = await bookingService.cancelBookingByCustomer(id, reason);
     }
 
     // SECURITY: Log mutation for audit
     if (user) {
       try {
-        await auditService.createAuditLog(
-          user.id,
-          "booking_cancelled",
-          "booking",
-          {
-            entityId: id,
-            description: `Booking cancelled by ${cancelMethod}${reason ? `: ${reason}` : ""}`,
-            request,
-          },
-        );
+        await auditService.createAuditLog(user.id, 'booking_cancelled', 'booking', {
+          entityId: id,
+          description: `Booking cancelled by ${cancelMethod}${reason ? `: ${reason}` : ''}`,
+          request,
+        });
       } catch (auditError) {
-        logStructured("warn", "Audit log failed on cancel", {
-          action: "audit_failed",
+        logStructured('warn', 'Audit log failed on cancel', {
+          action: 'audit_failed',
           booking_id: id,
-          error:
-            auditError instanceof Error
-              ? auditError.message
-              : String(auditError),
+          error: auditError instanceof Error ? auditError.message : String(auditError),
         });
       }
     }
 
-    logStructured("info", "Booking cancelled", {
-      action: "booking_cancelled",
+    logStructured('info', 'Booking cancelled', {
+      action: 'booking_cancelled',
       booking_id: id,
       client_ip: clientIP ?? null,
       cancel_method: cancelMethod,
@@ -166,33 +142,25 @@ export async function POST(
     });
 
     invalidateBookingCache(id);
-    const bookingWithDetails =
-      await bookingService.getBookingByUuidWithDetails(id);
+    const bookingWithDetails = await bookingService.getBookingByUuidWithDetails(id);
     if (!bookingWithDetails || !bookingWithDetails.salon) {
-      return successResponse(
-        cancelledBooking,
-        SUCCESS_MESSAGES.BOOKING_CANCELLED,
-      );
+      return successResponse(cancelledBooking, SUCCESS_MESSAGES.BOOKING_CANCELLED);
     }
 
-    const message = `❌ *BOOKING CANCELLED*\n\nDear *${bookingWithDetails.customer_name}*,\n\nYour booking has been cancelled.\n\nBooking ID: ${bookingWithDetails.booking_id}\n${reason ? `Reason: ${reason}` : ""}\n\nPlease book a new slot if needed.`;
-    const whatsappUrl = whatsappService.getWhatsAppUrl(
-      bookingWithDetails.customer_phone,
-      message,
-    );
+    const message = `❌ *BOOKING CANCELLED*\n\nDear *${bookingWithDetails.customer_name}*,\n\nYour booking has been cancelled.\n\nBooking ID: ${bookingWithDetails.booking_id}\n${reason ? `Reason: ${reason}` : ''}\n\nPlease book a new slot if needed.`;
+    const whatsappUrl = whatsappService.getWhatsAppUrl(bookingWithDetails.customer_phone, message);
 
     const response = successResponse(
       {
         ...cancelledBooking,
         whatsapp_url: whatsappUrl,
       },
-      SUCCESS_MESSAGES.BOOKING_CANCELLED,
+      SUCCESS_MESSAGES.BOOKING_CANCELLED
     );
     setNoCacheHeaders(response);
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 400);
   }
 }

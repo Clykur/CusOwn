@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { useRouter } from "next/navigation";
-import { PHONE_DIGITS } from "@cusown/config";
-import { ROUTES } from "@cusown/shared";
-import type { ProfileFormData, ProfileData } from "./types";
+import { memo } from 'react';
+import { useRouter } from 'next/navigation';
+import { PHONE_DIGITS } from '@cusown/config';
+import { ROUTES } from '@cusown/shared';
+import type { ProfileFormData, ProfileData } from './types';
 
 interface ProfileErrorProps {
   error: string;
@@ -28,25 +28,23 @@ function ProfileErrorComponent({
   const handleRetry = () => {
     setError(null);
     setLoading(true);
-    fetch("/api/user/profile", { credentials: "include" })
+    fetch('/api/user/profile', { credentials: 'include' })
       .then((res) => res.json())
       .then((result) => {
         if (result.success && result.data) {
           setProfileData(result.data);
-          const rawPhone = result.data.profile?.phone_number || "";
-          const phoneDigits = rawPhone
-            .replace(/\D/g, "")
-            .slice(0, PHONE_DIGITS);
+          const rawPhone = result.data.profile?.phone_number || '';
+          const phoneDigits = rawPhone.replace(/\D/g, '').slice(0, PHONE_DIGITS);
           setFormData({
-            full_name: result.data.profile?.full_name || "",
+            full_name: result.data.profile?.full_name || '',
             phone_number: phoneDigits,
           });
         } else {
-          setError(result.error || "Failed to load profile");
+          setError(result.error || 'Failed to load profile');
         }
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load profile");
+        setError(err instanceof Error ? err.message : 'Failed to load profile');
       })
       .finally(() => setLoading(false));
   };
@@ -77,9 +75,7 @@ function ProfileErrorComponent({
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      {errorContent}
-    </div>
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">{errorContent}</div>
   );
 }
 

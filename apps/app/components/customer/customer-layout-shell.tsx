@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import CustomerHeader from "@/components/customer/customer-header";
-import { MobileBrandHeader } from "@/components/layout/mobile-brand-header";
-import CustomerSidebar from "@/components/customer/customer-sidebar";
-import CustomerMobileBottomNav from "@/components/customer/mobile-bottom-nav";
+import React, { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import CustomerHeader from '@/components/customer/customer-header';
+import { MobileBrandHeader } from '@/components/layout/mobile-brand-header';
+import CustomerSidebar from '@/components/customer/customer-sidebar';
+import CustomerMobileBottomNav from '@/components/customer/mobile-bottom-nav';
 import {
   CustomerSessionProvider,
   type CustomerInitialUser,
-} from "@/components/customer/customer-session-context";
-import { RatingPromptProvider } from "@/components/rating/rating-prompt-provider";
-import { ROUTES } from "@cusown/shared";
-import { UI_CUSTOMER } from "@cusown/config";
-import { useMounted } from "@cusown/shared/client";
-import { prefetchCustomerDashboard } from "@cusown/shared";
-import { cn } from "@cusown/shared";
+} from '@/components/customer/customer-session-context';
+import { RatingPromptProvider } from '@/components/rating/rating-prompt-provider';
+import { ROUTES } from '@cusown/shared';
+import { UI_CUSTOMER } from '@cusown/config';
+import { useMounted } from '@cusown/shared/client';
+import { prefetchCustomerDashboard } from '@cusown/shared';
+import { cn } from '@cusown/shared';
 
 function getCustomerHeader(pathname: string): {
   title: string;
@@ -34,14 +34,14 @@ function getCustomerHeader(pathname: string): {
   if (pathname === ROUTES.CUSTOMER_SALON_LIST)
     return {
       title: UI_CUSTOMER.NAV_EXPLORE_SERVICES,
-      subtitle: "",
+      subtitle: '',
     };
   if (pathname === ROUTES.CUSTOMER_PROFILE)
     return {
       title: UI_CUSTOMER.HEADER_PROFILE,
       subtitle: UI_CUSTOMER.HEADER_PROFILE_SUB,
     };
-  if (pathname?.startsWith("/booking/"))
+  if (pathname?.startsWith('/booking/'))
     return {
       title: UI_CUSTOMER.HEADER_BOOKING_DETAILS,
       subtitle: UI_CUSTOMER.HEADER_BOOKING_DETAILS_SUB,
@@ -63,7 +63,7 @@ const AuthLoadingContent = () => (
 
 type CustomerLayoutShellProps = {
   children: React.ReactNode;
-  role: "customer";
+  role: 'customer';
   initialUser?: CustomerInitialUser;
   requireClientAuthCheck?: boolean;
 };
@@ -80,15 +80,11 @@ export default function CustomerLayoutShell({
   const mounted = useMounted();
   const pathname = usePathname();
   const router = useRouter();
-  const safePathname = pathname ?? "";
+  const safePathname = pathname ?? '';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const header = getCustomerHeader(safePathname);
-  const [clientUser, setClientUser] = useState<CustomerInitialUser | null>(
-    null,
-  );
-  const [clientCheckDone, setClientCheckDone] = useState(
-    !requireClientAuthCheck,
-  );
+  const [clientUser, setClientUser] = useState<CustomerInitialUser | null>(null);
+  const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
@@ -96,8 +92,8 @@ export default function CustomerLayoutShell({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/auth/session", {
-          credentials: "include",
+        const res = await fetch('/api/auth/session', {
+          credentials: 'include',
         });
         const json = await res.json();
         const data = json?.data ?? json;
@@ -112,16 +108,14 @@ export default function CustomerLayoutShell({
         setClientUser({
           id: user.id,
           email: user.email,
-          full_name:
-            (profile as { full_name?: string } | null)?.full_name ?? undefined,
+          full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
           user_type: (
             profile as {
-              user_type?: "owner" | "customer" | "both" | "admin";
+              user_type?: 'owner' | 'customer' | 'both' | 'admin';
             } | null
           )?.user_type,
-          profile_media_id: (
-            profile as { profile_media_id?: string | null } | null
-          )?.profile_media_id,
+          profile_media_id: (profile as { profile_media_id?: string | null } | null)
+            ?.profile_media_id,
         });
       } catch {
         if (!cancelled) {
@@ -150,15 +144,15 @@ export default function CustomerLayoutShell({
 
   const user = initialUser?.id ? initialUser : clientUser;
   const loginUrl =
-    typeof ROUTES.AUTH_LOGIN === "function"
-      ? ROUTES.AUTH_LOGIN("/customer/dashboard")
-      : "/auth/login";
+    typeof ROUTES.AUTH_LOGIN === 'function'
+      ? ROUTES.AUTH_LOGIN('/customer/dashboard')
+      : '/auth/login';
 
   const isDashboard = safePathname === ROUTES.CUSTOMER_DASHBOARD;
   const isCategories = safePathname === ROUTES.CUSTOMER_CATEGORIES;
   const isSalonList = safePathname === ROUTES.CUSTOMER_SALON_LIST;
   const isProfile = safePathname === ROUTES.CUSTOMER_PROFILE;
-  const mainSpacing = "";
+  const mainSpacing = '';
 
   // Only show CustomerHeader for main dashboard pages, not for detail/booking pages
   const showHeader = isDashboard || isCategories || isSalonList || isProfile;
@@ -191,7 +185,7 @@ export default function CustomerLayoutShell({
           <CustomerHeader
             title={header.title}
             subtitle={header.subtitle}
-            className={isSalonList ? "hidden md:mb-8 md:block" : undefined}
+            className={isSalonList ? 'hidden md:mb-8 md:block' : undefined}
           />
         )}
         {children}
@@ -203,25 +197,11 @@ export default function CustomerLayoutShell({
     <CustomerSessionProvider initialUser={user ?? undefined}>
       <RatingPromptProvider />
       <div className="min-h-screen bg-white flex overflow-x-hidden">
-        <CustomerSidebar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
-        <main
-          className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`}
-          suppressHydrationWarning
-        >
+        <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
           <MobileBrandHeader />
-          <div
-            className="w-full px-4 pb-8 pt-4 sm:px-6 md:py-8 lg:px-8"
-            suppressHydrationWarning
-          >
-            <div
-              className={cn(
-                "flex flex-col",
-                isSalonList ? "gap-2 md:gap-6" : "gap-6",
-              )}
-            >
+          <div className="w-full px-4 pb-8 pt-4 sm:px-6 md:py-8 lg:px-8" suppressHydrationWarning>
+            <div className={cn('flex flex-col', isSalonList ? 'gap-2 md:gap-6' : 'gap-6')}>
               {content}
             </div>
           </div>

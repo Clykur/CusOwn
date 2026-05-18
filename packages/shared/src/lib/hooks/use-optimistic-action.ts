@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from 'react';
 
-type ActionStatus = "idle" | "pending" | "success" | "error";
+type ActionStatus = 'idle' | 'pending' | 'success' | 'error';
 
 interface OptimisticActionState<T> {
   status: ActionStatus;
@@ -43,19 +43,12 @@ interface UseOptimisticActionReturn<T, TArgs extends unknown[]> {
  * and rolls back on failure.
  */
 export function useOptimisticAction<T, TArgs extends unknown[] = []>(
-  options: UseOptimisticActionOptions<T, TArgs>,
+  options: UseOptimisticActionOptions<T, TArgs>
 ): UseOptimisticActionReturn<T, TArgs> {
-  const {
-    action,
-    getOptimisticData,
-    onSuccess,
-    onError,
-    onRollback,
-    loadingDelay = 0,
-  } = options;
+  const { action, getOptimisticData, onSuccess, onError, onRollback, loadingDelay = 0 } = options;
 
   const [state, setState] = useState<OptimisticActionState<T>>({
-    status: "idle",
+    status: 'idle',
     data: null,
     error: null,
     isOptimistic: false,
@@ -71,7 +64,7 @@ export function useOptimisticAction<T, TArgs extends unknown[] = []>(
     }
     optimisticDataRef.current = null;
     setState({
-      status: "idle",
+      status: 'idle',
       data: null,
       error: null,
       isOptimistic: false,
@@ -89,7 +82,7 @@ export function useOptimisticAction<T, TArgs extends unknown[] = []>(
 
       if (optimisticData !== null) {
         setState({
-          status: "pending",
+          status: 'pending',
           data: optimisticData,
           error: null,
           isOptimistic: true,
@@ -98,13 +91,13 @@ export function useOptimisticAction<T, TArgs extends unknown[] = []>(
         loadingTimeoutRef.current = setTimeout(() => {
           setState((prev) => ({
             ...prev,
-            status: "pending",
+            status: 'pending',
           }));
         }, loadingDelay);
       } else {
         setState((prev) => ({
           ...prev,
-          status: "pending",
+          status: 'pending',
           error: null,
         }));
       }
@@ -118,7 +111,7 @@ export function useOptimisticAction<T, TArgs extends unknown[] = []>(
         }
 
         setState({
-          status: "success",
+          status: 'success',
           data: result,
           error: null,
           isOptimistic: false,
@@ -132,13 +125,12 @@ export function useOptimisticAction<T, TArgs extends unknown[] = []>(
           loadingTimeoutRef.current = null;
         }
 
-        const errorMessage =
-          err instanceof Error ? err.message : "An error occurred";
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
 
         onRollback?.(optimisticDataRef.current);
 
         setState({
-          status: "error",
+          status: 'error',
           data: null,
           error: errorMessage,
           isOptimistic: false,
@@ -150,15 +142,15 @@ export function useOptimisticAction<T, TArgs extends unknown[] = []>(
         return null;
       }
     },
-    [action, getOptimisticData, onSuccess, onError, onRollback, loadingDelay],
+    [action, getOptimisticData, onSuccess, onError, onRollback, loadingDelay]
   );
 
   return {
     execute,
     status: state.status,
-    isLoading: state.status === "pending",
-    isSuccess: state.status === "success",
-    isError: state.status === "error",
+    isLoading: state.status === 'pending',
+    isSuccess: state.status === 'success',
+    isError: state.status === 'error',
     error: state.error,
     data: state.data,
     reset,
@@ -169,16 +161,8 @@ interface OptimisticMutationOptions<TData, TVariables> {
   mutationFn: (variables: TVariables) => Promise<TData>;
   onMutate?: (variables: TVariables) => TData | void | Promise<TData | void>;
   onSuccess?: (data: TData, variables: TVariables) => void;
-  onError?: (
-    error: Error,
-    variables: TVariables,
-    context: TData | void,
-  ) => void;
-  onSettled?: (
-    data: TData | undefined,
-    error: Error | null,
-    variables: TVariables,
-  ) => void;
+  onError?: (error: Error, variables: TVariables, context: TData | void) => void;
+  onSettled?: (data: TData | undefined, error: Error | null, variables: TVariables) => void;
 }
 
 /**
@@ -186,7 +170,7 @@ interface OptimisticMutationOptions<TData, TVariables> {
  * Similar to React Query's useMutation but lightweight.
  */
 export function useOptimisticMutation<TData, TVariables>(
-  options: OptimisticMutationOptions<TData, TVariables>,
+  options: OptimisticMutationOptions<TData, TVariables>
 ) {
   const { mutationFn, onMutate, onSuccess, onError, onSettled } = options;
 
@@ -215,7 +199,7 @@ export function useOptimisticMutation<TData, TVariables>(
 
         return result;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Unknown error");
+        const error = err instanceof Error ? err : new Error('Unknown error');
         setError(error);
         setIsError(true);
         onError?.(error, variables, contextRef.current);
@@ -225,7 +209,7 @@ export function useOptimisticMutation<TData, TVariables>(
         setIsPending(false);
       }
     },
-    [mutationFn, onMutate, onSuccess, onError, onSettled],
+    [mutationFn, onMutate, onSuccess, onError, onSettled]
   );
 
   const reset = useCallback(() => {
@@ -267,10 +251,7 @@ export function usePendingAction() {
     });
   }, []);
 
-  const isPending = useCallback(
-    (id: string) => pendingIds.has(id),
-    [pendingIds],
-  );
+  const isPending = useCallback((id: string) => pendingIds.has(id), [pendingIds]);
 
   const isAnyPending = pendingIds.size > 0;
 

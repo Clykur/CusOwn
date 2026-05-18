@@ -3,10 +3,10 @@
  * No tokens or raw PII stored.
  */
 
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { createHash } from "crypto";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { createHash } from 'crypto';
 
-export type AuthEventType = "login_success" | "login_failed" | "logout";
+export type AuthEventType = 'login_success' | 'login_failed' | 'logout';
 
 export interface AuthEventInsert {
   event_type: AuthEventType;
@@ -41,10 +41,7 @@ export interface GetAuthEventsResult {
 }
 
 function hashEmail(email: string): string {
-  return createHash("sha256")
-    .update(email.toLowerCase().trim())
-    .digest("hex")
-    .slice(0, 32);
+  return createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 32);
 }
 
 export class AuthEventsService {
@@ -55,12 +52,12 @@ export class AuthEventsService {
       email?: string | null;
       ip?: string | null;
       userAgent?: string | null;
-    },
+    }
   ): Promise<AuthEvent | null> {
     const supabase = requireSupabaseAdmin();
     const email_hash = options?.email ? hashEmail(options.email) : null;
     const { data, error } = await supabase
-      .from("auth_events")
+      .from('auth_events')
       .insert({
         event_type: eventType,
         user_id: options?.userId ?? null,
@@ -72,7 +69,7 @@ export class AuthEventsService {
       .single();
 
     if (error) {
-      console.error("[AUTH_EVENTS] Insert failed:", error);
+      console.error('[AUTH_EVENTS] Insert failed:', error);
       return null;
     }
     return data as AuthEvent;
@@ -82,30 +79,28 @@ export class AuthEventsService {
    * Get auth events with filters and pagination.
    * Returns empty when auth_events table does not exist (migration not run).
    */
-  async getAuthEvents(
-    filters: GetAuthEventsFilters,
-  ): Promise<GetAuthEventsResult> {
+  async getAuthEvents(filters: GetAuthEventsFilters): Promise<GetAuthEventsResult> {
     try {
       const supabase = requireSupabaseAdmin();
       const limit = Math.min(Math.max(1, filters.limit ?? 25), 100);
       const offset = Math.max(0, filters.offset ?? 0);
 
       let query = supabase
-        .from("auth_events")
-        .select("*", { count: "exact" })
-        .order("created_at", { ascending: false });
+        .from('auth_events')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
 
       if (filters.event_type) {
-        query = query.eq("event_type", filters.event_type);
+        query = query.eq('event_type', filters.event_type);
       }
       if (filters.user_id) {
-        query = query.eq("user_id", filters.user_id);
+        query = query.eq('user_id', filters.user_id);
       }
       if (filters.start_date) {
-        query = query.gte("created_at", filters.start_date);
+        query = query.gte('created_at', filters.start_date);
       }
       if (filters.end_date) {
-        query = query.lte("created_at", filters.end_date);
+        query = query.lte('created_at', filters.end_date);
       }
 
       query = query.range(offset, offset + limit - 1);
@@ -113,10 +108,7 @@ export class AuthEventsService {
       const { data, error, count } = await query;
 
       if (error) {
-        console.warn(
-          "[AUTH_EVENTS] getAuthEvents error (table may not exist):",
-          error.message,
-        );
+        console.warn('[AUTH_EVENTS] getAuthEvents error (table may not exist):', error.message);
         return { events: [], total: 0 };
       }
 
@@ -125,7 +117,7 @@ export class AuthEventsService {
         total: count ?? 0,
       };
     } catch (err) {
-      console.warn("[AUTH_EVENTS] getAuthEvents exception:", err);
+      console.warn('[AUTH_EVENTS] getAuthEvents exception:', err);
       return { events: [], total: 0 };
     }
   }

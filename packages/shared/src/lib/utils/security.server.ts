@@ -1,19 +1,17 @@
-import { createHmac, timingSafeEqual } from "crypto";
-import { env } from "@cusown/config";
-import { getBaseUrl } from "./url";
-import { ResourceType } from "./security";
-export { getClientIp } from "./edge-helpers";
+import { createHmac, timingSafeEqual } from 'crypto';
+import { env } from '@cusown/config';
+import { getBaseUrl } from './url';
+import { ResourceType } from './security';
+export { getClientIp } from './edge-helpers';
 
 /** Same source as validation: env.security.salonTokenSecret (SALON_TOKEN_SECRET). */
 function requireSalonTokenSecretForSigning(): string {
-  const secret = env.security.salonTokenSecret?.trim() ?? "";
+  const secret = env.security.salonTokenSecret?.trim() ?? '';
   if (!secret) {
     console.error(
-      "[security] Cannot generate resource token: SALON_TOKEN_SECRET is not set. Use the same SALON_TOKEN_SECRET for signing and validating links.",
+      '[security] Cannot generate resource token: SALON_TOKEN_SECRET is not set. Use the same SALON_TOKEN_SECRET for signing and validating links.'
     );
-    throw new Error(
-      "SALON_TOKEN_SECRET is required to generate resource tokens",
-    );
+    throw new Error('SALON_TOKEN_SECRET is required to generate resource tokens');
   }
   return secret;
 }
@@ -22,12 +20,12 @@ let salonTokenSecretMissingLogged = false;
 
 /** Returns null if secret unavailable (e.g. misconfiguration); logs once. */
 function getSalonTokenSecretForValidation(): string | null {
-  const secret = env.security.salonTokenSecret?.trim() ?? "";
+  const secret = env.security.salonTokenSecret?.trim() ?? '';
   if (!secret) {
     if (!salonTokenSecretMissingLogged) {
       salonTokenSecretMissingLogged = true;
       console.error(
-        "[security] SALON_TOKEN_SECRET is not set; resource token validation cannot succeed. Set SALON_TOKEN_SECRET to match the value used when generating tokens.",
+        '[security] SALON_TOKEN_SECRET is not set; resource token validation cannot succeed. Set SALON_TOKEN_SECRET to match the value used when generating tokens.'
       );
     }
     return null;
@@ -49,15 +47,15 @@ const TOKEN_TIME_TOLERANCE = 3600; // 1 hour tolerance for clock skew
 export const generateResourceToken = (
   resourceType: ResourceType,
   resourceId: string,
-  timestamp?: number,
+  timestamp?: number
 ): string => {
   const secret = requireSalonTokenSecretForSigning();
   const time = timestamp || Math.floor(Date.now() / 1000);
-  const hmac = createHmac("sha256", secret);
+  const hmac = createHmac('sha256', secret);
   hmac.update(resourceType);
   hmac.update(resourceId);
   hmac.update(time.toString());
-  return hmac.digest("hex");
+  return hmac.digest('hex');
 };
 
 // Validate resource token with enhanced security and time-based validation
@@ -65,14 +63,12 @@ export const validateResourceToken = (
   resourceType: ResourceType,
   resourceId: string,
   token: string,
-  requestTime?: number,
+  requestTime?: number
 ): boolean => {
   if (!token || !resourceId) return false;
 
   const isValidFormat =
-    /^[0-9a-f]{64}$/i.test(token) ||
-    /^[0-9a-f]{32}$/i.test(token) ||
-    /^[0-9a-f]{16}$/i.test(token);
+    /^[0-9a-f]{64}$/i.test(token) || /^[0-9a-f]{32}$/i.test(token) || /^[0-9a-f]{16}$/i.test(token);
   if (!isValidFormat) return false;
 
   try {
@@ -86,39 +82,24 @@ export const validateResourceToken = (
       const timeWindows: number[] = [];
       // (Simplified windows for brevity in this step, or I can copy the whole block)
       // For now, I'll copy the whole block to ensure correctness.
-      for (let t = currentTime; t >= currentTime - 120; t -= 1)
-        timeWindows.push(t);
-      for (let t = currentTime - 120; t >= currentTime - 300; t -= 10)
-        timeWindows.push(t);
-      for (let t = currentTime - 300; t >= currentTime - 1800; t -= 60)
-        timeWindows.push(t);
-      for (let t = currentTime - 1800; t >= currentTime - 7200; t -= 300)
-        timeWindows.push(t);
-      for (let t = currentTime - 7200; t >= currentTime - 21600; t -= 900)
-        timeWindows.push(t);
+      for (let t = currentTime; t >= currentTime - 120; t -= 1) timeWindows.push(t);
+      for (let t = currentTime - 120; t >= currentTime - 300; t -= 10) timeWindows.push(t);
+      for (let t = currentTime - 300; t >= currentTime - 1800; t -= 60) timeWindows.push(t);
+      for (let t = currentTime - 1800; t >= currentTime - 7200; t -= 300) timeWindows.push(t);
+      for (let t = currentTime - 7200; t >= currentTime - 21600; t -= 900) timeWindows.push(t);
       for (
         let t = currentTime - 21600;
         t >= currentTime - TOKEN_VALIDITY_WINDOW - TOKEN_TIME_TOLERANCE;
         t -= 3600
       )
         timeWindows.push(t);
-      for (let t = currentTime + 1; t <= currentTime + 120; t += 1)
-        timeWindows.push(t);
+      for (let t = currentTime + 1; t <= currentTime + 120; t += 1) timeWindows.push(t);
 
       for (const timeWindow of timeWindows) {
         try {
-          const expectedToken = generateResourceToken(
-            resourceType,
-            resourceId,
-            timeWindow,
-          );
+          const expectedToken = generateResourceToken(resourceType, resourceId, timeWindow);
           if (token.length !== expectedToken.length) continue;
-          if (
-            timingSafeEqual(
-              Buffer.from(token, "hex"),
-              Buffer.from(expectedToken, "hex"),
-            )
-          ) {
+          if (timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expectedToken, 'hex'))) {
             return true;
           }
         } catch {
@@ -129,16 +110,13 @@ export const validateResourceToken = (
     }
 
     if (token.length === 16 || token.length === 32) {
-      const hmac = createHmac("sha256", secret);
+      const hmac = createHmac('sha256', secret);
       hmac.update(resourceType);
       hmac.update(resourceId);
-      const legacyToken = hmac.digest("hex");
+      const legacyToken = hmac.digest('hex');
       const expected = legacyToken.substring(0, token.length);
       try {
-        return timingSafeEqual(
-          Buffer.from(token, "hex"),
-          Buffer.from(expected, "hex"),
-        );
+        return timingSafeEqual(Buffer.from(token, 'hex'), Buffer.from(expected, 'hex'));
       } catch {
         return false;
       }
@@ -154,40 +132,37 @@ export const validateResourceToken = (
 export const getSecureResourceUrl = (
   resourceType: ResourceType,
   resourceId: string,
-  baseUrl?: string,
+  baseUrl?: string
 ): string => {
   const token = generateResourceToken(resourceType, resourceId);
   let url = baseUrl || getBaseUrl();
-  if (env.nodeEnv === "production" && /localhost|127\.0\.0\.1/.test(url)) {
-    url = env.app.baseUrl.replace(/\/$/, "");
+  if (env.nodeEnv === 'production' && /localhost|127\.0\.0\.1/.test(url)) {
+    url = env.app.baseUrl.replace(/\/$/, '');
   }
   const encodedToken = encodeURIComponent(token);
   const urlPatterns: Record<ResourceType, string> = {
     salon: `/salon/${resourceId}?token=${encodedToken}`,
     booking: `/b/${resourceId}?token=${encodedToken}`,
-    "booking-status": `/booking/${resourceId}?token=${encodedToken}`,
-    "owner-dashboard": `/owner/${resourceId}?token=${encodedToken}`,
+    'booking-status': `/booking/${resourceId}?token=${encodedToken}`,
+    'owner-dashboard': `/owner/${resourceId}?token=${encodedToken}`,
     accept: `/accept/${resourceId}?token=${encodedToken}`,
     reject: `/reject/${resourceId}?token=${encodedToken}`,
-    "admin-business": `/admin/businesses/${resourceId}?token=${encodedToken}`,
-    "admin-booking": `/admin/bookings/${resourceId}?token=${encodedToken}`,
+    'admin-business': `/admin/businesses/${resourceId}?token=${encodedToken}`,
+    'admin-booking': `/admin/bookings/${resourceId}?token=${encodedToken}`,
   };
   return `${url}${urlPatterns[resourceType]}`;
 };
 
-export const getSecureSalonUrl = (
-  salonId: string,
-  baseUrl?: string,
-): string => {
-  return getSecureResourceUrl("salon", salonId, baseUrl);
+export const getSecureSalonUrl = (salonId: string, baseUrl?: string): string => {
+  return getSecureResourceUrl('salon', salonId, baseUrl);
 };
 
 export const generateSalonToken = (salonId: string): string => {
-  return generateResourceToken("salon", salonId);
+  return generateResourceToken('salon', salonId);
 };
 
 export const validateSalonToken = (salonId: string, token: string): boolean => {
-  return validateResourceToken("salon", salonId, token);
+  return validateResourceToken('salon', salonId, token);
 };
 
 /**
@@ -196,7 +171,7 @@ export const validateSalonToken = (salonId: string, token: string): boolean => {
  */
 export const validateBookingAccess = (
   actualSalonId: string,
-  requestedSalonId?: string,
+  requestedSalonId?: string
 ): boolean => {
   if (!requestedSalonId) return true; // Optional check
   return actualSalonId === requestedSalonId;

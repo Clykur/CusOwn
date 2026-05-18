@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireOwner,
   successResponse,
@@ -12,15 +12,12 @@ import {
   breakWithinWorkingHours,
   invalidateBusinessCache,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
 
-const ROUTE = "PUT /api/owner/businesses/[id]/breaks";
+const ROUTE = 'PUT /api/owner/businesses/[id]/breaks';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireOwner(request, ROUTE);
     if (auth instanceof Response) return auth;
@@ -78,8 +75,8 @@ export async function PUT(
       }
       const o = normalizeTime(row.opening_time);
       const c = normalizeTime(row.closing_time);
-      const bs = normalizeTime(String(br.start ?? ""));
-      const be = normalizeTime(String(br.end ?? ""));
+      const bs = normalizeTime(String(br.start ?? ''));
+      const be = normalizeTime(String(br.end ?? ''));
       if (!bs || !be) {
         return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
       }

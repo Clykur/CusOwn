@@ -1,6 +1,6 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { mergeRecommendationScores } from "../lib/recommendation/scoring";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { mergeRecommendationScores } from '../lib/recommendation/scoring';
 import {
   RECOMMENDATION_NEARBY_DAYS,
   RECOMMENDATION_PAGE_MIN,
@@ -9,7 +9,7 @@ import {
   RECOMMENDATION_LIMIT_MAX,
   RECOMMENDATION_DEFAULT_LIMIT,
   RECOMMENDATION_DEFAULT_RADIUS_KM,
-} from "@cusown/config";
+} from '@cusown/config';
 
 export interface RecommendedBusiness {
   id: string;
@@ -43,9 +43,9 @@ const recommendationCache = new Map<
 >();
 
 function cacheKey(params: GetRecommendationsParams): string {
-  const uid = params.userId ?? "anon";
-  const lat = params.latitude ?? "";
-  const lng = params.longitude ?? "";
+  const uid = params.userId ?? 'anon';
+  const lat = params.latitude ?? '';
+  const lng = params.longitude ?? '';
   const r = params.radiusKm ?? RECOMMENDATION_DEFAULT_RADIUS_KM;
   const page = params.page ?? RECOMMENDATION_PAGE_MIN;
   const limit = params.limit ?? RECOMMENDATION_DEFAULT_LIMIT;
@@ -53,17 +53,12 @@ function cacheKey(params: GetRecommendationsParams): string {
 }
 
 /** Fetch previously booked business ids and counts for a user (RPC). */
-async function getPreviouslyBookedScores(
-  userId: string,
-): Promise<Map<string, number>> {
+async function getPreviouslyBookedScores(userId: string): Promise<Map<string, number>> {
   const supabaseAdmin = requireSupabaseAdmin();
-  const { data, error } = await supabaseAdmin.rpc(
-    "get_previously_booked_business_ids",
-    {
-      p_customer_user_id: userId,
-      p_limit: 100,
-    },
-  );
+  const { data, error } = await supabaseAdmin.rpc('get_previously_booked_business_ids', {
+    p_customer_user_id: userId,
+    p_limit: 100,
+  });
   if (error) throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
   const rows = (data ?? []) as { business_id: string; booking_count: number }[];
   const maxCount = Math.max(1, ...rows.map((r) => r.booking_count));
@@ -76,31 +71,27 @@ async function getPreviouslyBookedScores(
 const RECOMMENDATION_FREQUENT_BOOKINGS_LIMIT = 5000;
 
 /** Frequently booked services (last 30d): top service_ids then business_ids that offer them. */
-async function getFrequentServiceBusinessScores(): Promise<
-  Map<string, number>
-> {
+async function getFrequentServiceBusinessScores(): Promise<Map<string, number>> {
   const supabaseAdmin = requireSupabaseAdmin();
   const since = new Date();
   since.setDate(since.getDate() - RECOMMENDATION_NEARBY_DAYS);
   const sinceIso = since.toISOString();
 
   const { data: recentBookings, error: bkError } = await supabaseAdmin
-    .from("bookings")
-    .select("id")
-    .gte("created_at", sinceIso)
-    .eq("status", "confirmed")
+    .from('bookings')
+    .select('id')
+    .gte('created_at', sinceIso)
+    .eq('status', 'confirmed')
     .limit(RECOMMENDATION_FREQUENT_BOOKINGS_LIMIT);
-  if (bkError)
-    throw new Error(bkError.message || ERROR_MESSAGES.DATABASE_ERROR);
+  if (bkError) throw new Error(bkError.message || ERROR_MESSAGES.DATABASE_ERROR);
   const bookingIds = (recentBookings ?? []).map((b) => b.id);
   if (bookingIds.length === 0) return new Map();
 
   const { data: bookingServices, error: bsError } = await supabaseAdmin
-    .from("booking_services")
-    .select("booking_id, service_id")
-    .in("booking_id", bookingIds);
-  if (bsError)
-    throw new Error(bsError.message || ERROR_MESSAGES.DATABASE_ERROR);
+    .from('booking_services')
+    .select('booking_id, service_id')
+    .in('booking_id', bookingIds);
+  if (bsError) throw new Error(bsError.message || ERROR_MESSAGES.DATABASE_ERROR);
 
   const serviceCounts = new Map<string, number>();
   (bookingServices ?? []).forEach((bs) => {
@@ -115,17 +106,13 @@ async function getFrequentServiceBusinessScores(): Promise<
   if (topServiceIds.length === 0) return new Map();
 
   const { data: services, error: svError } = await supabaseAdmin
-    .from("services")
-    .select("id, business_id")
-    .in("id", topServiceIds)
-    .eq("is_active", true);
-  if (svError)
-    throw new Error(svError.message || ERROR_MESSAGES.DATABASE_ERROR);
+    .from('services')
+    .select('id, business_id')
+    .in('id', topServiceIds)
+    .eq('is_active', true);
+  if (svError) throw new Error(svError.message || ERROR_MESSAGES.DATABASE_ERROR);
 
-  const maxCount = Math.max(
-    1,
-    ...topServiceIds.map((id) => serviceCounts.get(id) ?? 0),
-  );
+  const maxCount = Math.max(1, ...topServiceIds.map((id) => serviceCounts.get(id) ?? 0));
   const businessScores = new Map<string, number>();
   (services ?? []).forEach((s) => {
     const bid = s.business_id as string;
@@ -141,20 +128,17 @@ async function getNearbyPopularScores(
   lat: number | null,
   lng: number | null,
   radiusKm: number,
-  limit: number,
+  limit: number
 ): Promise<Map<string, number>> {
   const supabaseAdmin = requireSupabaseAdmin();
-  const { data, error } = await supabaseAdmin.rpc(
-    "get_nearby_popular_businesses",
-    {
-      p_lat: lat ?? undefined,
-      p_lng: lng ?? undefined,
-      p_radius_km: radiusKm,
-      p_days: RECOMMENDATION_NEARBY_DAYS,
-      p_limit: limit * 2,
-      p_offset: 0,
-    },
-  );
+  const { data, error } = await supabaseAdmin.rpc('get_nearby_popular_businesses', {
+    p_lat: lat ?? undefined,
+    p_lng: lng ?? undefined,
+    p_radius_km: radiusKm,
+    p_days: RECOMMENDATION_NEARBY_DAYS,
+    p_limit: limit * 2,
+    p_offset: 0,
+  });
   if (error) throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
   const rows = (data ?? []) as {
     business_id: string;
@@ -169,18 +153,15 @@ async function getNearbyPopularScores(
 
 export async function getRecommendations(
   params: GetRecommendationsParams,
-  cacheTtlSeconds: number,
+  cacheTtlSeconds: number
 ): Promise<GetRecommendationsResult> {
   const page = Math.max(
     RECOMMENDATION_PAGE_MIN,
-    Math.min(RECOMMENDATION_PAGE_MAX, params.page ?? RECOMMENDATION_PAGE_MIN),
+    Math.min(RECOMMENDATION_PAGE_MAX, params.page ?? RECOMMENDATION_PAGE_MIN)
   );
   const limit = Math.max(
     RECOMMENDATION_LIMIT_MIN,
-    Math.min(
-      RECOMMENDATION_LIMIT_MAX,
-      params.limit ?? RECOMMENDATION_DEFAULT_LIMIT,
-    ),
+    Math.min(RECOMMENDATION_LIMIT_MAX, params.limit ?? RECOMMENDATION_DEFAULT_LIMIT)
   );
   const radiusKm = params.radiusKm ?? RECOMMENDATION_DEFAULT_RADIUS_KM;
   const key = cacheKey({ ...params, page, limit });
@@ -195,19 +176,10 @@ export async function getRecommendations(
       ? getPreviouslyBookedScores(params.userId)
       : Promise.resolve(new Map<string, number>()),
     getFrequentServiceBusinessScores(),
-    getNearbyPopularScores(
-      params.latitude ?? null,
-      params.longitude ?? null,
-      radiusKm,
-      limit * 3,
-    ),
+    getNearbyPopularScores(params.latitude ?? null, params.longitude ?? null, radiusKm, limit * 3),
   ]);
 
-  const merged = mergeRecommendationScores(
-    prevScores,
-    frequentScores,
-    nearbyScores,
-  );
+  const merged = mergeRecommendationScores(prevScores, frequentScores, nearbyScores);
   const total = merged.length;
   const offset = (page - 1) * limit;
   const pageIds = merged.slice(offset, offset + limit);
@@ -229,14 +201,14 @@ export async function getRecommendations(
 
   const idToScore = new Map(pageIds.map((p) => [p.businessId, p.score]));
   const { data: businesses, error } = await supabaseAdmin
-    .from("businesses")
-    .select("id, salon_name, location, category, booking_link")
+    .from('businesses')
+    .select('id, salon_name, location, category, booking_link')
     .in(
-      "id",
-      pageIds.map((p) => p.businessId),
+      'id',
+      pageIds.map((p) => p.businessId)
     )
-    .eq("suspended", false)
-    .is("deleted_at", null);
+    .eq('suspended', false)
+    .is('deleted_at', null);
   if (error) throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
 
   const items: RecommendedBusiness[] = (businesses ?? [])

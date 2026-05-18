@@ -1,27 +1,25 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
-const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 /** Accent #22c55e — matches landing `text-accent` loader on dark shell. */
 const LOTTIE_STROKE_LANDING = [0.133, 0.773, 0.369, 1] as const;
 const LOTTIE_STROKE_DEFAULT = [0.06, 0.09, 0.16, 1] as const;
 
-function buildLoadingAnimation(
-  strokeRgb: readonly [number, number, number, number],
-) {
+function buildLoadingAnimation(strokeRgb: readonly [number, number, number, number]) {
   return {
-    v: "5.5.7",
+    v: '5.5.7',
     fr: 60,
     ip: 0,
     op: 120,
     w: 200,
     h: 200,
-    nm: "Loading",
+    nm: 'Loading',
     ddd: 0,
     assets: [],
     layers: [
@@ -29,7 +27,7 @@ function buildLoadingAnimation(
         ddd: 0,
         ind: 1,
         ty: 4,
-        nm: "Circle 1",
+        nm: 'Circle 1',
         sr: 1,
         ks: {
           o: { a: 0, k: 100 },
@@ -51,26 +49,26 @@ function buildLoadingAnimation(
         },
         shapes: [
           {
-            ty: "gr",
+            ty: 'gr',
             it: [
               {
                 d: 1,
-                ty: "el",
+                ty: 'el',
                 s: { a: 0, k: [80, 80] },
                 p: { a: 0, k: [0, 0] },
               },
               {
-                ty: "st",
+                ty: 'st',
                 c: { a: 0, k: [...strokeRgb] },
                 o: { a: 0, k: 100 },
                 w: { a: 0, k: 4 },
                 lc: 2,
                 lj: 1,
                 d: [
-                  { n: "d", v: { a: 0, k: 60 } },
-                  { n: "g", v: { a: 0, k: 200 } },
+                  { n: 'd', v: { a: 0, k: 60 } },
+                  { n: 'g', v: { a: 0, k: 200 } },
                   {
-                    n: "o",
+                    n: 'o',
                     v: {
                       a: 1,
                       k: [
@@ -113,7 +111,7 @@ export function SplashScreen() {
   useEffect(() => {
     setMounted(true);
 
-    const allowedRoutes = ["/", "/customer/dashboard", "/owner/dashboard"];
+    const allowedRoutes = ['/', '/customer/dashboard', '/owner/dashboard'];
 
     // Not an allowed route → don't show splash
     if (!allowedRoutes.includes(pathname)) {
@@ -136,7 +134,7 @@ export function SplashScreen() {
     setTimeout(() => setShowContent(true), 100);
 
     const hideTimeout = setTimeout(() => {
-      sessionStorage.setItem(sessionKey, "true");
+      sessionStorage.setItem(sessionKey, 'true');
       setLoadPercent(100);
       setFadeOut(true);
       setTimeout(() => setVisible(false), SPLASH_FADE_MS);
@@ -163,16 +161,14 @@ export function SplashScreen() {
 
   if (!mounted || !visible || !shouldShow) return null;
 
-  const isLanding = pathname === "/";
-  const loadingAnimation = isLanding
-    ? loadingAnimationLanding
-    : loadingAnimationDefault;
+  const isLanding = pathname === '/';
+  const loadingAnimation = isLanding ? loadingAnimationLanding : loadingAnimationDefault;
 
   return (
     <div
       className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden transition-all duration-500 ${
-        isLanding ? "bg-zinc-950" : "bg-white"
-      } ${fadeOut ? "opacity-0 scale-105" : "opacity-100 scale-100"}`}
+        isLanding ? 'bg-zinc-950' : 'bg-white'
+      } ${fadeOut ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
     >
       {isLanding ? (
         <>
@@ -201,18 +197,18 @@ export function SplashScreen() {
 
       <div
         className={`relative z-10 flex flex-col items-center transition-all duration-700 ${
-          showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
         {/* Logo */}
         <h1
           className={`mb-8 text-5xl font-bold tracking-tight sm:text-6xl ${
             isLanding
-              ? "font-display text-white"
-              : "font-calegar uppercase tracking-[0.15em] text-slate-900"
+              ? 'font-display text-white'
+              : 'font-calegar uppercase tracking-[0.15em] text-slate-900'
           }`}
         >
-          {isLanding ? "CUSOWN" : "CusOwn"}
+          {isLanding ? 'CUSOWN' : 'CusOwn'}
         </h1>
 
         {/* Loader */}
@@ -223,13 +219,11 @@ export function SplashScreen() {
         {/* Branding */}
         <div
           className={`flex items-center gap-3 transition-all duration-700 delay-300 ${
-            showContent
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-4"
+            showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
           <span
-            className={`text-sm font-light tracking-wider ${isLanding ? "text-zinc-500" : "text-slate-400"}`}
+            className={`text-sm font-light tracking-wider ${isLanding ? 'text-zinc-500' : 'text-slate-400'}`}
           >
             A
           </span>
@@ -238,11 +232,11 @@ export function SplashScreen() {
             alt="Clykur"
             width={140}
             height={140}
-            className={`h-28 w-28 sm:h-32 sm:w-32 ${isLanding ? "brightness-0 invert opacity-90" : ""}`}
+            className={`h-28 w-28 sm:h-32 sm:w-32 ${isLanding ? 'brightness-0 invert opacity-90' : ''}`}
             priority
           />
           <span
-            className={`text-sm font-light tracking-wider ${isLanding ? "text-zinc-500" : "text-slate-400"}`}
+            className={`text-sm font-light tracking-wider ${isLanding ? 'text-zinc-500' : 'text-slate-400'}`}
           >
             Product
           </span>
@@ -251,14 +245,12 @@ export function SplashScreen() {
 
       <p
         className={`pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] right-[max(1.25rem,env(safe-area-inset-right,0px))] z-10 font-mono text-xs font-semibold tabular-nums tracking-tight sm:text-sm ${
-          isLanding ? "text-zinc-500" : "text-slate-400"
+          isLanding ? 'text-zinc-500' : 'text-slate-400'
         }`}
         aria-live="polite"
         aria-label={`Loading ${loadPercent} percent`}
       >
-        <span className={isLanding ? "text-accent" : "text-slate-700"}>
-          {loadPercent}
-        </span>
+        <span className={isLanding ? 'text-accent' : 'text-slate-700'}>{loadPercent}</span>
         <span className="text-[0.85em] font-medium opacity-80">%</span>
       </p>
     </div>

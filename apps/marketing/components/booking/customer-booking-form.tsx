@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { PHONE_DIGITS, UI_CUSTOMER } from "@cusown/config";
-import { useBookingFlowStore } from "@cusown/shared/client";
+import { memo } from 'react';
+import { PHONE_DIGITS, UI_CUSTOMER } from '@cusown/config';
+import { useBookingFlowStore } from '@cusown/shared/client';
 
 interface CustomerBookingFormProps {
   shopClosed?: boolean;
@@ -21,25 +21,17 @@ function CustomerBookingFormComponent({
   const submitting = useBookingFlowStore((state) => state.submitting);
   const validatingSlot = useBookingFlowStore((state) => state.validatingSlot);
   const error = useBookingFlowStore((state) => state.error);
-  const slotValidationError = useBookingFlowStore(
-    (state) => state.slotValidationError,
-  );
+  const slotValidationError = useBookingFlowStore((state) => state.slotValidationError);
   const setCustomerName = useBookingFlowStore((state) => state.setCustomerName);
-  const setCustomerPhone = useBookingFlowStore(
-    (state) => state.setCustomerPhone,
-  );
+  const setCustomerPhone = useBookingFlowStore((state) => state.setCustomerPhone);
 
   const displayError = shopClosedError || error || slotValidationError;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
       <div>
-        <label
-          htmlFor="customer_name"
-          className="block text-sm font-medium text-slate-700 mb-2"
-        >
-          {UI_CUSTOMER.LABEL_YOUR_NAME}{" "}
-          <span className="text-slate-900">*</span>
+        <label htmlFor="customer_name" className="block text-sm font-medium text-slate-700 mb-2">
+          {UI_CUSTOMER.LABEL_YOUR_NAME} <span className="text-slate-900">*</span>
         </label>
         <input
           type="text"
@@ -53,22 +45,14 @@ function CustomerBookingFormComponent({
       </div>
 
       <div>
-        <label
-          htmlFor="customer_phone"
-          className="block text-sm font-medium text-slate-700 mb-2"
-        >
-          {UI_CUSTOMER.LABEL_PHONE_NUMBER}{" "}
-          <span className="text-slate-900">*</span>
+        <label htmlFor="customer_phone" className="block text-sm font-medium text-slate-700 mb-2">
+          {UI_CUSTOMER.LABEL_PHONE_NUMBER} <span className="text-slate-900">*</span>
         </label>
         <input
           type="tel"
           id="customer_phone"
           value={customerPhone}
-          onChange={(e) =>
-            setCustomerPhone(
-              e.target.value.replace(/\D/g, "").slice(-PHONE_DIGITS),
-            )
-          }
+          onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(-PHONE_DIGITS))}
           required
           maxLength={PHONE_DIGITS}
           pattern="[0-9]{10}"

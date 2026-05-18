@@ -1,8 +1,5 @@
-export const getCacheKey = (
-  prefix: string,
-  ...parts: (string | number)[]
-): string => {
-  return `${prefix}:${parts.join(":")}`;
+export const getCacheKey = (prefix: string, ...parts: (string | number)[]): string => {
+  return `${prefix}:${parts.join(':')}`;
 };
 
 export const shouldRefetch = (lastFetched: number, maxAge: number): boolean => {

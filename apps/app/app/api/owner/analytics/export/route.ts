@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import {
   analyticsService,
   errorResponse,
   requireOwner,
   userService,
   isValidUUID,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/owner/analytics/export";
+const ROUTE = 'GET /api/owner/analytics/export';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,52 +16,42 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const { searchParams } = new URL(request.url);
-    const businessId = searchParams.get("business_id");
+    const businessId = searchParams.get('business_id');
     const startDate =
-      searchParams.get("start_date") ||
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0];
-    const endDate =
-      searchParams.get("end_date") || new Date().toISOString().split("T")[0];
+      searchParams.get('start_date') ||
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
 
-    if (!businessId || (businessId !== "all" && !isValidUUID(businessId))) {
-      return errorResponse("Valid business ID is required", 400);
+    if (!businessId || (businessId !== 'all' && !isValidUUID(businessId))) {
+      return errorResponse('Valid business ID is required', 400);
     }
 
     const userBusinesses = await userService.getUserBusinesses(auth.user.id);
     const userBusinessIds = userBusinesses.map((business) => business.id);
     const hasAccess =
-      businessId === "all"
-        ? userBusinessIds.length > 0
-        : userBusinessIds.includes(businessId);
+      businessId === 'all' ? userBusinessIds.length > 0 : userBusinessIds.includes(businessId);
 
     if (!hasAccess) {
-      return errorResponse("Access denied", 403);
+      return errorResponse('Access denied', 403);
     }
 
     const csv =
-      businessId === "all"
+      businessId === 'all'
         ? await analyticsService.exportAnalyticsCSVForBusinesses(
             userBusinessIds,
             startDate,
-            endDate,
+            endDate
           )
-        : await analyticsService.exportAnalyticsCSV(
-            businessId,
-            startDate,
-            endDate,
-          );
+        : await analyticsService.exportAnalyticsCSV(businessId, startDate, endDate);
 
     return new NextResponse(csv, {
       headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="analytics-${businessId === "all" ? "all-businesses" : businessId}-${startDate}-${endDate}.csv"`,
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="analytics-${businessId === 'all' ? 'all-businesses' : businessId}-${startDate}-${endDate}.csv"`,
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

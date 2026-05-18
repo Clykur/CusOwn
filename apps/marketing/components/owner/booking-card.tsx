@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { formatDate, formatTime } from "@cusown/shared";
-import NoShowButton from "@/components/booking/no-show-button";
-import { IconCheck, IconCross } from "@/components/ui/status-icons";
-import { UI_CONTEXT } from "@cusown/config";
-import UndoIcon from "@cusown/shared/icons/undo.svg";
+import { memo } from 'react';
+import { formatDate, formatTime } from '@cusown/shared';
+import NoShowButton from '@/components/booking/no-show-button';
+import { IconCheck, IconCross } from '@/components/ui/status-icons';
+import { UI_CONTEXT } from '@cusown/config';
+import UndoIcon from '@cusown/shared/icons/undo.svg';
 
 interface BookingCardProps {
   booking: any;
@@ -34,17 +34,17 @@ function BookingCardComponent({
 }: BookingCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return "bg-black text-white";
-      case "pending":
-        return "bg-gray-200 text-gray-800";
-      case "rejected":
-        return "bg-gray-300 text-gray-800";
-      case "cancelled":
-      case "expired":
-        return "bg-gray-100 text-gray-800";
+      case 'confirmed':
+        return 'bg-black text-white';
+      case 'pending':
+        return 'bg-gray-200 text-gray-800';
+      case 'rejected':
+        return 'bg-gray-300 text-gray-800';
+      case 'cancelled':
+      case 'expired':
+        return 'bg-gray-100 text-gray-800';
       default:
-        return "bg-gray-100 text-gray-800";
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -63,7 +63,7 @@ function BookingCardComponent({
 
   const canUndo =
     undoWindowMinutes > 0 &&
-    (booking.status === "confirmed" || booking.status === "rejected") &&
+    (booking.status === 'confirmed' || booking.status === 'rejected') &&
     !booking.undo_used_at &&
     withinUndoWindow &&
     !isSlotExpired;
@@ -75,25 +75,19 @@ function BookingCardComponent({
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-gray-900 truncate">
-              {booking.customer_name || "Unknown Customer"}
+              {booking.customer_name || 'Unknown Customer'}
             </h3>
-            <p className="text-sm text-gray-500">
-              {booking.customer_phone || "No phone"}
-            </p>
+            <p className="text-sm text-gray-500">{booking.customer_phone || 'No phone'}</p>
           </div>
 
           <span
             className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(
-              booking.status,
+              booking.status
             )}`}
           >
-            {booking.status === "confirmed" && (
-              <IconCheck className="h-4 w-4 text-green-600" />
-            )}
+            {booking.status === 'confirmed' && <IconCheck className="h-4 w-4 text-green-600" />}
 
-            {booking.status === "rejected" && (
-              <IconCross className="h-4 w-4 text-red-600" />
-            )}
+            {booking.status === 'rejected' && <IconCross className="h-4 w-4 text-red-600" />}
 
             {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
           </span>
@@ -104,31 +98,25 @@ function BookingCardComponent({
           <div className="mb-3 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
             <div>{formatDate(booking.slot.date)}</div>
             <div>
-              {formatTime(booking.slot.start_time)} -{" "}
-              {formatTime(booking.slot.end_time)}
+              {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
             </div>
           </div>
         )}
 
         {/* Review */}
         {booking.review && (
-          <p
-            className="mb-3 text-sm text-gray-600"
-            aria-label={UI_CONTEXT.LABEL_CUSTOMER_RATING}
-          >
+          <p className="mb-3 text-sm text-gray-600" aria-label={UI_CONTEXT.LABEL_CUSTOMER_RATING}>
             {UI_CONTEXT.LABEL_CUSTOMER_RATING}: {booking.review.rating} ★
           </p>
         )}
 
         {/* Booking ID */}
-        <div className="mb-3 text-xs text-gray-600 font-mono">
-          {booking.booking_id}
-        </div>
+        <div className="mb-3 text-xs text-gray-600 font-mono">{booking.booking_id}</div>
 
         {/* Bottom Actions */}
         <div className="flex gap-6 pt-3 border-t border-gray-100">
           {/* Pending + future */}
-          {booking.status === "pending" && !isSlotExpired && (
+          {booking.status === 'pending' && !isSlotExpired && (
             <>
               <button
                 onClick={() => onAccept(booking.id)}
@@ -149,30 +137,24 @@ function BookingCardComponent({
           )}
 
           {/* Pending + expired */}
-          {booking.status === "pending" && isSlotExpired && (
+          {booking.status === 'pending' && isSlotExpired && (
             <span className="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-800 rounded-lg flex items-center justify-center h-9">
               Expired
             </span>
           )}
 
           {/* Accepted + future */}
-          {booking.status === "confirmed" &&
-            !isSlotExpired &&
-            !booking.no_show && (
-              <div className="w-full">
-                <NoShowButton
-                  bookingId={booking.id}
-                  onMarked={
-                    onNoShowMarked
-                      ? () => onNoShowMarked(booking.id)
-                      : onRescheduled
-                  }
-                />
-              </div>
-            )}
+          {booking.status === 'confirmed' && !isSlotExpired && !booking.no_show && (
+            <div className="w-full">
+              <NoShowButton
+                bookingId={booking.id}
+                onMarked={onNoShowMarked ? () => onNoShowMarked(booking.id) : onRescheduled}
+              />
+            </div>
+          )}
 
           {/* Undo accepted */}
-          {booking.status === "confirmed" && canUndo && onUndoAccept && (
+          {booking.status === 'confirmed' && canUndo && onUndoAccept && (
             <button
               onClick={() => onUndoAccept(booking.id)}
               disabled={isProcessing}
@@ -184,7 +166,7 @@ function BookingCardComponent({
           )}
 
           {/* Undo rejected */}
-          {booking.status === "rejected" && canUndo && onUndoReject && (
+          {booking.status === 'rejected' && canUndo && onUndoReject && (
             <button
               onClick={() => onUndoReject(booking.id)}
               disabled={isProcessing}

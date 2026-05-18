@@ -1,32 +1,32 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { env } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { env } from '@cusown/config';
 import {
   generateUPIPaymentLink,
   generateUPIQRCode,
   generateTransactionId,
   generatePaymentId,
-} from "../lib/utils/upi-payment";
-import { paymentStateMachine } from "../lib/state/payment-state-machine";
-import { auditService } from "./audit.service";
-import { logPaymentLifecycle } from "../lib/monitoring/lifecycle-structured-log";
+} from '../lib/utils/upi-payment';
+import { paymentStateMachine } from '../lib/state/payment-state-machine';
+import { auditService } from './audit.service';
+import { logPaymentLifecycle } from '../lib/monitoring/lifecycle-structured-log';
 import {
   METRICS_PAYMENT_CREATED,
   METRICS_PAYMENT_SUCCEEDED,
   METRICS_PAYMENT_FAILED,
-} from "@cusown/config";
-import { safeMetrics } from "../lib/monitoring/safe-metrics";
+} from '@cusown/config';
+import { safeMetrics } from '../lib/monitoring/safe-metrics';
 
-export type PaymentProvider = "razorpay" | "stripe" | "cash" | "upi";
+export type PaymentProvider = 'razorpay' | 'stripe' | 'cash' | 'upi';
 export type PaymentStatus =
-  | "pending"
-  | "processing"
-  | "completed"
-  | "failed"
-  | "refunded"
-  | "partially_refunded"
-  | "initiated"
-  | "expired";
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'refunded'
+  | 'partially_refunded'
+  | 'initiated'
+  | 'expired';
 
 export type Payment = {
   id: string;
@@ -47,7 +47,7 @@ export type Payment = {
   transaction_id?: string | null;
   verified_at?: string | null;
   verified_by?: string | null;
-  verification_method?: "webhook" | "manual" | "polling" | null;
+  verification_method?: 'webhook' | 'manual' | 'polling' | null;
   upi_app_used?: string | null;
   failure_reason?: string | null;
   attempt_count?: number | null;
@@ -58,22 +58,22 @@ export type Payment = {
 
 /** Explicit column list for payments table to avoid SELECT * and reduce I/O. */
 const PAYMENT_SELECT =
-  "id, booking_id, provider, provider_payment_id, amount_cents, currency, status, payment_method, payment_intent_id, order_id, idempotency_key, payment_id, upi_payment_link, upi_qr_code, expires_at, transaction_id, verified_at, verified_by, verification_method, upi_app_used, failure_reason, attempt_count, created_at, updated_at, webhook_payload_hash";
+  'id, booking_id, provider, provider_payment_id, amount_cents, currency, status, payment_method, payment_intent_id, order_id, idempotency_key, payment_id, upi_payment_link, upi_qr_code, expires_at, transaction_id, verified_at, verified_by, verification_method, upi_app_used, failure_reason, attempt_count, created_at, updated_at, webhook_payload_hash';
 
 export class PaymentService {
   async createPayment(
     bookingId: string,
     provider: PaymentProvider,
     amountCents: number,
-    idempotencyKey: string,
+    idempotencyKey: string
   ): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     if (idempotencyKey) {
       const { data: existing } = await supabaseAdmin
-        .from("payments")
+        .from('payments')
         .select(PAYMENT_SELECT)
-        .eq("idempotency_key", idempotencyKey)
+        .eq('idempotency_key', idempotencyKey)
         .single();
 
       if (existing) {
@@ -82,14 +82,14 @@ export class PaymentService {
     }
 
     const { data: payment, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .insert({
         booking_id: bookingId,
         provider,
         provider_payment_id: `pending-${Date.now()}`,
         amount_cents: amountCents,
-        currency: "INR",
-        status: "pending",
+        currency: 'INR',
+        status: 'pending',
         idempotency_key: idempotencyKey || null,
       })
       .select(PAYMENT_SELECT)
@@ -104,7 +104,7 @@ export class PaymentService {
     }
 
     try {
-      await auditService.createAuditLog(null, "payment_created", "payment", {
+      await auditService.createAuditLog(null, 'payment_created', 'payment', {
         entityId: payment.id,
         newData: {
           booking_id: bookingId,
@@ -115,14 +115,14 @@ export class PaymentService {
         description: `Payment created (${provider})`,
       });
     } catch (auditErr) {
-      console.error("[AUDIT] Failed to log payment_created:", auditErr);
+      console.error('[AUDIT] Failed to log payment_created:', auditErr);
     }
     safeMetrics.increment(METRICS_PAYMENT_CREATED);
     logPaymentLifecycle({
       payment_id: payment.id,
       booking_id: bookingId,
-      action: "payment_created",
-      actor: "user",
+      action: 'payment_created',
+      actor: 'user',
     });
 
     return payment;
@@ -132,18 +132,18 @@ export class PaymentService {
     paymentId: string,
     status: PaymentStatus,
     providerPaymentId?: string,
-    webhookData?: { signature?: string; payloadHash?: string },
+    webhookData?: { signature?: string; payloadHash?: string }
   ): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data: currentPayment, error: fetchError } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("id", paymentId)
+      .eq('id', paymentId)
       .single();
 
     if (fetchError || !currentPayment) {
-      throw new Error("Payment not found");
+      throw new Error('Payment not found');
     }
 
     if (currentPayment.status === status) {
@@ -151,23 +151,18 @@ export class PaymentService {
     }
 
     const event =
-      status === "completed"
-        ? "verify"
-        : status === "failed"
-          ? "fail"
-          : status === "refunded" || status === "partially_refunded"
-            ? "refund"
+      status === 'completed'
+        ? 'verify'
+        : status === 'failed'
+          ? 'fail'
+          : status === 'refunded' || status === 'partially_refunded'
+            ? 'refund'
             : null;
     if (
       event &&
-      !paymentStateMachine.canTransition(
-        currentPayment.status as PaymentStatus,
-        event,
-      )
+      !paymentStateMachine.canTransition(currentPayment.status as PaymentStatus, event)
     ) {
-      throw new Error(
-        `Invalid payment state transition: ${currentPayment.status} -> ${status}`,
-      );
+      throw new Error(`Invalid payment state transition: ${currentPayment.status} -> ${status}`);
     }
 
     const updateData: any = {
@@ -190,9 +185,9 @@ export class PaymentService {
     }
 
     const { data: payment, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .update(updateData)
-      .eq("id", paymentId)
+      .eq('id', paymentId)
       .select(PAYMENT_SELECT)
       .single();
 
@@ -201,43 +196,43 @@ export class PaymentService {
     }
 
     if (!payment) {
-      throw new Error("Payment not found");
+      throw new Error('Payment not found');
     }
 
     const auditAction =
-      status === "completed"
-        ? "payment_succeeded"
-        : status === "failed"
-          ? "payment_failed"
-          : status === "refunded" || status === "partially_refunded"
-            ? "payment_refunded"
+      status === 'completed'
+        ? 'payment_succeeded'
+        : status === 'failed'
+          ? 'payment_failed'
+          : status === 'refunded' || status === 'partially_refunded'
+            ? 'payment_refunded'
             : null;
     if (auditAction) {
       try {
-        await auditService.createAuditLog(null, auditAction, "payment", {
+        await auditService.createAuditLog(null, auditAction, 'payment', {
           entityId: paymentId,
           oldData: { status: currentPayment.status },
           newData: { status: payment.status },
-          description: `Payment ${auditAction.replace("payment_", "")}`,
+          description: `Payment ${auditAction.replace('payment_', '')}`,
         });
       } catch (auditErr) {
-        console.error("[AUDIT] Failed to log payment state change:", auditErr);
+        console.error('[AUDIT] Failed to log payment state change:', auditErr);
       }
-      if (status === "completed") {
+      if (status === 'completed') {
         safeMetrics.increment(METRICS_PAYMENT_SUCCEEDED);
         logPaymentLifecycle({
           payment_id: paymentId,
           booking_id: payment.booking_id,
-          action: "payment_succeeded",
-          actor: "system",
+          action: 'payment_succeeded',
+          actor: 'system',
         });
-      } else if (status === "failed") {
+      } else if (status === 'failed') {
         safeMetrics.increment(METRICS_PAYMENT_FAILED);
         logPaymentLifecycle({
           payment_id: paymentId,
           booking_id: payment.booking_id,
-          action: "payment_failed",
-          actor: "system",
+          action: 'payment_failed',
+          actor: 'system',
         });
       }
     }
@@ -249,15 +244,15 @@ export class PaymentService {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("booking_id", bookingId)
-      .order("created_at", { ascending: false })
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -266,19 +261,17 @@ export class PaymentService {
     return data;
   }
 
-  async getPaymentByIdempotencyKey(
-    idempotencyKey: string,
-  ): Promise<Payment | null> {
+  async getPaymentByIdempotencyKey(idempotencyKey: string): Promise<Payment | null> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("idempotency_key", idempotencyKey)
+      .eq('idempotency_key', idempotencyKey)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -289,11 +282,11 @@ export class PaymentService {
 
   calculatePaymentAmount(
     totalPriceCents: number,
-    paymentType: "full" | "deposit" | "cash",
+    paymentType: 'full' | 'deposit' | 'cash'
   ): number {
-    if (paymentType === "full") {
+    if (paymentType === 'full') {
       return totalPriceCents;
-    } else if (paymentType === "deposit") {
+    } else if (paymentType === 'deposit') {
       return Math.ceil(totalPriceCents * 0.3);
     }
     return 0;
@@ -303,7 +296,7 @@ export class PaymentService {
     bookingId: string,
     amountCents: number,
     customerName: string,
-    idempotencyKey: string,
+    idempotencyKey: string
   ): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 
@@ -326,19 +319,17 @@ export class PaymentService {
     const qrCode = await generateUPIQRCode(upiLink);
 
     const expiresAt = new Date();
-    expiresAt.setMinutes(
-      expiresAt.getMinutes() + env.payment.paymentExpiryMinutes,
-    );
+    expiresAt.setMinutes(expiresAt.getMinutes() + env.payment.paymentExpiryMinutes);
 
     const { data: payment, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .insert({
         booking_id: bookingId,
-        provider: "upi",
+        provider: 'upi',
         provider_payment_id: paymentId,
         amount_cents: amountCents,
-        currency: "INR",
-        status: "initiated",
+        currency: 'INR',
+        status: 'initiated',
         idempotency_key: idempotencyKey || null,
         payment_id: paymentId,
         upi_payment_link: upiLink,
@@ -358,39 +349,31 @@ export class PaymentService {
       throw new Error(ERROR_MESSAGES.DATABASE_ERROR);
     }
 
-    await this.logPaymentAudit(
-      payment.id,
-      null,
-      "system",
-      "payment_initiated",
-      "initiated",
-      null,
-      {
-        payment_id: paymentId,
-        transaction_id: transactionId,
-      },
-    );
+    await this.logPaymentAudit(payment.id, null, 'system', 'payment_initiated', 'initiated', null, {
+      payment_id: paymentId,
+      transaction_id: transactionId,
+    });
 
     try {
-      await auditService.createAuditLog(null, "payment_created", "payment", {
+      await auditService.createAuditLog(null, 'payment_created', 'payment', {
         entityId: payment.id,
         newData: {
           booking_id: bookingId,
-          provider: "upi",
+          provider: 'upi',
           amount_cents: amountCents,
-          status: "initiated",
+          status: 'initiated',
         },
-        description: "Payment created (upi)",
+        description: 'Payment created (upi)',
       });
     } catch (auditErr) {
-      console.error("[AUDIT] Failed to log payment_created:", auditErr);
+      console.error('[AUDIT] Failed to log payment_created:', auditErr);
     }
     safeMetrics.increment(METRICS_PAYMENT_CREATED);
     logPaymentLifecycle({
       payment_id: payment.id,
       booking_id: bookingId,
-      action: "payment_created",
-      actor: "user",
+      action: 'payment_created',
+      actor: 'user',
     });
 
     return payment;
@@ -400,52 +383,47 @@ export class PaymentService {
     paymentId: string,
     transactionId: string,
     verifiedBy: string,
-    verificationMethod: "webhook" | "manual" | "polling",
-    metadata?: { upiAppUsed?: string; paymentReference?: string },
+    verificationMethod: 'webhook' | 'manual' | 'polling',
+    metadata?: { upiAppUsed?: string; paymentReference?: string }
   ): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data: payment, error: fetchError } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("id", paymentId)
+      .eq('id', paymentId)
       .single();
 
     if (fetchError || !payment) {
-      throw new Error("Payment not found");
+      throw new Error('Payment not found');
     }
 
-    if (payment.status === "completed") {
+    if (payment.status === 'completed') {
       return payment;
     }
 
-    if (!paymentStateMachine.canTransition(payment.status, "verify")) {
+    if (!paymentStateMachine.canTransition(payment.status, 'verify')) {
       throw new Error(`Cannot verify payment from ${payment.status} state`);
     }
 
     if (payment.transaction_id !== transactionId) {
-      throw new Error("Transaction ID mismatch");
+      throw new Error('Transaction ID mismatch');
     }
 
     if (payment.expires_at && new Date(payment.expires_at) < new Date()) {
       if (!env.payment.autoRefundOnLateSuccess) {
-        throw new Error("Payment expired");
+        throw new Error('Payment expired');
       }
     }
 
     const oldStatus = payment.status;
-    const nextState = paymentStateMachine.getNextState(
-      payment.status,
-      "verify",
-    );
-    if (nextState !== "completed") {
-      throw new Error(
-        `Invalid state transition: ${payment.status} -> ${nextState}`,
-      );
+    const nextState = paymentStateMachine.getNextState(payment.status, 'verify');
+    if (nextState !== 'completed') {
+      throw new Error(`Invalid state transition: ${payment.status} -> ${nextState}`);
     }
 
     const updateData: any = {
-      status: "completed",
+      status: 'completed',
       updated_at: new Date().toISOString(),
       verified_at: new Date().toISOString(),
       verified_by: verifiedBy,
@@ -457,9 +435,9 @@ export class PaymentService {
     }
 
     const { data: updatedPayment, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .update(updateData)
-      .eq("id", paymentId)
+      .eq('id', paymentId)
       .select(PAYMENT_SELECT)
       .single();
 
@@ -468,89 +446,83 @@ export class PaymentService {
     }
 
     if (!updatedPayment) {
-      throw new Error("Payment update failed");
+      throw new Error('Payment update failed');
     }
 
     await this.logPaymentAudit(
       paymentId,
       verifiedBy,
-      verificationMethod === "manual" ? "admin" : "system",
-      "payment_verified",
+      verificationMethod === 'manual' ? 'admin' : 'system',
+      'payment_verified',
       oldStatus,
-      "completed",
-      metadata,
+      'completed',
+      metadata
     );
 
     try {
       await auditService.createAuditLog(
-        verifiedBy === "system" ? null : verifiedBy,
-        "payment_succeeded",
-        "payment",
+        verifiedBy === 'system' ? null : verifiedBy,
+        'payment_succeeded',
+        'payment',
         {
           entityId: paymentId,
           oldData: { status: oldStatus },
-          newData: { status: "completed" },
-          description: "Payment verified",
-        },
+          newData: { status: 'completed' },
+          description: 'Payment verified',
+        }
       );
     } catch (auditErr) {
-      console.error("[AUDIT] Failed to log payment_succeeded:", auditErr);
+      console.error('[AUDIT] Failed to log payment_succeeded:', auditErr);
     }
     safeMetrics.increment(METRICS_PAYMENT_SUCCEEDED);
     logPaymentLifecycle({
       payment_id: paymentId,
       booking_id: payment.booking_id,
-      action: "payment_succeeded",
-      actor: verifiedBy === "system" ? "system" : "user",
+      action: 'payment_succeeded',
+      actor: verifiedBy === 'system' ? 'system' : 'user',
     });
 
     return updatedPayment;
   }
 
-  async markPaymentFailed(
-    paymentId: string,
-    reason: string,
-    actorId?: string,
-  ): Promise<Payment> {
+  async markPaymentFailed(paymentId: string, reason: string, actorId?: string): Promise<Payment> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data: payment } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("id", paymentId)
+      .eq('id', paymentId)
       .single();
 
     if (!payment) {
-      throw new Error("Payment not found");
+      throw new Error('Payment not found');
     }
 
-    if (payment.status === "completed") {
-      throw new Error("Cannot fail completed payment");
+    if (payment.status === 'completed') {
+      throw new Error('Cannot fail completed payment');
     }
 
-    if (!paymentStateMachine.canTransition(payment.status, "fail")) {
+    if (!paymentStateMachine.canTransition(payment.status, 'fail')) {
       throw new Error(`Cannot fail payment from ${payment.status} state`);
     }
 
     const oldStatus = payment.status;
-    const nextState = paymentStateMachine.getNextState(payment.status, "fail");
-    if (nextState !== "failed") {
-      throw new Error(
-        `Invalid state transition: ${payment.status} -> ${nextState}`,
-      );
+    const nextState = paymentStateMachine.getNextState(payment.status, 'fail');
+    if (nextState !== 'failed') {
+      throw new Error(`Invalid state transition: ${payment.status} -> ${nextState}`);
     }
 
     const newAttemptCount = (payment.attempt_count || 0) + 1;
 
     const { data: updatedPayment, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .update({
-        status: "failed",
+        status: 'failed',
         failure_reason: reason,
         attempt_count: newAttemptCount,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", paymentId)
+      .eq('id', paymentId)
       .select(PAYMENT_SELECT)
       .single();
 
@@ -559,13 +531,13 @@ export class PaymentService {
     }
 
     if (!updatedPayment) {
-      throw new Error("Payment update failed");
+      throw new Error('Payment update failed');
     }
 
-    await supabaseAdmin.from("payment_attempts").insert({
+    await supabaseAdmin.from('payment_attempts').insert({
       payment_id: paymentId,
       attempt_number: newAttemptCount,
-      status: "failed",
+      status: 'failed',
       error_message: reason,
       created_at: new Date().toISOString(),
     });
@@ -573,34 +545,29 @@ export class PaymentService {
     await this.logPaymentAudit(
       paymentId,
       actorId || null,
-      actorId ? "admin" : "system",
-      "payment_failed",
+      actorId ? 'admin' : 'system',
+      'payment_failed',
       oldStatus,
-      "failed",
-      { reason, attempt_count: newAttemptCount },
+      'failed',
+      { reason, attempt_count: newAttemptCount }
     );
 
     try {
-      await auditService.createAuditLog(
-        actorId || null,
-        "payment_failed",
-        "payment",
-        {
-          entityId: paymentId,
-          oldData: { status: oldStatus },
-          newData: { status: "failed" },
-          description: reason || "Payment failed",
-        },
-      );
+      await auditService.createAuditLog(actorId || null, 'payment_failed', 'payment', {
+        entityId: paymentId,
+        oldData: { status: oldStatus },
+        newData: { status: 'failed' },
+        description: reason || 'Payment failed',
+      });
     } catch (auditErr) {
-      console.error("[AUDIT] Failed to log payment_failed:", auditErr);
+      console.error('[AUDIT] Failed to log payment_failed:', auditErr);
     }
     safeMetrics.increment(METRICS_PAYMENT_FAILED);
     logPaymentLifecycle({
       payment_id: paymentId,
       booking_id: payment.booking_id,
-      action: "payment_failed",
-      actor: actorId ? "user" : "system",
+      action: 'payment_failed',
+      actor: actorId ? 'user' : 'system',
       reason,
     });
 
@@ -612,10 +579,10 @@ export class PaymentService {
     const now = new Date().toISOString();
 
     const { data: expiredPayments, error: fetchError } = await supabaseAdmin
-      .from("payments")
-      .select("id, status")
-      .eq("status", "initiated")
-      .lt("expires_at", now);
+      .from('payments')
+      .select('id, status')
+      .eq('status', 'initiated')
+      .lt('expires_at', now);
 
     if (fetchError || !expiredPayments || expiredPayments.length === 0) {
       return 0;
@@ -624,35 +591,32 @@ export class PaymentService {
     let expiredCount = 0;
     for (const payment of expiredPayments) {
       try {
-        if (paymentStateMachine.canTransition(payment.status, "expire")) {
+        if (paymentStateMachine.canTransition(payment.status, 'expire')) {
           const { error: updateError } = await supabaseAdmin
-            .from("payments")
+            .from('payments')
             .update({
-              status: "expired",
-              failure_reason: "Payment expired",
+              status: 'expired',
+              failure_reason: 'Payment expired',
               updated_at: new Date().toISOString(),
             })
-            .eq("id", payment.id)
-            .eq("status", "initiated");
+            .eq('id', payment.id)
+            .eq('status', 'initiated');
 
           if (!updateError) {
             await this.logPaymentAudit(
               payment.id,
               null,
-              "system",
-              "payment_expired",
+              'system',
+              'payment_expired',
               payment.status,
-              "expired",
-              { reason: "Payment expired" },
+              'expired',
+              { reason: 'Payment expired' }
             );
             expiredCount++;
           }
         }
       } catch (error) {
-        console.error(
-          `[PAYMENT] Failed to expire payment ${payment.id}:`,
-          error,
-        );
+        console.error(`[PAYMENT] Failed to expire payment ${payment.id}:`, error);
       }
     }
 
@@ -663,13 +627,13 @@ export class PaymentService {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("payment_id", paymentId)
+      .eq('payment_id', paymentId)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -678,19 +642,17 @@ export class PaymentService {
     return data;
   }
 
-  async getPaymentByTransactionId(
-    transactionId: string,
-  ): Promise<Payment | null> {
+  async getPaymentByTransactionId(transactionId: string): Promise<Payment | null> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("payments")
+      .from('payments')
       .select(PAYMENT_SELECT)
-      .eq("transaction_id", transactionId)
+      .eq('transaction_id', transactionId)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -702,15 +664,15 @@ export class PaymentService {
   private async logPaymentAudit(
     paymentId: string,
     actorId: string | null,
-    actorType: "customer" | "owner" | "admin" | "system",
+    actorType: 'customer' | 'owner' | 'admin' | 'system',
     action: string,
     fromStatus: PaymentStatus | null,
     toStatus: PaymentStatus | null,
-    metadata?: any,
+    metadata?: any
   ): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
 
-    await supabaseAdmin.from("payment_audit_logs").insert({
+    await supabaseAdmin.from('payment_audit_logs').insert({
       payment_id: paymentId,
       actor_id: actorId,
       actor_type: actorType,

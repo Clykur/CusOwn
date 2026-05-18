@@ -3,12 +3,12 @@
  * Prevents 429 from many concurrent or rapid refresh_token requests.
  */
 
-import { AUTH_REFRESH_DEBOUNCE_MS } from "@cusown/config";
+import { AUTH_REFRESH_DEBOUNCE_MS } from '@cusown/config';
 
 function isRefreshTokenRequest(url: string, body: string): boolean {
   return (
-    url.includes("/auth/v1/token") &&
-    (url.includes("refresh_token") || body.includes("refresh_token"))
+    url.includes('/auth/v1/token') &&
+    (url.includes('refresh_token') || body.includes('refresh_token'))
   );
 }
 
@@ -44,21 +44,14 @@ function responseFromCached(c: CachedResponse): Response {
  * Fetch that debounces and coalesces Supabase refresh_token requests.
  * At most one request every AUTH_REFRESH_DEBOUNCE_MS; concurrent callers get the same result.
  */
-export function createRefreshAwareFetch(
-  originalFetch: typeof fetch,
-): typeof fetch {
+export function createRefreshAwareFetch(originalFetch: typeof fetch): typeof fetch {
   return function refreshAwareFetch(
     input: RequestInfo | URL,
-    init?: RequestInit,
+    init?: RequestInit
   ): Promise<Response> {
     const url =
-      typeof input === "string"
-        ? input
-        : input instanceof Request
-          ? input.url
-          : String(input);
-    const body =
-      init?.body != null && typeof init.body === "string" ? init.body : "";
+      typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+    const body = init?.body != null && typeof init.body === 'string' ? init.body : '';
     if (!isRefreshTokenRequest(url, body)) {
       return originalFetch(input, init);
     }

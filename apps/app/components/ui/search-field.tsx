@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Input, type InputProps } from "@/components/ui/input";
-import { cn } from "@cusown/shared";
+import * as React from 'react';
+import { Input, type InputProps } from '@/components/ui/input';
+import { cn } from '@cusown/shared';
 
 export interface SearchFieldProps extends InputProps {
   /** Optional leading icon (e.g. magnifying glass); adds left padding for the input. */
@@ -13,7 +13,7 @@ export interface SearchFieldProps extends InputProps {
  * Search-styled input with optional leading icon. Wraps {@link Input}.
  */
 const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
-  ({ className, leadingIcon, type = "search", ...props }, ref) => {
+  ({ className, leadingIcon, type = 'search', ...props }, ref) => {
     return (
       <div className="relative min-w-0">
         {leadingIcon ? (
@@ -24,13 +24,13 @@ const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
         <Input
           ref={ref}
           type={type}
-          className={cn(leadingIcon ? "pl-10" : undefined, className)}
+          className={cn(leadingIcon ? 'pl-10' : undefined, className)}
           {...props}
         />
       </div>
     );
-  },
+  }
 );
-SearchField.displayName = "SearchField";
+SearchField.displayName = 'SearchField';
 
 export { SearchField };

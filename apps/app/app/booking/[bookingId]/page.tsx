@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   CUSTOMER_SCREEN_TITLE_CLASSNAME,
   UI_CUSTOMER,
   UI_CONTEXT,
   UI_ERROR_CONTEXT,
-} from "@cusown/config";
-import { publicEnv } from "@cusown/config";
-import { ROUTES } from "@cusown/shared";
-import { getCSRFToken } from "@cusown/shared";
-import { cn } from "@cusown/shared";
-import { BookingStatusSkeleton } from "@/components/ui/skeleton";
-import RefreshIcon from "@cusown/shared/icons/refresh.svg";
-import { useBookingStatusPolling } from "@cusown/shared/client";
+} from '@cusown/config';
+import { publicEnv } from '@cusown/config';
+import { ROUTES } from '@cusown/shared';
+import { getCSRFToken } from '@cusown/shared';
+import { cn } from '@cusown/shared';
+import { BookingStatusSkeleton } from '@/components/ui/skeleton';
+import RefreshIcon from '@cusown/shared/icons/refresh.svg';
+import { useBookingStatusPolling } from '@cusown/shared/client';
 import {
   useBookingData,
   BookingStatusBanner,
@@ -23,12 +23,11 @@ import {
   AppointmentDetailsCard,
   CustomerDetailsCard,
   BookingActions,
-} from "@/components/booking/booking-status";
+} from '@/components/booking/booking-status';
 
 export default function BookingStatusPage() {
   const params = useParams();
-  const bookingId =
-    typeof params?.bookingId === "string" ? params.bookingId : "";
+  const bookingId = typeof params?.bookingId === 'string' ? params.bookingId : '';
 
   const {
     booking,
@@ -53,7 +52,7 @@ export default function BookingStatusPage() {
     refresh: refreshBookingSilent,
     isEnabled: Boolean(bookingId),
     onTransition: (event) => {
-      console.info("[booking-status] transition", event.type, {
+      console.info('[booking-status] transition', event.type, {
         previousStatus: event.previous.status,
         currentStatus: event.current.status,
       });
@@ -73,12 +72,10 @@ export default function BookingStatusPage() {
       <div className="w-full pb-24 flex flex-col gap-8">
         <div className="w-full">
           <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
-            <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, "mb-4")}>
+            <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-4')}>
               {UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}
             </h2>
-            <p className="text-slate-600 mb-6">
-              {error || "Booking not found."}
-            </p>
+            <p className="text-slate-600 mb-6">{error || 'Booking not found.'}</p>
             <Link
               href={ROUTES.CUSTOMER_DASHBOARD}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition shadow-sm"
@@ -91,15 +88,14 @@ export default function BookingStatusPage() {
     );
   }
 
-  const isNoShow = booking.status === "confirmed" && booking.no_show;
-  const cancellationMinHoursMs =
-    publicEnv.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
+  const isNoShow = booking.status === 'confirmed' && booking.no_show;
+  const cancellationMinHoursMs = publicEnv.booking.cancellationMinHoursBefore * 60 * 60 * 1000;
 
   const handleCancelled = () => {
     setBooking((prev: any) => ({
       ...prev,
-      status: "cancelled",
-      cancelled_by: "customer",
+      status: 'cancelled',
+      cancelled_by: 'customer',
       cancelled_at: new Date().toISOString(),
     }));
   };
@@ -119,14 +115,10 @@ export default function BookingStatusPage() {
               disabled={refreshingStatus}
               className="p-1 text-slate-600 hover:text-slate-900 disabled:opacity-50"
             >
-              <RefreshIcon
-                className={`w-5 h-5 ${refreshingStatus ? "animate-spin" : ""}`}
-              />
+              <RefreshIcon className={`w-5 h-5 ${refreshingStatus ? 'animate-spin' : ''}`} />
             </button>
           </div>
-          <p className="text-sm text-slate-600 mb-3">
-            {UI_CONTEXT.BOOKING_STATUS_SINGLE}
-          </p>
+          <p className="text-sm text-slate-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
           <div className="flex flex-wrap items-center gap-2 text-slate-600">
             <span className="text-sm">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
             <span className="font-mono text-sm bg-slate-100 px-3 py-1 rounded-xl text-slate-900">
@@ -136,7 +128,7 @@ export default function BookingStatusPage() {
               <div className="w-full mt-3">
                 <button
                   type="button"
-                  onClick={() => window.open(whatsappUrl, "_blank")}
+                  onClick={() => window.open(whatsappUrl, '_blank')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800"
                 >
                   Open WhatsApp
@@ -177,18 +169,16 @@ export default function BookingStatusPage() {
           <div className="mb-6 bg-slate-100 p-4 rounded-xl">
             <p className="font-medium text-slate-900">Cancellation Details</p>
             <p className="text-sm text-slate-600 mt-1">
-              Cancelled{" "}
-              {booking.cancelled_by === "customer"
-                ? "by you"
-                : booking.cancelled_by === "owner"
-                  ? "by business owner"
-                  : "automatically"}{" "}
+              Cancelled{' '}
+              {booking.cancelled_by === 'customer'
+                ? 'by you'
+                : booking.cancelled_by === 'owner'
+                  ? 'by business owner'
+                  : 'automatically'}{' '}
               on {new Date(booking.cancelled_at).toLocaleString()}
             </p>
             {booking.cancellation_reason && (
-              <p className="text-sm text-slate-600 mt-1">
-                Reason: {booking.cancellation_reason}
-              </p>
+              <p className="text-sm text-slate-600 mt-1">Reason: {booking.cancellation_reason}</p>
             )}
           </div>
         )}

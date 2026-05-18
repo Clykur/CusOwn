@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { memo, useMemo } from "react";
-import { motion } from "framer-motion";
+import { memo, useMemo } from 'react';
+import { motion } from 'framer-motion';
 
 function currency(cents?: number): string {
   const value = (cents || 0) / 100;
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value);
 }
 
 function formatPeakHour(value: string | null | undefined): string {
-  if (!value) return "—";
-  const hourPart = value.split(":")[0];
+  if (!value) return '—';
+  const hourPart = value.split(':')[0];
   const hour = Number(hourPart);
-  if (!Number.isFinite(hour)) return "—";
-  return `${String(hour).padStart(2, "0")}:00`;
+  if (!Number.isFinite(hour)) return '—';
+  return `${String(hour).padStart(2, '0')}:00`;
 }
 
 const KPICompactCard = memo(function KPICompactCard({
@@ -54,23 +54,23 @@ function KPISectionComponent({
   const memoizedKpis = useMemo(() => {
     const bookings = analytics?.totalBookings ?? 0;
     return [
-      { title: "Total Revenue", value: currency(analytics?.totalRevenueCents) },
-      { title: "Total Bookings", value: String(bookings) },
-      { title: "Conversion Rate", value: `${analytics?.conversionRate ?? 0}%` },
+      { title: 'Total Revenue', value: currency(analytics?.totalRevenueCents) },
+      { title: 'Total Bookings', value: String(bookings) },
+      { title: 'Conversion Rate', value: `${analytics?.conversionRate ?? 0}%` },
       {
-        title: "Avg Ticket Size",
+        title: 'Avg Ticket Size',
         value: currency(analytics?.averageTicketCents),
       },
-      { title: "No Show Rate", value: `${analytics?.noShowRate ?? 0}%` },
-      { title: "Peak Hour", value: formatPeakHour(analytics?.peakHour) },
+      { title: 'No Show Rate', value: `${analytics?.noShowRate ?? 0}%` },
+      { title: 'Peak Hour', value: formatPeakHour(analytics?.peakHour) },
       ...(advanced
         ? [
             {
-              title: "Repeat Customer %",
+              title: 'Repeat Customer %',
               value: `${advanced.repeatCustomerPercentage}%`,
             },
             {
-              title: "Cancellation Rate",
+              title: 'Cancellation Rate',
               value: `${advanced.cancellationRate}%`,
             },
           ]

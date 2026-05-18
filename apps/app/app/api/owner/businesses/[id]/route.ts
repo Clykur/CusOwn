@@ -3,7 +3,7 @@
  * Only the owner of the business can PATCH or DELETE.
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   userService,
   adminService,
@@ -24,14 +24,11 @@ import {
   auditService,
   salonService,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import {
-  ERROR_MESSAGES,
-  MAX_CONCURRENT_BOOKING_CAPACITY,
-} from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, MAX_CONCURRENT_BOOKING_CAPACITY } from '@cusown/config';
 
-const ROUTE_PATCH = "PATCH /api/owner/businesses/[id]";
-const ROUTE_DELETE = "DELETE /api/owner/businesses/[id]";
+const ROUTE_PATCH = 'PATCH /api/owner/businesses/[id]';
+const ROUTE_DELETE = 'DELETE /api/owner/businesses/[id]';
 
 async function getOwnedBusiness(identifier: string, userId: string) {
   const businesses = await userService.getUserBusinesses(userId, true);
@@ -42,10 +39,7 @@ async function getOwnedBusiness(identifier: string, userId: string) {
   return businesses?.find((b: any) => b.booking_link === identifier) ?? null;
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireOwner(request, ROUTE_PATCH);
     if (auth instanceof Response) return auth;
@@ -57,40 +51,28 @@ export async function PATCH(
 
     const owned = await getOwnedBusiness(id, auth.user.id);
     if (!owned) {
-      return errorResponse("Access denied", 403);
+      return errorResponse('Access denied', 403);
     }
 
     const body = await request.json();
     const filtered = filterOwnerBusinessUpdateFields(body);
 
-    if (
-      filtered.salon_name !== undefined &&
-      !validateStringLength(filtered.salon_name, 200)
-    ) {
-      return errorResponse("Salon name is too long", 400);
+    if (filtered.salon_name !== undefined && !validateStringLength(filtered.salon_name, 200)) {
+      return errorResponse('Salon name is too long', 400);
     }
-    if (
-      filtered.owner_name !== undefined &&
-      !validateStringLength(filtered.owner_name, 200)
-    ) {
-      return errorResponse("Owner name is too long", 400);
+    if (filtered.owner_name !== undefined && !validateStringLength(filtered.owner_name, 200)) {
+      return errorResponse('Owner name is too long', 400);
     }
-    if (
-      filtered.address !== undefined &&
-      !validateStringLength(filtered.address, 500)
-    ) {
-      return errorResponse("Address is too long", 400);
+    if (filtered.address !== undefined && !validateStringLength(filtered.address, 500)) {
+      return errorResponse('Address is too long', 400);
     }
-    if (
-      filtered.location !== undefined &&
-      !validateStringLength(filtered.location, 200)
-    ) {
-      return errorResponse("Location is too long", 400);
+    if (filtered.location !== undefined && !validateStringLength(filtered.location, 200)) {
+      return errorResponse('Location is too long', 400);
     }
     if (filtered.slot_duration !== undefined) {
       const duration = Number(filtered.slot_duration);
       if (isNaN(duration) || duration <= 0 || duration > 1440) {
-        return errorResponse("Invalid slot duration", 400);
+        return errorResponse('Invalid slot duration', 400);
       }
     }
 
@@ -99,29 +81,22 @@ export async function PATCH(
       if (!validateConcurrentCapacity(cap)) {
         return errorResponse(
           `Capacity must be between 1 and ${MAX_CONCURRENT_BOOKING_CAPACITY}`,
-          400,
+          400
         );
       }
     }
 
     const openForRange =
-      filtered.opening_time !== undefined
-        ? filtered.opening_time
-        : owned.opening_time;
+      filtered.opening_time !== undefined ? filtered.opening_time : owned.opening_time;
     const closeForRange =
-      filtered.closing_time !== undefined
-        ? filtered.closing_time
-        : owned.closing_time;
-    if (
-      filtered.opening_time !== undefined ||
-      filtered.closing_time !== undefined
-    ) {
+      filtered.closing_time !== undefined ? filtered.closing_time : owned.closing_time;
+    if (filtered.opening_time !== undefined || filtered.closing_time !== undefined) {
       const o =
-        typeof openForRange === "string" && openForRange.length === 5
+        typeof openForRange === 'string' && openForRange.length === 5
           ? `${openForRange}:00`
           : String(openForRange);
       const c =
-        typeof closeForRange === "string" && closeForRange.length === 5
+        typeof closeForRange === 'string' && closeForRange.length === 5
           ? `${closeForRange}:00`
           : String(closeForRange);
       try {
@@ -145,22 +120,18 @@ export async function PATCH(
     }
 
     const updateData: Record<string, unknown> = {};
-    if (filtered.salon_name !== undefined)
-      updateData.salon_name = filtered.salon_name;
-    if (filtered.owner_name !== undefined)
-      updateData.owner_name = filtered.owner_name;
+    if (filtered.salon_name !== undefined) updateData.salon_name = filtered.salon_name;
+    if (filtered.owner_name !== undefined) updateData.owner_name = filtered.owner_name;
     if (filtered.whatsapp_number !== undefined) {
       updateData.whatsapp_number = formatPhoneNumber(filtered.whatsapp_number);
     }
     if (filtered.opening_time !== undefined) {
       const v = filtered.opening_time;
-      updateData.opening_time =
-        typeof v === "string" && v.length === 5 ? `${v}:00` : v;
+      updateData.opening_time = typeof v === 'string' && v.length === 5 ? `${v}:00` : v;
     }
     if (filtered.closing_time !== undefined) {
       const v = filtered.closing_time;
-      updateData.closing_time =
-        typeof v === "string" && v.length === 5 ? `${v}:00` : v;
+      updateData.closing_time = typeof v === 'string' && v.length === 5 ? `${v}:00` : v;
     }
     if (filtered.slot_duration !== undefined) {
       updateData.slot_duration = Number(filtered.slot_duration);
@@ -168,32 +139,25 @@ export async function PATCH(
     if (filtered.concurrent_booking_capacity !== undefined) {
       updateData.concurrent_booking_capacity = Math.min(
         MAX_CONCURRENT_BOOKING_CAPACITY,
-        Math.max(1, Math.floor(Number(filtered.concurrent_booking_capacity))),
+        Math.max(1, Math.floor(Number(filtered.concurrent_booking_capacity)))
       );
     }
     if (filtered.address !== undefined) updateData.address = filtered.address;
-    if (filtered.location !== undefined)
-      updateData.location = filtered.location;
-    if (filtered.category !== undefined)
-      updateData.category = filtered.category;
+    if (filtered.location !== undefined) updateData.location = filtered.location;
+    if (filtered.category !== undefined) updateData.category = filtered.category;
     if (filtered.city !== undefined) updateData.city = filtered.city;
     if (filtered.area !== undefined) updateData.area = filtered.area;
     if (filtered.pincode !== undefined) updateData.pincode = filtered.pincode;
-    if (filtered.latitude !== undefined)
-      updateData.latitude = Number(filtered.latitude);
-    if (filtered.longitude !== undefined)
-      updateData.longitude = Number(filtered.longitude);
-    if (filtered.address_line1 !== undefined)
-      updateData.address_line1 = filtered.address_line1;
-    if (filtered.address_line2 !== undefined)
-      updateData.address_line2 = filtered.address_line2;
+    if (filtered.latitude !== undefined) updateData.latitude = Number(filtered.latitude);
+    if (filtered.longitude !== undefined) updateData.longitude = Number(filtered.longitude);
+    if (filtered.address_line1 !== undefined) updateData.address_line1 = filtered.address_line1;
+    if (filtered.address_line2 !== undefined) updateData.address_line2 = filtered.address_line2;
     if (filtered.state !== undefined) updateData.state = filtered.state;
     if (filtered.country !== undefined) updateData.country = filtered.country;
-    if (filtered.postal_code !== undefined)
-      updateData.postal_code = filtered.postal_code;
+    if (filtered.postal_code !== undefined) updateData.postal_code = filtered.postal_code;
 
     if (Object.keys(updateData).length === 0) {
-      return successResponse(owned, "No changes");
+      return successResponse(owned, 'No changes');
     }
 
     const updated = await salonService.updateSalon(owned.id, updateData);
@@ -201,19 +165,14 @@ export async function PATCH(
     invalidateBusinessCacheBySlug(owned.booking_link);
 
     // Create audit log
-    await auditService.createAuditLog(
-      auth.user.id,
-      "business_updated",
-      "business",
-      {
-        entityId: owned.id,
-        oldData: owned,
-        newData: updated,
-        description: `Business updated by owner: ${Object.keys(updateData).join(", ")}`,
-      },
-    );
+    await auditService.createAuditLog(auth.user.id, 'business_updated', 'business', {
+      entityId: owned.id,
+      oldData: owned,
+      newData: updated,
+      description: `Business updated by owner: ${Object.keys(updateData).join(', ')}`,
+    });
 
-    return successResponse(updated, "Business updated successfully");
+    return successResponse(updated, 'Business updated successfully');
   } catch (err) {
     const friendlyMessage = getUserFriendlyError(err);
     return errorResponse(friendlyMessage, 500);
@@ -222,7 +181,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireOwner(request, ROUTE_DELETE);
@@ -235,35 +194,30 @@ export async function DELETE(
 
     const owned = await getOwnedBusiness(id, auth.user.id);
     if (!owned) {
-      return errorResponse("Access denied", 403);
+      return errorResponse('Access denied', 403);
     }
 
     const clientIp = getClientIp(request);
     await adminService.softDeleteBusiness(
       owned.id,
       auth.user.id,
-      "Owner requested business deletion",
+      'Owner requested business deletion',
       {
         ip: clientIp ?? null,
-      },
+      }
     );
 
-    invalidateApiCacheByPrefix("GET|/api/owner/businesses");
+    invalidateApiCacheByPrefix('GET|/api/owner/businesses');
     invalidateBusinessCacheBySlug(owned.booking_link);
 
     // Create audit log
-    await auditService.createAuditLog(
-      auth.user.id,
-      "business_deleted",
-      "business",
-      {
-        entityId: owned.id,
-        description: "Business soft-deleted by owner",
-        metadata: { reason: "Owner requested business deletion" },
-      },
-    );
+    await auditService.createAuditLog(auth.user.id, 'business_deleted', 'business', {
+      entityId: owned.id,
+      description: 'Business soft-deleted by owner',
+      metadata: { reason: 'Owner requested business deletion' },
+    });
 
-    return successResponse(null, "Business deleted successfully");
+    return successResponse(null, 'Business deleted successfully');
   } catch (err) {
     const friendlyMessage = getUserFriendlyError(err);
     return errorResponse(friendlyMessage, 500);

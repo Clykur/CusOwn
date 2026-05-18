@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
+import React, { useMemo } from 'react';
 
 function SmallSparkline({ values }: { values: number[] }) {
   const w = 120;
@@ -8,9 +8,7 @@ function SmallSparkline({ values }: { values: number[] }) {
   const safeValues = values && values.length > 0 ? values : [0, 0, 0, 0, 0];
   const max = Math.max(...safeValues, 1);
   const step = w / Math.max(1, safeValues.length - 1);
-  const path = safeValues
-    .map((v, i) => `${i * step},${h - (v / max) * (h - 4)}`)
-    .join(" ");
+  const path = safeValues.map((v, i) => `${i * step},${h - (v / max) * (h - 4)}`).join(' ');
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
@@ -19,14 +17,7 @@ function SmallSparkline({ values }: { values: number[] }) {
       height={h}
       preserveAspectRatio="xMidYMid meet"
     >
-      <line
-        x1={0}
-        y1={h - 4}
-        x2={w}
-        y2={h - 4}
-        stroke="#eef2f7"
-        strokeWidth={1}
-      />
+      <line x1={0} y1={h - 4} x2={w} y2={h - 4} stroke="#eef2f7" strokeWidth={1} />
       <polyline
         points={path}
         fill="none"
@@ -50,22 +41,20 @@ function MetricCard({
   change?: number | null;
   spark?: number[];
 }) {
-  const positive = typeof change === "number" ? change >= 0 : null;
+  const positive = typeof change === 'number' ? change >= 0 : null;
   return (
     <div className="h-32 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between">
       <div className="flex justify-between items-start">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {title}
-          </div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</div>
           <div className="mt-1 text-2xl font-bold text-slate-900">{value}</div>
         </div>
         <div className="text-right">
-          {typeof change === "number" ? (
+          {typeof change === 'number' ? (
             <div
-              className={`text-sm font-semibold ${positive ? "text-emerald-600" : "text-rose-600"}`}
+              className={`text-sm font-semibold ${positive ? 'text-emerald-600' : 'text-rose-600'}`}
             >
-              {positive ? "▲" : "▼"} {Math.abs(change)}%
+              {positive ? '▲' : '▼'} {Math.abs(change)}%
             </div>
           ) : (
             <div className="text-xs text-slate-400">—</div>
@@ -88,10 +77,7 @@ export default function KPIGrid({
   dailyData: any[];
   retention?: any[] | null;
 }) {
-  const values = useMemo(
-    () => dailyData.map((d) => d.totalBookings),
-    [dailyData],
-  );
+  const values = useMemo(() => dailyData.map((d) => d.totalBookings), [dailyData]);
 
   const total = analytics?.totalBookings ?? 0;
   const confirmed = analytics?.confirmedBookings ?? 0;
@@ -103,9 +89,7 @@ export default function KPIGrid({
   const change = useMemo(() => {
     if (dailyData.length < 14) return null;
     const last7 = dailyData.slice(-7).reduce((s, d) => s + d.totalBookings, 0);
-    const prev7 = dailyData
-      .slice(-14, -7)
-      .reduce((s, d) => s + d.totalBookings, 0);
+    const prev7 = dailyData.slice(-14, -7).reduce((s, d) => s + d.totalBookings, 0);
     if (prev7 === 0) return null;
     return Math.round(((last7 - prev7) / prev7) * 100 * 100) / 100;
   }, [dailyData]);
@@ -114,9 +98,7 @@ export default function KPIGrid({
     if (!retention || retention.length === 0) return null;
     const returning = retention.filter((r: any) => r.totalBookings > 1).length;
     const totalCustomers = retention.length;
-    return (
-      Math.round((returning / Math.max(1, totalCustomers)) * 100 * 100) / 100
-    );
+    return Math.round((returning / Math.max(1, totalCustomers)) * 100 * 100) / 100;
   }, [retention]);
 
   const avgPerDay = useMemo(() => {
@@ -127,51 +109,36 @@ export default function KPIGrid({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <MetricCard
-        title="Total Bookings"
-        value={total}
-        change={change}
-        spark={values}
-      />
-      <MetricCard
-        title="Confirmed"
-        value={confirmed}
-        change={change}
-        spark={values}
-      />
+      <MetricCard title="Total Bookings" value={total} change={change} spark={values} />
+      <MetricCard title="Confirmed" value={confirmed} change={change} spark={values} />
       <MetricCard
         title="Conversion"
-        value={conversion != null ? `${conversion}%` : "—"}
+        value={conversion != null ? `${conversion}%` : '—'}
         change={change}
         spark={values}
       />
       <MetricCard
         title="No Show Rate"
-        value={noshow != null ? `${noshow}%` : "—"}
+        value={noshow != null ? `${noshow}%` : '—'}
         change={change}
         spark={values}
       />
       <MetricCard
         title="Cancelled Rate"
-        value={cancelled != null ? `${cancelled}%` : "—"}
+        value={cancelled != null ? `${cancelled}%` : '—'}
         change={change}
         spark={values}
       />
       <MetricCard
         title="Returning %"
-        value={returningPct != null ? `${returningPct}%` : "—"}
+        value={returningPct != null ? `${returningPct}%` : '—'}
         change={null}
         spark={values}
       />
-      <MetricCard
-        title="Avg / Day"
-        value={avgPerDay}
-        change={null}
-        spark={values}
-      />
+      <MetricCard title="Avg / Day" value={avgPerDay} change={null} spark={values} />
       <MetricCard
         title="Peak Hour"
-        value={analytics?.peakHour ?? "—"}
+        value={analytics?.peakHour ?? '—'}
         change={null}
         spark={values}
       />

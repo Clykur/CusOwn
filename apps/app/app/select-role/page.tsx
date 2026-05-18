@@ -1,48 +1,43 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { getServerSessionClient } from "@cusown/shared";
-import { isAdmin } from "@cusown/shared";
-import { ROUTES, getOwnerDashboardUrl } from "@cusown/shared";
-import { UI_CONTEXT } from "@cusown/config";
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { getServerSessionClient } from '@cusown/shared';
+import { isAdmin } from '@cusown/shared';
+import { ROUTES, getOwnerDashboardUrl } from '@cusown/shared';
+import { UI_CONTEXT } from '@cusown/config';
 
 const ROLE_ACCESS_ERRORS = {
   not_owner: UI_CONTEXT.ROLE_ACCESS_DENIED_NOT_OWNER,
   not_customer: UI_CONTEXT.ROLE_ACCESS_DENIED_NOT_CUSTOMER,
 } as const;
-import CreateBusinessForm from "@/components/setup/create-business-form";
-import { SelectRoleSkeleton } from "@/components/ui/skeleton";
-import { SelectRolePremiumChrome } from "@/components/layout/select-role-premium-chrome";
-import { getCSRFToken } from "@cusown/shared";
-import LinkIcon from "@cusown/shared/icons/link.svg";
-import BusinessesIcon from "@cusown/shared/icons/businesses.svg";
-import ProfileIcon from "@cusown/shared/icons/profile.svg";
-import { fetchUserState } from "@cusown/shared";
-import { ArrowRight, Check, QrCode } from "lucide-react";
+import CreateBusinessForm from '@/components/setup/create-business-form';
+import { SelectRoleSkeleton } from '@/components/ui/skeleton';
+import { SelectRolePremiumChrome } from '@/components/layout/select-role-premium-chrome';
+import { getCSRFToken } from '@cusown/shared';
+import LinkIcon from '@cusown/shared/icons/link.svg';
+import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
+import ProfileIcon from '@cusown/shared/icons/profile.svg';
+import { fetchUserState } from '@cusown/shared';
+import { ArrowRight, Check, QrCode } from 'lucide-react';
 
-type SelectableUserType = "owner" | "customer" | "both" | "admin" | null;
+type SelectableUserType = 'owner' | 'customer' | 'both' | 'admin' | null;
 
 function SelectRoleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const urlRole =
-    (searchParams?.get("role") as "owner" | "customer" | null) ?? null;
+  const urlRole = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
   const accessError =
-    (searchParams?.get("error") as keyof typeof ROLE_ACCESS_ERRORS | null) ??
-    null;
+    (searchParams?.get('error') as keyof typeof ROLE_ACCESS_ERRORS | null) ?? null;
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedRole, setSelectedRole] = useState<"owner" | "customer" | null>(
-    urlRole,
-  );
+  const [selectedRole, setSelectedRole] = useState<'owner' | 'customer' | null>(urlRole);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [dismissedError, setDismissedError] = useState(false);
-  const [currentUserType, setCurrentUserType] =
-    useState<SelectableUserType>(null);
+  const [currentUserType, setCurrentUserType] = useState<SelectableUserType>(null);
   /** Stores business creation result for the "Get Started" step */
   const [businessResult, setBusinessResult] = useState<{
     bookingLink: string;
@@ -87,20 +82,15 @@ function SelectRoleContent() {
         const state = await fetchUserState();
         setCurrentUserType((state?.userType as SelectableUserType) ?? null);
 
-        const isOwner = state.userType === "owner" || state.userType === "both";
+        const isOwner = state.userType === 'owner' || state.userType === 'both';
         const hasBusiness = state.businessCount >= 1;
 
         // NEW: If we arrived with not_owner error but the user explicitly wants to be an owner
         // and we haven't started processing, let's trigger the upgrade if they aren't an owner yet.
-        if (
-          accessError === "not_owner" &&
-          urlRole === "owner" &&
-          !isOwner &&
-          !processing
-        ) {
+        if (accessError === 'not_owner' && urlRole === 'owner' && !isOwner && !processing) {
           // Just set the state to show they picked owner and let them click continue
           // or we can even auto-trigger handleContinue if we want to be very robust.
-          setSelectedRole("owner");
+          setSelectedRole('owner');
         }
 
         /**
@@ -110,7 +100,7 @@ function SelectRoleContent() {
          * - Customer → customer dashboard
          */
         if (!urlRole) {
-          if (state.userType === "both") {
+          if (state.userType === 'both') {
             // Users with both roles should choose   don't auto-redirect
             setLoading(false);
             return;
@@ -129,8 +119,8 @@ function SelectRoleContent() {
          * Logged-in owner with no business arriving via ?role=owner
          * → start at step 2 (setup) directly
          */
-        if (urlRole === "owner" && isOwner && !hasBusiness) {
-          setSelectedRole("owner");
+        if (urlRole === 'owner' && isOwner && !hasBusiness) {
+          setSelectedRole('owner');
           setCurrentStep(2);
           setLoading(false);
           return;
@@ -139,7 +129,7 @@ function SelectRoleContent() {
         /**
          * Owner with business arriving via ?role=owner → skip onboarding
          */
-        if (urlRole === "owner" && isOwner && hasBusiness) {
+        if (urlRole === 'owner' && isOwner && hasBusiness) {
           router.replace(ROUTES.OWNER_DASHBOARD_BASE);
           return;
         }
@@ -151,7 +141,7 @@ function SelectRoleContent() {
         setLoading(false);
       } catch (err) {
         // Any failure here should not take down the entire route.
-        console.error("Select-role init failed:", err);
+        console.error('Select-role init failed:', err);
         setLoading(false);
       }
     };
@@ -166,29 +156,24 @@ function SelectRoleContent() {
 
     // Not logged in → login first
     if (!user) {
-      router.push(
-        ROUTES.AUTH_LOGIN("/auth/callback") + `&role=${selectedRole}`,
-      );
+      router.push(ROUTES.AUTH_LOGIN('/auth/callback') + `&role=${selectedRole}`);
       return;
     }
 
     const alreadyHasSelectedRole =
-      (selectedRole === "customer" &&
-        (currentUserType === "customer" || currentUserType === "both")) ||
-      (selectedRole === "owner" &&
-        (currentUserType === "owner" || currentUserType === "both"));
+      (selectedRole === 'customer' &&
+        (currentUserType === 'customer' || currentUserType === 'both')) ||
+      (selectedRole === 'owner' && (currentUserType === 'owner' || currentUserType === 'both'));
 
     if (alreadyHasSelectedRole) {
       const state = await fetchUserState();
-      if (selectedRole === "owner" && state.businessCount === 0) {
+      if (selectedRole === 'owner' && state.businessCount === 0) {
         setCurrentStep(2);
         setProcessing(false);
         return;
       }
       router.replace(
-        selectedRole === "owner"
-          ? ROUTES.OWNER_DASHBOARD_BASE
-          : ROUTES.CUSTOMER_DASHBOARD,
+        selectedRole === 'owner' ? ROUTES.OWNER_DASHBOARD_BASE : ROUTES.CUSTOMER_DASHBOARD
       );
       setProcessing(false);
       return;
@@ -197,14 +182,14 @@ function SelectRoleContent() {
     try {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       };
-      if (csrfToken) headers["x-csrf-token"] = csrfToken;
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
-      await fetch("/api/user/upgrade-role", {
-        method: "POST",
+      await fetch('/api/user/upgrade-role', {
+        method: 'POST',
         headers,
-        credentials: "include",
+        credentials: 'include',
         body: JSON.stringify({ role: selectedRole }),
       });
 
@@ -214,31 +199,31 @@ function SelectRoleContent() {
       const hasBusiness = state.businessCount >= 1;
 
       // CUSTOMER → redirect immediately
-      if (selectedRole === "customer") {
+      if (selectedRole === 'customer') {
         router.replace(ROUTES.CUSTOMER_DASHBOARD);
         return;
       }
 
       // OWNER with existing business → skip onboarding, go to dashboard
-      if (selectedRole === "owner" && hasBusiness) {
+      if (selectedRole === 'owner' && hasBusiness) {
         router.replace(ROUTES.OWNER_DASHBOARD_BASE);
         return;
       }
 
       // OWNER with no business → move to Step 2 (inline setup)
-      if (selectedRole === "owner" && !hasBusiness) {
+      if (selectedRole === 'owner' && !hasBusiness) {
         setCurrentStep(2);
         setProcessing(false);
         return;
       }
     } catch (error) {
-      console.error("Role upgrade error:", error);
+      console.error('Role upgrade error:', error);
 
       // Fallback
       try {
         const state = await fetchUserState();
 
-        if (selectedRole === "customer") {
+        if (selectedRole === 'customer') {
           router.replace(ROUTES.CUSTOMER_DASHBOARD);
         } else if (state.businessCount >= 1) {
           router.replace(ROUTES.OWNER_DASHBOARD_BASE);
@@ -264,13 +249,13 @@ function SelectRoleContent() {
     setCurrentStep(3);
   };
 
-  const handleRoleSelect = (role: "owner" | "customer") => {
+  const handleRoleSelect = (role: 'owner' | 'customer') => {
     // Always allow role selection - update state immediately
     setSelectedRole(role);
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set("role", role);
-      window.history.replaceState({}, "", newUrl.toString());
+      newUrl.searchParams.set('role', role);
+      window.history.replaceState({}, '', newUrl.toString());
     }
   };
 
@@ -292,11 +277,7 @@ function SelectRoleContent() {
           <div className="w-full max-w-lg">
             <div className="mb-10 text-center">
               <div className="mx-auto mb-6 text-accent">
-                <Check
-                  className="mx-auto h-14 w-14"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
+                <Check className="mx-auto h-14 w-14" strokeWidth={1.75} aria-hidden />
               </div>
               <h1 className="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 You&apos;re all set
@@ -324,7 +305,7 @@ function SelectRoleContent() {
                     onClick={() => copyToClipboard(businessResult.bookingUrl)}
                     className="min-h-[2.75rem] shrink-0 self-start rounded-lg px-1 text-sm font-semibold text-accent transition-colors hover:text-emerald-300 sm:min-h-0 sm:self-auto sm:px-0"
                   >
-                    {bookingLinkCopied ? "Copied" : "Copy"}
+                    {bookingLinkCopied ? 'Copied' : 'Copy'}
                   </button>
                 </div>
               </div>
@@ -332,11 +313,7 @@ function SelectRoleContent() {
               {businessResult.qrCode ? (
                 <div className="py-8 sm:py-9">
                   <label className="mb-5 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
-                    <QrCode
-                      className="h-4 w-4 text-accent"
-                      strokeWidth={2}
-                      aria-hidden
-                    />
+                    <QrCode className="h-4 w-4 text-accent" strokeWidth={2} aria-hidden />
                     QR code
                   </label>
                   <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-8">
@@ -353,7 +330,7 @@ function SelectRoleContent() {
                       type="button"
                       onClick={() => {
                         if (!businessResult.qrCode) return;
-                        const link = document.createElement("a");
+                        const link = document.createElement('a');
                         link.href = businessResult.qrCode;
                         link.download = `${businessResult.bookingLink}-qr-code.png`;
                         document.body.appendChild(link);
@@ -370,17 +347,11 @@ function SelectRoleContent() {
 
               <button
                 type="button"
-                onClick={() =>
-                  router.push(getOwnerDashboardUrl(businessResult.bookingLink))
-                }
+                onClick={() => router.push(getOwnerDashboardUrl(businessResult.bookingLink))}
                 className="mt-2 flex w-full min-h-[3.25rem] items-center justify-center gap-2 rounded-lg bg-accent py-3.5 text-[15px] font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_36px_rgba(34,197,94,0.4)] sm:mt-0 sm:py-4 sm:text-base"
               >
                 Go to dashboard
-                <ArrowRight
-                  className="h-4 w-4"
-                  strokeWidth={2.25}
-                  aria-hidden
-                />
+                <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden />
               </button>
             </div>
           </div>
@@ -390,7 +361,7 @@ function SelectRoleContent() {
   }
 
   // ─── Step 2: Owner Setup   embedded business creation form ───
-  if (currentStep === 2 && selectedRole === "owner") {
+  if (currentStep === 2 && selectedRole === 'owner') {
     return (
       <SelectRolePremiumChrome>
         <div className="px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] sm:py-16 sm:pb-16">
@@ -463,7 +434,7 @@ function SelectRoleContent() {
               Get started
             </p>
             <h1 className="font-display text-[clamp(1.65rem,4.5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight text-white sm:text-4xl sm:leading-[1.1]">
-              How will you use{" "}
+              How will you use{' '}
               <span className="bg-gradient-to-r from-white via-emerald-50 to-accent bg-clip-text text-transparent">
                 CusOwn
               </span>
@@ -482,18 +453,16 @@ function SelectRoleContent() {
             <div className="grid grid-cols-1 divide-y divide-white/[0.08] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
               <button
                 type="button"
-                onClick={() => handleRoleSelect("owner")}
+                onClick={() => handleRoleSelect('owner')}
                 className={`flex w-full min-h-0 text-left transition-colors ${
-                  selectedRole === "owner"
-                    ? "bg-white/[0.04]"
-                    : "hover:bg-white/[0.02]"
+                  selectedRole === 'owner' ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'
                 }`}
               >
                 <div
                   className={`flex w-full gap-4 py-7 sm:gap-6 sm:py-10 ${
-                    selectedRole === "owner"
-                      ? "border-l-[3px] border-accent pl-4 sm:pl-6"
-                      : "border-l-[3px] border-transparent pl-4 sm:pl-6"
+                    selectedRole === 'owner'
+                      ? 'border-l-[3px] border-accent pl-4 sm:pl-6'
+                      : 'border-l-[3px] border-transparent pl-4 sm:pl-6'
                   }`}
                 >
                   <BusinessesIcon
@@ -505,26 +474,18 @@ function SelectRoleContent() {
                       <h3 className="font-display text-lg font-semibold text-white sm:text-xl">
                         Business owner
                       </h3>
-                      {selectedRole === "owner" ? (
+                      {selectedRole === 'owner' ? (
                         <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
                           Selected
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-sm text-zinc-500">
-                      Run your booking page
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-500">Run your booking page</p>
                     <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-                      Create your page, share your link, and take appointments
-                      without the chaos.
+                      Create your page, share your link, and take appointments without the chaos.
                     </p>
                     <ul className="mt-4 space-y-1.5 text-sm text-zinc-500">
-                      {[
-                        "Booking pages",
-                        "QR codes",
-                        "Manage slots",
-                        "Analytics",
-                      ].map((feature) => (
+                      {['Booking pages', 'QR codes', 'Manage slots', 'Analytics'].map((feature) => (
                         <li key={feature} className="flex gap-2">
                           <span className="text-accent" aria-hidden>
                             ·
@@ -539,18 +500,16 @@ function SelectRoleContent() {
 
               <button
                 type="button"
-                onClick={() => handleRoleSelect("customer")}
+                onClick={() => handleRoleSelect('customer')}
                 className={`flex w-full min-h-0 text-left transition-colors ${
-                  selectedRole === "customer"
-                    ? "bg-white/[0.04]"
-                    : "hover:bg-white/[0.02]"
+                  selectedRole === 'customer' ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'
                 }`}
               >
                 <div
                   className={`flex w-full gap-4 py-7 sm:gap-6 sm:py-10 ${
-                    selectedRole === "customer"
-                      ? "border-l-[3px] border-accent pl-4 sm:pl-6"
-                      : "border-l-[3px] border-transparent pl-4 sm:pl-6"
+                    selectedRole === 'customer'
+                      ? 'border-l-[3px] border-accent pl-4 sm:pl-6'
+                      : 'border-l-[3px] border-transparent pl-4 sm:pl-6'
                   }`}
                 >
                   <ProfileIcon
@@ -562,7 +521,7 @@ function SelectRoleContent() {
                       <h3 className="font-display text-lg font-semibold text-white sm:text-xl">
                         Customer
                       </h3>
-                      {selectedRole === "customer" ? (
+                      {selectedRole === 'customer' ? (
                         <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
                           Selected
                         </span>
@@ -570,15 +529,14 @@ function SelectRoleContent() {
                     </div>
                     <p className="mt-1 text-sm text-zinc-500">Book services</p>
                     <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-                      Browse businesses, book a slot, and get clear
-                      confirmations on WhatsApp.
+                      Browse businesses, book a slot, and get clear confirmations on WhatsApp.
                     </p>
                     <ul className="mt-4 space-y-1.5 text-sm text-zinc-500">
                       {[
-                        "Browse services",
-                        "Instant booking",
-                        "WhatsApp alerts",
-                        "Manage bookings",
+                        'Browse services',
+                        'Instant booking',
+                        'WhatsApp alerts',
+                        'Manage bookings',
                       ].map((feature) => (
                         <li key={feature} className="flex gap-2">
                           <span className="text-accent" aria-hidden>
@@ -597,7 +555,7 @@ function SelectRoleContent() {
           {user ? (
             <div className="mb-6 text-center sm:mb-8">
               <p className="text-sm text-zinc-500">
-                Signed in as{" "}
+                Signed in as{' '}
                 <span className="mt-0.5 block max-w-full truncate font-medium text-zinc-300 sm:mt-0 sm:inline">
                   {user.email}
                 </span>
@@ -620,20 +578,12 @@ function SelectRoleContent() {
               ) : user ? (
                 <>
                   Continue
-                  <ArrowRight
-                    className="h-4 w-4"
-                    strokeWidth={2.25}
-                    aria-hidden
-                  />
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 </>
               ) : (
                 <>
                   Sign in & continue
-                  <ArrowRight
-                    className="h-4 w-4"
-                    strokeWidth={2.25}
-                    aria-hidden
-                  />
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 </>
               )}
             </button>

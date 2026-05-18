@@ -3,7 +3,7 @@
  * Tracks navigation timing, route change duration, and identifies slow transitions.
  */
 
-import { recordMetric } from "./performance";
+import { recordMetric } from './performance';
 
 interface RouteTransition {
   from: string;
@@ -11,7 +11,7 @@ interface RouteTransition {
   startTime: number;
   endTime?: number;
   duration?: number;
-  type: "soft" | "hard";
+  type: 'soft' | 'hard';
 }
 
 const SLOW_TRANSITION_THRESHOLD_MS = 1000;
@@ -24,9 +24,7 @@ let lastPathname: string | null = null;
 type TransitionListener = (transition: RouteTransition) => void;
 const listeners: TransitionListener[] = [];
 
-export function subscribeToTransitions(
-  listener: TransitionListener,
-): () => void {
+export function subscribeToTransitions(listener: TransitionListener): () => void {
   listeners.push(listener);
   return () => {
     const index = listeners.indexOf(listener);
@@ -35,7 +33,7 @@ export function subscribeToTransitions(
 }
 
 export function startRouteTransition(pathname: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   const now = performance.now();
   const from = lastPathname || window.location.pathname;
@@ -46,12 +44,12 @@ export function startRouteTransition(pathname: string): void {
     from,
     to: pathname,
     startTime: now,
-    type: "soft",
+    type: 'soft',
   };
 }
 
 export function endRouteTransition(pathname: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   const now = performance.now();
 
@@ -60,10 +58,10 @@ export function endRouteTransition(pathname: string): void {
     currentTransition.duration = now - currentTransition.startTime;
 
     recordMetric({
-      name: "route-transition",
-      type: "navigation",
+      name: 'route-transition',
+      type: 'navigation',
       value: currentTransition.duration,
-      unit: "ms",
+      unit: 'ms',
       metadata: {
         from: currentTransition.from,
         to: currentTransition.to,
@@ -74,10 +72,10 @@ export function endRouteTransition(pathname: string): void {
 
     if (currentTransition.duration > SLOW_TRANSITION_THRESHOLD_MS) {
       recordMetric({
-        name: "slow-route-transition",
-        type: "navigation",
+        name: 'slow-route-transition',
+        type: 'navigation',
         value: currentTransition.duration,
-        unit: "ms",
+        unit: 'ms',
         metadata: {
           from: currentTransition.from,
           to: currentTransition.to,
@@ -100,26 +98,23 @@ export function endRouteTransition(pathname: string): void {
 }
 
 export function recordHardNavigation(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
-  const navigation = performance.getEntriesByType(
-    "navigation",
-  )[0] as PerformanceNavigationTiming;
+  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
   if (!navigation) return;
 
   const duration = navigation.loadEventEnd - navigation.startTime;
 
   recordMetric({
-    name: "hard-navigation",
-    type: "navigation",
+    name: 'hard-navigation',
+    type: 'navigation',
     value: duration,
-    unit: "ms",
+    unit: 'ms',
     metadata: {
       to: window.location.pathname,
-      type: "hard",
+      type: 'hard',
       domInteractive: navigation.domInteractive - navigation.startTime,
-      domContentLoaded:
-        navigation.domContentLoadedEventEnd - navigation.startTime,
+      domContentLoaded: navigation.domContentLoadedEventEnd - navigation.startTime,
     },
   });
 }
@@ -153,9 +148,7 @@ export function getTransitionStats(): {
   const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
   const p95Index = Math.floor(durations.length * 0.95);
   const p95Duration = durations[p95Index] || durations[durations.length - 1];
-  const slowTransitions = durations.filter(
-    (d) => d > SLOW_TRANSITION_THRESHOLD_MS,
-  ).length;
+  const slowTransitions = durations.filter((d) => d > SLOW_TRANSITION_THRESHOLD_MS).length;
 
   const routeDurations = new Map<string, number[]>();
   transitionHistory.forEach((t) => {

@@ -4,14 +4,14 @@
  * Mutation methods should call invalidation functions.
  */
 
-import { getCache, setCache, deletePattern, deleteCache } from "./cache";
-import { env } from "@cusown/config";
-import crypto from "crypto";
+import { getCache, setCache, deletePattern, deleteCache } from './cache';
+import { env } from '@cusown/config';
+import crypto from 'crypto';
 
-const isDev = env.nodeEnv === "development";
+const isDev = env.nodeEnv === 'development';
 
 function sanitizeKeyForLog(key: string): string {
-  return key.replace(/[\r\n]/g, "").slice(0, 200);
+  return key.replace(/[\r\n]/g, '').slice(0, 200);
 }
 
 /** TTL values for query caching (in seconds) */
@@ -34,11 +34,11 @@ export const QUERY_CACHE_TTL = {
 
 /** Query cache key prefixes */
 export const QUERY_CACHE_PREFIX = {
-  BOOKINGS: "query:bookings:",
-  SLOTS: "query:slots:",
-  BUSINESS: "query:business:",
-  ANALYTICS: "query:analytics:",
-  DASHBOARD: "query:dashboard:",
+  BOOKINGS: 'query:bookings:',
+  SLOTS: 'query:slots:',
+  BUSINESS: 'query:business:',
+  ANALYTICS: 'query:analytics:',
+  DASHBOARD: 'query:dashboard:',
 } as const;
 
 /**
@@ -46,7 +46,7 @@ export const QUERY_CACHE_PREFIX = {
  */
 function hashParams(params: unknown): string {
   const str = JSON.stringify(params);
-  return crypto.createHash("sha256").update(str).digest("hex").substring(0, 12);
+  return crypto.createHash('sha256').update(str).digest('hex').substring(0, 12);
 }
 
 /**
@@ -55,9 +55,9 @@ function hashParams(params: unknown): string {
 export function buildQueryCacheKey(
   prefix: string,
   name: string,
-  params?: Record<string, unknown>,
+  params?: Record<string, unknown>
 ): string {
-  const paramsHash = params ? hashParams(params) : "noparams";
+  const paramsHash = params ? hashParams(params) : 'noparams';
   return `${prefix}${name}:${paramsHash}`;
 }
 
@@ -70,11 +70,7 @@ export async function getQueryCache<T>(cacheKey: string): Promise<T | null> {
     return hit ? data : null;
   } catch (err) {
     if (isDev) {
-      console.error(
-        "[Query Cache] GET error for key:",
-        sanitizeKeyForLog(cacheKey),
-        err,
-      );
+      console.error('[Query Cache] GET error for key:', sanitizeKeyForLog(cacheKey), err);
     }
     return null;
   }
@@ -86,17 +82,13 @@ export async function getQueryCache<T>(cacheKey: string): Promise<T | null> {
 export async function setQueryCache<T>(
   cacheKey: string,
   data: T,
-  ttlSeconds: number,
+  ttlSeconds: number
 ): Promise<void> {
   try {
     await setCache(cacheKey, data, ttlSeconds);
   } catch (err) {
     if (isDev) {
-      console.error(
-        "[Query Cache] SET error for key:",
-        sanitizeKeyForLog(cacheKey),
-        err,
-      );
+      console.error('[Query Cache] SET error for key:', sanitizeKeyForLog(cacheKey), err);
     }
   }
 }
@@ -108,7 +100,7 @@ export async function setQueryCache<T>(
 export async function withQueryCache<T>(
   cacheKey: string,
   ttlSeconds: number,
-  queryFn: () => Promise<T>,
+  queryFn: () => Promise<T>
 ): Promise<T> {
   const cached = await getQueryCache<T>(cacheKey);
   if (cached !== null) {
@@ -124,9 +116,7 @@ export async function withQueryCache<T>(
  * Invalidate bookings cache for a business.
  * Call after: booking created, confirmed, cancelled, rejected.
  */
-export async function invalidateBookingsCache(
-  businessId: string,
-): Promise<void> {
+export async function invalidateBookingsCache(businessId: string): Promise<void> {
   try {
     await Promise.all([
       deletePattern(`${QUERY_CACHE_PREFIX.BOOKINGS}${businessId}:*`),
@@ -142,10 +132,7 @@ export async function invalidateBookingsCache(
  * Invalidate slots cache for a business.
  * Call after: slot reserved, booked, released.
  */
-export async function invalidateSlotsCache(
-  businessId: string,
-  date?: string,
-): Promise<void> {
+export async function invalidateSlotsCache(businessId: string, date?: string): Promise<void> {
   try {
     if (date) {
       await deletePattern(`${QUERY_CACHE_PREFIX.SLOTS}${businessId}:${date}:*`);
@@ -161,13 +148,9 @@ export async function invalidateSlotsCache(
  * Invalidate customer bookings cache.
  * Call after: booking created by customer.
  */
-export async function invalidateCustomerBookingsCache(
-  customerUserId: string,
-): Promise<void> {
+export async function invalidateCustomerBookingsCache(customerUserId: string): Promise<void> {
   try {
-    await deletePattern(
-      `${QUERY_CACHE_PREFIX.BOOKINGS}customer:${customerUserId}:*`,
-    );
+    await deletePattern(`${QUERY_CACHE_PREFIX.BOOKINGS}customer:${customerUserId}:*`);
   } catch {
     // Fail silently - cache invalidation errors shouldn't break operations
   }
@@ -177,9 +160,7 @@ export async function invalidateCustomerBookingsCache(
  * Invalidate business profile cache.
  * Call after: business profile updated.
  */
-export async function invalidateBusinessProfileCache(
-  businessId: string,
-): Promise<void> {
+export async function invalidateBusinessProfileCache(businessId: string): Promise<void> {
   try {
     await deletePattern(`${QUERY_CACHE_PREFIX.BUSINESS}${businessId}:*`);
   } catch {
@@ -191,9 +172,7 @@ export async function invalidateBusinessProfileCache(
  * Invalidate owner dashboard cache.
  * Call after: booking mutations affecting a business.
  */
-export async function invalidateOwnerDashboardCache(
-  ownerId: string,
-): Promise<void> {
+export async function invalidateOwnerDashboardCache(ownerId: string): Promise<void> {
   try {
     await Promise.all([
       deletePattern(`dashboard:owner:${ownerId}:*`),
@@ -227,7 +206,7 @@ export async function invalidateAfterBookingMutation(
   businessId: string,
   customerUserId?: string | null,
   slotDate?: string,
-  ownerUserId?: string | null,
+  ownerUserId?: string | null
 ): Promise<void> {
   const promises: Promise<void>[] = [invalidateBookingsCache(businessId)];
 

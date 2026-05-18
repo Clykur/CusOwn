@@ -19,8 +19,8 @@ const activeRequests = new Map<string, ActiveRequest>();
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function generateKey(url: string, options?: RequestInit): string {
-  const method = options?.method?.toUpperCase() || "GET";
-  const body = options?.body ? String(options.body) : "";
+  const method = options?.method?.toUpperCase() || 'GET';
+  const body = options?.body ? String(options.body) : '';
   return `${method}:${url}:${body}`;
 }
 
@@ -30,10 +30,7 @@ function generateKey(url: string, options?: RequestInit): string {
  * - cancelPrevious=true will abort the previous request for the same key
  * - debounceMs will delay the request and cancel if another comes in
  */
-export async function dedupFetch(
-  url: string,
-  options?: FetchOptions,
-): Promise<Response> {
+export async function dedupFetch(url: string, options?: FetchOptions): Promise<Response> {
   const key = options?.dedupKey || generateKey(url, options);
   const { debounceMs, cancelPrevious, ...fetchOptions } = options || {};
 
@@ -99,9 +96,7 @@ export async function dedupFetch(
 export function cancelRequests(keyPattern: string | RegExp): void {
   activeRequests.forEach((request, key) => {
     const matches =
-      typeof keyPattern === "string"
-        ? key.includes(keyPattern)
-        : keyPattern.test(key);
+      typeof keyPattern === 'string' ? key.includes(keyPattern) : keyPattern.test(key);
     if (matches) {
       request.controller.abort();
       activeRequests.delete(key);
@@ -140,10 +135,7 @@ export class RequestBatcher<T> {
   private batchFn: (ids: string[]) => Promise<Map<string, T>>;
   private delayMs: number;
 
-  constructor(
-    batchFn: (ids: string[]) => Promise<Map<string, T>>,
-    delayMs = 50,
-  ) {
+  constructor(batchFn: (ids: string[]) => Promise<Map<string, T>>, delayMs = 50) {
     this.batchFn = batchFn;
     this.delayMs = delayMs;
   }
@@ -194,10 +186,7 @@ export class RequestBatcher<T> {
 /**
  * Creates a memoized fetch function with TTL cache
  */
-export function createCachedFetch<T>(
-  fetcher: () => Promise<T>,
-  ttlMs: number,
-): () => Promise<T> {
+export function createCachedFetch<T>(fetcher: () => Promise<T>, ttlMs: number): () => Promise<T> {
   let cache: { data: T; timestamp: number } | null = null;
   let pendingPromise: Promise<T> | null = null;
 

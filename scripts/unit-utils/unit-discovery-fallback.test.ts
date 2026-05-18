@@ -4,8 +4,8 @@
  * Chain: from().select().order() then applyActiveBusinessFilters adds .eq().is(), then optional .eq(), then .range().
  */
 
-import { vi, describe, it, expect, beforeEach } from "vitest";
-import { queryDiscoveryFallback } from "@/lib/db/discovery-fallback";
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { queryDiscoveryFallback } from '@/lib/db/discovery-fallback';
 
 function makeChain(rangeResult: { data: unknown; error: unknown }) {
   const chain = {
@@ -18,14 +18,14 @@ function makeChain(rangeResult: { data: unknown; error: unknown }) {
   return chain;
 }
 
-describe("discovery-fallback", () => {
+describe('discovery-fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("queryDiscoveryFallback", () => {
-    it("returns empty array when query errors", async () => {
-      const chain = makeChain({ data: null, error: { message: "DB error" } });
+  describe('queryDiscoveryFallback', () => {
+    it('returns empty array when query errors', async () => {
+      const chain = makeChain({ data: null, error: { message: 'DB error' } });
       const supabase = {
         from: vi.fn().mockReturnValue(chain),
       } as unknown as Parameters<typeof queryDiscoveryFallback>[0];
@@ -42,17 +42,17 @@ describe("discovery-fallback", () => {
       expect(chain.range).toHaveBeenCalledWith(0, 9);
     });
 
-    it("maps rows to DiscoveryFallbackRow shape when query succeeds", async () => {
+    it('maps rows to DiscoveryFallbackRow shape when query succeeds', async () => {
       const rows = [
         {
-          id: "bus-1",
-          salon_name: "Salon A",
-          location: "Mumbai",
-          category: "salon",
+          id: 'bus-1',
+          salon_name: 'Salon A',
+          location: 'Mumbai',
+          category: 'salon',
           latitude: 19.0,
           longitude: 72.8,
-          area: "Andheri",
-          created_at: "2025-01-01T00:00:00Z",
+          area: 'Andheri',
+          created_at: '2025-01-01T00:00:00Z',
         },
       ];
       const chain = makeChain({ data: rows, error: null });
@@ -70,13 +70,13 @@ describe("discovery-fallback", () => {
       });
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
-        business_id: "bus-1",
-        salon_name: "Salon A",
-        location: "Mumbai",
-        category: "salon",
+        business_id: 'bus-1',
+        salon_name: 'Salon A',
+        location: 'Mumbai',
+        category: 'salon',
         latitude: 19.0,
         longitude: 72.8,
-        area: "Andheri",
+        area: 'Andheri',
         distance_km: null,
         score: 0,
         rating_avg: 0,
@@ -86,7 +86,7 @@ describe("discovery-fallback", () => {
       });
     });
 
-    it("returns empty array when data is null", async () => {
+    it('returns empty array when data is null', async () => {
       const chain = makeChain({ data: null, error: null });
       const supabase = {
         from: vi.fn().mockReturnValue(chain),

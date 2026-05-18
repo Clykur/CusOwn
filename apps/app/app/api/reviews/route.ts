@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   successResponse,
   errorResponse,
@@ -13,21 +13,21 @@ import {
   listReviewsByBusiness,
   isValidUUID,
   auditService,
-} from "@cusown/shared/server";
+} from '@cusown/shared/server';
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   VALIDATION,
   RATE_LIMIT_REVIEW_WINDOW_MS,
   RATE_LIMIT_REVIEW_MAX_PER_WINDOW,
-} from "@cusown/config";
+} from '@cusown/config';
 
 const reviewCreateRateLimit = enhancedRateLimit({
   maxRequests: RATE_LIMIT_REVIEW_MAX_PER_WINDOW,
   windowMs: RATE_LIMIT_REVIEW_WINDOW_MS,
   perIP: true,
   perUser: true,
-  keyPrefix: "review_create",
+  keyPrefix: 'review_create',
 });
 
 export async function POST(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const allowedFields = ["booking_id", "rating", "comment"] as const;
+    const allowedFields = ['booking_id', 'rating', 'comment'] as const;
     const filtered = filterFields(body, allowedFields);
 
     const bookingId = filtered.booking_id;
@@ -60,24 +60,23 @@ export async function POST(request: NextRequest) {
       return errorResponse(ERROR_MESSAGES.REVIEW_INVALID_RATING, 400);
     }
 
-    const comment =
-      filtered.comment != null ? String(filtered.comment).trim() : undefined;
+    const comment = filtered.comment != null ? String(filtered.comment).trim() : undefined;
     if (
       comment !== undefined &&
-      comment !== "" &&
+      comment !== '' &&
       !validateStringLength(comment, VALIDATION.REVIEW_COMMENT_MAX_LENGTH)
     ) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
     }
-    if (comment !== undefined && comment !== "" && containsProfanity(comment)) {
+    if (comment !== undefined && comment !== '' && containsProfanity(comment)) {
       return errorResponse(ERROR_MESSAGES.REVIEW_PROFANITY, 400);
     }
 
     const supabase = requireSupabaseAdmin();
     const { data: booking } = await supabase
-      .from("bookings")
-      .select("id, status, customer_user_id")
-      .eq("id", bookingId)
+      .from('bookings')
+      .select('id, status, customer_user_id')
+      .eq('id', bookingId)
       .single();
 
     if (!booking) {
@@ -101,19 +100,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Audit Log
-    await auditService.createAuditLog(user.id, "review_created", "review", {
+    await auditService.createAuditLog(user.id, 'review_created', 'review', {
       entityId: result.review_id as string,
       newData: { booking_id: bookingId, rating, comment },
       description: `Review created for booking ${bookingId}`,
     });
 
-    return successResponse(
-      { review_id: result.review_id },
-      SUCCESS_MESSAGES.REVIEW_CREATED,
-    );
+    return successResponse({ review_id: result.review_id }, SUCCESS_MESSAGES.REVIEW_CREATED);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }
@@ -121,15 +116,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const businessId = searchParams.get("business_id");
-    const page = Math.max(
-      1,
-      parseInt(searchParams.get("page") ?? "1", 10) || 1,
-    );
-    const limit = Math.max(
-      1,
-      Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10) || 20),
-    );
+    const businessId = searchParams.get('business_id');
+    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') ?? '20', 10) || 20));
 
     if (!businessId || !isValidUUID(businessId)) {
       return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
@@ -139,9 +128,9 @@ export async function GET(request: NextRequest) {
     const [result, bizRow, rating_counts] = await Promise.all([
       listReviewsByBusiness(businessId, page, limit),
       supabase
-        .from("businesses")
-        .select("rating_avg, review_count")
-        .eq("id", businessId)
+        .from('businesses')
+        .select('rating_avg, review_count')
+        .eq('id', businessId)
         .maybeSingle(),
       getReviewRatingCountsForBusiness(businessId),
     ]);
@@ -171,8 +160,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

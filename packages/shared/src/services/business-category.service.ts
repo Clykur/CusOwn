@@ -1,6 +1,6 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { cache } from "react";
-import { CACHE_TTL_STATIC_MS } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { cache } from 'react';
+import { CACHE_TTL_STATIC_MS } from '@cusown/config';
 
 export type BusinessCategoryItem = { value: string; label: string };
 
@@ -28,31 +28,29 @@ function setCategoriesInMemory(data: BusinessCategoryItem[]): void {
  * Returns active business categories (available services) for Business type dropdown.
  * Source of truth is DB table business_categories; in-memory TTL + React cache.
  */
-export const getBusinessCategories = cache(
-  async (): Promise<BusinessCategoryItem[]> => {
-    const fromMemory = getCategoriesFromMemory();
-    if (fromMemory) return fromMemory;
+export const getBusinessCategories = cache(async (): Promise<BusinessCategoryItem[]> => {
+  const fromMemory = getCategoriesFromMemory();
+  if (fromMemory) return fromMemory;
 
-    try {
-      const supabaseAdmin = requireSupabaseAdmin();
-      if (!supabaseAdmin) return [];
+  try {
+    const supabaseAdmin = requireSupabaseAdmin();
+    if (!supabaseAdmin) return [];
 
-      const { data, error } = await supabaseAdmin
-        .from("business_categories")
-        .select("value, label")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("label", { ascending: true });
+    const { data, error } = await supabaseAdmin
+      .from('business_categories')
+      .select('value, label')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('label', { ascending: true });
 
-      if (error || !data?.length) return [];
-      const list = data as BusinessCategoryItem[];
-      setCategoriesInMemory(list);
-      return list;
-    } catch {
-      return [];
-    }
-  },
-);
+    if (error || !data?.length) return [];
+    const list = data as BusinessCategoryItem[];
+    setCategoriesInMemory(list);
+    return list;
+  } catch {
+    return [];
+  }
+});
 
 /** Returns allowed category values only (for validation). */
 export async function getAllowedCategoryValues(): Promise<string[]> {

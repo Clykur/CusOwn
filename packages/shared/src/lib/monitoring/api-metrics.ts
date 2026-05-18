@@ -3,7 +3,7 @@
  * Wraps fetch calls to track performance metrics.
  */
 
-import { recordMetric } from "./performance";
+import { recordMetric } from './performance';
 
 interface ApiMetrics {
   endpoint: string;
@@ -32,9 +32,9 @@ export function recordApiMetric(metrics: ApiMetrics): void {
 
   recordMetric({
     name: key,
-    type: "api-latency",
+    type: 'api-latency',
     value: metrics.latency,
-    unit: "ms",
+    unit: 'ms',
     metadata: {
       status: metrics.status,
       cached: metrics.cached,
@@ -47,9 +47,9 @@ export function recordApiMetric(metrics: ApiMetrics): void {
   if (metrics.cacheHit !== undefined) {
     recordMetric({
       name: `cache:${key}`,
-      type: "cache",
+      type: 'cache',
       value: metrics.cacheHit ? 1 : 0,
-      unit: "count",
+      unit: 'count',
       metadata: { endpoint: metrics.endpoint },
     });
   }
@@ -96,20 +96,15 @@ export function getApiStats(endpoint?: string): {
 
 export async function monitoredFetch(
   input: RequestInfo | URL,
-  init?: RequestInit & { skipMonitoring?: boolean },
+  init?: RequestInit & { skipMonitoring?: boolean }
 ): Promise<Response> {
   if (init?.skipMonitoring) {
     return fetch(input, init);
   }
 
   const start = performance.now();
-  const url =
-    typeof input === "string"
-      ? input
-      : input instanceof URL
-        ? input.href
-        : input.url;
-  const method = init?.method || "GET";
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  const method = init?.method || 'GET';
 
   let endpoint = url;
   try {
@@ -123,13 +118,13 @@ export async function monitoredFetch(
     const response = await fetch(input, init);
     const latency = performance.now() - start;
 
-    const cacheControl = response.headers.get("cache-control");
-    const xCache = response.headers.get("x-cache");
-    const cached = cacheControl?.includes("max-age") || false;
-    const cacheHit = xCache?.toLowerCase().includes("hit") || undefined;
+    const cacheControl = response.headers.get('cache-control');
+    const xCache = response.headers.get('x-cache');
+    const cached = cacheControl?.includes('max-age') || false;
+    const cacheHit = xCache?.toLowerCase().includes('hit') || undefined;
 
     let size: number | undefined;
-    const contentLength = response.headers.get("content-length");
+    const contentLength = response.headers.get('content-length');
     if (contentLength) {
       size = parseInt(contentLength, 10);
     }
@@ -154,7 +149,7 @@ export async function monitoredFetch(
       latency,
       status: 0,
       cached: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
 
     throw error;

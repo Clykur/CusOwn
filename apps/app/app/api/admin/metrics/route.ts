@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   adminService,
   requireAdmin,
@@ -10,17 +10,15 @@ import {
   API_CACHE_TTL,
   dedupe,
   hashToken,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/admin/metrics";
+const ROUTE = 'GET /api/admin/metrics';
 
 function getTokenHash(request: NextRequest): string {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ")
-    ? authHeader.substring(7).trim()
-    : "";
-  return token ? hashToken(token) : "admin";
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
+  return token ? hashToken(token) : 'admin';
 }
 
 export async function GET(request: NextRequest) {
@@ -29,21 +27,16 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const scope = getTokenHash(request);
-    const cacheKey = buildApiCacheKey("GET", "/api/admin/metrics", {}, scope);
+    const cacheKey = buildApiCacheKey('GET', '/api/admin/metrics', {}, scope);
     const cached =
-      getCachedApiResponse<
-        Awaited<ReturnType<typeof adminService.getPlatformMetrics>>
-      >(cacheKey);
+      getCachedApiResponse<Awaited<ReturnType<typeof adminService.getPlatformMetrics>>>(cacheKey);
     if (cached) return successResponse(cached);
 
-    const metrics = await dedupe(cacheKey, () =>
-      adminService.getPlatformMetrics(),
-    );
+    const metrics = await dedupe(cacheKey, () => adminService.getPlatformMetrics());
     setCachedApiResponse(cacheKey, metrics, API_CACHE_TTL.DEFAULT);
     return successResponse(metrics);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

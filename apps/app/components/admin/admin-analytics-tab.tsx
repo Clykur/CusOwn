@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useAdminSession } from "@/components/admin/admin-session-context";
+import { useState, useEffect, useCallback } from 'react';
+import { useAdminSession } from '@/components/admin/admin-session-context';
 import {
   getAdminCached,
   getAdminCachedStale,
   setAdminCache,
   getAdminAnalyticsCacheKey,
-} from "@/components/admin/admin-cache";
-import { adminFetch } from "@cusown/shared";
-import DateFilter from "@/components/owner/date-filter";
-import { Line, Bar } from "react-chartjs-2";
+} from '@/components/admin/admin-cache';
+import { adminFetch } from '@cusown/shared';
+import DateFilter from '@/components/owner/date-filter';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,14 +22,14 @@ import {
   Tooltip,
   Legend,
   Filler,
-} from "chart.js";
+} from 'chart.js';
 import type {
   AdminRevenueMetrics,
   AdminBookingFunnel,
   AdminBusinessHealthItem,
   AdminSystemMetrics,
-} from "@cusown/shared";
-import { AdminAnalyticsSkeleton } from "@/components/ui/skeleton";
+} from '@cusown/shared';
+import { AdminAnalyticsSkeleton } from '@/components/ui/skeleton';
 
 ChartJS.register(
   CategoryScale,
@@ -40,13 +40,13 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler,
+  Filler
 );
 
 const DEFAULT_DAYS = 30;
 
 function toDateOnly(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return d.toISOString().split('T')[0];
 }
 
 function formatCurrency(n: number): string {
@@ -56,7 +56,7 @@ function formatCurrency(n: number): string {
 }
 
 function formatNumber(n: number): string {
-  return new Intl.NumberFormat("en-IN").format(n);
+  return new Intl.NumberFormat('en-IN').format(n);
 }
 
 function formatPercent(n: number): string {
@@ -64,19 +64,14 @@ function formatPercent(n: number): string {
 }
 
 const CHART_COLORS = {
-  primary: "rgb(16, 185, 129)",
-  primaryLight: "rgba(16, 185, 129, 0.12)",
-  secondary: "rgb(15, 23, 42)",
-  secondaryLight: "rgba(15, 23, 42, 0.08)",
-  success: "rgb(34, 197, 94)",
-  warning: "rgb(234, 179, 8)",
-  danger: "rgb(239, 68, 68)",
-  neutral: [
-    "rgb(15, 23, 42)",
-    "rgb(71, 85, 105)",
-    "rgb(148, 163, 184)",
-    "rgb(203, 213, 225)",
-  ],
+  primary: 'rgb(16, 185, 129)',
+  primaryLight: 'rgba(16, 185, 129, 0.12)',
+  secondary: 'rgb(15, 23, 42)',
+  secondaryLight: 'rgba(15, 23, 42, 0.08)',
+  success: 'rgb(34, 197, 94)',
+  warning: 'rgb(234, 179, 8)',
+  danger: 'rgb(239, 68, 68)',
+  neutral: ['rgb(15, 23, 42)', 'rgb(71, 85, 105)', 'rgb(148, 163, 184)', 'rgb(203, 213, 225)'],
 };
 
 const chartDefaults = {
@@ -84,11 +79,11 @@ const chartDefaults = {
   maintainAspectRatio: true,
   plugins: {
     legend: {
-      position: "top" as const,
+      position: 'top' as const,
       labels: { usePointStyle: true, padding: 16 },
     },
     tooltip: {
-      backgroundColor: "rgb(15, 23, 42)",
+      backgroundColor: 'rgb(15, 23, 42)',
       padding: 12,
       titleFont: { size: 13 },
       bodyFont: { size: 12 },
@@ -101,7 +96,7 @@ const chartDefaults = {
     },
     y: {
       beginAtZero: true,
-      grid: { color: "rgba(0,0,0,0.06)" },
+      grid: { color: 'rgba(0,0,0,0.06)' },
       ticks: { font: { size: 11 } },
     },
   },
@@ -137,7 +132,7 @@ export default function AdminAnalyticsTab() {
       startDate: `${startDate}T00:00:00.000Z`,
       endDate: `${endDate}T23:59:59.999Z`,
     });
-    const opts = { token, credentials: "include" as RequestCredentials };
+    const opts = { token, credentials: 'include' as RequestCredentials };
     const cacheKey = getAdminAnalyticsCacheKey(startDate, endDate);
 
     const revP = adminFetch(`/api/admin/revenue-metrics?${params}`, opts)
@@ -154,17 +149,14 @@ export default function AdminAnalyticsTab() {
         else setFunnel(null);
         return data;
       });
-    const healthP = adminFetch(
-      `/api/admin/business-health?${params}&limit=20`,
-      opts,
-    )
+    const healthP = adminFetch(`/api/admin/business-health?${params}&limit=20`, opts)
       .then((r) => r.json())
       .then((data) => {
         if (data?.success) setHealth(data.data);
         else setHealth([]);
         return data;
       });
-    const sysP = adminFetch("/api/admin/system-metrics", opts)
+    const sysP = adminFetch('/api/admin/system-metrics', opts)
       .then((r) => r.json())
       .then((data) => {
         if (data?.success) setSystem(data.data);
@@ -175,30 +167,19 @@ export default function AdminAnalyticsTab() {
     Promise.allSettled([revP, funP, healthP, sysP])
       .then(([rev, fun, healthRes, sys]) => {
         const payload: AnalyticsCachePayload = {
-          revenue:
-            rev.status === "fulfilled" && rev.value?.success
-              ? rev.value.data
-              : null,
-          funnel:
-            fun.status === "fulfilled" && fun.value?.success
-              ? fun.value.data
-              : null,
+          revenue: rev.status === 'fulfilled' && rev.value?.success ? rev.value.data : null,
+          funnel: fun.status === 'fulfilled' && fun.value?.success ? fun.value.data : null,
           health:
-            healthRes.status === "fulfilled" && healthRes.value?.success
+            healthRes.status === 'fulfilled' && healthRes.value?.success
               ? healthRes.value.data
               : null,
-          system:
-            sys.status === "fulfilled" && sys.value?.success
-              ? sys.value.data
-              : null,
+          system: sys.status === 'fulfilled' && sys.value?.success ? sys.value.data : null,
         };
         setAdminCache(cacheKey, payload);
         setLoading(false);
       })
       .catch((err) => {
-        setError(
-          err instanceof Error ? err.message : "Failed to load analytics",
-        );
+        setError(err instanceof Error ? err.message : 'Failed to load analytics');
         setLoading(false);
       });
   }, [startDate, endDate, token]);
@@ -240,9 +221,9 @@ export default function AdminAnalyticsTab() {
     if (!res.ok) return;
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "bookings-export.csv";
+    a.download = 'bookings-export.csv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -258,9 +239,7 @@ export default function AdminAnalyticsTab() {
       {/* Header: Title + Date range + Export */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
-            Analytics
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Analytics</h2>
           <p className="text-sm text-slate-500 mt-0.5">
             Performance and revenue metrics for the selected period
           </p>
@@ -336,33 +315,17 @@ export default function AdminAnalyticsTab() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">
-              Revenue & payments
-            </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Revenue over time and payment outcomes
-            </p>
+            <h3 className="text-lg font-semibold text-slate-900">Revenue & payments</h3>
+            <p className="text-sm text-slate-500 mt-0.5">Revenue over time and payment outcomes</p>
           </div>
         </div>
         {revenue ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-              <MetricCard
-                label="Total revenue"
-                value={formatCurrency(revenue.totalRevenue)}
-              />
-              <MetricCard
-                label="Today"
-                value={formatCurrency(revenue.revenueToday)}
-              />
-              <MetricCard
-                label="This week"
-                value={formatCurrency(revenue.revenueWeek)}
-              />
-              <MetricCard
-                label="This month"
-                value={formatCurrency(revenue.revenueMonth)}
-              />
+              <MetricCard label="Total revenue" value={formatCurrency(revenue.totalRevenue)} />
+              <MetricCard label="Today" value={formatCurrency(revenue.revenueToday)} />
+              <MetricCard label="This week" value={formatCurrency(revenue.revenueWeek)} />
+              <MetricCard label="This month" value={formatCurrency(revenue.revenueMonth)} />
               <MetricCard
                 label="Avg. booking value"
                 value={formatCurrency(revenue.avgBookingValue)}
@@ -379,9 +342,7 @@ export default function AdminAnalyticsTab() {
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-                <h4 className="text-sm font-semibold text-slate-700 mb-4">
-                  Revenue trend
-                </h4>
+                <h4 className="text-sm font-semibold text-slate-700 mb-4">Revenue trend</h4>
                 {revenue.revenueTrend.length > 0 ? (
                   <div className="h-64">
                     <Line
@@ -389,7 +350,7 @@ export default function AdminAnalyticsTab() {
                         labels: revenue.revenueTrend.map((t) => t.date),
                         datasets: [
                           {
-                            label: "Revenue (₹)",
+                            label: 'Revenue (₹)',
                             data: revenue.revenueTrend.map((t) => t.revenue),
                             borderColor: CHART_COLORS.primary,
                             backgroundColor: CHART_COLORS.primaryLight,
@@ -407,8 +368,7 @@ export default function AdminAnalyticsTab() {
                           y: {
                             ...chartDefaults.scales.y,
                             ticks: {
-                              callback: (v) =>
-                                typeof v === "number" ? `₹${v}` : v,
+                              callback: (v) => (typeof v === 'number' ? `₹${v}` : v),
                             },
                           },
                         },
@@ -420,22 +380,16 @@ export default function AdminAnalyticsTab() {
                 )}
               </div>
               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-                <h4 className="text-sm font-semibold text-slate-700 mb-4">
-                  Payment status
-                </h4>
+                <h4 className="text-sm font-semibold text-slate-700 mb-4">Payment status</h4>
                 {revenue.paymentStatusDistribution.length > 0 ? (
                   <div className="h-64">
                     <Bar
                       data={{
-                        labels: revenue.paymentStatusDistribution.map(
-                          (s) => s.status,
-                        ),
+                        labels: revenue.paymentStatusDistribution.map((s) => s.status),
                         datasets: [
                           {
-                            label: "Count",
-                            data: revenue.paymentStatusDistribution.map(
-                              (s) => s.count,
-                            ),
+                            label: 'Count',
+                            data: revenue.paymentStatusDistribution.map((s) => s.count),
                             backgroundColor: CHART_COLORS.neutral,
                             borderRadius: 6,
                           },
@@ -458,11 +412,11 @@ export default function AdminAnalyticsTab() {
                   <Bar
                     data={{
                       labels: revenue.revenueByBusiness.map(
-                        (b) => b.name || b.business_id.slice(0, 8),
+                        (b) => b.name || b.business_id.slice(0, 8)
                       ),
                       datasets: [
                         {
-                          label: "Revenue (₹)",
+                          label: 'Revenue (₹)',
                           data: revenue.revenueByBusiness.map((b) => b.revenue),
                           backgroundColor: CHART_COLORS.primary,
                           borderRadius: 6,
@@ -471,7 +425,7 @@ export default function AdminAnalyticsTab() {
                     }}
                     options={{
                       ...chartDefaults,
-                      indexAxis: "y" as const,
+                      indexAxis: 'y' as const,
                       scales: {
                         ...chartDefaults.scales,
                         x: { ...chartDefaults.scales.x, beginAtZero: true },
@@ -492,46 +446,24 @@ export default function AdminAnalyticsTab() {
       {/* Booking funnel */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Booking funnel
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900">Booking funnel</h3>
           <p className="text-sm text-slate-500 mt-0.5">
             From request to confirmation — conversion and response metrics
           </p>
         </div>
         {funnel ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-            <MetricCard
-              label="Attempts"
-              value={formatNumber(funnel.attempts)}
-            />
-            <MetricCard
-              label="Confirmed"
-              value={formatNumber(funnel.confirmed)}
-              highlight
-            />
-            <MetricCard
-              label="Rejected"
-              value={formatNumber(funnel.rejected)}
-            />
-            <MetricCard
-              label="Cancelled"
-              value={formatNumber(funnel.cancelled)}
-            />
+            <MetricCard label="Attempts" value={formatNumber(funnel.attempts)} />
+            <MetricCard label="Confirmed" value={formatNumber(funnel.confirmed)} highlight />
+            <MetricCard label="Rejected" value={formatNumber(funnel.rejected)} />
+            <MetricCard label="Cancelled" value={formatNumber(funnel.cancelled)} />
             <MetricCard label="Expired" value={formatNumber(funnel.expired)} />
-            <MetricCard
-              label="Conversion"
-              value={formatPercent(funnel.conversionRate)}
-              highlight
-            />
+            <MetricCard label="Conversion" value={formatPercent(funnel.conversionRate)} highlight />
             <MetricCard
               label="Avg. response (min)"
               value={funnel.avgTimeToAcceptMinutes.toFixed(1)}
             />
-            <MetricCard
-              label="Auto-expired"
-              value={formatPercent(funnel.autoExpiredPct)}
-            />
+            <MetricCard label="Auto-expired" value={formatPercent(funnel.autoExpiredPct)} />
           </div>
         ) : (
           <EmptyState message="Funnel data unavailable" />
@@ -541,9 +473,7 @@ export default function AdminAnalyticsTab() {
       {/* Business health */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Business health
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900">Business health</h3>
           <p className="text-sm text-slate-500 mt-0.5">
             Performance score by business (lowest first — focus on improvement)
           </p>
@@ -578,10 +508,7 @@ export default function AdminAnalyticsTab() {
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {health.map((row) => (
-                  <tr
-                    key={row.business_id}
-                    className="hover:bg-slate-50/80 transition-colors"
-                  >
+                  <tr key={row.business_id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-4 text-sm font-medium text-slate-900">
                       {row.name || row.business_id.slice(0, 8)}
                     </td>
@@ -616,48 +543,29 @@ export default function AdminAnalyticsTab() {
       {/* System / technical */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">
-            System & reliability
-          </h3>
-          <p className="text-sm text-slate-500 mt-0.5">
-            API and background job health
-          </p>
+          <h3 className="text-lg font-semibold text-slate-900">System & reliability</h3>
+          <p className="text-sm text-slate-500 mt-0.5">API and background job health</p>
         </div>
         {system ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <MetricCard
-              label="Avg. response (ms)"
-              value={formatNumber(system.avgResponseTimeMs)}
-            />
-            <MetricCard
-              label="P95 latency (ms)"
-              value={formatNumber(system.p95LatencyMs)}
-            />
-            <MetricCard
-              label="Rate limit (429)"
-              value={formatNumber(system.rateLimitHits429)}
-            />
-            <MetricCard
-              label="Server errors (5xx)"
-              value={formatNumber(system.failedCalls5xx)}
-            />
+            <MetricCard label="Avg. response (ms)" value={formatNumber(system.avgResponseTimeMs)} />
+            <MetricCard label="P95 latency (ms)" value={formatNumber(system.p95LatencyMs)} />
+            <MetricCard label="Rate limit (429)" value={formatNumber(system.rateLimitHits429)} />
+            <MetricCard label="Server errors (5xx)" value={formatNumber(system.failedCalls5xx)} />
             <MetricCard
               label="Cron last run"
               value={
                 system.cronExpireBookingsLastRun
-                  ? new Date(system.cronExpireBookingsLastRun).toLocaleString(
-                      undefined,
-                      {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      },
-                    )
-                  : "—"
+                  ? new Date(system.cronExpireBookingsLastRun).toLocaleString(undefined, {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })
+                  : '—'
               }
             />
             <MetricCard
               label="Cron status"
-              value={system.cronExpireBookingsOk ? "OK" : "Stale"}
+              value={system.cronExpireBookingsOk ? 'OK' : 'Stale'}
               highlight={system.cronExpireBookingsOk}
             />
           </div>
@@ -669,23 +577,11 @@ export default function AdminAnalyticsTab() {
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  subtext,
-}: {
-  label: string;
-  value: string;
-  subtext: string;
-}) {
+function KpiCard({ label, value, subtext }: { label: string; value: string; subtext: string }) {
   return (
     <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-        {value}
-      </p>
+      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
       <p className="mt-1 text-xs text-slate-400">{subtext}</p>
     </div>
   );
@@ -703,14 +599,12 @@ function MetricCard({
   return (
     <div
       className={`rounded-xl border p-4 ${
-        highlight
-          ? "border-emerald-200 bg-emerald-50/60"
-          : "border-slate-200 bg-slate-50/50"
+        highlight ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50/50'
       }`}
     >
       <p className="text-xs font-medium text-slate-500 truncate">{label}</p>
       <p
-        className={`mt-1 text-lg font-semibold truncate ${highlight ? "text-emerald-800" : "text-slate-900"}`}
+        className={`mt-1 text-lg font-semibold truncate ${highlight ? 'text-emerald-800' : 'text-slate-900'}`}
         title={value}
       >
         {value}
@@ -721,8 +615,7 @@ function MetricCard({
 
 function HealthScoreBar({ score }: { score: number }) {
   const pct = Math.min(100, Math.max(0, score));
-  const color =
-    pct >= 70 ? "bg-emerald-500" : pct >= 40 ? "bg-amber-500" : "bg-red-500";
+  const color = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500';
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
       <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
@@ -731,9 +624,7 @@ function HealthScoreBar({ score }: { score: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs font-medium text-slate-700 w-8">
-        {pct.toFixed(0)}
-      </span>
+      <span className="text-xs font-medium text-slate-700 w-8">{pct.toFixed(0)}</span>
     </div>
   );
 }

@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { memo, useCallback, useId } from "react";
-import { VALIDATION } from "@cusown/config";
+import { memo, useCallback, useId } from 'react';
+import { VALIDATION } from '@cusown/config';
 
 const MAX_STARS = VALIDATION.REVIEW_RATING_MAX;
 
 type StarRatingProps =
-  | { value: number; readonly: true; size?: "sm" | "md" }
+  | { value: number; readonly: true; size?: 'sm' | 'md' }
   | {
       value: number;
       readonly: false;
-      size?: "sm" | "md";
+      size?: 'sm' | 'md';
       onChange: (rating: number) => void;
       disabled?: boolean;
     };
@@ -22,10 +22,10 @@ const StarSVG = memo(function StarSVG({
   gradientId,
 }: {
   fillPercent: number;
-  size: "sm" | "md";
+  size: 'sm' | 'md';
   gradientId: string; // unique per star, passed from parent
 }) {
-  const dimension = size === "sm" ? 20 : 28;
+  const dimension = size === 'sm' ? 20 : 28;
 
   return (
     <svg
@@ -58,7 +58,7 @@ function getStarFillPercent(value: number, starIndex: number): number {
 interface InteractiveStarButtonProps {
   starValue: number;
   fillPercent: number;
-  size: "sm" | "md";
+  size: 'sm' | 'md';
   disabled?: boolean;
   onChange: (rating: number) => void;
   gradientId: string;
@@ -72,19 +72,16 @@ const InteractiveStarButton = memo(function InteractiveStarButton({
   onChange,
   gradientId,
 }: InteractiveStarButtonProps) {
-  const handleClick = useCallback(
-    () => onChange(starValue),
-    [onChange, starValue],
-  );
+  const handleClick = useCallback(() => onChange(starValue), [onChange, starValue]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         onChange(starValue);
       }
     },
-    [onChange, starValue],
+    [onChange, starValue]
   );
 
   return (
@@ -94,7 +91,7 @@ const InteractiveStarButton = memo(function InteractiveStarButton({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className="p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
-      aria-label={`${starValue} star${starValue === 1 ? "" : "s"}`}
+      aria-label={`${starValue} star${starValue === 1 ? '' : 's'}`}
     >
       <StarSVG fillPercent={fillPercent} size={size} gradientId={gradientId} />
     </button>
@@ -102,18 +99,14 @@ const InteractiveStarButton = memo(function InteractiveStarButton({
 });
 
 function StarRatingComponent(props: StarRatingProps) {
-  const { value, size = "md" } = props;
-  const isReadonly = "readonly" in props && props.readonly;
+  const { value, size = 'md' } = props;
+  const isReadonly = 'readonly' in props && props.readonly;
   // useId gives a stable, unique ID per component instance — safe across SSR + client
   const instanceId = useId();
 
   if (isReadonly) {
     return (
-      <div
-        className="flex gap-0.5"
-        role="img"
-        aria-label={`Rating: ${value} out of ${MAX_STARS}`}
-      >
+      <div className="flex gap-0.5" role="img" aria-label={`Rating: ${value} out of ${MAX_STARS}`}>
         {Array.from({ length: MAX_STARS }, (_, i) => (
           <StarSVG
             key={i}
@@ -128,11 +121,7 @@ function StarRatingComponent(props: StarRatingProps) {
 
   const { onChange, disabled } = props;
   return (
-    <div
-      className="flex gap-0.5"
-      role="group"
-      aria-label="Rate from 1 to 5 stars"
-    >
+    <div className="flex gap-0.5" role="group" aria-label="Rate from 1 to 5 stars">
       {Array.from({ length: MAX_STARS }, (_, i) => (
         <InteractiveStarButton
           key={i}

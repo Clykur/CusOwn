@@ -3,20 +3,16 @@
  * Persist all resolved locations; treat as fresh if < 7 days.
  */
 
-import { NextRequest } from "next/server";
-import { getClientIp } from "../utils/security.server";
-import { requireSupabaseAdmin } from "../supabase/server";
+import { NextRequest } from 'next/server';
+import { getClientIp } from '../utils/security.server';
+import { requireSupabaseAdmin } from '../supabase/server';
 import {
   LOCATION_FRESH_DAYS,
   LOCATION_COOKIE_NAME,
   LOCATION_COOKIE_MAX_AGE_SECONDS,
-} from "@cusown/config";
-import {
-  signLocationCookie,
-  verifyLocationCookie,
-  type LocationSource,
-} from "./location-cookie";
-import { ipGeocode } from "./provider";
+} from '@cusown/config';
+import { signLocationCookie, verifyLocationCookie, type LocationSource } from './location-cookie';
+import { ipGeocode } from './provider';
 
 export interface ResolvedLocation {
   city?: string;
@@ -31,10 +27,7 @@ export interface ResolvedLocation {
 const FRESH_MS = LOCATION_FRESH_DAYS * 24 * 60 * 60 * 1000;
 
 function isFresh(detectedAt: Date | string): boolean {
-  const t =
-    typeof detectedAt === "string"
-      ? new Date(detectedAt).getTime()
-      : detectedAt.getTime();
+  const t = typeof detectedAt === 'string' ? new Date(detectedAt).getTime() : detectedAt.getTime();
   return Date.now() - t < FRESH_MS;
 }
 
@@ -58,12 +51,10 @@ async function getFromDb(userId: string): Promise<ResolvedLocation | null> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (!supabaseAdmin) return null;
   const { data, error } = await supabaseAdmin
-    .from("user_locations")
-    .select(
-      "city, region, country_code, latitude, longitude, source, detected_at",
-    )
-    .eq("user_id", userId)
-    .order("detected_at", { ascending: false })
+    .from('user_locations')
+    .select('city, region, country_code, latitude, longitude, source, detected_at')
+    .eq('user_id', userId)
+    .order('detected_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error || !data) return null;
@@ -75,7 +66,7 @@ async function getFromDb(userId: string): Promise<ResolvedLocation | null> {
     country_code: data.country_code ?? undefined,
     latitude: data.latitude ?? undefined,
     longitude: data.longitude ?? undefined,
-    source: (data.source as LocationSource) ?? "ip",
+    source: (data.source as LocationSource) ?? 'ip',
     detected_at: detectedAt,
   };
 }
@@ -86,7 +77,7 @@ async function getFromDb(userId: string): Promise<ResolvedLocation | null> {
  */
 export async function getLocation(
   request: NextRequest,
-  userId?: string | null,
+  userId?: string | null
 ): Promise<{
   location: ResolvedLocation | null;
   setCookieHeader?: string;
@@ -111,19 +102,19 @@ export async function getLocation(
     country_code: fromProvider.countryCode,
     latitude: fromProvider.latitude,
     longitude: fromProvider.longitude,
-    source: "ip",
+    source: 'ip',
   };
 
   const supabaseAdmin = requireSupabaseAdmin();
   if (userId && supabaseAdmin) {
-    await supabaseAdmin.from("user_locations").insert({
+    await supabaseAdmin.from('user_locations').insert({
       user_id: userId,
       city: resolved.city ?? null,
       region: resolved.region ?? null,
       country_code: resolved.country_code ?? null,
       latitude: resolved.latitude ?? null,
       longitude: resolved.longitude ?? null,
-      source: "ip",
+      source: 'ip',
       detected_at: new Date().toISOString(),
     });
   }
@@ -134,7 +125,7 @@ export async function getLocation(
     country_code: resolved.country_code,
     latitude: resolved.latitude,
     longitude: resolved.longitude,
-    source: "ip",
+    source: 'ip',
   });
   const setCookieHeader = `${LOCATION_COOKIE_NAME}=${cookieValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${LOCATION_COOKIE_MAX_AGE_SECONDS}`;
 
@@ -153,11 +144,11 @@ export async function setLocation(
     country_code?: string;
     source: LocationSource;
   },
-  userId?: string | null,
+  userId?: string | null
 ): Promise<{ setCookieHeader: string }> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (userId && supabaseAdmin) {
-    await supabaseAdmin.from("user_locations").insert({
+    await supabaseAdmin.from('user_locations').insert({
       user_id: userId,
       city: payload.city ?? null,
       region: payload.region ?? null,

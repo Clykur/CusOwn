@@ -1,6 +1,6 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { cache } from "react";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { cache } from 'react';
 
 export type Service = {
   id: string;
@@ -15,22 +15,16 @@ export type Service = {
 };
 
 export class ServiceService {
-  async getServicesByBusiness(
-    businessId: string,
-    activeOnly = true,
-  ): Promise<Service[]> {
+  async getServicesByBusiness(businessId: string, activeOnly = true): Promise<Service[]> {
     const supabaseAdmin = requireSupabaseAdmin();
 
-    let query = supabaseAdmin
-      .from("services")
-      .select("*")
-      .eq("business_id", businessId);
+    let query = supabaseAdmin.from('services').select('*').eq('business_id', businessId);
 
     if (activeOnly) {
-      query = query.eq("is_active", true);
+      query = query.eq('is_active', true);
     }
 
-    const { data, error } = await query.order("name", { ascending: true });
+    const { data, error } = await query.order('name', { ascending: true });
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -43,13 +37,13 @@ export class ServiceService {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("services")
-      .select("*")
-      .eq("id", serviceId)
+      .from('services')
+      .select('*')
+      .eq('id', serviceId)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
@@ -58,35 +52,29 @@ export class ServiceService {
     return data;
   });
 
-  async validateServices(
-    serviceIds: string[],
-    businessId: string,
-  ): Promise<Service[]> {
+  async validateServices(serviceIds: string[], businessId: string): Promise<Service[]> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("services")
-      .select("*")
-      .in("id", serviceIds)
-      .eq("business_id", businessId)
-      .eq("is_active", true);
+      .from('services')
+      .select('*')
+      .in('id', serviceIds)
+      .eq('business_id', businessId)
+      .eq('is_active', true);
 
     if (error) {
       throw new Error(error.message || ERROR_MESSAGES.DATABASE_ERROR);
     }
 
     if (!data || data.length !== serviceIds.length) {
-      throw new Error("Invalid or inactive service");
+      throw new Error('Invalid or inactive service');
     }
 
     return data;
   }
 
   async calculateTotalDuration(services: Service[]): Promise<number> {
-    return services.reduce(
-      (total, service) => total + service.duration_minutes,
-      0,
-    );
+    return services.reduce((total, service) => total + service.duration_minutes, 0);
   }
 
   async calculateTotalPrice(services: Service[]): Promise<number> {
@@ -103,7 +91,7 @@ export class ServiceService {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data: service, error } = await supabaseAdmin
-      .from("services")
+      .from('services')
       .insert({
         ...data,
         is_active: data.is_active ?? true,
@@ -125,14 +113,14 @@ export class ServiceService {
       duration_minutes: number;
       price_cents: number;
       is_active: boolean;
-    }>,
+    }>
   ): Promise<Service> {
     const supabaseAdmin = requireSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
-      .from("services")
+      .from('services')
       .update(updates)
-      .eq("id", serviceId)
+      .eq('id', serviceId)
       .select()
       .single();
 

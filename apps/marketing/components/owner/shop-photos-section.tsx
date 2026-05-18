@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import Image from "next/image";
+import { memo } from 'react';
+import Image from 'next/image';
 
 interface ShopPhoto {
   id: string;
@@ -17,7 +17,7 @@ interface ShopPhotosSectionProps {
   deletingPhotoIds: Set<string>;
   uploadQueue: {
     file: File;
-    status: "pending" | "uploading" | "success" | "error";
+    status: 'pending' | 'uploading' | 'success' | 'error';
   }[];
   onFileSelect: (files: File[]) => void;
   onRemoveSelectedFile: (index: number) => void;
@@ -40,9 +40,7 @@ function ShopPhotosSectionComponent({
 }: ShopPhotosSectionProps) {
   return (
     <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6">
-      <h2 className="mb-1 text-base font-semibold text-slate-900 md:text-lg">
-        Shop Photos
-      </h2>
+      <h2 className="mb-1 text-base font-semibold text-slate-900 md:text-lg">Shop Photos</h2>
       <p className="mb-4 text-xs text-slate-500 md:text-sm">
         Show customers your space. Sharp, well-lit photos work best.
       </p>
@@ -66,12 +64,8 @@ function ShopPhotosSectionComponent({
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">
-              Upload shop photos
-            </h3>
-            <p className="text-[11px] text-slate-500 md:text-xs">
-              Choose files, then tap Upload
-            </p>
+            <h3 className="text-sm font-semibold text-slate-900">Upload shop photos</h3>
+            <p className="text-[11px] text-slate-500 md:text-xs">Choose files, then tap Upload</p>
           </div>
         </div>
 
@@ -91,8 +85,8 @@ function ShopPhotosSectionComponent({
             />
             <span className="truncate text-xs font-medium text-slate-700 sm:text-sm">
               {selectedFiles.length > 0
-                ? `${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"} selected`
-                : "No file chosen"}
+                ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} selected`
+                : 'No file chosen'}
             </span>
           </label>
           <button
@@ -107,7 +101,7 @@ function ShopPhotosSectionComponent({
                 Uploading…
               </>
             ) : (
-              "Upload"
+              'Upload'
             )}
           </button>
         </div>
@@ -157,13 +151,13 @@ function ShopPhotosSectionComponent({
                     </button>
                   </div>
                   <div className="absolute bottom-1.5 left-1.5 rounded-md border border-slate-200/80 bg-white/95 px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-sm">
-                    {uploadQueue[idx]?.status === "uploading"
-                      ? "Uploading…"
-                      : uploadQueue[idx]?.status === "success"
-                        ? "Uploaded"
-                        : uploadQueue[idx]?.status === "error"
-                          ? "Error"
-                          : "Pending"}
+                    {uploadQueue[idx]?.status === 'uploading'
+                      ? 'Uploading…'
+                      : uploadQueue[idx]?.status === 'success'
+                        ? 'Uploaded'
+                        : uploadQueue[idx]?.status === 'error'
+                          ? 'Error'
+                          : 'Pending'}
                   </div>
                 </div>
               );
@@ -209,9 +203,7 @@ function ShopPhotosSectionComponent({
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-slate-700">
-            No shop photos yet
-          </p>
+          <p className="text-sm font-medium text-slate-700">No shop photos yet</p>
           <p className="mt-1 max-w-xs mx-auto text-xs leading-relaxed text-slate-500">
             Add images above so customers can see your salon before they book.
           </p>
@@ -241,12 +233,7 @@ function ShopPhotosSectionComponent({
                 {deletingPhotoIds.has(photo.id) ? (
                   <span className="block h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
                 ) : (
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

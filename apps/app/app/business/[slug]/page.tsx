@@ -1,5 +1,5 @@
-"use client";
-import BusinessProfile from "@/components/salon/BusinessProfile";
+'use client';
+import BusinessProfile from '@/components/salon/BusinessProfile';
 
 export default function BusinessViewPage() {
   return <BusinessProfile />;

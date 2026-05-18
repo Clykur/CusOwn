@@ -11,13 +11,13 @@ interface CachedSession {
 const SESSION_CACHE_TTL = 30000; // 30 seconds
 
 let sessionCache: CachedSession | null = null;
-let pendingSessionPromise: Promise<CachedSession["user"]> | null = null;
+let pendingSessionPromise: Promise<CachedSession['user']> | null = null;
 
 /**
  * Get cached session or fetch if stale/missing
  * Deduplicates concurrent session requests
  */
-export async function getCachedSession(): Promise<CachedSession["user"]> {
+export async function getCachedSession(): Promise<CachedSession['user']> {
   const now = Date.now();
 
   if (sessionCache && now - sessionCache.timestamp < SESSION_CACHE_TTL) {
@@ -38,10 +38,10 @@ export async function getCachedSession(): Promise<CachedSession["user"]> {
   }
 }
 
-async function fetchSession(): Promise<CachedSession["user"]> {
+async function fetchSession(): Promise<CachedSession['user']> {
   try {
-    const response = await fetch("/api/auth/session", {
-      credentials: "include",
+    const response = await fetch('/api/auth/session', {
+      credentials: 'include',
     });
     const json = await response.json();
 
@@ -81,7 +81,7 @@ export function hasValidSessionCache(): boolean {
 /**
  * Get the current cached user without fetching
  */
-export function getCachedUser(): CachedSession["user"] | null {
+export function getCachedUser(): CachedSession['user'] | null {
   if (!sessionCache) return null;
   if (Date.now() - sessionCache.timestamp >= SESSION_CACHE_TTL) return null;
   return sessionCache.user;

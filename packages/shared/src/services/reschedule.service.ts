@@ -1,14 +1,14 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { bookingService } from "./booking.service";
-import { slotService } from "./slot.service";
-import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from "@cusown/config";
-import { env } from "@cusown/config";
-import { bookingEventsAnalyticsService } from "./booking-events-analytics.service";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { bookingService } from './booking.service';
+import { slotService } from './slot.service';
+import { ERROR_MESSAGES, BOOKING_STATUS, SLOT_STATUS } from '@cusown/config';
+import { env } from '@cusown/config';
+import { bookingEventsAnalyticsService } from './booking-events-analytics.service';
 
 export interface RescheduleInput {
   bookingId: string;
   newSlotId: string;
-  rescheduledBy: "customer" | "owner";
+  rescheduledBy: 'customer' | 'owner';
   reason?: string;
 }
 
@@ -19,30 +19,25 @@ export class RescheduleService {
   async rescheduleBooking(input: RescheduleInput): Promise<any> {
     const supabase = requireSupabaseAdmin();
 
-    const booking = await bookingService.getBookingByUuidWithDetails(
-      input.bookingId,
-    );
+    const booking = await bookingService.getBookingByUuidWithDetails(input.bookingId);
     if (!booking) {
       throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
     }
 
-    if (
-      booking.status !== BOOKING_STATUS.CONFIRMED &&
-      booking.status !== BOOKING_STATUS.PENDING
-    ) {
-      throw new Error("Only confirmed or pending bookings can be rescheduled");
+    if (booking.status !== BOOKING_STATUS.CONFIRMED && booking.status !== BOOKING_STATUS.PENDING) {
+      throw new Error('Only confirmed or pending bookings can be rescheduled');
     }
 
     if (booking.no_show) {
-      throw new Error("No-show bookings cannot be rescheduled");
+      throw new Error('No-show bookings cannot be rescheduled');
     }
 
     if (input.newSlotId === booking.slot_id) {
-      throw new Error("New slot must be different from current slot");
+      throw new Error('New slot must be different from current slot');
     }
 
     const maxRescheduleCount = env.booking.maxRescheduleCount;
-    const { data: result, error } = await supabase.rpc("reschedule_booking", {
+    const { data: result, error } = await supabase.rpc('reschedule_booking', {
       p_booking_id: input.bookingId,
       p_new_slot_id: input.newSlotId,
       p_rescheduled_by: input.rescheduledBy,
@@ -53,22 +48,22 @@ export class RescheduleService {
     if (error) {
       const msg = error.message ?? ERROR_MESSAGES.DATABASE_ERROR;
       // Normalize known conflict/validation messages
-      if (msg.includes("Max reschedule count exceeded")) {
+      if (msg.includes('Max reschedule count exceeded')) {
         throw new Error(ERROR_MESSAGES.RESCHEDULE_MAX_EXCEEDED);
       }
-      if (msg.includes("New slot is already booked")) {
+      if (msg.includes('New slot is already booked')) {
         throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
       }
       if (
-        msg.includes("New slot is reserved") ||
-        msg.includes("New slot overlaps with an existing booking")
+        msg.includes('New slot is reserved') ||
+        msg.includes('New slot overlaps with an existing booking')
       ) {
         throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
       }
-      if (msg.includes("New slot not found or does not belong to business")) {
+      if (msg.includes('New slot not found or does not belong to business')) {
         throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
       }
-      if (msg.includes("Booking not found")) {
+      if (msg.includes('Booking not found')) {
         throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
       }
       throw new Error(msg);
@@ -77,29 +72,27 @@ export class RescheduleService {
     const out = result as { success?: boolean; error?: string };
     if (!out?.success) {
       const err = (out?.error as string) || ERROR_MESSAGES.DATABASE_ERROR;
-      if (err.includes("Max reschedule count exceeded")) {
+      if (err.includes('Max reschedule count exceeded')) {
         throw new Error(ERROR_MESSAGES.RESCHEDULE_MAX_EXCEEDED);
       }
-      if (err.includes("New slot is already booked")) {
+      if (err.includes('New slot is already booked')) {
         throw new Error(ERROR_MESSAGES.SLOT_ALREADY_BOOKED);
       }
       if (
-        err.includes("New slot is reserved") ||
-        err.includes("New slot overlaps with an existing booking")
+        err.includes('New slot is reserved') ||
+        err.includes('New slot overlaps with an existing booking')
       ) {
         throw new Error(ERROR_MESSAGES.SLOT_NO_LONGER_AVAILABLE);
       }
-      if (err.includes("New slot not found or does not belong to business")) {
+      if (err.includes('New slot not found or does not belong to business')) {
         throw new Error(ERROR_MESSAGES.SLOT_NOT_FOUND);
       }
-      if (err.includes("Booking not found")) {
+      if (err.includes('Booking not found')) {
         throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
       }
       // Idempotent behavior: if new slot equals current slot, treat as success and return latest booking.
-      if (err.includes("New slot must be different from current slot")) {
-        const latest = await bookingService.getBookingByUuidWithDetails(
-          input.bookingId,
-        );
+      if (err.includes('New slot must be different from current slot')) {
+        const latest = await bookingService.getBookingByUuidWithDetails(input.bookingId);
         if (!latest) {
           throw new Error(ERROR_MESSAGES.BOOKING_NOT_FOUND);
         }
@@ -108,16 +101,14 @@ export class RescheduleService {
       throw new Error(err);
     }
 
-    const updated = await bookingService.getBookingByUuidWithDetails(
-      input.bookingId,
-    );
+    const updated = await bookingService.getBookingByUuidWithDetails(input.bookingId);
     if (updated) {
       void bookingEventsAnalyticsService.recordEvent({
         bookingId: updated.id,
-        eventType: "rescheduled",
+        eventType: 'rescheduled',
         actorType: input.rescheduledBy,
         actorId: updated.customer_user_id ?? null,
-        source: "api",
+        source: 'api',
       });
     }
 
@@ -136,13 +127,11 @@ export class RescheduleService {
     }
 
     const { data, error } = await supabase
-      .from("booking_lifecycle_audit")
-      .select(
-        "id, old_slot_id, new_slot_id, action_type, actor_type, created_at",
-      )
-      .eq("booking_id", bookingId)
-      .eq("action_type", "reschedule")
-      .order("created_at", { ascending: false });
+      .from('booking_lifecycle_audit')
+      .select('id, old_slot_id, new_slot_id, action_type, actor_type, created_at')
+      .eq('booking_id', bookingId)
+      .eq('action_type', 'reschedule')
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(error.message ?? ERROR_MESSAGES.DATABASE_ERROR);
@@ -155,7 +144,7 @@ export class RescheduleService {
     businessId: string,
     currentSlotId: string,
     targetDate: string,
-    targetTime: string,
+    targetTime: string
   ): Promise<boolean> {
     const supabaseAdmin = requireSupabaseAdmin();
 
@@ -165,12 +154,12 @@ export class RescheduleService {
     }
 
     const { data: slots, error } = await supabaseAdmin
-      .from("slots")
-      .select("id, status")
-      .eq("business_id", businessId)
-      .eq("date", targetDate)
-      .eq("start_time", targetTime)
-      .eq("status", SLOT_STATUS.AVAILABLE)
+      .from('slots')
+      .select('id, status')
+      .eq('business_id', businessId)
+      .eq('date', targetDate)
+      .eq('start_time', targetTime)
+      .eq('status', SLOT_STATUS.AVAILABLE)
       .limit(1);
 
     if (error || !slots || slots.length === 0) {

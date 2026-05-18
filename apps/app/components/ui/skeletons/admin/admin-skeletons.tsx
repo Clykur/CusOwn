@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { skeletonBase } from "../base-skeleton";
-import { AdminTableSkeleton } from "../common/table-skeleton";
+import { skeletonBase } from '../base-skeleton';
+import { AdminTableSkeleton } from '../common/table-skeleton';
 
 export function OverviewSkeleton() {
   return (
@@ -17,10 +17,7 @@ export function OverviewSkeleton() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className={`rounded-xl border border-slate-200 p-5 ${skeletonBase}`}
-            >
+            <div key={i} className={`rounded-xl border border-slate-200 p-5 ${skeletonBase}`}>
               <div className={`h-3 ${skeletonBase} w-24 rounded mb-2`} />
               <div className={`h-8 ${skeletonBase} w-16 rounded`} />
               <div className={`h-3 ${skeletonBase} w-20 rounded mt-2`} />
@@ -35,10 +32,7 @@ export function OverviewSkeleton() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className={`rounded-xl border border-slate-200 p-5 ${skeletonBase}`}
-            >
+            <div key={i} className={`rounded-xl border border-slate-200 p-5 ${skeletonBase}`}>
               <div className={`h-3 ${skeletonBase} w-20 rounded mb-2`} />
               <div className={`h-8 ${skeletonBase} w-14 rounded`} />
             </div>
@@ -73,10 +67,7 @@ export function OverviewSkeleton() {
 
 export function AdminDashboardSkeleton() {
   return (
-    <div
-      className="flex min-h-[calc(100vh-6rem)] flex-col space-y-8 pb-8"
-      aria-busy="true"
-    >
+    <div className="flex min-h-[calc(100vh-6rem)] flex-col space-y-8 pb-8" aria-busy="true">
       <OverviewSkeleton />
       <div className="flex-1 min-h-[120px]" aria-hidden="true" />
     </div>
@@ -158,9 +149,7 @@ export function UsersSkeleton() {
             <div className="divide-y divide-slate-100">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="px-5 py-4 flex gap-4 items-center">
-                  <div
-                    className={`h-4 ${skeletonBase} w-28 rounded flex-shrink-0`}
-                  />
+                  <div className={`h-4 ${skeletonBase} w-28 rounded flex-shrink-0`} />
                   <div className={`h-4 ${skeletonBase} w-40 rounded`} />
                   <div className={`h-5 ${skeletonBase} w-16 rounded`} />
                   <div className={`h-4 ${skeletonBase} w-8 rounded`} />
@@ -202,13 +191,9 @@ export function BookingsSkeleton() {
             <div className="divide-y divide-slate-100">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="px-5 py-4 flex gap-4 items-center">
-                  <div
-                    className={`h-4 ${skeletonBase} w-28 rounded flex-shrink-0`}
-                  />
+                  <div className={`h-4 ${skeletonBase} w-28 rounded flex-shrink-0`} />
                   <div className={`h-4 ${skeletonBase} w-32 rounded`} />
-                  <div
-                    className={`h-4 ${skeletonBase} w-24 rounded flex-shrink-0`}
-                  />
+                  <div className={`h-4 ${skeletonBase} w-24 rounded flex-shrink-0`} />
                   <div className={`h-4 ${skeletonBase} w-28 rounded`} />
                   <div className={`h-5 ${skeletonBase} w-16 rounded`} />
                   <div className={`h-8 ${skeletonBase} w-16 rounded`} />
@@ -249,14 +234,10 @@ export function AuditLogsSkeleton() {
             <div className="divide-y divide-slate-100">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="px-5 py-4 flex gap-4 items-center">
-                  <div
-                    className={`h-4 ${skeletonBase} w-32 flex-shrink-0 rounded`}
-                  />
+                  <div className={`h-4 ${skeletonBase} w-32 flex-shrink-0 rounded`} />
                   <div className={`h-5 ${skeletonBase} w-24 rounded`} />
                   <div className={`h-4 ${skeletonBase} w-28 rounded`} />
-                  <div
-                    className={`h-4 ${skeletonBase} flex-1 max-w-md rounded`}
-                  />
+                  <div className={`h-4 ${skeletonBase} flex-1 max-w-md rounded`} />
                 </div>
               ))}
             </div>
@@ -270,10 +251,7 @@ export function AuditLogsSkeleton() {
 
 export function AdminAnalyticsSkeleton() {
   return (
-    <div
-      className="flex min-h-[calc(100vh-6rem)] flex-col space-y-8 pb-8"
-      aria-busy="true"
-    >
+    <div className="flex min-h-[calc(100vh-6rem)] flex-col space-y-8 pb-8" aria-busy="true">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-2">
           <div className={`h-6 ${skeletonBase} w-24 rounded`} />
@@ -291,10 +269,7 @@ export function AdminAnalyticsSkeleton() {
         <div className={`h-4 ${skeletonBase} w-48 rounded mb-4`} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm"
-            >
+            <div key={i} className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <div className={`h-3 ${skeletonBase} w-20 rounded mb-2`} />
               <div className={`h-8 ${skeletonBase} w-16 rounded mt-2`} />
               <div className={`h-3 ${skeletonBase} w-28 rounded mt-2`} />
@@ -310,10 +285,7 @@ export function AdminAnalyticsSkeleton() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
           {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-4"
-            >
+            <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
               <div className={`h-3 ${skeletonBase} w-16 rounded mb-2`} />
               <div className={`h-5 ${skeletonBase} w-12 rounded mt-1`} />
             </div>
@@ -338,10 +310,7 @@ export function AdminAnalyticsSkeleton() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-4"
-            >
+            <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
               <div className={`h-3 ${skeletonBase} w-14 rounded mb-2`} />
               <div className={`h-5 ${skeletonBase} w-10 rounded mt-1`} />
             </div>

@@ -16,7 +16,7 @@ interface ThrottleOptions {
 export function throttle<T extends ThrottledCallback>(
   fn: T,
   intervalMs: number,
-  options: ThrottleOptions = {},
+  options: ThrottleOptions = {}
 ): T & { cancel: () => void } {
   const { leading = true, trailing = true } = options;
   let lastCallTime = 0;
@@ -67,7 +67,7 @@ export function throttle<T extends ThrottledCallback>(
  */
 export function batchUpdates<T>(
   handler: (items: T[]) => void,
-  delayMs: number = 100,
+  delayMs: number = 100
 ): {
   add: (item: T) => void;
   flush: () => void;
@@ -142,14 +142,14 @@ export function createVisibilityAwareSubscription<T>(options: {
       subscription = onVisible();
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   };
 
   const stop = () => {
     if (!isStarted) return;
     isStarted = false;
 
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
 
     if (subscription && onHidden) {
       onHidden(subscription);
@@ -165,7 +165,7 @@ export function createVisibilityAwareSubscription<T>(options: {
  */
 export function createEventDeduplicator<T>(
   keyExtractor: (event: T) => string,
-  maxSize: number = 500,
+  maxSize: number = 500
 ): {
   isDuplicate: (event: T) => boolean;
   clear: () => void;
@@ -232,10 +232,7 @@ export function createRefreshManager(options: {
     if (timeoutId) return;
 
     const timeSinceLastRefresh = Date.now() - lastRefreshTime;
-    const delay = Math.max(
-      0,
-      Math.min(maxBatchDelayMs, minIntervalMs - timeSinceLastRefresh),
-    );
+    const delay = Math.max(0, Math.min(maxBatchDelayMs, minIntervalMs - timeSinceLastRefresh));
 
     timeoutId = setTimeout(() => {
       timeoutId = null;
@@ -270,11 +267,7 @@ export function createRefreshManager(options: {
   return { requestRefresh, forceRefresh, cancel };
 }
 
-export type RealtimeSubscriptionStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "error";
+export type RealtimeSubscriptionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export interface RealtimeMetrics {
   eventsReceived: number;
@@ -301,7 +294,7 @@ export function createRealtimeMetrics(): {
     eventsDeduplicated: 0,
     reconnects: 0,
     lastEventAt: null,
-    status: "disconnected",
+    status: 'disconnected',
   };
 
   const recordEvent = (processed: boolean) => {
@@ -328,7 +321,7 @@ export function createRealtimeMetrics(): {
     metrics.eventsDeduplicated = 0;
     metrics.reconnects = 0;
     metrics.lastEventAt = null;
-    metrics.status = "disconnected";
+    metrics.status = 'disconnected';
   };
 
   return { metrics, recordEvent, recordReconnect, setStatus, reset };

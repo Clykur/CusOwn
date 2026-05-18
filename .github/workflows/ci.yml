@@ -340,6 +340,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          NEXT_PUBLIC_APP_URL=https://example.com
           EOF
       - run: npm run test:unit
         env:
@@ -383,6 +384,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          NEXT_PUBLIC_APP_URL=https://example.com
           EOF
       - run: npx dotenv-cli -e .env.test -- npx vitest run scripts/unit-database --config vitest.config.mts
       - run: npx dotenv-cli -e .env.test -- npm run test:database-migrations
@@ -412,6 +414,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          NEXT_PUBLIC_APP_URL=https://example.com
           EOF
       # These suites expect a real Supabase project (see scripts/test-utils.ts). CI uses placeholders only.
       - name: Phase 4–6 (best-effort without live DB)
@@ -457,6 +460,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+          NEXT_PUBLIC_APP_URL=https://example.com
           EOF
       - run: npm run test:crud
         env:
@@ -483,8 +487,10 @@ jobs:
         run: npm ci
       - uses: actions/cache@v4
         with:
-          path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json', 'next.config.js', 'tsconfig.json') }}
+          path: |
+            apps/app/.next/cache
+            apps/marketing/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json', 'apps/app/next.config.js', 'apps/marketing/next.config.js') }}
           restore-keys: nextjs-${{ runner.os }}-
       - name: Production build (strict)
         run: npm run build:strict
@@ -502,7 +508,9 @@ jobs:
         if: success()
         with:
           name: next-build-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .next
+          path: |
+            apps/app/.next
+            apps/marketing/.next
           retention-days: 1
 
   sbom:

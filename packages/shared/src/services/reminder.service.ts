@@ -1,19 +1,19 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { bookingService } from "./booking.service";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { env } from "@cusown/config";
-import { BookingWithDetails } from "../types";
-import { retry } from "../lib/resilience/retry";
-import { whatsappCircuitBreaker } from "../lib/resilience/circuit-breaker";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { bookingService } from './booking.service';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { env } from '@cusown/config';
+import { BookingWithDetails } from '../types';
+import { retry } from '../lib/resilience/retry';
+import { whatsappCircuitBreaker } from '../lib/resilience/circuit-breaker';
 
 export type BookingReminder = {
   id: string;
   booking_id: string;
-  reminder_type: "24h_before" | "2h_before" | "custom";
+  reminder_type: '24h_before' | '2h_before' | 'custom';
   scheduled_at: string;
   sent_at?: string | null;
-  channel: "whatsapp" | "sms" | "email";
-  status: "pending" | "sent" | "failed";
+  channel: 'whatsapp' | 'sms' | 'email';
+  status: 'pending' | 'sent' | 'failed';
   error_message?: string | null;
   created_at: string;
   updated_at: string;
@@ -22,19 +22,19 @@ export type BookingReminder = {
 export class ReminderService {
   async createReminder(
     bookingId: string,
-    reminderType: "24h_before" | "2h_before" | "custom",
+    reminderType: '24h_before' | '2h_before' | 'custom',
     scheduledAt: string,
-    channel: "whatsapp" | "sms" | "email",
+    channel: 'whatsapp' | 'sms' | 'email'
   ): Promise<BookingReminder> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data, error } = await supabaseAdmin
-      .from("booking_reminders")
+      .from('booking_reminders')
       .insert({
         booking_id: bookingId,
         reminder_type: reminderType,
         scheduled_at: scheduledAt,
         channel: channel,
-        status: "pending",
+        status: 'pending',
       })
       .select()
       .single();
@@ -52,10 +52,10 @@ export class ReminderService {
   async cancelRemindersForBooking(bookingId: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
     await supabaseAdmin
-      .from("booking_reminders")
+      .from('booking_reminders')
       .delete()
-      .eq("booking_id", bookingId)
-      .eq("status", "pending");
+      .eq('booking_id', bookingId)
+      .eq('status', 'pending');
   }
 
   async scheduleBookingReminders(bookingId: string): Promise<void> {
@@ -64,39 +64,23 @@ export class ReminderService {
       return;
     }
 
-    if (booking.status !== "confirmed") {
+    if (booking.status !== 'confirmed') {
       return;
     }
 
-    const slotDateTime = new Date(
-      `${booking.slot.date}T${booking.slot.start_time}`,
-    );
+    const slotDateTime = new Date(`${booking.slot.date}T${booking.slot.start_time}`);
     const now = new Date();
 
     const reminder24h = new Date(slotDateTime);
-    reminder24h.setHours(
-      reminder24h.getHours() - env.booking.reminder24hBeforeHours,
-    );
+    reminder24h.setHours(reminder24h.getHours() - env.booking.reminder24hBeforeHours);
     if (reminder24h > now) {
-      await this.createReminder(
-        bookingId,
-        "24h_before",
-        reminder24h.toISOString(),
-        "whatsapp",
-      );
+      await this.createReminder(bookingId, '24h_before', reminder24h.toISOString(), 'whatsapp');
     }
 
     const reminder2h = new Date(slotDateTime);
-    reminder2h.setHours(
-      reminder2h.getHours() - env.booking.reminder2hBeforeHours,
-    );
+    reminder2h.setHours(reminder2h.getHours() - env.booking.reminder2hBeforeHours);
     if (reminder2h > now) {
-      await this.createReminder(
-        bookingId,
-        "2h_before",
-        reminder2h.toISOString(),
-        "whatsapp",
-      );
+      await this.createReminder(bookingId, '2h_before', reminder2h.toISOString(), 'whatsapp');
     }
   }
 
@@ -104,11 +88,11 @@ export class ReminderService {
     const supabaseAdmin = requireSupabaseAdmin();
     const now = new Date().toISOString();
     const { data, error } = await supabaseAdmin
-      .from("booking_reminders")
-      .select("*")
-      .eq("status", "pending")
-      .lte("scheduled_at", now)
-      .order("scheduled_at", { ascending: true })
+      .from('booking_reminders')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_at', now)
+      .order('scheduled_at', { ascending: true })
       .limit(limit);
 
     if (error) {
@@ -120,34 +104,32 @@ export class ReminderService {
   async sendReminder(reminderId: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
     const { data: reminder, error: fetchError } = await supabaseAdmin
-      .from("booking_reminders")
-      .select("*")
-      .eq("id", reminderId)
+      .from('booking_reminders')
+      .select('*')
+      .eq('id', reminderId)
       .single();
 
     if (fetchError || !reminder) {
       throw new Error(ERROR_MESSAGES.REMINDER_NOT_FOUND);
     }
 
-    if (reminder.status === "sent") {
+    if (reminder.status === 'sent') {
       throw new Error(ERROR_MESSAGES.REMINDER_ALREADY_SENT);
     }
 
-    const booking = await bookingService.getBookingByUuidWithDetails(
-      reminder.booking_id,
-    );
+    const booking = await bookingService.getBookingByUuidWithDetails(reminder.booking_id);
     if (!booking || !booking.slot || !booking.salon) {
-      await this.markReminderFailed(reminderId, "Booking not found");
+      await this.markReminderFailed(reminderId, 'Booking not found');
       return;
     }
 
-    if (booking.status !== "confirmed") {
-      await this.markReminderFailed(reminderId, "Booking not confirmed");
+    if (booking.status !== 'confirmed') {
+      await this.markReminderFailed(reminderId, 'Booking not confirmed');
       return;
     }
 
     try {
-      if (reminder.channel === "whatsapp") {
+      if (reminder.channel === 'whatsapp') {
         await whatsappCircuitBreaker.execute(async () => {
           return retry(() => this.sendWhatsAppReminder(booking), {
             maxAttempts: 3,
@@ -157,18 +139,15 @@ export class ReminderService {
       }
       await this.markReminderSent(reminderId);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.markReminderFailed(reminderId, errorMessage);
       throw error;
     }
   }
 
-  private async sendWhatsAppReminder(
-    booking: BookingWithDetails,
-  ): Promise<void> {
+  private async sendWhatsAppReminder(booking: BookingWithDetails): Promise<void> {
     if (!booking.slot || !booking.salon) {
-      throw new Error("Booking details incomplete");
+      throw new Error('Booking details incomplete');
     }
     await Promise.resolve();
   }
@@ -177,20 +156,17 @@ export class ReminderService {
     const supabaseAdmin = requireSupabaseAdmin();
     const now = new Date().toISOString();
     await supabaseAdmin
-      .from("booking_reminders")
-      .update({ status: "sent", sent_at: now })
-      .eq("id", reminderId);
+      .from('booking_reminders')
+      .update({ status: 'sent', sent_at: now })
+      .eq('id', reminderId);
   }
 
-  private async markReminderFailed(
-    reminderId: string,
-    errorMessage: string,
-  ): Promise<void> {
+  private async markReminderFailed(reminderId: string, errorMessage: string): Promise<void> {
     const supabaseAdmin = requireSupabaseAdmin();
     await supabaseAdmin
-      .from("booking_reminders")
-      .update({ status: "failed", error_message: errorMessage })
-      .eq("id", reminderId);
+      .from('booking_reminders')
+      .update({ status: 'failed', error_message: errorMessage })
+      .eq('id', reminderId);
   }
 }
 

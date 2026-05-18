@@ -1,11 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useRef, useEffect } from "react";
-import {
-  dedupFetch,
-  cancelRequests,
-  cancelDebounce,
-} from "../utils/fetch-dedup";
+import { useCallback, useRef, useEffect } from 'react';
+import { dedupFetch, cancelRequests, cancelDebounce } from '../utils/fetch-dedup';
 
 interface UseDedupFetchOptions {
   debounceMs?: number;
@@ -15,10 +11,7 @@ interface UseDedupFetchOptions {
 /**
  * Hook for deduplicating fetch requests with automatic cleanup
  */
-export function useDedupFetch<T = unknown>(
-  keyPrefix: string,
-  options?: UseDedupFetchOptions,
-) {
+export function useDedupFetch<T = unknown>(keyPrefix: string, options?: UseDedupFetchOptions) {
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -38,7 +31,7 @@ export function useDedupFetch<T = unknown>(
   const fetchWithDedup = useCallback(
     async (
       url: string,
-      fetchOptions?: RequestInit & { dedupKeySuffix?: string },
+      fetchOptions?: RequestInit & { dedupKeySuffix?: string }
     ): Promise<T | null> => {
       const { dedupKeySuffix, ...restOptions } = fetchOptions || {};
       const dedupKey = `${keyPrefix}:${dedupKeySuffix || url}`;
@@ -60,13 +53,13 @@ export function useDedupFetch<T = unknown>(
         const data = await response.json();
         return data as T;
       } catch (error) {
-        if ((error as Error)?.name === "AbortError") {
+        if ((error as Error)?.name === 'AbortError') {
           return null;
         }
         throw error;
       }
     },
-    [keyPrefix, options?.debounceMs, options?.cancelPrevious],
+    [keyPrefix, options?.debounceMs, options?.cancelPrevious]
   );
 
   const cancel = useCallback(() => {
@@ -80,10 +73,7 @@ export function useDedupFetch<T = unknown>(
 /**
  * Hook for debounced fetch that cancels previous requests
  */
-export function useDebouncedFetch<T = unknown>(
-  keyPrefix: string,
-  debounceMs = 300,
-) {
+export function useDebouncedFetch<T = unknown>(keyPrefix: string, debounceMs = 300) {
   return useDedupFetch<T>(keyPrefix, {
     debounceMs,
     cancelPrevious: true,
@@ -107,7 +97,7 @@ export function useParallelFetch<T = unknown>(keyPrefix: string) {
 
   const fetchAll = useCallback(
     async (
-      requests: Array<{ url: string; key: string; options?: RequestInit }>,
+      requests: Array<{ url: string; key: string; options?: RequestInit }>
     ): Promise<Map<string, T | null>> => {
       const results = new Map<string, T | null>();
 
@@ -136,18 +126,18 @@ export function useParallelFetch<T = unknown>(keyPrefix: string) {
               results.set(key, null);
             }
           } catch (error) {
-            if ((error as Error)?.name !== "AbortError") {
+            if ((error as Error)?.name !== 'AbortError') {
               results.set(key, null);
             }
           } finally {
             pendingRef.current.delete(key);
           }
-        }),
+        })
       );
 
       return results;
     },
-    [keyPrefix],
+    [keyPrefix]
   );
 
   const cancel = useCallback(() => {

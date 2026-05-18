@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import StarRating from "@/components/booking/star-rating";
+import { memo } from 'react';
+import StarRating from '@/components/booking/star-rating';
 
 export interface ReviewData {
   rating_avg: number;
@@ -14,15 +14,10 @@ interface ReviewSummaryProps {
 }
 
 function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
-  if (
-    !reviewData ||
-    (reviewData.rating_avg === 0 && reviewData.review_count === 0)
-  ) {
+  if (!reviewData || (reviewData.rating_avg === 0 && reviewData.review_count === 0)) {
     return (
       <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-slate-100/80 lg:p-6">
-        <h2 className="mb-1 text-base font-semibold text-slate-900 md:text-lg">
-          Customer Reviews
-        </h2>
+        <h2 className="mb-1 text-base font-semibold text-slate-900 md:text-lg">Customer Reviews</h2>
         <p className="mb-4 text-xs text-slate-500 md:text-sm">
           Ratings from customers who booked with you
         </p>
@@ -53,9 +48,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
 
   return (
     <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-slate-100/80 lg:p-6">
-      <h2 className="mb-4 text-base font-semibold text-slate-900 md:text-lg">
-        Customer Reviews
-      </h2>
+      <h2 className="mb-4 text-base font-semibold text-slate-900 md:text-lg">Customer Reviews</h2>
 
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex flex-col items-center sm:items-start sm:min-w-[120px]">
@@ -69,7 +62,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
           </div>
 
           <p className="mt-1 text-sm text-slate-500">
-            {review_count} review{review_count === 1 ? "" : "s"}
+            {review_count} review{review_count === 1 ? '' : 's'}
           </p>
         </div>
 
@@ -100,9 +93,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
                   />
                 </div>
 
-                <span className="w-8 text-right text-xs text-slate-500">
-                  {count}
-                </span>
+                <span className="w-8 text-right text-xs text-slate-500">{count}</span>
               </div>
             );
           })}

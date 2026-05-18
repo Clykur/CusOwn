@@ -1,13 +1,13 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireAdmin,
   successResponse,
   errorResponse,
   adminAnalyticsService,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/admin/system-metrics";
+const ROUTE = 'GET /api/admin/system-metrics';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
     const data = await adminAnalyticsService.getSystemMetrics();
     return successResponse(data);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

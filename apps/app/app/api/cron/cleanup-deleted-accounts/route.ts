@@ -1,12 +1,12 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   adminService,
   successResponse,
   errorResponse,
   validateCronSecret,
   requireSupabaseAdmin,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 /**
  * POST /api/cron/cleanup-deleted-accounts
@@ -24,17 +24,16 @@ export async function POST(request: NextRequest) {
 
     return successResponse(
       result,
-      `Cleanup completed: ${result.users_deleted} users and ${result.businesses_deleted} businesses permanently deleted`,
+      `Cleanup completed: ${result.users_deleted} users and ${result.businesses_deleted} businesses permanently deleted`
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     try {
       const supabase = requireSupabaseAdmin();
-      await supabase.from("deletion_events").insert({
-        entity_type: "user",
+      await supabase.from('deletion_events').insert({
+        entity_type: 'user',
         entity_id: null,
-        action: "purge_failed",
+        action: 'purge_failed',
         success: false,
         error_message: message,
       });

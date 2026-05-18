@@ -3,7 +3,7 @@
  * For horizontal scaling, provide a Redis/DB-backed implementation of RateLimitStore.
  */
 
-import type { RateLimitStore } from "./rate-limit-store.interface";
+import type { RateLimitStore } from './rate-limit-store.interface';
 
 interface Entry {
   count: number;
@@ -20,9 +20,7 @@ function prune(): void {
     if (v.resetAt < now) store.delete(k);
   }
   if (store.size > MAX_KEYS) {
-    const sorted = [...store.entries()].sort(
-      (a, b) => a[1].resetAt - b[1].resetAt,
-    );
+    const sorted = [...store.entries()].sort((a, b) => a[1].resetAt - b[1].resetAt);
     for (let i = 0; i < sorted.length && store.size > MAX_KEYS; i++) {
       store.delete(sorted[i][0]);
     }
@@ -36,10 +34,7 @@ export const memoryRateLimitStore: RateLimitStore = {
     return e.count;
   },
 
-  async incr(
-    key: string,
-    windowMs: number,
-  ): Promise<{ count: number; resetAt: number }> {
+  async incr(key: string, windowMs: number): Promise<{ count: number; resetAt: number }> {
     prune();
     const now = Date.now();
     let e = store.get(key);

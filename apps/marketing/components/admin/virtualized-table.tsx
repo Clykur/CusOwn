@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useRef, memo } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface Column<T> {
   key: string;
@@ -29,7 +29,7 @@ function VirtualizedTableInner<T>({
   rowHeight = 56,
   maxHeight = 600,
   getRowKey,
-  emptyMessage = "No data available",
+  emptyMessage = 'No data available',
   isLoading = false,
   loadingRows = 5,
 }: VirtualizedTableProps<T>) {
@@ -64,7 +64,7 @@ function VirtualizedTableInner<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 ${col.headerClassName || ""}`}
+                  className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 ${col.headerClassName || ''}`}
                 >
                   {col.header}
                 </th>
@@ -74,16 +74,12 @@ function VirtualizedTableInner<T>({
         </table>
       </div>
 
-      <div
-        ref={parentRef}
-        className="overflow-auto"
-        style={{ maxHeight: `${maxHeight}px` }}
-      >
+      <div ref={parentRef} className="overflow-auto" style={{ maxHeight: `${maxHeight}px` }}>
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
-            width: "100%",
-            position: "relative",
+            width: '100%',
+            position: 'relative',
           }}
         >
           <table className="w-full table-fixed border-collapse">
@@ -102,20 +98,16 @@ function VirtualizedTableInner<T>({
                       style={{
                         height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`,
-                        position: "absolute",
+                        position: 'absolute',
                         top: 0,
                         left: 0,
-                        width: "100%",
-                        display: "table",
-                        tableLayout: "fixed",
+                        width: '100%',
+                        display: 'table',
+                        tableLayout: 'fixed',
                       }}
                     >
                       {columns.map((col) => (
-                        <td
-                          key={col.key}
-                          className="px-4 py-4"
-                          style={{ width: col.width }}
-                        >
+                        <td key={col.key} className="px-4 py-4" style={{ width: col.width }}>
                           <div className="h-4 bg-slate-200 rounded w-3/4" />
                         </td>
                       ))}
@@ -131,18 +123,18 @@ function VirtualizedTableInner<T>({
                     style={{
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
-                      position: "absolute",
+                      position: 'absolute',
                       top: 0,
                       left: 0,
-                      width: "100%",
-                      display: "table",
-                      tableLayout: "fixed",
+                      width: '100%',
+                      display: 'table',
+                      tableLayout: 'fixed',
                     }}
                   >
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`px-4 py-3 ${col.cellClassName || ""}`}
+                        className={`px-4 py-3 ${col.cellClassName || ''}`}
                         style={{ width: col.width }}
                       >
                         {col.render(item, virtualRow.index)}
@@ -159,6 +151,4 @@ function VirtualizedTableInner<T>({
   );
 }
 
-export const VirtualizedTable = memo(
-  VirtualizedTableInner,
-) as typeof VirtualizedTableInner;
+export const VirtualizedTable = memo(VirtualizedTableInner) as typeof VirtualizedTableInner;

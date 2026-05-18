@@ -12,11 +12,11 @@ import {
   getRandomBusiness,
   getRandomAvailableSlot,
   cleanupTestData,
-} from "../test-utils";
-import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
+} from '../test-utils';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -30,14 +30,14 @@ async function runRealtimeSlotUpdatesTest(): Promise<void> {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn(
-      "Skipping realtime integration test: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set.",
+      'Skipping realtime integration test: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY not set.'
     );
     return;
   }
 
   try {
     await runner.runTest(
-      "REALTIME: 2 clients – one books while other watches slot updates",
+      'REALTIME: 2 clients – one books while other watches slot updates',
       async () => {
         const business = await getRandomBusiness();
         const slot = await getRandomAvailableSlot(business.id);
@@ -52,20 +52,20 @@ async function runRealtimeSlotUpdatesTest(): Promise<void> {
         const channel = watcherClient.channel(channelName);
 
         channel.on(
-          "postgres_changes",
+          'postgres_changes',
           {
-            event: "*",
-            schema: "public",
-            table: "slots",
+            event: '*',
+            schema: 'public',
+            table: 'slots',
             filter: `business_id=eq.${business.id}`,
           },
           (payload) => {
             payloads.push(payload);
-          },
+          }
         );
 
         channel.subscribe((status) => {
-          if (status === "SUBSCRIBED") {
+          if (status === 'SUBSCRIBED') {
             // Give time for subscription to be active before we book
             setImmediate(() => {});
           }
@@ -74,27 +74,22 @@ async function runRealtimeSlotUpdatesTest(): Promise<void> {
         await new Promise<void>((resolve) => setTimeout(resolve, 1500));
 
         const bookingId = `REALTIME-${Date.now()}`;
-        const { data: result, error } = await supabase.rpc(
-          "create_booking_atomically",
-          {
-            p_business_id: business.id,
-            p_slot_id: slot.id,
-            p_customer_name: "Realtime Test",
-            p_customer_phone: "+919876543211",
-            p_booking_id: bookingId,
-            p_customer_user_id: null,
-            p_total_duration_minutes: 30,
-            p_total_price_cents: 1000,
-            p_services_count: 1,
-            p_service_data: null,
-          },
-        );
+        const { data: result, error } = await supabase.rpc('create_booking_atomically', {
+          p_business_id: business.id,
+          p_slot_id: slot.id,
+          p_customer_name: 'Realtime Test',
+          p_customer_phone: '+919876543211',
+          p_booking_id: bookingId,
+          p_customer_user_id: null,
+          p_total_duration_minutes: 30,
+          p_total_price_cents: 1000,
+          p_services_count: 1,
+          p_service_data: null,
+        });
 
         if (error || !result?.success) {
           await channel.unsubscribe();
-          throw new Error(
-            `Booking create failed: ${error?.message ?? result?.error}`,
-          );
+          throw new Error(`Booking create failed: ${error?.message ?? result?.error}`);
         }
         cleanup.bookings.push(result.booking_id);
 
@@ -104,7 +99,7 @@ async function runRealtimeSlotUpdatesTest(): Promise<void> {
 
         if (payloads.length === 0) {
           console.warn(
-            "   ⚠ Watcher received no postgres_changes. Ensure slots table is in supabase_realtime publication.",
+            '   ⚠ Watcher received no postgres_changes. Ensure slots table is in supabase_realtime publication.'
           );
           return;
         }
@@ -114,19 +109,19 @@ async function runRealtimeSlotUpdatesTest(): Promise<void> {
           return (
             rec &&
             String(rec.id) === slot.id &&
-            (rec.status === "reserved" || rec.status === "booked")
+            (rec.status === 'reserved' || rec.status === 'booked')
           );
         });
         if (!hasSlotUpdate) {
           throw new Error(
-            `Watcher did not receive slot update for ${slot.id}. Payloads: ${JSON.stringify(payloads.length)}`,
+            `Watcher did not receive slot update for ${slot.id}. Payloads: ${JSON.stringify(payloads.length)}`
           );
         }
 
         console.log(
-          `   ✅ Watcher received ${payloads.length} slot update(s); one booking while other watched.`,
+          `   ✅ Watcher received ${payloads.length} slot update(s); one booking while other watched.`
         );
-      },
+      }
     );
 
     await cleanupTestData(cleanup.bookings, cleanup.slots);
@@ -139,11 +134,11 @@ async function runRealtimeSlotUpdatesTest(): Promise<void> {
 if (require.main === module) {
   runRealtimeSlotUpdatesTest()
     .then(() => {
-      console.log("\n✅ Realtime slot updates integration test passed.\n");
+      console.log('\n✅ Realtime slot updates integration test passed.\n');
       process.exit(0);
     })
     .catch((err) => {
-      console.error("\n❌ Realtime slot updates integration test failed:", err);
+      console.error('\n❌ Realtime slot updates integration test failed:', err);
       process.exit(1);
     });
 }

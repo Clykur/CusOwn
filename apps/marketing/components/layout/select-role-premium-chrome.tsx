@@ -1,16 +1,14 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { motion } from "framer-motion";
-import { CusownMarketingNav } from "@/components/marketing/cusown-marketing-nav";
+import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { CusownMarketingNav } from '@/components/marketing/cusown-marketing-nav';
 
 type SelectRolePremiumChromeProps = {
   children: ReactNode;
 };
 
-export function SelectRolePremiumChrome({
-  children,
-}: SelectRolePremiumChromeProps) {
+export function SelectRolePremiumChrome({ children }: SelectRolePremiumChromeProps) {
   return (
     <div className="marketing-safe-x relative min-h-screen overflow-x-hidden bg-zinc-950 text-zinc-100">
       <div
@@ -34,7 +32,7 @@ export function SelectRolePremiumChrome({
         aria-hidden
         className="pointer-events-none absolute -left-[35%] top-[10%] h-[min(100vw,520px)] w-[min(100vw,520px)] rounded-full bg-accent/14 blur-[100px]"
         animate={{ opacity: [0.4, 0.58, 0.4], scale: [1, 1.05, 1] }}
-        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         aria-hidden
@@ -43,7 +41,7 @@ export function SelectRolePremiumChrome({
         transition={{
           duration: 13,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: 'easeInOut',
           delay: 2,
         }}
       />

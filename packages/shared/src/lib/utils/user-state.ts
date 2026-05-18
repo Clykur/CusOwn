@@ -8,24 +8,24 @@
  * Server: React cache() dedupes per request to avoid repeated getUserBusinesses.
  */
 
-import { cache } from "react";
-import { ROUTES } from "./navigation";
+import { cache } from 'react';
+import { ROUTES } from './navigation';
 
 export type UserState =
-  | "S0" // Unauthenticated
-  | "S1" // Authenticated, No Profile
-  | "S2" // Customer Only
-  | "S3" // Owner, No Business
-  | "S4" // Owner, Has Business
-  | "S5" // Both Roles, No Business
-  | "S6" // Both Roles, Has Business
-  | "S7"; // Admin
+  | 'S0' // Unauthenticated
+  | 'S1' // Authenticated, No Profile
+  | 'S2' // Customer Only
+  | 'S3' // Owner, No Business
+  | 'S4' // Owner, Has Business
+  | 'S5' // Both Roles, No Business
+  | 'S6' // Both Roles, Has Business
+  | 'S7'; // Admin
 
 export interface UserStateResult {
   state: UserState;
   authenticated: boolean;
   profileExists: boolean;
-  userType: "customer" | "owner" | "both" | "admin" | null;
+  userType: 'customer' | 'owner' | 'both' | 'admin' | null;
   businessCount: number;
   redirectUrl: string | null;
   reason: string;
@@ -41,14 +41,13 @@ export interface UserStateResult {
  */
 async function getUserProfileSafe(userId: string): Promise<any> {
   // Check if we're in a server context (no window object)
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     // Server-side: use server-auth
-    const { getServerUserProfile } = await import("../supabase/server-auth");
+    const { getServerUserProfile } = await import('../supabase/server-auth');
     return getServerUserProfile(userId);
   } else {
     // Client-side: server-only session
-    const { getServerSessionClient } =
-      await import("../auth/server-session-client");
+    const { getServerSessionClient } = await import('../auth/server-session-client');
     const { user, profile } = await getServerSessionClient();
     return user?.id === userId ? profile : null;
   }
@@ -57,41 +56,33 @@ async function getUserProfileSafe(userId: string): Promise<any> {
 /**
  * Get roles array (from access.service). Server-only; client uses profile/user_type fallback.
  */
-async function getRolesSafe(
-  userId: string,
-  context: "server" | "client",
-): Promise<string[]> {
-  if (context === "client") {
+async function getRolesSafe(userId: string, context: 'server' | 'client'): Promise<string[]> {
+  if (context === 'client') {
     const profile = await getUserProfileSafe(userId);
     const ut = (profile as any)?.user_type;
     if (!ut) return [];
-    if (ut === "admin") return ["admin"];
-    if (ut === "owner") return ["owner"];
-    if (ut === "customer") return ["customer"];
-    if (ut === "both") return ["customer", "owner"];
+    if (ut === 'admin') return ['admin'];
+    if (ut === 'owner') return ['owner'];
+    if (ut === 'customer') return ['customer'];
+    if (ut === 'both') return ['customer', 'owner'];
     return [];
   }
-  const { getRoles } = await import("../../services/access.service");
+  const { getRoles } = await import('../../services/access.service');
   return getRoles(userId);
 }
 
 /** Derive legacy userType from roles for backward-compat return shape. */
-function rolesToUserType(
-  roles: string[],
-): "customer" | "owner" | "both" | "admin" | null {
-  if (roles.includes("admin")) return "admin";
-  if (roles.includes("owner") && roles.includes("customer")) return "both";
-  if (roles.includes("owner")) return "owner";
-  if (roles.includes("customer")) return "customer";
+function rolesToUserType(roles: string[]): 'customer' | 'owner' | 'both' | 'admin' | null {
+  if (roles.includes('admin')) return 'admin';
+  if (roles.includes('owner') && roles.includes('customer')) return 'both';
+  if (roles.includes('owner')) return 'owner';
+  if (roles.includes('customer')) return 'customer';
   return null;
 }
 
-async function isAdminSafe(
-  userId: string,
-  context: "server" | "client",
-): Promise<boolean> {
+async function isAdminSafe(userId: string, context: 'server' | 'client'): Promise<boolean> {
   const roles = await getRolesSafe(userId, context);
-  return roles.includes("admin");
+  return roles.includes('admin');
 }
 
 // Simple cache to prevent redundant API calls
@@ -110,17 +101,17 @@ const CACHE_TTL = 5000; // Cache for 5 seconds
 /** Inner implementation; shared by server (cached per-request) and client. */
 async function computeUserState(
   userId: string | null,
-  context: "server" | "client",
+  context: 'server' | 'client'
 ): Promise<UserStateResult> {
   if (!userId) {
     return {
-      state: "S0",
+      state: 'S0',
       authenticated: false,
       profileExists: false,
       userType: null,
       businessCount: 0,
       redirectUrl: null,
-      reason: "unauthenticated",
+      reason: 'unauthenticated',
       canAccessOwnerDashboard: false,
       canAccessCustomerDashboard: false,
       canAccessSetup: false,
@@ -132,13 +123,13 @@ async function computeUserState(
     const adminCheck = await isAdminSafe(userId, context);
     if (adminCheck) {
       return {
-        state: "S7",
+        state: 'S7',
         authenticated: true,
         profileExists: true,
-        userType: "admin",
+        userType: 'admin',
         businessCount: 0, // Admins don't need businesses
         redirectUrl: ROUTES.ADMIN_DASHBOARD,
-        reason: "admin_user",
+        reason: 'admin_user',
         canAccessOwnerDashboard: true,
         canAccessCustomerDashboard: true,
         canAccessSetup: false, // Admins don't need setup
@@ -152,13 +143,13 @@ async function computeUserState(
     // S1: Authenticated but no profile
     if (!profile) {
       const result: UserStateResult = {
-        state: "S1",
+        state: 'S1',
         authenticated: true,
         profileExists: false,
         userType: null,
         businessCount: 0,
         redirectUrl: null,
-        reason: "no_profile",
+        reason: 'no_profile',
         canAccessOwnerDashboard: false,
         canAccessCustomerDashboard: false,
         canAccessSetup: false,
@@ -166,7 +157,7 @@ async function computeUserState(
       };
 
       // Cache the result (client-side only)
-      if (context === "client") {
+      if (context === 'client') {
         userStateCache = {
           userId,
           result,
@@ -181,14 +172,14 @@ async function computeUserState(
     const userType = rolesToUserType(roles);
 
     let businessCount = 0;
-    if (roles.includes("owner")) {
+    if (roles.includes('owner')) {
       try {
         let businesses: any[] = [];
-        if (context === "client") {
+        if (context === 'client') {
           // Client-side: server-only auth via cookies
           try {
-            const response = await fetch("/api/owner/businesses", {
-              credentials: "include",
+            const response = await fetch('/api/owner/businesses', {
+              credentials: 'include',
             });
             if (response.ok) {
               const result = await response.json();
@@ -207,7 +198,7 @@ async function computeUserState(
           }
         } else {
           // Server-side: use service directly
-          const { userService } = await import("../../services/user.service");
+          const { userService } = await import('../../services/user.service');
           businesses = await userService.getUserBusinesses(userId);
         }
 
@@ -220,15 +211,15 @@ async function computeUserState(
     }
 
     // S2: Customer only (no owner role)
-    if (userType === "customer") {
+    if (userType === 'customer') {
       const result = {
-        state: "S2" as const,
+        state: 'S2' as const,
         authenticated: true,
         profileExists: true,
-        userType: "customer" as const,
+        userType: 'customer' as const,
         businessCount: 0,
         redirectUrl: ROUTES.CUSTOMER_DASHBOARD,
-        reason: "customer_only",
+        reason: 'customer_only',
         canAccessOwnerDashboard: false,
         canAccessCustomerDashboard: true,
         canAccessSetup: false,
@@ -236,7 +227,7 @@ async function computeUserState(
       };
 
       // Cache the result (client-side only)
-      if (context === "client") {
+      if (context === 'client') {
         userStateCache = {
           userId,
           result,
@@ -248,15 +239,15 @@ async function computeUserState(
     }
 
     // S3: Owner, no business
-    if (userType === "owner" && businessCount === 0) {
+    if (userType === 'owner' && businessCount === 0) {
       const result = {
-        state: "S3" as const,
+        state: 'S3' as const,
         authenticated: true,
         profileExists: true,
-        userType: "owner" as const,
+        userType: 'owner' as const,
         businessCount: 0,
-        redirectUrl: ROUTES.SELECT_ROLE("owner"), // Onboarding flow handles setup inline
-        reason: "owner_no_business",
+        redirectUrl: ROUTES.SELECT_ROLE('owner'), // Onboarding flow handles setup inline
+        reason: 'owner_no_business',
         canAccessOwnerDashboard: false, // CRITICAL: Cannot access without business
         canAccessCustomerDashboard: false,
         canAccessSetup: true,
@@ -264,7 +255,7 @@ async function computeUserState(
       };
 
       // Cache the result (client-side only)
-      if (context === "client") {
+      if (context === 'client') {
         userStateCache = {
           userId,
           result,
@@ -276,15 +267,15 @@ async function computeUserState(
     }
 
     // S4: Owner, has business
-    if (userType === "owner" && businessCount >= 1) {
+    if (userType === 'owner' && businessCount >= 1) {
       const result = {
-        state: "S4" as const,
+        state: 'S4' as const,
         authenticated: true,
         profileExists: true,
-        userType: "owner" as const,
+        userType: 'owner' as const,
         businessCount,
         redirectUrl: ROUTES.OWNER_DASHBOARD_BASE,
-        reason: "owner_with_business",
+        reason: 'owner_with_business',
         canAccessOwnerDashboard: true,
         canAccessCustomerDashboard: false,
         canAccessSetup: false, // Has business, cannot access setup
@@ -292,7 +283,7 @@ async function computeUserState(
       };
 
       // Cache the result (client-side only)
-      if (context === "client") {
+      if (context === 'client') {
         userStateCache = {
           userId,
           result,
@@ -304,15 +295,15 @@ async function computeUserState(
     }
 
     // S5: Both roles, no business
-    if (userType === "both" && businessCount === 0) {
+    if (userType === 'both' && businessCount === 0) {
       const result = {
-        state: "S5" as const,
+        state: 'S5' as const,
         authenticated: true,
         profileExists: true,
-        userType: "both" as const,
+        userType: 'both' as const,
         businessCount: 0,
-        redirectUrl: ROUTES.SELECT_ROLE("owner"), // Onboarding flow handles setup inline
-        reason: "both_no_business",
+        redirectUrl: ROUTES.SELECT_ROLE('owner'), // Onboarding flow handles setup inline
+        reason: 'both_no_business',
         canAccessOwnerDashboard: false, // CRITICAL: Cannot access without business
         canAccessCustomerDashboard: true,
         canAccessSetup: true,
@@ -320,7 +311,7 @@ async function computeUserState(
       };
 
       // Cache the result (client-side only)
-      if (context === "client") {
+      if (context === 'client') {
         userStateCache = {
           userId,
           result,
@@ -332,15 +323,15 @@ async function computeUserState(
     }
 
     // S6: Both roles, has business
-    if (userType === "both" && businessCount >= 1) {
+    if (userType === 'both' && businessCount >= 1) {
       const result = {
-        state: "S6" as const,
+        state: 'S6' as const,
         authenticated: true,
         profileExists: true,
-        userType: "both" as const,
+        userType: 'both' as const,
         businessCount,
         redirectUrl: ROUTES.OWNER_DASHBOARD_BASE, // Default to owner dashboard
-        reason: "both_with_business",
+        reason: 'both_with_business',
         canAccessOwnerDashboard: true,
         canAccessCustomerDashboard: true,
         canAccessSetup: false, // Has business, cannot access setup
@@ -348,7 +339,7 @@ async function computeUserState(
       };
 
       // Cache the result (client-side only)
-      if (context === "client") {
+      if (context === 'client') {
         userStateCache = {
           userId,
           result,
@@ -361,13 +352,13 @@ async function computeUserState(
 
     // Unknown state - fail safe
     return {
-      state: "S1",
+      state: 'S1',
       authenticated: true,
       profileExists: true,
-      userType: userType as UserStateResult["userType"],
+      userType: userType as UserStateResult['userType'],
       businessCount: 0,
       redirectUrl: null,
-      reason: "unknown_state",
+      reason: 'unknown_state',
       canAccessOwnerDashboard: false,
       canAccessCustomerDashboard: false,
       canAccessSetup: false,
@@ -381,13 +372,13 @@ async function computeUserState(
     //   stack: error instanceof Error ? error.stack : undefined,
     // });
     return {
-      state: "S0",
+      state: 'S0',
       authenticated: false,
       profileExists: false,
       userType: null,
       businessCount: 0,
       redirectUrl: null,
-      reason: "error",
+      reason: 'error',
       canAccessOwnerDashboard: false,
       canAccessCustomerDashboard: false,
       canAccessSetup: false,
@@ -396,9 +387,7 @@ async function computeUserState(
   }
 }
 
-const getCachedUserState = cache((userId: string | null) =>
-  computeUserState(userId, "server"),
-);
+const getCachedUserState = cache((userId: string | null) => computeUserState(userId, 'server'));
 
 /**
  * Determine the canonical user state and redirect decision.
@@ -406,16 +395,15 @@ const getCachedUserState = cache((userId: string | null) =>
  */
 export async function getUserState(
   userId: string | null,
-  options?: { skipCache?: boolean },
+  options?: { skipCache?: boolean }
 ): Promise<UserStateResult> {
-  const context = typeof window === "undefined" ? "server" : "client";
-  if (context === "server") return getCachedUserState(userId);
+  const context = typeof window === 'undefined' ? 'server' : 'client';
+  if (context === 'server') return getCachedUserState(userId);
   if (!options?.skipCache && userStateCache.userId === userId) {
     const cacheAge = Date.now() - userStateCache.timestamp;
-    if (cacheAge < CACHE_TTL && userStateCache.result)
-      return userStateCache.result;
+    if (cacheAge < CACHE_TTL && userStateCache.result) return userStateCache.result;
   }
-  return computeUserState(userId, "client");
+  return computeUserState(userId, 'client');
 }
 
 /**
@@ -452,18 +440,17 @@ export function clearUserStateCache(): void {
  */
 export function getRedirectMessage(reason: string): string {
   const messages: Record<string, string> = {
-    admin_user: "Redirecting to admin dashboard…",
-    owner_no_business:
-      "You need to create a business first. Redirecting to setup…",
-    owner_with_business: "Taking you to your businesses…",
+    admin_user: 'Redirecting to admin dashboard…',
+    owner_no_business: 'You need to create a business first. Redirecting to setup…',
+    owner_with_business: 'Taking you to your businesses…',
     both_no_business:
-      "You need to create a business to access owner features. Redirecting to setup…",
-    both_with_business: "Taking you to your dashboard…",
-    customer_only: "Taking you to your bookings…",
-    no_profile: "Please complete your profile setup.",
-    unauthenticated: "Please sign in to continue.",
-    error: "An error occurred. Please try again.",
+      'You need to create a business to access owner features. Redirecting to setup…',
+    both_with_business: 'Taking you to your dashboard…',
+    customer_only: 'Taking you to your bookings…',
+    no_profile: 'Please complete your profile setup.',
+    unauthenticated: 'Please sign in to continue.',
+    error: 'An error occurred. Please try again.',
   };
 
-  return messages[reason] || "Redirecting…";
+  return messages[reason] || 'Redirecting…';
 }

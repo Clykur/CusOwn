@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   salonService,
   mediaService,
@@ -20,21 +20,18 @@ import {
   setApiRedisCache,
   API_REDIS_TTL,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES, CACHE_TTL_API_LONG_MS, env } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, CACHE_TTL_API_LONG_MS, env } from '@cusown/config';
 
 // Strict rate limiting for salon access: 30 requests per minute per IP
 const salonAccessRateLimit = enhancedRateLimit({
   maxRequests: 30,
   windowMs: 60000,
   perIP: true,
-  keyPrefix: "salon_access",
+  keyPrefix: 'salon_access',
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Apply rate limiting
     const rateLimitResponse = await salonAccessRateLimit(request);
@@ -59,7 +56,7 @@ export async function GET(
 
       if (!user) {
         // If not logged in, require token
-        let token = request.nextUrl.searchParams.get("token");
+        let token = request.nextUrl.searchParams.get('token');
 
         if (token) {
           try {
@@ -68,23 +65,19 @@ export async function GET(
         }
 
         if (!token || !validateSalonToken(id, token)) {
-          return errorResponse("Invalid or missing access token", 403);
+          return errorResponse('Invalid or missing access token', 403);
         }
       }
     }
 
     // Check Redis cache first (for public booking link access)
     const redisKey = buildApiRedisKeyFromPath(`/api/salons/${id}`);
-    let salon:
-      | Awaited<ReturnType<typeof salonService.getSalonById>>
-      | undefined;
+    let salon: Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
 
     // Only use Redis cache for non-UUID (public slug) access without auth context
     if (!isUUID) {
       const redisCached =
-        await getApiRedisCache<
-          Awaited<ReturnType<typeof salonService.getSalonById>>
-        >(redisKey);
+        await getApiRedisCache<Awaited<ReturnType<typeof salonService.getSalonById>>>(redisKey);
       if (redisCached) {
         salon = redisCached;
       }
@@ -92,45 +85,27 @@ export async function GET(
 
     // Check in-memory cache if not found in Redis
     if (!salon) {
-      const cacheKey = buildApiCacheKey("GET", `/api/salons/${id}`);
-      const cachedSalon = getCachedApiResponse<{ data: unknown }>(
-        cacheKey,
-      )?.data;
-      salon = cachedSalon as
-        | Awaited<ReturnType<typeof salonService.getSalonById>>
-        | undefined;
+      const cacheKey = buildApiCacheKey('GET', `/api/salons/${id}`);
+      const cachedSalon = getCachedApiResponse<{ data: unknown }>(cacheKey)?.data;
+      salon = cachedSalon as Awaited<ReturnType<typeof salonService.getSalonById>> | undefined;
       if (!salon) {
         if (isUUID) {
-          salon = await dedupe(`salon:id:${id}`, () =>
-            salonService.getSalonById(id),
-          );
+          salon = await dedupe(`salon:id:${id}`, () => salonService.getSalonById(id));
         } else {
-          salon = await dedupe(`salon:slug:${id}`, () =>
-            salonService.getSalonByBookingLink(id),
-          );
+          salon = await dedupe(`salon:slug:${id}`, () => salonService.getSalonByBookingLink(id));
         }
         if (salon) {
           // Cache in both Redis (for public slug access) and in-memory
           if (!isUUID) {
-            await setApiRedisCache(
-              redisKey,
-              salon,
-              API_REDIS_TTL.BUSINESS_PROFILE,
-            );
+            await setApiRedisCache(redisKey, salon, API_REDIS_TTL.BUSINESS_PROFILE);
           }
-          setCachedApiResponse(
-            cacheKey,
-            { data: salon },
-            CACHE_TTL_API_LONG_MS,
-          );
+          setCachedApiResponse(cacheKey, { data: salon }, CACHE_TTL_API_LONG_MS);
         }
       }
     }
 
     if (!salon) {
-      console.warn(
-        `[SECURITY] Salon not found from IP: ${clientIP}, Link: ${id}`,
-      );
+      console.warn(`[SECURITY] Salon not found from IP: ${clientIP}, Link: ${id}`);
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
     }
 
@@ -138,10 +113,9 @@ export async function GET(
     // This prevents unauthorized access to owner dashboards via guessable slugs
     if (!isUUID && salon) {
       // Check if this is an owner dashboard access attempt
-      const referer = request.headers.get("referer") || "";
-      const pathname = request.nextUrl.pathname || "";
-      const isOwnerDashboardAccess =
-        referer.includes("/owner/") || pathname.includes("/owner/");
+      const referer = request.headers.get('referer') || '';
+      const pathname = request.nextUrl.pathname || '';
+      const isOwnerDashboardAccess = referer.includes('/owner/') || pathname.includes('/owner/');
 
       if (isOwnerDashboardAccess) {
         // Owner dashboard access requires authentication
@@ -149,25 +123,25 @@ export async function GET(
 
         if (!user) {
           console.warn(
-            `[SECURITY] Unauthenticated owner dashboard access attempt from IP: ${clientIP}, BookingLink: ${id}`,
+            `[SECURITY] Unauthenticated owner dashboard access attempt from IP: ${clientIP}, BookingLink: ${id}`
           );
-          return errorResponse("Authentication required", 401);
+          return errorResponse('Authentication required', 401);
         }
 
         // Verify ownership
         const userBusinesses = await userService.getUserBusinesses(user.id);
         const hasAccess = userBusinesses.some(
-          (b: any) => b.id === salon.id || b.booking_link === id,
+          (b: any) => b.id === salon.id || b.booking_link === id
         );
 
         if (!hasAccess) {
           const profile = await userService.getUserProfile(user.id);
-          const isAdmin = profile?.user_type === "admin";
+          const isAdmin = profile?.user_type === 'admin';
           if (!isAdmin) {
             console.warn(
-              `[SECURITY] Unauthorized owner dashboard access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Business: ${salon.id.substring(0, 8)}..., BookingLink: ${id}`,
+              `[SECURITY] Unauthorized owner dashboard access from IP: ${clientIP}, User: ${user.id.substring(0, 8)}..., Business: ${salon.id.substring(0, 8)}..., BookingLink: ${id}`
             );
-            return errorResponse("Access denied", 403);
+            return errorResponse('Access denied', 403);
           }
         }
       }
@@ -182,7 +156,7 @@ export async function GET(
         if (profileMedia) {
           const signed = await mediaService.createSignedUrl(
             profileMedia.id,
-            env.security.signedUrlTtlSeconds,
+            env.security.signedUrlTtlSeconds
           );
           if (signed?.url) payload.owner_image = signed.url;
         }

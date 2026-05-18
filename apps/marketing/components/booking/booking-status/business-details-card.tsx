@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { UI_CUSTOMER, UI_CONTEXT } from "@cusown/config";
-import BusinessesIcon from "@cusown/shared/icons/businesses.svg";
+import { memo } from 'react';
+import { UI_CUSTOMER, UI_CONTEXT } from '@cusown/config';
+import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
 
 interface BusinessDetailsCardProps {
   salon: {
@@ -23,24 +23,18 @@ function BusinessDetailsCardComponent({ salon }: BusinessDetailsCardProps) {
       </h2>
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-            Business Name
-          </p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Business Name</p>
           <p className="font-semibold text-slate-900">{salon.salon_name}</p>
         </div>
         {salon.location && (
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-              Location
-            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Location</p>
             <p className="text-slate-700">{salon.location}</p>
           </div>
         )}
         {salon.address && (
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-              Address
-            </p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Address</p>
             <p className="text-sm text-slate-600">{salon.address}</p>
           </div>
         )}
@@ -52,7 +46,7 @@ function BusinessDetailsCardComponent({ salon }: BusinessDetailsCardProps) {
             <p className="font-semibold text-slate-900">
               {UI_CONTEXT.BUSINESS_RATING_REVIEWS(
                 (salon.rating_avg ?? 0).toFixed(1),
-                salon.review_count ?? 0,
+                salon.review_count ?? 0
               )}
             </p>
           </div>

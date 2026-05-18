@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   salonService,
   generateQRCodeForBookingLink,
@@ -7,21 +7,18 @@ import {
   isValidUUID,
   setCacheHeaders,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 /**
  * GET /api/salons/[id]/qr
  * Generate or retrieve QR code for a salon.
  * Use ?regenerate=1 to force a new QR (e.g. after fixing production URL).
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const regenerate = request.nextUrl.searchParams.get("regenerate") === "1";
+    const regenerate = request.nextUrl.searchParams.get('regenerate') === '1';
 
     if (!id) {
       return errorResponse(ERROR_MESSAGES.SALON_NOT_FOUND, 404);
@@ -45,10 +42,7 @@ export async function GET(
 
     // Generate QR code if it doesn't exist
     try {
-      const qrCode = await generateQRCodeForBookingLink(
-        salon.booking_link,
-        request,
-      );
+      const qrCode = await generateQRCodeForBookingLink(salon.booking_link, request);
 
       // Update salon with QR code using standardized service
       if (qrCode) {
@@ -59,8 +53,8 @@ export async function GET(
       setCacheHeaders(response, 86400, 172800);
       return response;
     } catch (qrError) {
-      console.error("[QR] Generation error:", qrError);
-      return errorResponse("Failed to generate QR code", 500);
+      console.error('[QR] Generation error:', qrError);
+      return errorResponse('Failed to generate QR code', 500);
     }
   } catch (error) {
     const friendlyMessage = getUserFriendlyError(error);

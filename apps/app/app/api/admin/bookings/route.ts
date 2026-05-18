@@ -1,14 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   adminService,
   requireAdmin,
   successResponse,
   errorResponse,
   parseLimitOffset,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/admin/bookings";
+const ROUTE = 'GET /api/admin/bookings';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const { limit, offset } = parseLimitOffset(searchParams);
-    const businessId = searchParams.get("business_id") || undefined;
-    const status = searchParams.get("status") || undefined;
+    const businessId = searchParams.get('business_id') || undefined;
+    const status = searchParams.get('status') || undefined;
 
     const bookings = await adminService.getAllBookings({
       businessId,
@@ -29,8 +29,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(bookings);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

@@ -16,6 +16,6 @@ export {
   loginRateLimit,
   publicApiRateLimit,
   RATE_LIMITS,
-} from "./redis-rate-limit";
+} from './redis-rate-limit';
 
-export type { RedisRateLimitOptions as EnhancedRateLimitOptions } from "./redis-rate-limit";
+export type { RedisRateLimitOptions as EnhancedRateLimitOptions } from './redis-rate-limit';

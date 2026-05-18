@@ -4,15 +4,15 @@
  * Sends malformed/invalid payloads to POST /api/bookings and expects 4xx, no state change.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const API_BASE = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 async function fuzzPostBookings(
   body: unknown,
-  expectStatus: number = 400,
+  expectStatus: number = 400
 ): Promise<{ status: number; ok: boolean; body: unknown }> {
   const res = await fetch(`${API_BASE}/api/bookings`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   const bodyJson = await res.json().catch(() => ({}));
@@ -21,60 +21,60 @@ async function fuzzPostBookings(
 
 async function main() {
   const cases: { name: string; body: unknown; expectStatus?: number }[] = [
-    { name: "empty body", body: {} },
-    { name: "null body", body: null },
+    { name: 'empty body', body: {} },
+    { name: 'null body', body: null },
     {
-      name: "missing salon_id and slot_id",
-      body: { customer_name: "A", customer_phone: "+919999999999" },
+      name: 'missing salon_id and slot_id',
+      body: { customer_name: 'A', customer_phone: '+919999999999' },
     },
     {
-      name: "invalid salon_id format",
+      name: 'invalid salon_id format',
       body: {
-        salon_id: "not-a-uuid",
-        slot_id: "00000000-0000-0000-0000-000000000001",
-        customer_name: "A",
-        customer_phone: "+919999999999",
+        salon_id: 'not-a-uuid',
+        slot_id: '00000000-0000-0000-0000-000000000001',
+        customer_name: 'A',
+        customer_phone: '+919999999999',
       },
     },
     {
-      name: "invalid slot_id format",
+      name: 'invalid slot_id format',
       body: {
-        salon_id: "00000000-0000-0000-0000-000000000001",
-        slot_id: "x",
-        customer_name: "A",
-        customer_phone: "+919999999999",
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: 'x',
+        customer_name: 'A',
+        customer_phone: '+919999999999',
       },
     },
     {
-      name: "empty customer_name",
+      name: 'empty customer_name',
       body: {
-        salon_id: "00000000-0000-0000-0000-000000000001",
-        slot_id: "00000000-0000-0000-0000-000000000002",
-        customer_name: "",
-        customer_phone: "+919999999999",
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: '',
+        customer_phone: '+919999999999',
       },
     },
     {
-      name: "empty customer_phone",
+      name: 'empty customer_phone',
       body: {
-        salon_id: "00000000-0000-0000-0000-000000000001",
-        slot_id: "00000000-0000-0000-0000-000000000002",
-        customer_name: "A",
-        customer_phone: "",
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: 'A',
+        customer_phone: '',
       },
     },
     {
-      name: "extra unknown fields",
+      name: 'extra unknown fields',
       body: {
-        salon_id: "00000000-0000-0000-0000-000000000001",
-        slot_id: "00000000-0000-0000-0000-000000000002",
-        customer_name: "A",
-        customer_phone: "+919999999999",
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: 'A',
+        customer_phone: '+919999999999',
         admin: true,
       },
     },
     {
-      name: "wrong types",
+      name: 'wrong types',
       body: {
         salon_id: 123,
         slot_id: [],
@@ -83,12 +83,12 @@ async function main() {
       },
     },
     {
-      name: "huge name",
+      name: 'huge name',
       body: {
-        salon_id: "00000000-0000-0000-0000-000000000001",
-        slot_id: "00000000-0000-0000-0000-000000000002",
-        customer_name: "x".repeat(300),
-        customer_phone: "+919999999999",
+        salon_id: '00000000-0000-0000-0000-000000000001',
+        slot_id: '00000000-0000-0000-0000-000000000002',
+        customer_name: 'x'.repeat(300),
+        customer_phone: '+919999999999',
       },
     },
   ];

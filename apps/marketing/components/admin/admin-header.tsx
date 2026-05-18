@@ -1,12 +1,6 @@
-"use client";
+'use client';
 
-export default function AdminHeader({
-  title,
-  subtitle,
-}: {
-  title?: string;
-  subtitle?: string;
-}) {
+export default function AdminHeader({ title, subtitle }: { title?: string; subtitle?: string }) {
   return (
     <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
       <div>

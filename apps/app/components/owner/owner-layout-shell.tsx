@@ -1,27 +1,24 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
-import OwnerHeader from "@/components/owner/owner-header";
-import { MobileBrandHeader } from "@/components/layout/mobile-brand-header";
+import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
+import OwnerHeader from '@/components/owner/owner-header';
+import { MobileBrandHeader } from '@/components/layout/mobile-brand-header';
 import {
   OwnerSessionProvider,
   type OwnerInitialUser,
-} from "@/components/owner/owner-session-context";
-import { ROUTES } from "@cusown/shared";
-import { useMounted } from "@cusown/shared/client";
+} from '@/components/owner/owner-session-context';
+import { ROUTES } from '@cusown/shared';
+import { useMounted } from '@cusown/shared/client';
 
-const OwnerSidebar = dynamic(() => import("@/components/owner/owner-sidebar"), {
+const OwnerSidebar = dynamic(() => import('@/components/owner/owner-sidebar'), {
   ssr: false,
 });
 
-const MobileBottomNav = dynamic(
-  () => import("@/components/owner/mobile-bottom-nav"),
-  {
-    ssr: false,
-  },
-);
+const MobileBottomNav = dynamic(() => import('@/components/owner/mobile-bottom-nav'), {
+  ssr: false,
+});
 
 const AuthLoadingSkeleton = () => (
   <div className="min-h-screen bg-white flex items-center justify-center">
@@ -34,7 +31,7 @@ const AuthLoadingSkeleton = () => (
 
 type OwnerLayoutShellProps = {
   children: React.ReactNode;
-  role: "owner";
+  role: 'owner';
   initialUser?: OwnerInitialUser;
   requireClientAuthCheck?: boolean;
 };
@@ -50,12 +47,10 @@ export default function OwnerLayoutShell({
 }: OwnerLayoutShellProps) {
   const mounted = useMounted();
   const pathname = usePathname();
-  const safePathname = pathname ?? "";
+  const safePathname = pathname ?? '';
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientUser, setClientUser] = useState<OwnerInitialUser | null>(null);
-  const [clientCheckDone, setClientCheckDone] = useState(
-    !requireClientAuthCheck,
-  );
+  const [clientCheckDone, setClientCheckDone] = useState(!requireClientAuthCheck);
   const [sessionMissing, setSessionMissing] = useState(false);
 
   useEffect(() => {
@@ -63,8 +58,8 @@ export default function OwnerLayoutShell({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/auth/session", {
-          credentials: "include",
+        const res = await fetch('/api/auth/session', {
+          credentials: 'include',
         });
         const json = await res.json();
         const data = json?.data ?? json;
@@ -79,16 +74,14 @@ export default function OwnerLayoutShell({
         setClientUser({
           id: user.id,
           email: user.email,
-          full_name:
-            (profile as { full_name?: string } | null)?.full_name ?? undefined,
+          full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
           user_type: (
             profile as {
-              user_type?: "owner" | "customer" | "both" | "admin";
+              user_type?: 'owner' | 'customer' | 'both' | 'admin';
             } | null
           )?.user_type,
-          profile_media_id: (
-            profile as { profile_media_id?: string | null } | null
-          )?.profile_media_id,
+          profile_media_id: (profile as { profile_media_id?: string | null } | null)
+            ?.profile_media_id,
         });
       } catch {
         if (!cancelled) {
@@ -105,9 +98,7 @@ export default function OwnerLayoutShell({
 
   const user = initialUser ?? clientUser;
   const loginUrl =
-    typeof ROUTES.AUTH_LOGIN === "function"
-      ? ROUTES.AUTH_LOGIN("/owner/dashboard")
-      : "/auth/login";
+    typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN('/owner/dashboard') : '/auth/login';
 
   if (requireClientAuthCheck && (!mounted || !clientCheckDone)) {
     return <AuthLoadingSkeleton />;
@@ -131,21 +122,19 @@ export default function OwnerLayoutShell({
     );
   }
 
-  const isDashboard = safePathname === "/owner/dashboard";
-  const isProfile = safePathname === "/owner/profile";
-  const isCreateBusiness = safePathname === "/owner/setup";
-  const isBusinesses = safePathname === "/owner/businesses";
-  const isBusinessSetupFlow = /^\/owner\/businesses\/[^/]+\/setup$/.test(
-    safePathname,
-  );
+  const isDashboard = safePathname === '/owner/dashboard';
+  const isProfile = safePathname === '/owner/profile';
+  const isCreateBusiness = safePathname === '/owner/setup';
+  const isBusinesses = safePathname === '/owner/businesses';
+  const isBusinessSetupFlow = /^\/owner\/businesses\/[^/]+\/setup$/.test(safePathname);
   const isBusinessDetail =
-    safePathname.startsWith("/owner/") &&
-    safePathname !== "/owner/dashboard" &&
-    safePathname !== "/owner/setup" &&
-    safePathname !== "/owner/businesses" &&
+    safePathname.startsWith('/owner/') &&
+    safePathname !== '/owner/dashboard' &&
+    safePathname !== '/owner/setup' &&
+    safePathname !== '/owner/businesses' &&
     !isBusinessSetupFlow &&
-    safePathname !== "/owner/profile" &&
-    safePathname.split("/").filter(Boolean).length === 2;
+    safePathname !== '/owner/profile' &&
+    safePathname.split('/').filter(Boolean).length === 2;
   const isOwnerMainArea =
     isDashboard ||
     isCreateBusiness ||
@@ -153,25 +142,16 @@ export default function OwnerLayoutShell({
     isBusinessDetail ||
     isBusinessSetupFlow ||
     isProfile;
-  const mainSpacing = "";
+  const mainSpacing = '';
 
   return (
     <OwnerSessionProvider initialUser={user ?? undefined}>
       <div className="min-h-screen bg-white flex overflow-x-hidden">
-        <OwnerSidebar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
-        <main
-          className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`}
-          suppressHydrationWarning
-        >
+        <OwnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
           <MobileBrandHeader />
           {isOwnerMainArea ? (
-            <div
-              className="w-full px-4 pb-8 pt-4 sm:px-6 md:py-8 lg:px-8"
-              suppressHydrationWarning
-            >
+            <div className="w-full px-4 pb-8 pt-4 sm:px-6 md:py-8 lg:px-8" suppressHydrationWarning>
               <div className="flex flex-col gap-6">
                 {isDashboard && (
                   <OwnerHeader
@@ -186,10 +166,7 @@ export default function OwnerLayoutShell({
                   />
                 )}
                 {isBusinesses && (
-                  <OwnerHeader
-                    title="My Businesses"
-                    subtitle="View and manage your businesses"
-                  />
+                  <OwnerHeader title="My Businesses" subtitle="View and manage your businesses" />
                 )}
                 {isBusinessSetupFlow && (
                   <OwnerHeader
@@ -198,10 +175,7 @@ export default function OwnerLayoutShell({
                   />
                 )}
                 {isProfile && (
-                  <OwnerHeader
-                    title="My Profile"
-                    subtitle="Manage your account and preferences"
-                  />
+                  <OwnerHeader title="My Profile" subtitle="Manage your account and preferences" />
                 )}
                 {children}
               </div>

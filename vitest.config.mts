@@ -1,8 +1,5 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { vitestAliases } from './vitest-aliases.mts';
 
 /**
  * Vitest config for API route tests and service-level tests.
@@ -37,7 +34,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html'],
-      include: ['app/**/*.ts', 'app/**/*.tsx', 'lib/**/*.ts', 'services/**/*.ts', 'components/**/*.ts', 'components/**/*.tsx'],
+      include: [
+        'apps/app/app/**/*.ts',
+        'apps/app/app/**/*.tsx',
+        'apps/app/components/**/*.ts',
+        'apps/app/components/**/*.tsx',
+        'packages/shared/src/**/*.ts',
+      ],
       exclude: ['**/*.test.*', '**/*.spec.*', '**/node_modules/**', '**/.next/**'],
       thresholds: {
         statements: 80,
@@ -48,8 +51,6 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
-    },
+    alias: vitestAliases,
   },
 });

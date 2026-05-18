@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { BOOKING_STATUS } from "@cusown/config";
-import { BookingWithDetails } from "../../types";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { BOOKING_STATUS } from '@cusown/config';
+import { BookingWithDetails } from '../../types';
 
 export type OwnerDashboardStatusFilter =
-  | "all"
+  | 'all'
   | (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS];
 
 interface DashboardStats {
@@ -33,10 +33,7 @@ interface OwnerDashboardState {
 
   setStats: (stats: DashboardStats | null) => void;
   setBookings: (bookings: BookingWithDetails[]) => void;
-  updateBooking: (
-    bookingId: string,
-    updates: Partial<BookingWithDetails>,
-  ) => void;
+  updateBooking: (bookingId: string, updates: Partial<BookingWithDetails>) => void;
   setFromDate: (date: string) => void;
   setToDate: (date: string) => void;
   setDateRange: (from: string, to: string) => void;
@@ -55,25 +52,25 @@ const CACHE_TTL_MS = 30_000;
 
 const initialState: Pick<
   OwnerDashboardState,
-  | "stats"
-  | "bookings"
-  | "fromDate"
-  | "toDate"
-  | "businessIdFilter"
-  | "statusFilter"
-  | "searchTerm"
-  | "processingBookingId"
-  | "isLoading"
-  | "isRefreshing"
-  | "lastFetchedAt"
+  | 'stats'
+  | 'bookings'
+  | 'fromDate'
+  | 'toDate'
+  | 'businessIdFilter'
+  | 'statusFilter'
+  | 'searchTerm'
+  | 'processingBookingId'
+  | 'isLoading'
+  | 'isRefreshing'
+  | 'lastFetchedAt'
 > = {
   stats: null,
   bookings: [],
-  fromDate: "",
-  toDate: "",
-  businessIdFilter: "",
-  statusFilter: "all",
-  searchTerm: "",
+  fromDate: '',
+  toDate: '',
+  businessIdFilter: '',
+  statusFilter: 'all',
+  searchTerm: '',
   processingBookingId: null,
   isLoading: true,
   isRefreshing: false,
@@ -95,7 +92,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
       updateBooking: (bookingId, updates) =>
         set((state) => {
           const updatedBookings = state.bookings.map((booking) =>
-            booking.id === bookingId ? { ...booking, ...updates } : booking,
+            booking.id === bookingId ? { ...booking, ...updates } : booking
           );
 
           return {
@@ -104,15 +101,9 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
               ? {
                   ...state.stats,
                   totalBookings: updatedBookings.length,
-                  confirmedBookings: updatedBookings.filter(
-                    (b) => b.status === "confirmed",
-                  ).length,
-                  pendingBookings: updatedBookings.filter(
-                    (b) => b.status === "pending",
-                  ).length,
-                  cancelledBookings: updatedBookings.filter(
-                    (b) => b.status === "cancelled",
-                  ).length,
+                  confirmedBookings: updatedBookings.filter((b) => b.status === 'confirmed').length,
+                  pendingBookings: updatedBookings.filter((b) => b.status === 'pending').length,
+                  cancelledBookings: updatedBookings.filter((b) => b.status === 'cancelled').length,
                 }
               : state.stats,
           };
@@ -130,8 +121,7 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
 
       setSearchTerm: (searchTerm) => set({ searchTerm }),
 
-      setProcessingBookingId: (processingBookingId) =>
-        set({ processingBookingId }),
+      setProcessingBookingId: (processingBookingId) => set({ processingBookingId }),
 
       setIsLoading: (isLoading) => set({ isLoading }),
 
@@ -141,21 +131,21 @@ export const useOwnerDashboardStore = create<OwnerDashboardState>()(
 
       clearFilters: () =>
         set({
-          fromDate: "",
-          toDate: "",
-          businessIdFilter: "",
-          statusFilter: "all",
-          searchTerm: "",
+          fromDate: '',
+          toDate: '',
+          businessIdFilter: '',
+          statusFilter: 'all',
+          searchTerm: '',
         }),
 
       reset: () => set(initialState),
     }),
     {
       /** v2: do not persist date filters (they hid bookings via API + localStorage). */
-      name: "owner-dashboard-store-v2",
+      name: 'owner-dashboard-store-v2',
       partialize: () => ({}),
-    },
-  ),
+    }
+  )
 );
 
 export const selectOwnerHasValidCache = (state: OwnerDashboardState) => {
@@ -167,10 +157,10 @@ export const selectBookingCounts = (state: OwnerDashboardState) => {
   const { bookings } = state;
   return {
     total: bookings.length,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
-    cancelled: bookings.filter((b) => b.status === "cancelled").length,
-    rejected: bookings.filter((b) => b.status === "rejected").length,
+    pending: bookings.filter((b) => b.status === 'pending').length,
+    confirmed: bookings.filter((b) => b.status === 'confirmed').length,
+    cancelled: bookings.filter((b) => b.status === 'cancelled').length,
+    rejected: bookings.filter((b) => b.status === 'rejected').length,
   };
 };
 

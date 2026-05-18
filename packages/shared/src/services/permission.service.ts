@@ -4,7 +4,7 @@
  * No hardcoded role string checks.
  */
 
-import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
 
 /** role_id -> Set(permission_name). Built from role_permissions + permissions; refreshed by TTL. */
 let rolePermissionsMap: Map<string, Set<string>> | null = null;
@@ -14,17 +14,17 @@ const ROLE_PERMISSIONS_TTL_MS = 60_000;
 
 /** Permission names used by API routes. */
 export const PERMISSIONS = {
-  ADMIN_ACCESS: "admin:access",
-  BUSINESSES_READ: "businesses:read",
-  BUSINESSES_WRITE: "businesses:write",
-  BOOKINGS_READ: "bookings:read",
-  BOOKINGS_WRITE: "bookings:write",
-  BOOKINGS_CONFIRM: "bookings:confirm",
-  BOOKINGS_REJECT: "bookings:reject",
-  SLOTS_READ: "slots:read",
-  SLOTS_WRITE: "slots:write",
-  AUDIT_READ: "audit:read",
-  USERS_READ: "users:read",
+  ADMIN_ACCESS: 'admin:access',
+  BUSINESSES_READ: 'businesses:read',
+  BUSINESSES_WRITE: 'businesses:write',
+  BOOKINGS_READ: 'bookings:read',
+  BOOKINGS_WRITE: 'bookings:write',
+  BOOKINGS_CONFIRM: 'bookings:confirm',
+  BOOKINGS_REJECT: 'bookings:reject',
+  SLOTS_READ: 'slots:read',
+  SLOTS_WRITE: 'slots:write',
+  AUDIT_READ: 'audit:read',
+  USERS_READ: 'users:read',
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -35,13 +35,11 @@ export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 async function buildRolePermissionsMap(): Promise<Map<string, Set<string>>> {
   const supabase = requireSupabaseAdmin();
   const [rpRes, permRes] = await Promise.all([
-    supabase.from("role_permissions").select("role_id, permission_id"),
-    supabase.from("permissions").select("id, name"),
+    supabase.from('role_permissions').select('role_id, permission_id'),
+    supabase.from('permissions').select('id, name'),
   ]);
-  if (rpRes.error)
-    throw new Error(rpRes.error.message || "Failed to load role_permissions");
-  if (permRes.error)
-    throw new Error(permRes.error.message || "Failed to load permissions");
+  if (rpRes.error) throw new Error(rpRes.error.message || 'Failed to load role_permissions');
+  if (permRes.error) throw new Error(permRes.error.message || 'Failed to load permissions');
   const idToName = new Map<string, string>();
   for (const p of permRes.data ?? []) {
     idToName.set(p.id, p.name);
@@ -65,10 +63,7 @@ async function buildRolePermissionsMap(): Promise<Map<string, Set<string>>> {
  */
 async function getRolePermissionsMap(): Promise<Map<string, Set<string>>> {
   const now = Date.now();
-  if (
-    rolePermissionsMap &&
-    now - rolePermissionsMapBuiltAt < ROLE_PERMISSIONS_TTL_MS
-  ) {
+  if (rolePermissionsMap && now - rolePermissionsMapBuiltAt < ROLE_PERMISSIONS_TTL_MS) {
     return rolePermissionsMap;
   }
   rolePermissionsMap = await buildRolePermissionsMap();
@@ -80,34 +75,32 @@ async function getRolePermissionsMap(): Promise<Map<string, Set<string>>> {
  * Get set of permission names for a user (user_roles -> union of role permissions).
  * Falls back to user_profiles.user_type if no roles are explicitly assigned.
  */
-export async function getUserPermissionSet(
-  userId: string,
-): Promise<Set<string>> {
+export async function getUserPermissionSet(userId: string): Promise<Set<string>> {
   const supabase = requireSupabaseAdmin();
   const { data: userRoles, error } = await supabase
-    .from("user_roles")
-    .select("role_id")
-    .eq("user_id", userId);
+    .from('user_roles')
+    .select('role_id')
+    .eq('user_id', userId);
 
-  if (error) throw new Error(error.message || "Failed to load user roles");
+  if (error) throw new Error(error.message || 'Failed to load user roles');
 
   let roleIds = (userRoles ?? []).map((r: { role_id: string }) => r.role_id);
 
   // FALLBACK: If no roles in user_roles, check user_profiles.user_type
   if (roleIds.length === 0) {
     const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("user_type")
-      .eq("id", userId)
+      .from('user_profiles')
+      .select('user_type')
+      .eq('id', userId)
       .maybeSingle();
 
     if (profile?.user_type) {
-      const { ROLE_IDS } = await import("@cusown/config");
+      const { ROLE_IDS } = await import('@cusown/config');
       const type = profile.user_type;
-      if (type === "admin") roleIds = [ROLE_IDS.admin];
-      else if (type === "both") roleIds = [ROLE_IDS.owner, ROLE_IDS.customer];
-      else if (type === "owner") roleIds = [ROLE_IDS.owner];
-      else if (type === "customer") roleIds = [ROLE_IDS.customer];
+      if (type === 'admin') roleIds = [ROLE_IDS.admin];
+      else if (type === 'both') roleIds = [ROLE_IDS.owner, ROLE_IDS.customer];
+      else if (type === 'owner') roleIds = [ROLE_IDS.owner];
+      else if (type === 'customer') roleIds = [ROLE_IDS.customer];
     }
   }
 
@@ -127,22 +120,22 @@ export async function getUserPermissionSet(
  */
 async function isEmailInAdminUsers(
   supabase: ReturnType<typeof requireSupabaseAdmin>,
-  email: string,
+  email: string
 ): Promise<boolean> {
   if (!email?.trim()) return false;
   const normalized = email.trim().toLowerCase();
   const { data, error } = await supabase
-    .from("admin_users")
-    .select("id")
-    .eq("is_admin", true)
-    .eq("email", normalized)
+    .from('admin_users')
+    .select('id')
+    .eq('is_admin', true)
+    .eq('email', normalized)
     .maybeSingle();
   if (!error && data) return true;
   const { data: fallback, error: fallbackError } = await supabase
-    .from("admin_users")
-    .select("id")
-    .eq("is_admin", true)
-    .ilike("email", normalized)
+    .from('admin_users')
+    .select('id')
+    .eq('is_admin', true)
+    .ilike('email', normalized)
     .maybeSingle();
   if (fallbackError) return false;
   return !!fallback;
@@ -152,10 +145,7 @@ async function isEmailInAdminUsers(
  * O(1) permission check: user has permission if name is in their permission set.
  * For admin:access, also grants access if user's email is in admin_users table.
  */
-export async function hasPermission(
-  userId: string,
-  permissionName: string,
-): Promise<boolean> {
+export async function hasPermission(userId: string, permissionName: string): Promise<boolean> {
   if (permissionName === PERMISSIONS.ADMIN_ACCESS) {
     try {
       const supabase = requireSupabaseAdmin();

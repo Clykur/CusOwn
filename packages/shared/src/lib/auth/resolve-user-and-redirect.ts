@@ -4,12 +4,12 @@
  * @deprecated Dashboard layouts use resolveUserAccess from @/services/access.service. Kept for non-layout callers.
  */
 
-import type { NextRequest } from "next/server";
-import { getServerUser, getServerUserProfile } from "../supabase/server-auth";
-import { getUserState } from "../utils/user-state";
-import type { UserStateResult } from "../utils/user-state";
-import type { ServerUserProfileResult } from "../supabase/server-auth";
-import { ROUTES } from "../utils/navigation";
+import type { NextRequest } from 'next/server';
+import { getServerUser, getServerUserProfile } from '../supabase/server-auth';
+import { getUserState } from '../utils/user-state';
+import type { UserStateResult } from '../utils/user-state';
+import type { ServerUserProfileResult } from '../supabase/server-auth';
+import { ROUTES } from '../utils/navigation';
 
 export type ResolvedAuth = {
   user: { id: string; email?: string };
@@ -27,26 +27,25 @@ export type ResolvedAuth = {
 
 export type ResolveOptions = {
   /** Require specific scope; if set, redirect when user cannot access this scope. */
-  requireScope?: "admin" | "owner" | "customer";
+  requireScope?: 'admin' | 'owner' | 'customer';
   /** Base URL for redirects (default from request or headers). */
   baseUrl?: string;
 };
 
 /** In dev, localhost without port is not reachable (Next runs on 3000). Use port 3000. */
 function normalizeHostForRedirect(host: string): string {
-  if (process.env.NODE_ENV !== "development") return host;
-  const h = host.split(":")[0]?.toLowerCase();
-  if (h === "localhost" && !host.includes(":")) {
-    return "localhost:3000";
+  if (process.env.NODE_ENV !== 'development') return host;
+  const h = host.split(':')[0]?.toLowerCase();
+  if (h === 'localhost' && !host.includes(':')) {
+    return 'localhost:3000';
   }
   return host;
 }
 
 function buildBaseUrlFromHeaders(headers: Headers): string {
-  const host =
-    headers.get("x-forwarded-host") ?? headers.get("host") ?? "localhost";
+  const host = headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost';
   const normalizedHost = normalizeHostForRedirect(host);
-  const proto = headers.get("x-forwarded-proto") ?? "http";
+  const proto = headers.get('x-forwarded-proto') ?? 'http';
   return `${proto}://${normalizedHost}/`;
 }
 
@@ -57,16 +56,16 @@ function buildBaseUrlFromHeaders(headers: Headers): string {
  */
 export async function resolveUserAndRedirect(
   requestOrContext?: NextRequest | null,
-  options?: ResolveOptions,
+  options?: ResolveOptions
 ): Promise<ResolvedAuth> {
   let baseUrl: string;
   let request: Request | undefined;
 
-  if (requestOrContext && "url" in requestOrContext) {
+  if (requestOrContext && 'url' in requestOrContext) {
     baseUrl = options?.baseUrl ?? `${new URL(requestOrContext.url).origin}/`;
     request = requestOrContext as Request;
   } else {
-    const { headers } = await import("next/headers");
+    const { headers } = await import('next/headers');
     const headersList = await headers();
     baseUrl = options?.baseUrl ?? buildBaseUrlFromHeaders(headersList);
     request = new Request(baseUrl, {
@@ -77,34 +76,30 @@ export async function resolveUserAndRedirect(
   const requireScope = options?.requireScope;
 
   const user = await getServerUser(request);
-  const isLayoutContext = !requestOrContext || !("url" in requestOrContext);
+  const isLayoutContext = !requestOrContext || !('url' in requestOrContext);
 
   if (!user) {
     const pathname =
-      request && "nextUrl" in request
-        ? (request as NextRequest).nextUrl.pathname
-        : undefined;
+      request && 'nextUrl' in request ? (request as NextRequest).nextUrl.pathname : undefined;
     let loginPath =
-      typeof ROUTES.AUTH_LOGIN === "function"
-        ? ROUTES.AUTH_LOGIN(pathname)
-        : "/auth/login";
+      typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN(pathname) : '/auth/login';
     const loginUrl = new URL(loginPath, baseUrl);
-    loginUrl.searchParams.set("redirect_from", "guard");
+    loginUrl.searchParams.set('redirect_from', 'guard');
     const redirectToLogin = loginUrl.toString();
 
     if (isLayoutContext) {
       // Layout often cannot see cookies (RSC). Do not redirect; let client verify session and redirect.
       return {
-        user: { id: "" },
+        user: { id: '' },
         profile: null,
         state: {
-          state: "S0",
+          state: 'S0',
           authenticated: false,
           profileExists: false,
           userType: null,
           businessCount: 0,
           redirectUrl: redirectToLogin,
-          reason: "unauthenticated",
+          reason: 'unauthenticated',
           canAccessOwnerDashboard: false,
           canAccessCustomerDashboard: false,
           canAccessSetup: false,
@@ -121,16 +116,16 @@ export async function resolveUserAndRedirect(
     }
 
     return {
-      user: { id: "" },
+      user: { id: '' },
       profile: null,
       state: {
-        state: "S0",
+        state: 'S0',
         authenticated: false,
         profileExists: false,
         userType: null,
         businessCount: 0,
         redirectUrl: redirectToLogin,
-        reason: "unauthenticated",
+        reason: 'unauthenticated',
         canAccessOwnerDashboard: false,
         canAccessCustomerDashboard: false,
         canAccessSetup: false,
@@ -164,53 +159,45 @@ export async function resolveUserAndRedirect(
 
   // Customer scope: do not redirect to onboarding; let them stay on customer dashboard.
   if (
-    requireScope === "customer" &&
+    requireScope === 'customer' &&
     permissions.canAccessCustomer &&
     redirectUrl &&
     (new URL(redirectUrl).pathname === ROUTES.SETUP ||
-      new URL(redirectUrl).pathname === "/select-role")
+      new URL(redirectUrl).pathname === '/select-role')
   ) {
     redirectUrl = null;
   }
 
-  if (requireScope === "admin" && !permissions.canAccessAdmin) {
-    void import("../../services/audit.service").then(({ auditService }) =>
-      auditService.createAuditLog(user.id, "admin_access_denied", "user", {
+  if (requireScope === 'admin' && !permissions.canAccessAdmin) {
+    void import('../../services/audit.service').then(({ auditService }) =>
+      auditService.createAuditLog(user.id, 'admin_access_denied', 'user', {
         entityId: user.id,
-        description: "Attempted admin area access without admin role",
-        request: request as import("next/server").NextRequest,
-      }),
+        description: 'Attempted admin area access without admin role',
+        request: request as import('next/server').NextRequest,
+      })
     );
-    redirectUrl =
-      redirectUrl ??
-      new URL(state.redirectUrl ?? ROUTES.HOME, baseUrl).toString();
+    redirectUrl = redirectUrl ?? new URL(state.redirectUrl ?? ROUTES.HOME, baseUrl).toString();
   }
-  if (requireScope === "owner" && !permissions.canAccessOwner) {
+  if (requireScope === 'owner' && !permissions.canAccessOwner) {
     // Owner with no business → send to onboarding flow instead of error page
-    if (
-      state.canAccessSetup &&
-      (state.userType === "owner" || state.userType === "both")
-    ) {
-      redirectUrl = new URL(ROUTES.SELECT_ROLE("owner"), baseUrl).toString();
+    if (state.canAccessSetup && (state.userType === 'owner' || state.userType === 'both')) {
+      redirectUrl = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl).toString();
     } else {
-      const selectRoleUrl = new URL(ROUTES.SELECT_ROLE("owner"), baseUrl);
-      selectRoleUrl.searchParams.set("error", "not_owner");
+      const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('owner'), baseUrl);
+      selectRoleUrl.searchParams.set('error', 'not_owner');
       redirectUrl = selectRoleUrl.toString();
     }
   }
-  if (requireScope === "customer" && !permissions.canAccessCustomer) {
-    const selectRoleUrl = new URL(ROUTES.SELECT_ROLE("customer"), baseUrl);
-    selectRoleUrl.searchParams.set("error", "not_customer");
+  if (requireScope === 'customer' && !permissions.canAccessCustomer) {
+    const selectRoleUrl = new URL(ROUTES.SELECT_ROLE('customer'), baseUrl);
+    selectRoleUrl.searchParams.set('error', 'not_customer');
     redirectUrl = selectRoleUrl.toString();
   }
 
   // User has permission for this scope: do not redirect (avoids loop when already on scope path).
-  if (requireScope === "admin" && permissions.canAccessAdmin)
-    redirectUrl = null;
-  if (requireScope === "owner" && permissions.canAccessOwner)
-    redirectUrl = null;
-  if (requireScope === "customer" && permissions.canAccessCustomer)
-    redirectUrl = null;
+  if (requireScope === 'admin' && permissions.canAccessAdmin) redirectUrl = null;
+  if (requireScope === 'owner' && permissions.canAccessOwner) redirectUrl = null;
+  if (requireScope === 'customer' && permissions.canAccessCustomer) redirectUrl = null;
 
   return {
     user: { id: user.id, email: user.email ?? undefined },

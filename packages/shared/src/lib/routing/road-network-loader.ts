@@ -5,7 +5,7 @@
  * For testing/development, uses synthetic grid-based road networks.
  */
 
-import { WeightedGraph, GraphNode, GraphEdge } from "./graph-data-structures";
+import { WeightedGraph, GraphNode, GraphEdge } from './graph-data-structures';
 
 interface SyntheticNetworkOptions {
   centerLat: number;
@@ -19,17 +19,14 @@ interface SyntheticNetworkOptions {
  * Create a synthetic grid-based road network for testing.
  * Useful for development and benchmarking before connecting to real OSM data.
  */
-export function createSyntheticRoadNetwork(
-  options: SyntheticNetworkOptions,
-): WeightedGraph {
+export function createSyntheticRoadNetwork(options: SyntheticNetworkOptions): WeightedGraph {
   const graph = new WeightedGraph();
   const { centerLat, centerLng, gridSpacingKm, gridSize, roadType } = options;
 
   // Rough conversion: 1 degree latitude ≈ 111 km
   const degreesPerKm = 1 / 111.32;
   const latSpacing = gridSpacingKm * degreesPerKm;
-  const lngSpacing =
-    (gridSpacingKm * degreesPerKm) / Math.cos((centerLat * Math.PI) / 180);
+  const lngSpacing = (gridSpacingKm * degreesPerKm) / Math.cos((centerLat * Math.PI) / 180);
 
   // Create grid nodes
   const nodes: Map<string, GraphNode> = new Map();
@@ -46,7 +43,7 @@ export function createSyntheticRoadNetwork(
         id: nodeId,
         latitude: lat,
         longitude: lng,
-        metadata: { type: "intersection", gridI: i, gridJ: j },
+        metadata: { type: 'intersection', gridI: i, gridJ: j },
       };
 
       nodes.set(nodeId, node);
@@ -69,7 +66,7 @@ export function createSyntheticRoadNetwork(
           currentNode.latitude,
           currentNode.longitude,
           rightNode.latitude,
-          rightNode.longitude,
+          rightNode.longitude
         );
 
         const edge: GraphEdge = {
@@ -94,7 +91,7 @@ export function createSyntheticRoadNetwork(
           currentNode.latitude,
           currentNode.longitude,
           downNode.latitude,
-          downNode.longitude,
+          downNode.longitude
         );
 
         const edge: GraphEdge = {
@@ -125,7 +122,7 @@ export function createTestNetwork(): WeightedGraph {
     centerLng: -74.006,
     gridSpacingKm: 0.5, // 500m blocks
     gridSize: 5, // 5x5 grid
-    roadType: "local_road",
+    roadType: 'local_road',
   });
 }
 
@@ -138,7 +135,7 @@ export function createCitySampleNetwork(): WeightedGraph {
     centerLng: -74.006,
     gridSpacingKm: 0.3, // 300m blocks
     gridSize: 10, // 10x10 grid
-    roadType: "city_street",
+    roadType: 'city_street',
   });
 }
 
@@ -154,11 +151,9 @@ export function addBusinessNodesToGraph(
     name: string;
     latitude: number;
     longitude: number;
-  }>,
+  }>
 ): void {
-  const gridNodes = graph
-    .getAllNodes()
-    .filter((n) => n.metadata?.type === "intersection");
+  const gridNodes = graph.getAllNodes().filter((n) => n.metadata?.type === 'intersection');
 
   for (const business of businesses) {
     // Find nearest grid node
@@ -170,7 +165,7 @@ export function addBusinessNodesToGraph(
         business.latitude,
         business.longitude,
         gridNode.latitude,
-        gridNode.longitude,
+        gridNode.longitude
       );
       if (dist < minDistance) {
         minDistance = dist;
@@ -184,7 +179,7 @@ export function addBusinessNodesToGraph(
       latitude: business.latitude,
       longitude: business.longitude,
       metadata: {
-        type: "business",
+        type: 'business',
         businessId: business.id,
         businessName: business.name,
       },
@@ -198,7 +193,7 @@ export function addBusinessNodesToGraph(
       from: `business-${business.id}`,
       to: nearestNode.id,
       distanceKm: minDistance,
-      roadType: "connector",
+      roadType: 'connector',
       bidirectional: true,
       walkable: true,
       drivable: true,
@@ -211,12 +206,7 @@ export function addBusinessNodesToGraph(
 /**
  * Helper: Simple Haversine distance (inline, for loader use).
  */
-function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   if (lat1 === lat2 && lon1 === lon2) return 0;
 
   const EARTH_RADIUS_KM = 6371.0088;

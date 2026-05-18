@@ -1,10 +1,10 @@
 #!/usr/bin/env ts-node
 
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
-import os from "os";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import os from 'os';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   STRESS_TEST_DEFAULT_CONCURRENT_USERS,
   STRESS_TEST_DEFAULT_DURATION_SEC,
@@ -19,72 +19,63 @@ import {
   BOOKING_STATUS,
   SLOT_STATUS,
   BOOKING_IDEMPOTENCY_HEADER,
-} from "@/config/constants";
+} from '@/config/constants';
 
-const NODE_ENV = process.env.NODE_ENV || "development";
+const NODE_ENV = process.env.NODE_ENV || 'development';
 const ALLOW_STRESS_TEST =
-  process.env.STRESS_TEST_ALLOWED === "true" ||
-  process.env.STRESS_TEST_ALLOWED === "1";
+  process.env.STRESS_TEST_ALLOWED === 'true' || process.env.STRESS_TEST_ALLOWED === '1';
 
-if (NODE_ENV === "production" && !ALLOW_STRESS_TEST) {
-  console.error(
-    "Stress test is not allowed in production. Set STRESS_TEST_ALLOWED=1 to override.",
-  );
+if (NODE_ENV === 'production' && !ALLOW_STRESS_TEST) {
+  console.error('Stress test is not allowed in production. Set STRESS_TEST_ALLOWED=1 to override.');
   process.exit(1);
 }
 
 const CONCURRENT_USERS = parseInt(
-  process.env.STRESS_CONCURRENT_USERS ??
-    String(STRESS_TEST_DEFAULT_CONCURRENT_USERS),
-  10,
+  process.env.STRESS_CONCURRENT_USERS ?? String(STRESS_TEST_DEFAULT_CONCURRENT_USERS),
+  10
 );
 const DURATION_SEC = parseInt(
   process.env.STRESS_DURATION_SEC ?? String(STRESS_TEST_DEFAULT_DURATION_SEC),
-  10,
+  10
 );
 const REQUESTS_PER_SEC = parseInt(
-  process.env.STRESS_REQUESTS_PER_SEC ??
-    String(STRESS_TEST_DEFAULT_REQUESTS_PER_SEC),
-  10,
+  process.env.STRESS_REQUESTS_PER_SEC ?? String(STRESS_TEST_DEFAULT_REQUESTS_PER_SEC),
+  10
 );
 const MIN_BUSINESSES = parseInt(
-  process.env.STRESS_MIN_BUSINESSES ??
-    String(STRESS_TEST_DEFAULT_MIN_BUSINESSES),
-  10,
+  process.env.STRESS_MIN_BUSINESSES ?? String(STRESS_TEST_DEFAULT_MIN_BUSINESSES),
+  10
 );
 const MIN_SLOTS = parseInt(
   process.env.STRESS_MIN_SLOTS ?? String(STRESS_TEST_DEFAULT_MIN_SLOTS),
-  10,
+  10
 );
 const MONITOR_INTERVAL_MS = parseInt(
   process.env.STRESS_MONITOR_INTERVAL_MS ?? String(STRESS_MONITOR_INTERVAL_MS),
-  10,
+  10
 );
 const EVENT_LOOP_LAG_THRESHOLD_MS = parseInt(
-  process.env.STRESS_EVENT_LOOP_LAG_THRESHOLD_MS ??
-    String(STRESS_EVENT_LOOP_LAG_THRESHOLD_MS),
-  10,
+  process.env.STRESS_EVENT_LOOP_LAG_THRESHOLD_MS ?? String(STRESS_EVENT_LOOP_LAG_THRESHOLD_MS),
+  10
 );
 const CPU_LIMIT_PCT = parseInt(
   process.env.STRESS_CPU_LIMIT_PCT ?? String(STRESS_CPU_LIMIT_PCT),
-  10,
+  10
 );
 const POOL_EXHAUSTION_PCT = parseInt(
   process.env.STRESS_POOL_EXHAUSTION_PCT ?? String(STRESS_POOL_EXHAUSTION_PCT),
-  10,
+  10
 );
 const BASE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.STRESS_BASE_URL ||
-  "http://localhost:3000"
-).replace(/\/$/, "");
+  'http://localhost:3000'
+).replace(/\/$/, '');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY",
-  );
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 
@@ -104,9 +95,9 @@ type DbPoolStats = {
 
 async function getConnectionPoolStats(): Promise<DbPoolStats | null> {
   try {
-    const { data, error } = await supabase.rpc("get_connection_pool_stats");
+    const { data, error } = await supabase.rpc('get_connection_pool_stats');
     if (error || data == null) return null;
-    const raw = typeof data === "string" ? JSON.parse(data) : data;
+    const raw = typeof data === 'string' ? JSON.parse(data) : data;
     const active = Number(raw.active) || 0;
     const idle = Number(raw.idle) || 0;
     const waiting = Number(raw.waiting) || 0;
@@ -136,10 +127,10 @@ function measureEventLoopLag(): Promise<number> {
 
 function getEventLoopUtilization(): number | null {
   try {
-    const perf = require("perf_hooks").performance;
-    if (typeof perf.eventLoopUtilization === "function") {
+    const perf = require('perf_hooks').performance;
+    if (typeof perf.eventLoopUtilization === 'function') {
       const u = perf.eventLoopUtilization();
-      return typeof u.utilization === "number" ? u.utilization : null;
+      return typeof u.utilization === 'number' ? u.utilization : null;
     }
   } catch {}
   return null;
@@ -149,22 +140,22 @@ type SlotTarget = { businessId: string; slotId: string; salonName: string };
 
 async function loadSlotPool(): Promise<SlotTarget[]> {
   const { data: businesses } = await supabase
-    .from("businesses")
-    .select("id, salon_name")
-    .eq("suspended", false)
+    .from('businesses')
+    .select('id, salon_name')
+    .eq('suspended', false)
     .limit(Math.max(MIN_BUSINESSES, 10));
 
   if (!businesses?.length) {
-    throw new Error("No active businesses for stress test");
+    throw new Error('No active businesses for stress test');
   }
 
   const pool: SlotTarget[] = [];
   for (const b of businesses) {
     const { data: slots } = await supabase
-      .from("slots")
-      .select("id")
-      .eq("business_id", b.id)
-      .eq("status", "available")
+      .from('slots')
+      .select('id')
+      .eq('business_id', b.id)
+      .eq('status', 'available')
       .limit(Math.max(20, MIN_SLOTS));
 
     if (slots?.length) {
@@ -175,9 +166,7 @@ async function loadSlotPool(): Promise<SlotTarget[]> {
   }
 
   if (pool.length < MIN_SLOTS) {
-    throw new Error(
-      `Not enough available slots (need at least ${MIN_SLOTS}, got ${pool.length})`,
-    );
+    throw new Error(`Not enough available slots (need at least ${MIN_SLOTS}, got ${pool.length})`);
   }
   return pool;
 }
@@ -207,10 +196,9 @@ type StressStats = {
 async function runStress(
   slotPool: SlotTarget[],
   abortSignal: AbortFlag,
-  stats: StressStats,
+  stats: StressStats
 ): Promise<void> {
-  const delayMs =
-    REQUESTS_PER_SEC > 0 ? (1000 * CONCURRENT_USERS) / REQUESTS_PER_SEC : 0;
+  const delayMs = REQUESTS_PER_SEC > 0 ? (1000 * CONCURRENT_USERS) / REQUESTS_PER_SEC : 0;
   const startTime = Date.now();
   const endTime = startTime + DURATION_SEC * 1000;
   stats.lastCpuUsage = process.cpuUsage();
@@ -231,17 +219,17 @@ async function runStress(
         const timeoutController = new AbortController();
         const timeoutId = setTimeout(() => timeoutController.abort(), 30000);
         const res = await fetch(`${BASE_URL}/api/bookings`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             [BOOKING_IDEMPOTENCY_HEADER]: idempotencyKey,
-            "x-request-id": crypto.randomUUID(),
+            'x-request-id': crypto.randomUUID(),
           },
           body: JSON.stringify({
             salon_id: slot.businessId,
             slot_id: slot.slotId,
             customer_name: `Stress User ${workerId}`,
-            customer_phone: "+919876543210",
+            customer_phone: '+919876543210',
           }),
           signal: timeoutController.signal,
         });
@@ -270,18 +258,13 @@ async function runStress(
     const now = Date.now();
     const elapsed = (now - startTime) / 1000;
     const rps = stats.requestCount / elapsed || 0;
-    const successRate = stats.requestCount
-      ? (stats.successCount / stats.requestCount) * 100
-      : 0;
-    const failRate = stats.requestCount
-      ? (stats.failureCount / stats.requestCount) * 100
-      : 0;
+    const successRate = stats.requestCount ? (stats.successCount / stats.requestCount) * 100 : 0;
+    const failRate = stats.requestCount ? (stats.failureCount / stats.requestCount) * 100 : 0;
     const avgLatency =
       stats.latencies.length > 0
         ? stats.latencies.reduce((a, b) => a + b, 0) / stats.latencies.length
         : 0;
-    const peakLatency =
-      stats.latencies.length > 0 ? Math.max(...stats.latencies) : 0;
+    const peakLatency = stats.latencies.length > 0 ? Math.max(...stats.latencies) : 0;
     const heapMb = process.memoryUsage().heapUsed / 1024 / 1024;
     stats.memorySamples.push(process.memoryUsage().heapUsed);
 
@@ -293,10 +276,7 @@ async function runStress(
     const cpuDelta = process.cpuUsage(stats.lastCpuUsage);
     stats.lastCpuUsage = process.cpuUsage();
     stats.lastCpuTime = now;
-    const cpuUtil =
-      cpuElapsedSec > 0
-        ? (cpuDelta.user + cpuDelta.system) / 1e6 / cpuElapsedSec
-        : 0;
+    const cpuUtil = cpuElapsedSec > 0 ? (cpuDelta.user + cpuDelta.system) / 1e6 / cpuElapsedSec : 0;
     const cpuPct = Math.min(100, Math.round(cpuUtil * 100));
     if (cpuPct > stats.peakCpuPct) stats.peakCpuPct = cpuPct;
     if (cpuPct >= CPU_LIMIT_PCT) {
@@ -313,10 +293,8 @@ async function runStress(
       dbStats = await getConnectionPoolStats();
       if (dbStats) {
         const totalConn = dbStats.active + dbStats.idle;
-        if (totalConn > stats.peakDbConnections)
-          stats.peakDbConnections = totalConn;
-        if (dbStats.pool_usage_pct >= POOL_EXHAUSTION_PCT)
-          stats.dbPoolExhausted = true;
+        if (totalConn > stats.peakDbConnections) stats.peakDbConnections = totalConn;
+        if (dbStats.pool_usage_pct >= POOL_EXHAUSTION_PCT) stats.dbPoolExhausted = true;
       }
     } catch {}
 
@@ -337,7 +315,7 @@ async function runStress(
         ? Math.round(
             (stats.eventLoopLagSamples.reduce((a, b) => a + b, 0) /
               stats.eventLoopLagSamples.length) *
-              100,
+              100
           ) / 100
         : null,
       peak_event_loop_lag_ms: stats.eventLoopLagSamples.length
@@ -352,12 +330,11 @@ async function runStress(
       logPayload.db_active_connections = dbStats.active;
       logPayload.db_idle_connections = dbStats.idle;
       logPayload.db_waiting_queries = dbStats.waiting;
-      logPayload.db_pool_usage_pct =
-        Math.round(dbStats.pool_usage_pct * 10) / 10;
+      logPayload.db_pool_usage_pct = Math.round(dbStats.pool_usage_pct * 10) / 10;
     }
     console.log(JSON.stringify({ stress_log: logPayload }));
     console.log(
-      `[stress] requests=${stats.requestCount} success=${stats.successCount} fail=${stats.failureCount} conflicts=${stats.conflictCount} avg_ms=${Math.round(avgLatency)} peak_ms=${peakLatency} heap_mb=${logPayload.heap_mb} rps=${logPayload.rps} lag_ms=${logPayload.event_loop_lag_ms} cpu_pct=${cpuPct}${dbStats ? ` db_conn=${dbStats.active + dbStats.idle}` : ""}`,
+      `[stress] requests=${stats.requestCount} success=${stats.successCount} fail=${stats.failureCount} conflicts=${stats.conflictCount} avg_ms=${Math.round(avgLatency)} peak_ms=${peakLatency} heap_mb=${logPayload.heap_mb} rps=${logPayload.rps} lag_ms=${logPayload.event_loop_lag_ms} cpu_pct=${cpuPct}${dbStats ? ` db_conn=${dbStats.active + dbStats.idle}` : ''}`
     );
   }, MONITOR_INTERVAL_MS);
 
@@ -384,9 +361,9 @@ async function verifyAfterRun(): Promise<VerificationResult> {
   };
 
   const { data: confirmedBySlot } = await supabase
-    .from("bookings")
-    .select("slot_id")
-    .eq("status", BOOKING_STATUS.CONFIRMED);
+    .from('bookings')
+    .select('slot_id')
+    .eq('status', BOOKING_STATUS.CONFIRMED);
 
   const slotCounts: Record<string, number> = {};
   for (const row of confirmedBySlot || []) {
@@ -400,12 +377,8 @@ async function verifyAfterRun(): Promise<VerificationResult> {
     }
   }
 
-  const { data: allBookings } = await supabase
-    .from("bookings")
-    .select("id, slot_id, business_id");
-  const { data: allSlots } = await supabase
-    .from("slots")
-    .select("id, business_id, status");
+  const { data: allBookings } = await supabase.from('bookings').select('id, slot_id, business_id');
+  const { data: allSlots } = await supabase.from('slots').select('id, business_id, status');
 
   const slotMap = new Map<string, { business_id: string; status: string }>();
   for (const s of allSlots || []) {
@@ -423,9 +396,7 @@ async function verifyAfterRun(): Promise<VerificationResult> {
     }
   }
 
-  const { data: bookingsForState } = await supabase
-    .from("bookings")
-    .select("id, status");
+  const { data: bookingsForState } = await supabase.from('bookings').select('id, status');
   for (const b of bookingsForState || []) {
     if (!validBookingStatuses.includes(b.status as BookingStatus)) {
       result.invalidBookingStates.push(b.id as string);
@@ -443,10 +414,10 @@ async function verifyAfterRun(): Promise<VerificationResult> {
 
 function main(): void {
   const abortSignal: AbortFlag = { aborted: false };
-  process.on("SIGINT", () => {
+  process.on('SIGINT', () => {
     abortSignal.aborted = true;
   });
-  process.on("SIGTERM", () => {
+  process.on('SIGTERM', () => {
     abortSignal.aborted = true;
   });
 
@@ -480,7 +451,7 @@ function main(): void {
             slot_pool_size: slotPool.length,
             monitor_interval_ms: MONITOR_INTERVAL_MS,
           },
-        }),
+        })
       );
       return runStress(slotPool, abortSignal, stats);
     })
@@ -491,18 +462,11 @@ function main(): void {
       const avgLatency = stats.latencies.length
         ? stats.latencies.reduce((a, b) => a + b, 0) / stats.latencies.length
         : 0;
-      const peakLatency = stats.latencies.length
-        ? Math.max(...stats.latencies)
-        : 0;
-      const successRate = stats.requestCount
-        ? (stats.successCount / stats.requestCount) * 100
-        : 0;
-      const errorRate = stats.requestCount
-        ? (stats.failureCount / stats.requestCount) * 100
-        : 0;
+      const peakLatency = stats.latencies.length ? Math.max(...stats.latencies) : 0;
+      const successRate = stats.requestCount ? (stats.successCount / stats.requestCount) * 100 : 0;
+      const errorRate = stats.requestCount ? (stats.failureCount / stats.requestCount) * 100 : 0;
       const avgEventLoopLag = stats.eventLoopLagSamples.length
-        ? stats.eventLoopLagSamples.reduce((a, b) => a + b, 0) /
-          stats.eventLoopLagSamples.length
+        ? stats.eventLoopLagSamples.reduce((a, b) => a + b, 0) / stats.eventLoopLagSamples.length
         : 0;
       const peakEventLoopLag = stats.eventLoopLagSamples.length
         ? Math.max(...stats.eventLoopLagSamples)
@@ -538,32 +502,24 @@ function main(): void {
       };
 
       console.log(JSON.stringify({ stress_report: report }));
-      console.log("\n--- STRESS TEST REPORT ---");
+      console.log('\n--- STRESS TEST REPORT ---');
       console.log(`Total requests: ${report.total_requests_executed}`);
       console.log(`Successful bookings: ${report.total_successful_bookings}`);
       console.log(`Rejected attempts: ${report.rejected_booking_attempts}`);
       console.log(`Booking conflicts (409): ${report.booking_conflicts_409}`);
       console.log(
-        `Detected race conditions (double-booked slots): ${report.detected_race_conditions}`,
+        `Detected race conditions (double-booked slots): ${report.detected_race_conditions}`
       );
       if (report.double_booked_slot_ids.length) {
-        console.log(
-          `Double-booked slot IDs: ${report.double_booked_slot_ids.join(", ")}`,
-        );
+        console.log(`Double-booked slot IDs: ${report.double_booked_slot_ids.join(', ')}`);
       }
-      console.log(
-        `Data inconsistencies: ${report.detected_data_inconsistencies}`,
-      );
+      console.log(`Data inconsistencies: ${report.detected_data_inconsistencies}`);
       if (report.orphan_booking_ids.length)
         console.log(`Orphan bookings: ${report.orphan_booking_ids.length}`);
       if (report.invalid_booking_state_ids.length)
-        console.log(
-          `Invalid booking states: ${report.invalid_booking_state_ids.length}`,
-        );
+        console.log(`Invalid booking states: ${report.invalid_booking_state_ids.length}`);
       if (report.invalid_slot_state_ids.length)
-        console.log(
-          `Invalid slot states: ${report.invalid_slot_state_ids.length}`,
-        );
+        console.log(`Invalid slot states: ${report.invalid_slot_state_ids.length}`);
       console.log(`Avg latency: ${report.average_latency_ms} ms`);
       console.log(`Peak latency: ${report.peak_latency_ms} ms`);
       console.log(`Avg event loop lag: ${report.average_event_loop_lag_ms} ms`);
@@ -573,13 +529,10 @@ function main(): void {
       console.log(`Success rate: ${report.success_rate_pct}%`);
       console.log(`Error rate: ${report.error_rate_pct}%`);
       console.log(`Memory growth: ${report.memory_growth_mb} MB`);
-      if (report.db_pool_exhausted)
-        console.log("FAIL: DB connection pool exhaustion detected");
-      if (report.event_loop_lag_exceeded)
-        console.log("FAIL: Event loop lag exceeded threshold");
-      if (report.sustained_cpu_exceeded)
-        console.log("FAIL: Sustained CPU usage above limit");
-      console.log("--- END REPORT ---\n");
+      if (report.db_pool_exhausted) console.log('FAIL: DB connection pool exhaustion detected');
+      if (report.event_loop_lag_exceeded) console.log('FAIL: Event loop lag exceeded threshold');
+      if (report.sustained_cpu_exceeded) console.log('FAIL: Sustained CPU usage above limit');
+      console.log('--- END REPORT ---\n');
 
       const hasFailures =
         report.detected_race_conditions > 0 ||
@@ -590,10 +543,7 @@ function main(): void {
       process.exit(hasFailures ? 1 : 0);
     })
     .catch((err) => {
-      console.error(
-        "Stress test failed:",
-        err instanceof Error ? err.message : String(err),
-      );
+      console.error('Stress test failed:', err instanceof Error ? err.message : String(err));
       process.exit(1);
     });
 }

@@ -1,24 +1,22 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   getServerUser,
   getServerUserProfile,
   requireSupabaseAdmin,
   successResponse,
   errorResponse,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 export async function GET(request: NextRequest) {
-  const DEBUG = process.env.NODE_ENV === "development";
+  const DEBUG = process.env.NODE_ENV === 'development';
 
   try {
     if (DEBUG) {
-      console.log("[check-status] Request received");
-      console.log("[check-status] Headers:", {
-        authorization: request.headers.get("authorization")
-          ? "present"
-          : "missing",
-        cookie: request.headers.get("cookie") ? "present" : "missing",
+      console.log('[check-status] Request received');
+      console.log('[check-status] Headers:', {
+        authorization: request.headers.get('authorization') ? 'present' : 'missing',
+        cookie: request.headers.get('cookie') ? 'present' : 'missing',
       });
     }
 
@@ -26,14 +24,14 @@ export async function GET(request: NextRequest) {
 
     if (DEBUG) {
       console.log(
-        "[check-status] User check result:",
-        user ? { id: user.id, email: user.email } : "null",
+        '[check-status] User check result:',
+        user ? { id: user.id, email: user.email } : 'null'
       );
     }
 
     if (!user) {
-      if (DEBUG) console.log("[check-status] No user found, returning 401");
-      return errorResponse("Authentication required", 401);
+      if (DEBUG) console.log('[check-status] No user found, returning 401');
+      return errorResponse('Authentication required', 401);
     }
 
     // Try to get profile using admin client directly as fallback
@@ -44,51 +42,45 @@ export async function GET(request: NextRequest) {
       try {
         const supabase = requireSupabaseAdmin();
         const { data: profileData, error: profileError } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", user.id)
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
           .single();
 
         if (!profileError && profileData) {
           profile = profileData;
-          if (DEBUG)
-            console.log("[check-status] Profile found via direct admin query");
+          if (DEBUG) console.log('[check-status] Profile found via direct admin query');
         } else if (DEBUG) {
-          console.log(
-            "[check-status] Direct admin query error:",
-            profileError?.message,
-          );
+          console.log('[check-status] Direct admin query error:', profileError?.message);
         }
       } catch (directError) {
         if (DEBUG)
           console.log(
-            "[check-status] Direct admin query exception:",
-            directError instanceof Error ? directError.message : "Unknown",
+            '[check-status] Direct admin query exception:',
+            directError instanceof Error ? directError.message : 'Unknown'
           );
       }
     }
 
     if (DEBUG) {
       console.log(
-        "[check-status] Profile check result:",
-        profile ? { user_type: profile.user_type, id: profile.id } : "null",
+        '[check-status] Profile check result:',
+        profile ? { user_type: profile.user_type, id: profile.id } : 'null'
       );
       if (!profile) {
-        console.log(
-          "[check-status] Attempting to verify profile exists in database...",
-        );
+        console.log('[check-status] Attempting to verify profile exists in database...');
         // Double-check with a raw query
         try {
           const supabase = requireSupabaseAdmin();
           const { count } = await supabase
-            .from("user_profiles")
-            .select("*", { count: "exact", head: true })
-            .eq("id", user.id);
-          console.log("[check-status] Profile count in DB:", count);
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('id', user.id);
+          console.log('[check-status] Profile count in DB:', count);
         } catch (e) {
           console.log(
-            "[check-status] Count query failed:",
-            e instanceof Error ? e.message : "Unknown",
+            '[check-status] Count query failed:',
+            e instanceof Error ? e.message : 'Unknown'
           );
         }
       }
@@ -98,13 +90,13 @@ export async function GET(request: NextRequest) {
       user_id: user.id,
       email: user.email,
       profile_exists: !!profile,
-      user_type: profile?.user_type || "none",
-      is_admin: profile?.user_type === "admin",
+      user_type: profile?.user_type || 'none',
+      is_admin: profile?.user_type === 'admin',
       profile: profile,
       debug: DEBUG
         ? {
             hasRequest: !!request,
-            hasAuthHeader: !!request.headers.get("authorization"),
+            hasAuthHeader: !!request.headers.get('authorization'),
             profileQueryAttempted: true,
             profileFound: !!profile,
           }
@@ -112,13 +104,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     if (DEBUG) {
-      console.log(
-        "[check-status] Error:",
-        error instanceof Error ? error.message : "Unknown",
-      );
+      console.log('[check-status] Error:', error instanceof Error ? error.message : 'Unknown');
     }
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

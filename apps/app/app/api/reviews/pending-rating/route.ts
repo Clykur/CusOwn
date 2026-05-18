@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   successResponse,
   errorResponse,
@@ -7,11 +7,11 @@ import {
   createReview,
   auditService,
   isValidUUID,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE_GET = "GET /api/reviews/pending-rating";
-const ROUTE_POST = "POST /api/reviews/pending-rating";
+const ROUTE_GET = 'GET /api/reviews/pending-rating';
+const ROUTE_POST = 'POST /api/reviews/pending-rating';
 
 /**
  * GET /api/reviews/pending-rating
@@ -28,8 +28,7 @@ export async function GET(request: NextRequest) {
       bookings: pendingBookings,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }
@@ -48,11 +47,11 @@ export async function POST(request: NextRequest) {
     const { booking_id, rating } = body;
 
     if (!booking_id || !isValidUUID(booking_id)) {
-      return errorResponse("Invalid booking_id", 400);
+      return errorResponse('Invalid booking_id', 400);
     }
 
-    if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
-      return errorResponse("Rating must be between 1 and 5", 400);
+    if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
+      return errorResponse('Rating must be between 1 and 5', 400);
     }
 
     const result = await createReview(auth.user.id, {
@@ -66,24 +65,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Audit Log
-    await auditService.createAuditLog(
-      auth.user.id,
-      "review_created",
-      "review",
-      {
-        entityId: result.review_id as string,
-        newData: { booking_id, rating, comment: null },
-        description: `Review created for booking ${booking_id} via pending-rating API`,
-      },
-    );
+    await auditService.createAuditLog(auth.user.id, 'review_created', 'review', {
+      entityId: result.review_id as string,
+      newData: { booking_id, rating, comment: null },
+      description: `Review created for booking ${booking_id} via pending-rating API`,
+    });
 
     return successResponse({
       success: true,
       review_id: result.review_id,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

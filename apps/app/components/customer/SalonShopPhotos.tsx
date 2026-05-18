@@ -1,29 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import { UI_CUSTOMER } from "@cusown/config";
+import { useState } from 'react';
+import Image from 'next/image';
+import { UI_CUSTOMER } from '@cusown/config';
 
 const GALLERY_IMAGE_WIDTH = 1200;
 const GALLERY_IMAGE_HEIGHT = 800;
 const IMAGE_QUALITY_PREMIUM = 95;
 
-function GalleryImage({
-  src,
-  alt,
-  className,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-}) {
+function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
     <div className="relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-slate-100 sm:rounded-xl">
       <div
         className={`absolute inset-0 image-skeleton-shine transition-opacity duration-300 ${
-          loaded ? "pointer-events-none opacity-0" : "opacity-100"
+          loaded ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
         aria-hidden
       />
@@ -36,8 +28,8 @@ function GalleryImage({
         quality={IMAGE_QUALITY_PREMIUM}
         sizes="(max-width: 640px) 34vw, (max-width: 1024px) 33vw, 320px"
         loading="lazy"
-        className={`${className ?? ""} h-full w-full object-cover transition-all duration-500 group-hover:scale-[1.03] ${
-          loaded ? "opacity-100" : "opacity-0"
+        className={`${className ?? ''} h-full w-full object-cover transition-all duration-500 group-hover:scale-[1.03] ${
+          loaded ? 'opacity-100' : 'opacity-0'
         }`}
         onLoad={() => setLoaded(true)}
       />
@@ -63,10 +55,7 @@ export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
               key={idx}
               className="group relative overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50 shadow-sm ring-1 ring-slate-200/40 transition hover:shadow-md sm:rounded-xl"
             >
-              <GalleryImage
-                src={url}
-                alt={`${UI_CUSTOMER.SALON_DETAILS_SHOP_PHOTOS} ${idx + 1}`}
-              />
+              <GalleryImage src={url} alt={`${UI_CUSTOMER.SALON_DETAILS_SHOP_PHOTOS} ${idx + 1}`} />
             </div>
           ))}
         </div>
@@ -89,9 +78,7 @@ export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
             </svg>
           </div>
 
-          <p className="text-sm text-slate-500">
-            {UI_CUSTOMER.SALON_DETAILS_NO_PHOTOS}
-          </p>
+          <p className="text-sm text-slate-500">{UI_CUSTOMER.SALON_DETAILS_NO_PHOTOS}</p>
         </div>
       )}
     </section>

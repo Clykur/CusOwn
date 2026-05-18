@@ -3,12 +3,8 @@
  * Compares current metrics against baselines to detect degradation after deployments.
  */
 
-import {
-  recordMetric,
-  performanceMonitor,
-  type PerformanceMetric,
-} from "./performance";
-import { env } from "@cusown/config";
+import { recordMetric, performanceMonitor, type PerformanceMetric } from './performance';
+import { env } from '@cusown/config';
 
 interface MetricBaseline {
   name: string;
@@ -22,21 +18,21 @@ interface RegressionReport {
   baseline: number;
   current: number;
   degradation: number;
-  severity: "warning" | "critical";
+  severity: 'warning' | 'critical';
   timestamp: number;
 }
 
 const DEFAULT_BASELINES: MetricBaseline[] = [
-  { name: "LCP", p50: 2500, p95: 4000, threshold: 1.2 },
-  { name: "FCP", p50: 1800, p95: 3000, threshold: 1.2 },
-  { name: "CLS", p50: 0.1, p95: 0.25, threshold: 1.5 },
-  { name: "INP", p50: 200, p95: 500, threshold: 1.2 },
-  { name: "TTFB", p50: 800, p95: 1800, threshold: 1.3 },
-  { name: "route-transition", p50: 300, p95: 1000, threshold: 1.3 },
-  { name: "api-latency", p50: 200, p95: 500, threshold: 1.3 },
+  { name: 'LCP', p50: 2500, p95: 4000, threshold: 1.2 },
+  { name: 'FCP', p50: 1800, p95: 3000, threshold: 1.2 },
+  { name: 'CLS', p50: 0.1, p95: 0.25, threshold: 1.5 },
+  { name: 'INP', p50: 200, p95: 500, threshold: 1.2 },
+  { name: 'TTFB', p50: 800, p95: 1800, threshold: 1.3 },
+  { name: 'route-transition', p50: 300, p95: 1000, threshold: 1.3 },
+  { name: 'api-latency', p50: 200, p95: 500, threshold: 1.3 },
 ];
 
-const STORAGE_KEY = "perf_baselines";
+const STORAGE_KEY = 'perf_baselines';
 const REGRESSION_WARNING_THRESHOLD = 1.2;
 const REGRESSION_CRITICAL_THRESHOLD = 1.5;
 const MIN_SAMPLES_FOR_DETECTION = 10;
@@ -47,9 +43,7 @@ const regressionReports: RegressionReport[] = [];
 type RegressionListener = (report: RegressionReport) => void;
 const listeners: RegressionListener[] = [];
 
-export function subscribeToRegressions(
-  listener: RegressionListener,
-): () => void {
+export function subscribeToRegressions(listener: RegressionListener): () => void {
   listeners.push(listener);
   return () => {
     const index = listeners.indexOf(listener);
@@ -58,7 +52,7 @@ export function subscribeToRegressions(
 }
 
 export function loadBaselines(): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -77,7 +71,7 @@ export function loadBaselines(): void {
 }
 
 export function saveBaselines(newBaselines: MetricBaseline[]): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   baselines = newBaselines;
   try {
@@ -92,8 +86,8 @@ export function updateBaselinesFromMetrics(): void {
 
   for (const baseline of baselines) {
     const stats = performanceMonitor.getAggregatedStats(
-      baseline.name.includes("api") ? "api-latency" : "web-vital",
-      baseline.name,
+      baseline.name.includes('api') ? 'api-latency' : 'web-vital',
+      baseline.name
     );
 
     if (stats && stats.count >= MIN_SAMPLES_FOR_DETECTION) {
@@ -115,11 +109,11 @@ export function checkForRegressions(): RegressionReport[] {
 
   for (const baseline of baselines) {
     const type =
-      baseline.name.includes("api") || baseline.name.includes("route")
-        ? baseline.name.includes("api")
-          ? "api-latency"
-          : "navigation"
-        : "web-vital";
+      baseline.name.includes('api') || baseline.name.includes('route')
+        ? baseline.name.includes('api')
+          ? 'api-latency'
+          : 'navigation'
+        : 'web-vital';
 
     const stats = performanceMonitor.getAggregatedStats(type, baseline.name);
 
@@ -128,8 +122,7 @@ export function checkForRegressions(): RegressionReport[] {
     const degradation = stats.p50 / baseline.p50;
 
     if (degradation >= REGRESSION_WARNING_THRESHOLD) {
-      const severity =
-        degradation >= REGRESSION_CRITICAL_THRESHOLD ? "critical" : "warning";
+      const severity = degradation >= REGRESSION_CRITICAL_THRESHOLD ? 'critical' : 'warning';
 
       const report: RegressionReport = {
         metric: baseline.name,
@@ -144,10 +137,10 @@ export function checkForRegressions(): RegressionReport[] {
       regressionReports.push(report);
 
       recordMetric({
-        name: "regression-detected",
-        type: "web-vital",
+        name: 'regression-detected',
+        type: 'web-vital',
         value: degradation,
-        unit: "ratio",
+        unit: 'ratio',
         metadata: {
           metric: baseline.name,
           baseline: baseline.p50,
@@ -180,14 +173,14 @@ export function getPerformanceSummary(): {
 } {
   const webVitals: Record<string, { value: number; rating: string }> = {};
 
-  ["LCP", "FCP", "CLS", "INP", "TTFB"].forEach((name) => {
-    const stats = performanceMonitor.getAggregatedStats("web-vital", name);
+  ['LCP', 'FCP', 'CLS', 'INP', 'TTFB'].forEach((name) => {
+    const stats = performanceMonitor.getAggregatedStats('web-vital', name);
     if (stats) {
       const metric: PerformanceMetric = {
         name,
-        type: "web-vital",
+        type: 'web-vital',
         value: stats.p50,
-        unit: name === "CLS" ? "score" : "ms",
+        unit: name === 'CLS' ? 'score' : 'ms',
         timestamp: Date.now(),
       };
       webVitals[name] = {
@@ -197,11 +190,8 @@ export function getPerformanceSummary(): {
     }
   });
 
-  const apiStats = performanceMonitor.getAggregatedStats("api-latency");
-  const routeStats = performanceMonitor.getAggregatedStats(
-    "navigation",
-    "route-transition",
-  );
+  const apiStats = performanceMonitor.getAggregatedStats('api-latency');
+  const routeStats = performanceMonitor.getAggregatedStats('navigation', 'route-transition');
 
   return {
     webVitals,
@@ -217,9 +207,9 @@ export function getPerformanceSummary(): {
 }
 
 export async function reportToServer(
-  summary: ReturnType<typeof getPerformanceSummary>,
+  summary: ReturnType<typeof getPerformanceSummary>
 ): Promise<void> {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   const body = {
     ...summary,
@@ -231,13 +221,13 @@ export async function reportToServer(
 
   try {
     if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/analytics/performance", JSON.stringify(body));
+      navigator.sendBeacon('/api/analytics/performance', JSON.stringify(body));
     } else {
-      await fetch("/api/analytics/performance", {
-        method: "POST",
+      await fetch('/api/analytics/performance', {
+        method: 'POST',
         body: JSON.stringify(body),
         keepalive: true,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
   } catch {

@@ -4,30 +4,30 @@
  * Rate-limited per IP; cached. Use for city/region/country from IP.
  */
 
-import { NextRequest } from "next/server";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { enhancedRateLimit } from "@cusown/shared/server";
-import { setCacheHeaders } from "@cusown/shared/server";
-import { geolocationService } from "@cusown/shared/server";
-import { getClientIp } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { enhancedRateLimit } from '@cusown/shared/server';
+import { setCacheHeaders } from '@cusown/shared/server';
+import { geolocationService } from '@cusown/shared/server';
+import { getClientIp } from '@cusown/shared/server';
 import {
   ERROR_MESSAGES,
   GEO_RATE_LIMIT_WINDOW_MS,
   GEO_RATE_LIMIT_MAX_PER_WINDOW,
   GEO_CACHE_MAX_AGE_SECONDS,
-} from "@cusown/config";
+} from '@cusown/config';
 import {
   buildApiRedisKeyFromPath,
   getApiRedisCache,
   setApiRedisCache,
   API_REDIS_TTL,
-} from "@cusown/shared/server";
+} from '@cusown/shared/server';
 
 const geoRateLimit = enhancedRateLimit({
   maxRequests: GEO_RATE_LIMIT_MAX_PER_WINDOW,
   windowMs: GEO_RATE_LIMIT_WINDOW_MS,
   perIP: true,
-  keyPrefix: "geo_ip",
+  keyPrefix: 'geo_ip',
 });
 
 /** Basic IPv4/IPv6 validation to avoid passing arbitrary strings to upstream. */
@@ -36,11 +36,9 @@ function isValidIp(ip: string): boolean {
   const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
   const ipv6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
   if (ipv4.test(ip)) {
-    return ip
-      .split(".")
-      .every((n) => parseInt(n, 10) >= 0 && parseInt(n, 10) <= 255);
+    return ip.split('.').every((n) => parseInt(n, 10) >= 0 && parseInt(n, 10) <= 255);
   }
-  return ipv6.test(ip) || ip === "::1";
+  return ipv6.test(ip) || ip === '::1';
 }
 
 export async function GET(request: NextRequest) {
@@ -48,18 +46,18 @@ export async function GET(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   const url = new URL(request.url);
-  const ipParam = url.searchParams.get("ip");
+  const ipParam = url.searchParams.get('ip');
   const clientIp = getClientIp(request);
 
   const ip = ipParam?.trim();
-  if (ip !== undefined && ip !== "" && !isValidIp(ip)) {
-    return errorResponse("Invalid IP parameter", 400);
+  if (ip !== undefined && ip !== '' && !isValidIp(ip)) {
+    return errorResponse('Invalid IP parameter', 400);
   }
 
-  const ipToLookup = ip && ip !== "" ? ip : clientIp;
+  const ipToLookup = ip && ip !== '' ? ip : clientIp;
 
   // Check Redis cache first (geo data is highly cacheable)
-  const redisKey = buildApiRedisKeyFromPath("/api/geo/ip", { ip: ipToLookup });
+  const redisKey = buildApiRedisKeyFromPath('/api/geo/ip', { ip: ipToLookup });
   const redisCached = await getApiRedisCache<{
     ip: string;
     city: string;
@@ -71,20 +69,16 @@ export async function GET(request: NextRequest) {
   }>(redisKey);
   if (redisCached) {
     const response = successResponse(redisCached);
-    setCacheHeaders(
-      response,
-      Math.min(GEO_CACHE_MAX_AGE_SECONDS, API_REDIS_TTL.GEO),
-      7200,
-    );
+    setCacheHeaders(response, Math.min(GEO_CACHE_MAX_AGE_SECONDS, API_REDIS_TTL.GEO), 7200);
     return response;
   }
 
   // Handle local development / private IPs
   const isLocal =
-    ipToLookup === "::1" ||
-    ipToLookup === "127.0.0.1" ||
-    ipToLookup.startsWith("192.168.") ||
-    ipToLookup.startsWith("10.");
+    ipToLookup === '::1' ||
+    ipToLookup === '127.0.0.1' ||
+    ipToLookup.startsWith('192.168.') ||
+    ipToLookup.startsWith('10.');
 
   let data = await geolocationService.ipLookup(ipToLookup);
 
@@ -94,10 +88,10 @@ export async function GET(request: NextRequest) {
       ip: ipToLookup,
       latitude: 12.9716, // Bangalore (default dev location)
       longitude: 77.5946,
-      city: "Bangalore",
-      country: "India",
-      countryCode: "IN",
-      state: "Karnataka",
+      city: 'Bangalore',
+      country: 'India',
+      countryCode: 'IN',
+      state: 'Karnataka',
     };
   }
 
@@ -119,10 +113,6 @@ export async function GET(request: NextRequest) {
   await setApiRedisCache(redisKey, responseData, API_REDIS_TTL.GEO);
 
   const response = successResponse(responseData);
-  setCacheHeaders(
-    response,
-    Math.min(GEO_CACHE_MAX_AGE_SECONDS, API_REDIS_TTL.GEO),
-    7200,
-  );
+  setCacheHeaders(response, Math.min(GEO_CACHE_MAX_AGE_SECONDS, API_REDIS_TTL.GEO), 7200);
   return response;
 }

@@ -1,23 +1,20 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { UI_CONTEXT } from "@cusown/config";
-import { ROUTES } from "@cusown/shared";
-import { PublicHeader } from "@/components/layout/public-header";
-import BusinessesIcon from "@cusown/shared/icons/businesses.svg";
-import ProfileIcon from "@cusown/shared/icons/profile.svg";
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { UI_CONTEXT } from '@cusown/config';
+import { ROUTES } from '@cusown/shared';
+import { PublicHeader } from '@/components/layout/public-header';
+import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
+import ProfileIcon from '@cusown/shared/icons/profile.svg';
 
 /** Build server auth URL: frontend only navigates; auth is done server-side via /api/auth/login. */
-function buildLoginUrl(
-  redirectTo: string,
-  role: "owner" | "customer" | null,
-): string {
+function buildLoginUrl(redirectTo: string, role: 'owner' | 'customer' | null): string {
   const params = new URLSearchParams();
-  if (redirectTo && redirectTo !== "/") params.set("redirect_to", redirectTo);
-  if (role) params.set("role", role);
+  if (redirectTo && redirectTo !== '/') params.set('redirect_to', redirectTo);
+  if (role) params.set('role', role);
   const q = params.toString();
-  return `/api/auth/login${q ? `?${q}` : ""}`;
+  return `/api/auth/login${q ? `?${q}` : ''}`;
 }
 
 function GoogleMark({ className }: { className?: string }) {
@@ -46,36 +43,25 @@ function GoogleMark({ className }: { className?: string }) {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const error = searchParams?.get("error");
+  const error = searchParams?.get('error');
 
-  const redirectTo = searchParams?.get("redirect_to") || "/";
-  const role =
-    (searchParams?.get("role") as "owner" | "customer" | null) ?? null;
+  const redirectTo = searchParams?.get('redirect_to') || '/';
+  const role = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
   const loginUrl = buildLoginUrl(redirectTo, role);
 
   const getRoleContext = () => {
-    if (role === "owner") {
+    if (role === 'owner') {
       return {
         title: UI_CONTEXT.AUTH_LOGIN_HEADING_OWNER,
         description: UI_CONTEXT.AUTH_LOGIN_DESC_OWNER,
-        icon: (
-          <BusinessesIcon
-            className="h-10 w-10 text-slate-700"
-            aria-hidden="true"
-          />
-        ),
+        icon: <BusinessesIcon className="h-10 w-10 text-slate-700" aria-hidden="true" />,
       };
     }
-    if (role === "customer") {
+    if (role === 'customer') {
       return {
         title: UI_CONTEXT.AUTH_LOGIN_HEADING_CUSTOMER,
         description: UI_CONTEXT.AUTH_LOGIN_DESC_CUSTOMER,
-        icon: (
-          <ProfileIcon
-            className="h-10 w-10 text-slate-700"
-            aria-hidden="true"
-          />
-        ),
+        icon: <ProfileIcon className="h-10 w-10 text-slate-700" aria-hidden="true" />,
       };
     }
     return {

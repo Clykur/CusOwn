@@ -1,28 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { bookingService } from "@cusown/shared/server";
-import { generateWhatsAppLink } from "@cusown/shared/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { bookingService } from '@cusown/shared/server';
+import { generateWhatsAppLink } from '@cusown/shared/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   if (!id) {
-    return NextResponse.json(
-      { success: false, error: "Missing booking id" },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: 'Missing booking id' }, { status: 400 });
   }
 
   try {
     const booking = await bookingService.getBookingById(id);
 
     if (!booking) {
-      return NextResponse.json(
-        { success: false, error: "Booking not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
     }
 
     const salon = booking.salon;
@@ -35,19 +26,19 @@ export async function GET(
       });
     }
 
-    const date = slot.date || "";
-    const start = slot.start_time || "";
-    const end = slot.end_time || "";
+    const date = slot.date || '';
+    const start = slot.start_time || '';
+    const end = slot.end_time || '';
     const time = start && end ? `${start} - ${end}` : start || end;
 
     const link = generateWhatsAppLink({
       phoneNumber: salon.whatsapp_number,
       bookingDetails: {
-        salonName: salon.salon_name || "",
+        salonName: salon.salon_name || '',
         serviceName: undefined,
         date,
         time,
-        customerName: booking.customer_name || "",
+        customerName: booking.customer_name || '',
         bookingId: booking.booking_id,
       },
     });
@@ -58,8 +49,8 @@ export async function GET(
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: "Failed to generate whatsapp link" },
-      { status: 500 },
+      { success: false, error: 'Failed to generate whatsapp link' },
+      { status: 500 }
     );
   }
 }

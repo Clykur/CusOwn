@@ -1,24 +1,19 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireAdmin,
   errorResponse,
   parseAdminDateRange,
   adminService,
   auditService,
-} from "@cusown/shared/server";
-import { ADMIN_EXPORT_BOOKINGS_MAX_ROWS, ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ADMIN_EXPORT_BOOKINGS_MAX_ROWS, ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/admin/export/bookings";
+const ROUTE = 'GET /api/admin/export/bookings';
 const CHUNK_SIZE = 500;
 
 function escapeCsvCell(value: string | number): string {
-  const s = String(value ?? "");
-  if (
-    s.includes(",") ||
-    s.includes('"') ||
-    s.includes("\n") ||
-    s.includes("\r")
-  ) {
+  const s = String(value ?? '');
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
@@ -31,23 +26,17 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const range = parseAdminDateRange(searchParams);
-    const businessId = searchParams.get("business_id")?.trim() || undefined;
+    const businessId = searchParams.get('business_id')?.trim() || undefined;
     const limit = ADMIN_EXPORT_BOOKINGS_MAX_ROWS;
 
-    if (!auth?.user?.id) throw new Error("Unauthorized");
-    await auditService.createAuditLog(
-      auth.user.id,
-      "admin_revenue_export",
-      "system",
-      {
-        description: `Bookings export: ${range.startDate.toISOString()} to ${range.endDate.toISOString()}${businessId ? ` business=${businessId}` : ""}`,
-        request,
-      },
-    );
+    if (!auth?.user?.id) throw new Error('Unauthorized');
+    await auditService.createAuditLog(auth.user.id, 'admin_revenue_export', 'system', {
+      description: `Bookings export: ${range.startDate.toISOString()} to ${range.endDate.toISOString()}${businessId ? ` business=${businessId}` : ''}`,
+      request,
+    });
 
     const encoder = new TextEncoder();
-    const header =
-      "booking_id,business_name,amount,status,payment_status,created_at\n";
+    const header = 'booking_id,business_name,amount,status,payment_status,created_at\n';
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -66,13 +55,12 @@ export async function GET(request: NextRequest) {
           if (rows.length === 0) break;
 
           const bookingIds = rows.map((r) => r.id);
-          const paymentMap =
-            await adminService.getPaymentsByBookingIds(bookingIds);
+          const paymentMap = await adminService.getPaymentsByBookingIds(bookingIds);
 
           for (const r of rows) {
             const pay = paymentMap.get(r.id);
-            const amount = pay ? (pay.amount_cents / 100).toFixed(2) : "";
-            const paymentStatus = pay ? pay.status : "";
+            const amount = pay ? (pay.amount_cents / 100).toFixed(2) : '';
+            const paymentStatus = pay ? pay.status : '';
             const line =
               [
                 escapeCsvCell(r.booking_id),
@@ -81,7 +69,7 @@ export async function GET(request: NextRequest) {
                 escapeCsvCell(r.status),
                 escapeCsvCell(paymentStatus),
                 escapeCsvCell(r.created_at),
-              ].join(",") + "\n";
+              ].join(',') + '\n';
             controller.enqueue(encoder.encode(line));
           }
 
@@ -94,14 +82,13 @@ export async function GET(request: NextRequest) {
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="bookings-export.csv"',
-        "Cache-Control": "no-store",
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="bookings-export.csv"',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

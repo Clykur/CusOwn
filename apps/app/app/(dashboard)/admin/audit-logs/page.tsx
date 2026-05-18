@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { adminFetch } from "@cusown/shared";
-import { AdminSectionWrapper } from "@/components/admin/admin-section-wrapper";
-import { SkeletonTable } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import FilterDropdown from "@/components/analytics/FilterDropdown";
-import DateFilter from "@/components/owner/date-filter";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { adminFetch } from '@cusown/shared';
+import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
+import { SkeletonTable } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
+import DateFilter from '@/components/owner/date-filter';
 import {
   AUDIT_ENTITY_TYPES,
   AUDIT_SEVERITY,
@@ -14,10 +14,10 @@ import {
   AUDIT_STATUS_STYLE,
   AUDIT_STYLE_NEUTRAL,
   UI_CONTEXT,
-} from "@cusown/config";
+} from '@cusown/config';
 
 const FILTER_LABEL_CLASS =
-  "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
 
 type AuditLogItem = {
   id: string;
@@ -32,17 +32,11 @@ type AuditLogItem = {
 };
 
 function severityStyle(severity: string): string {
-  return (
-    (AUDIT_SEVERITY_STYLE as Record<string, string>)[severity] ??
-    AUDIT_STYLE_NEUTRAL
-  );
+  return (AUDIT_SEVERITY_STYLE as Record<string, string>)[severity] ?? AUDIT_STYLE_NEUTRAL;
 }
 
 function statusStyle(status: string): string {
-  return (
-    (AUDIT_STATUS_STYLE as Record<string, string>)[status] ??
-    AUDIT_STYLE_NEUTRAL
-  );
+  return (AUDIT_STATUS_STYLE as Record<string, string>)[status] ?? AUDIT_STYLE_NEUTRAL;
 }
 
 function formatAuditLogTimestamp(ts: string): string {
@@ -54,13 +48,7 @@ function formatAuditLogTimestamp(ts: string): string {
   }
 }
 
-function LogDetailModal({
-  log,
-  onClose,
-}: {
-  log: AuditLogItem;
-  onClose: () => void;
-}) {
+function LogDetailModal({ log, onClose }: { log: AuditLogItem; onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -75,15 +63,10 @@ function LogDetailModal({
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2
-              id="log-detail-title"
-              className="text-lg font-semibold text-slate-900"
-            >
+            <h2 id="log-detail-title" className="text-lg font-semibold text-slate-900">
               Log details
             </h2>
-            <p className="mt-0.5 text-sm text-slate-500">
-              Full log information
-            </p>
+            <p className="mt-0.5 text-sm text-slate-500">Full log information</p>
           </div>
           <button
             type="button"
@@ -99,21 +82,15 @@ function LogDetailModal({
             <span className="font-medium text-slate-500">ID</span>
             <span className="break-all font-mono text-slate-800">{log.id}</span>
             <span className="font-medium text-slate-500">Timestamp</span>
-            <span className="text-slate-800">
-              {formatAuditLogTimestamp(log.timestamp)}
-            </span>
+            <span className="text-slate-800">{formatAuditLogTimestamp(log.timestamp)}</span>
             <span className="font-medium text-slate-500">Actor</span>
-            <span className="break-all font-mono text-slate-800">
-              {log.actor ?? "—"}
-            </span>
+            <span className="break-all font-mono text-slate-800">{log.actor ?? '—'}</span>
             <span className="font-medium text-slate-500">Action</span>
             <span className="text-slate-800">{log.action_type}</span>
             <span className="font-medium text-slate-500">Entity type</span>
-            <span className="text-slate-800">{log.entity_type ?? "—"}</span>
+            <span className="text-slate-800">{log.entity_type ?? '—'}</span>
             <span className="font-medium text-slate-500">Entity ID</span>
-            <span className="break-all font-mono text-slate-800">
-              {log.entity_id ?? "—"}
-            </span>
+            <span className="break-all font-mono text-slate-800">{log.entity_id ?? '—'}</span>
             <span className="font-medium text-slate-500">Severity</span>
             <span>
               <span
@@ -136,11 +113,9 @@ function LogDetailModal({
             )}
           </div>
           <div>
-            <span className="mb-1 block font-medium text-slate-500">
-              Metadata
-            </span>
+            <span className="mb-1 block font-medium text-slate-500">Metadata</span>
             <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
-              {log.metadata ? JSON.stringify(log.metadata, null, 2) : "—"}
+              {log.metadata ? JSON.stringify(log.metadata, null, 2) : '—'}
             </pre>
           </div>
         </div>
@@ -162,24 +137,20 @@ type AuditLogsResponse = {
   error?: string;
 };
 
-function buildUrl(
-  page: number,
-  limit: number,
-  filters: Record<string, string>,
-) {
+function buildUrl(page: number, limit: number, filters: Record<string, string>) {
   const params = new URLSearchParams();
-  params.set("page", String(page));
-  params.set("limit", String(limit));
-  if (filters.entity_type) params.set("entity_type", filters.entity_type);
-  if (filters.actor_id) params.set("actor_id", filters.actor_id);
-  if (filters.severity) params.set("severity", filters.severity);
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  if (filters.entity_type) params.set('entity_type', filters.entity_type);
+  if (filters.actor_id) params.set('actor_id', filters.actor_id);
+  if (filters.severity) params.set('severity', filters.severity);
   if (filters.start_time) {
     const d = new Date(filters.start_time);
-    if (!isNaN(d.getTime())) params.set("start_time", d.toISOString());
+    if (!isNaN(d.getTime())) params.set('start_time', d.toISOString());
   }
   if (filters.end_time) {
     const d = new Date(filters.end_time);
-    if (!isNaN(d.getTime())) params.set("end_time", d.toISOString());
+    if (!isNaN(d.getTime())) params.set('end_time', d.toISOString());
   }
   return `/api/admin/audit-logs?${params.toString()}`;
 }
@@ -192,12 +163,12 @@ export default function AdminAuditLogsPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [entity_type, setEntityType] = useState("");
-  const [actor_id, setActorId] = useState("");
-  const [debouncedActorId, setDebouncedActorId] = useState("");
-  const [severity, setSeverity] = useState("");
-  const [start_date, setStartDate] = useState("");
-  const [end_date, setEndDate] = useState("");
+  const [entity_type, setEntityType] = useState('');
+  const [actor_id, setActorId] = useState('');
+  const [debouncedActorId, setDebouncedActorId] = useState('');
+  const [severity, setSeverity] = useState('');
+  const [start_date, setStartDate] = useState('');
+  const [end_date, setEndDate] = useState('');
   const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null);
   const [notes, setNotes] = useState<string[]>([]);
 
@@ -209,16 +180,10 @@ export default function AdminAuditLogsPage() {
   const fetchLogs = useCallback(
     async (pageNum: number, overrides?: { actor_id?: string }) => {
       const effectiveActorId = (
-        overrides?.actor_id !== undefined
-          ? overrides.actor_id
-          : debouncedActorId
+        overrides?.actor_id !== undefined ? overrides.actor_id : debouncedActorId
       ).trim();
-      const start_time = start_date
-        ? new Date(start_date + "T00:00:00").toISOString()
-        : "";
-      const end_time = end_date
-        ? new Date(end_date + "T23:59:59.999").toISOString()
-        : "";
+      const start_time = start_date ? new Date(start_date + 'T00:00:00').toISOString() : '';
+      const end_time = end_date ? new Date(end_date + 'T23:59:59.999').toISOString() : '';
       const filtersForUrl = {
         entity_type: entity_type.trim(),
         actor_id: effectiveActorId,
@@ -237,9 +202,7 @@ export default function AdminAuditLogsPage() {
           json = await res.json();
         } catch {
           setError(
-            res.status === 401
-              ? "Please sign in again."
-              : `Request failed (${res.status}).`,
+            res.status === 401 ? 'Please sign in again.' : `Request failed (${res.status}).`
           );
           setItems([]);
           return;
@@ -261,66 +224,55 @@ export default function AdminAuditLogsPage() {
         setNotes(data.notes ?? []);
         setError(null);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to load audit logs";
+        const message = err instanceof Error ? err.message : 'Failed to load audit logs';
         setError(message);
         setItems([]);
       } finally {
         setLoading(false);
       }
     },
-    [limit, entity_type, debouncedActorId, severity, start_date, end_date],
+    [limit, entity_type, debouncedActorId, severity, start_date, end_date]
   );
 
   useEffect(() => {
     fetchLogs(1);
-  }, [
-    fetchLogs,
-    entity_type,
-    debouncedActorId,
-    severity,
-    start_date,
-    end_date,
-  ]);
+  }, [fetchLogs, entity_type, debouncedActorId, severity, start_date, end_date]);
 
   useEffect(() => {
     if (!selectedLog) return;
     const handle = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedLog(null);
+      if (e.key === 'Escape') setSelectedLog(null);
     };
-    window.addEventListener("keydown", handle);
-    return () => window.removeEventListener("keydown", handle);
+    window.addEventListener('keydown', handle);
+    return () => window.removeEventListener('keydown', handle);
   }, [selectedLog]);
 
   const entityTypeOptions = useMemo(
     () => [
-      { value: "", label: "All", checked: entity_type === "" },
+      { value: '', label: 'All', checked: entity_type === '' },
       ...AUDIT_ENTITY_TYPES.map((t) => ({
         value: t,
         label: t,
         checked: entity_type === t,
       })),
     ],
-    [entity_type],
+    [entity_type]
   );
 
   const severityOptions = useMemo(
     () => [
-      { value: "", label: "All", checked: severity === "" },
+      { value: '', label: 'All', checked: severity === '' },
       ...Object.values(AUDIT_SEVERITY).map((s) => ({
         value: s,
         label: s,
         checked: severity === s,
       })),
     ],
-    [severity],
+    [severity]
   );
 
-  const handleFilterKeyDown = (
-    e: React.KeyboardEvent,
-    currentActorId?: string,
-  ) => {
-    if (e.key !== "Enter") return;
+  const handleFilterKeyDown = (e: React.KeyboardEvent, currentActorId?: string) => {
+    if (e.key !== 'Enter') return;
     e.preventDefault();
     if (currentActorId !== undefined) {
       fetchLogs(1, { actor_id: currentActorId });
@@ -339,10 +291,7 @@ export default function AdminAuditLogsPage() {
 
   return (
     <div className="bg-slate-50/80 p-4 md:p-6">
-      <AdminSectionWrapper
-        title="Audit Logs"
-        subtitle={UI_CONTEXT.ADMIN_CONSOLE}
-      >
+      <AdminSectionWrapper title="Audit Logs" subtitle={UI_CONTEXT.ADMIN_CONSOLE}>
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="w-full">
@@ -428,34 +377,19 @@ export default function AdminAuditLogsPage() {
                 >
                   <thead className="bg-slate-50">
                     <tr>
-                      <th
-                        scope="col"
-                        className="w-[11rem] px-3 py-2.5 font-medium text-slate-700"
-                      >
+                      <th scope="col" className="w-[11rem] px-3 py-2.5 font-medium text-slate-700">
                         Timestamp
                       </th>
-                      <th
-                        scope="col"
-                        className="w-[8rem] px-3 py-2.5 font-medium text-slate-700"
-                      >
+                      <th scope="col" className="w-[8rem] px-3 py-2.5 font-medium text-slate-700">
                         Actor
                       </th>
-                      <th
-                        scope="col"
-                        className="w-[7rem] px-3 py-2.5 font-medium text-slate-700"
-                      >
+                      <th scope="col" className="w-[7rem] px-3 py-2.5 font-medium text-slate-700">
                         Action
                       </th>
-                      <th
-                        scope="col"
-                        className="w-[6rem] px-3 py-2.5 font-medium text-slate-700"
-                      >
+                      <th scope="col" className="w-[6rem] px-3 py-2.5 font-medium text-slate-700">
                         Entity
                       </th>
-                      <th
-                        scope="col"
-                        className="w-[5rem] px-3 py-2.5 font-medium text-slate-700"
-                      >
+                      <th scope="col" className="w-[5rem] px-3 py-2.5 font-medium text-slate-700">
                         Severity
                       </th>
                       <th
@@ -474,7 +408,7 @@ export default function AdminAuditLogsPage() {
                         tabIndex={0}
                         onClick={() => setSelectedLog(row)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
+                          if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             setSelectedLog(row);
                           }
@@ -491,13 +425,13 @@ export default function AdminAuditLogsPage() {
                           className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 font-mono text-slate-700"
                           title={row.actor ?? undefined}
                         >
-                          {row.actor ?? "—"}
+                          {row.actor ?? '—'}
                         </td>
                         <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700">
                           {row.action_type}
                         </td>
                         <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700">
-                          {row.entity_type ?? "—"}
+                          {row.entity_type ?? '—'}
                         </td>
                         <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700">
                           <span
@@ -550,12 +484,7 @@ export default function AdminAuditLogsPage() {
           )}
         </div>
       </AdminSectionWrapper>
-      {selectedLog && (
-        <LogDetailModal
-          log={selectedLog}
-          onClose={() => setSelectedLog(null)}
-        />
-      )}
+      {selectedLog && <LogDetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />}
     </div>
   );
 }

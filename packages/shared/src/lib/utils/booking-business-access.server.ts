@@ -3,10 +3,10 @@
  * Owner = businesses.owner_user_id matches user; platform admins (profile or admin:access) may act across businesses.
  */
 
-import { PERMISSIONS, hasPermission } from "../../services/permission.service";
-import { userService } from "../../services/user.service";
-import type { ProfileLike } from "./role-verification";
-import { isAdminProfile } from "./role-verification";
+import { PERMISSIONS, hasPermission } from '../../services/permission.service';
+import { userService } from '../../services/user.service';
+import type { ProfileLike } from './role-verification';
+import { isAdminProfile } from './role-verification';
 
 /**
  * True if the user may perform owner-level actions on bookings for this business
@@ -15,7 +15,7 @@ import { isAdminProfile } from "./role-verification";
 export async function canManageBookingForBusiness(
   userId: string,
   profile: ProfileLike | null,
-  businessId: string,
+  businessId: string
 ): Promise<boolean> {
   const userBusinesses = await userService.getUserBusinesses(userId);
   if (userBusinesses.some((b) => b.id === businessId)) {

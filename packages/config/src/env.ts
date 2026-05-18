@@ -1,17 +1,17 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const optionalUrl = z
   .string()
   .optional()
-  .transform((val) => (val === "" || val === undefined ? undefined : val))
+  .transform((val) => (val === '' || val === undefined ? undefined : val))
   .pipe(z.string().url().optional());
 
 /** Dev fallbacks when Supabase vars are unset (non-production only). */
-const DEV_SUPABASE_URL = "https://placeholder.supabase.co";
-const DEV_SUPABASE_ANON_KEY = "placeholder-anon-key";
-const DEV_SUPABASE_SERVICE_ROLE_KEY = "placeholder-service-role-key";
+const DEV_SUPABASE_URL = 'https://placeholder.supabase.co';
+const DEV_SUPABASE_ANON_KEY = 'placeholder-anon-key';
+const DEV_SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
 /** Dev-only fallback for SALON_TOKEN_SECRET; never used when NODE_ENV is production. */
-const DEV_SALON_TOKEN_FALLBACK = "dev-salon-token-secret-not-for-production";
+const DEV_SALON_TOKEN_FALLBACK = 'dev-salon-token-secret-not-for-production';
 
 /** Warn if production secret is shorter than this (aligns with scripts/infrastructure/validate-env.sh). */
 const SALON_TOKEN_SECRET_WARN_MIN_LEN = 32;
@@ -22,22 +22,21 @@ const CRON_SECRET_WARN_MIN_LEN = 16;
  * Production must not use these.
  */
 const PLACEHOLDER_MARKERS = [
-  "placeholder",
-  "your-project-id",
-  "your-anon-key",
-  "your-service-role",
-  "your-cron-secret",
-  "your-random-secret",
-  "changeme",
+  'placeholder',
+  'your-project-id',
+  'your-anon-key',
+  'your-service-role',
+  'your-cron-secret',
+  'your-random-secret',
+  'changeme',
 ] as const;
 
-const NODE_ENV = process.env.NODE_ENV || "development";
-const IS_PRODUCTION = NODE_ENV === "production";
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_PRODUCTION = NODE_ENV === 'production';
 /** True in Node/Edge server; false in browser bundles (evaluated at runtime per chunk). */
-const IS_SERVER_BUNDLE = typeof window === "undefined";
+const IS_SERVER_BUNDLE = typeof window === 'undefined';
 /** Next sets `NEXT_PHASE` during `next build` only; runtime server processes omit it. */
-const IS_NEXT_PRODUCTION_BUILD =
-  process.env.NEXT_PHASE === "phase-production-build";
+const IS_NEXT_PRODUCTION_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
 /**
  * Require production server secrets at Zod parse time. Relaxed during Next production build
  * so route modules can load without deploy secrets; `validateEnv()` enforces at server start.
@@ -48,7 +47,7 @@ const IS_PRODUCTION_SERVER_STRICT_SECRETS =
 function trimmedOrUndefined(raw: unknown): string | undefined {
   if (raw === undefined || raw === null) return undefined;
   const s = String(raw).trim();
-  return s === "" ? undefined : s;
+  return s === '' ? undefined : s;
 }
 
 /** True if value looks like a template or fake secret (case-insensitive). */
@@ -59,12 +58,12 @@ export function looksLikePlaceholderEnvValue(value: string): boolean {
 
 /** In dev, ensure localhost has port 3000 so redirects (e.g. sign-out) work. */
 function normalizeAppBaseUrl(url: string): string {
-  if (process.env.NODE_ENV !== "development") return url;
+  if (process.env.NODE_ENV !== 'development') return url;
   try {
     const u = new URL(url);
-    if ((u.hostname === "localhost" || u.hostname === "127.0.0.1") && !u.port) {
-      u.port = "3000";
-      return u.toString().replace(/\/?$/, "/");
+    if ((u.hostname === 'localhost' || u.hostname === '127.0.0.1') && !u.port) {
+      u.port = '3000';
+      return u.toString().replace(/\/?$/, '/');
     }
   } catch {
     // ignore
@@ -78,19 +77,16 @@ const nextPublicSupabaseUrlSchema = IS_PRODUCTION
       trimmedOrUndefined,
       z
         .string({
-          required_error: "NEXT_PUBLIC_SUPABASE_URL is required in production",
+          required_error: 'NEXT_PUBLIC_SUPABASE_URL is required in production',
         })
-        .url(),
+        .url()
     )
   : z
-      .preprocess(
-        trimmedOrUndefined,
-        z.union([z.string().url(), z.undefined()]),
-      )
+      .preprocess(trimmedOrUndefined, z.union([z.string().url(), z.undefined()]))
       .transform((val) => {
         if (val) return val;
         console.warn(
-          "[env] NEXT_PUBLIC_SUPABASE_URL is unset; using development placeholder. Set it in .env.local for a real Supabase project.",
+          '[env] NEXT_PUBLIC_SUPABASE_URL is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
         );
         return DEV_SUPABASE_URL;
       });
@@ -101,20 +97,16 @@ const nextPublicSupabaseAnonKeySchema = IS_PRODUCTION
       trimmedOrUndefined,
       z
         .string({
-          required_error:
-            "NEXT_PUBLIC_SUPABASE_ANON_KEY is required in production",
+          required_error: 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required in production',
         })
-        .min(1),
+        .min(1)
     )
   : z
-      .preprocess(
-        trimmedOrUndefined,
-        z.union([z.string().min(1), z.undefined()]),
-      )
+      .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
       .transform((val) => {
         if (val) return val;
         console.warn(
-          "[env] NEXT_PUBLIC_SUPABASE_ANON_KEY is unset; using development placeholder. Set it in .env.local for a real Supabase project.",
+          '[env] NEXT_PUBLIC_SUPABASE_ANON_KEY is unset; using development placeholder. Set it in .env.local for a real Supabase project.'
         );
         return DEV_SUPABASE_ANON_KEY;
       });
@@ -128,21 +120,18 @@ const supabaseServiceRoleKeySchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
       trimmedOrUndefined,
       z
         .string({
-          required_error: "SUPABASE_SERVICE_ROLE_KEY is required in production",
+          required_error: 'SUPABASE_SERVICE_ROLE_KEY is required in production',
         })
-        .min(1),
+        .min(1)
     )
   : IS_PRODUCTION && !IS_SERVER_BUNDLE
-    ? z.unknown().transform(() => "")
+    ? z.unknown().transform(() => '')
     : z
-        .preprocess(
-          trimmedOrUndefined,
-          z.union([z.string().min(1), z.undefined()]),
-        )
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
         .transform((val) => {
           if (val) return val;
           console.warn(
-            "[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.",
+            '[env] SUPABASE_SERVICE_ROLE_KEY is unset; using development placeholder. Set it in .env.local for server-side operations.'
           );
           return DEV_SUPABASE_SERVICE_ROLE_KEY;
         });
@@ -157,21 +146,18 @@ const salonTokenSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
       trimmedOrUndefined,
       z
         .string({
-          required_error: "SALON_TOKEN_SECRET is required in production",
+          required_error: 'SALON_TOKEN_SECRET is required in production',
         })
-        .min(1),
+        .min(1)
     )
   : IS_PRODUCTION && !IS_SERVER_BUNDLE
-    ? z.unknown().transform(() => "")
+    ? z.unknown().transform(() => '')
     : z
-        .preprocess(
-          trimmedOrUndefined,
-          z.union([z.string().min(1), z.undefined()]),
-        )
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
         .transform((val) => {
           if (val) return val;
           console.warn(
-            "[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.",
+            '[env] SALON_TOKEN_SECRET is unset; using a development-only fallback. Set SALON_TOKEN_SECRET in .env.local — the same value is used to generate and validate signed links and cookies.'
           );
           return DEV_SALON_TOKEN_FALLBACK;
         });
@@ -183,170 +169,87 @@ const salonTokenSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
 const cronSecretSchema = IS_PRODUCTION_SERVER_STRICT_SECRETS
   ? z.preprocess(
       trimmedOrUndefined,
-      z
-        .string({ required_error: "CRON_SECRET is required in production" })
-        .min(1),
+      z.string({ required_error: 'CRON_SECRET is required in production' }).min(1)
     )
   : IS_PRODUCTION && !IS_SERVER_BUNDLE
-    ? z.unknown().transform(() => "")
+    ? z.unknown().transform(() => '')
     : z
-        .preprocess(
-          trimmedOrUndefined,
-          z.union([z.string().min(1), z.undefined()]),
-        )
+        .preprocess(trimmedOrUndefined, z.union([z.string().min(1), z.undefined()]))
         .transform((val) => {
           if (val) return val;
           console.warn(
-            "[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.",
+            '[env] CRON_SECRET is unset; /api/cron/* and cron-protected routes accept requests without Bearer auth in development only. Set CRON_SECRET to test cron locally.'
           );
-          return "";
+          return '';
         });
 
 const envSchema = z.object({
-  NODE_ENV: z.string().default("development"),
+  NODE_ENV: z.string().default('development'),
   NEXT_PUBLIC_SUPABASE_URL: nextPublicSupabaseUrlSchema,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: nextPublicSupabaseAnonKeySchema,
   SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKeySchema,
   NEXT_PUBLIC_APP_URL: z.preprocess(
     trimmedOrUndefined,
-    z.string().url().default("http://localhost:3000"),
+    z.string().url().default('http://localhost:3000')
   ),
   NEXT_PUBLIC_MARKETING_URL: z.preprocess(
     trimmedOrUndefined,
-    z.string().url().default("http://localhost:3001"),
+    z.string().url().default('http://localhost:3001')
   ),
   CRON_SECRET: cronSecretSchema,
   SALON_TOKEN_SECRET: salonTokenSecretSchema,
-  RAZORPAY_WEBHOOK_SECRET: z.preprocess(
-    trimmedOrUndefined,
-    z.string().optional(),
-  ),
-  STRIPE_WEBHOOK_SECRET: z.preprocess(
-    trimmedOrUndefined,
-    z.string().optional(),
-  ),
-  SIGNED_URL_TTL_SECONDS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("86400"),
-  ),
-  AUDIT_RETENTION_DAYS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("90"),
-  ),
-  NEXT_PUBLIC_SENTRY_DSN: z.preprocess(
-    trimmedOrUndefined,
-    z.string().optional(),
-  ),
+  RAZORPAY_WEBHOOK_SECRET: z.preprocess(trimmedOrUndefined, z.string().optional()),
+  STRIPE_WEBHOOK_SECRET: z.preprocess(trimmedOrUndefined, z.string().optional()),
+  SIGNED_URL_TTL_SECONDS: z.preprocess(trimmedOrUndefined, z.string().default('86400')),
+  AUDIT_RETENTION_DAYS: z.preprocess(trimmedOrUndefined, z.string().default('90')),
+  NEXT_PUBLIC_SENTRY_DSN: z.preprocess(trimmedOrUndefined, z.string().optional()),
   EMAIL_SERVICE_URL: z.preprocess(trimmedOrUndefined, z.string().optional()),
   EMAIL_API_KEY: z.preprocess(trimmedOrUndefined, z.string().optional()),
   TWILIO_ACCOUNT_SID: z.preprocess(trimmedOrUndefined, z.string().optional()),
   TWILIO_AUTH_TOKEN: z.preprocess(trimmedOrUndefined, z.string().optional()),
   TWILIO_PHONE_NUMBER: z.preprocess(trimmedOrUndefined, z.string().optional()),
-  SLOT_EXPIRY_MINUTES: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("10"),
-  ),
-  PAYMENT_EXPIRY_MINUTES: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("10"),
-  ),
-  MAX_PAYMENT_ATTEMPTS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("3"),
-  ),
-  AUTO_REFUND_ON_LATE_SUCCESS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("false"),
-  ),
+  SLOT_EXPIRY_MINUTES: z.preprocess(trimmedOrUndefined, z.string().default('10')),
+  PAYMENT_EXPIRY_MINUTES: z.preprocess(trimmedOrUndefined, z.string().default('10')),
+  MAX_PAYMENT_ATTEMPTS: z.preprocess(trimmedOrUndefined, z.string().default('3')),
+  AUTO_REFUND_ON_LATE_SUCCESS: z.preprocess(trimmedOrUndefined, z.string().default('false')),
   UPI_MERCHANT_VPA: z.preprocess(trimmedOrUndefined, z.string().optional()),
-  UPI_MERCHANT_NAME: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("CusOwn"),
-  ),
+  UPI_MERCHANT_NAME: z.preprocess(trimmedOrUndefined, z.string().default('CusOwn')),
   UPI_WEBHOOK_SECRET: z.preprocess(trimmedOrUndefined, z.string().optional()),
-  BOOKING_EXPIRY_HOURS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("24"),
-  ),
-  REMINDER_24H_BEFORE_HOURS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("24"),
-  ),
-  REMINDER_2H_BEFORE_HOURS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("2"),
-  ),
-  CANCELLATION_MIN_HOURS_BEFORE: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("2"),
-  ),
+  BOOKING_EXPIRY_HOURS: z.preprocess(trimmedOrUndefined, z.string().default('24')),
+  REMINDER_24H_BEFORE_HOURS: z.preprocess(trimmedOrUndefined, z.string().default('24')),
+  REMINDER_2H_BEFORE_HOURS: z.preprocess(trimmedOrUndefined, z.string().default('2')),
+  CANCELLATION_MIN_HOURS_BEFORE: z.preprocess(trimmedOrUndefined, z.string().default('2')),
   /** No-show: mark confirmed bookings as no-show this many minutes after slot end (cron). */
-  NO_SHOW_AUTO_MARK_MINUTES: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("30"),
-  ),
+  NO_SHOW_AUTO_MARK_MINUTES: z.preprocess(trimmedOrUndefined, z.string().default('30')),
   /** Default max reschedules per booking when business has no override. */
-  MAX_RESCHEDULE_COUNT: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("5"),
-  ),
+  MAX_RESCHEDULE_COUNT: z.preprocess(trimmedOrUndefined, z.string().default('5')),
   /** Storage bucket for uploads (business + profile images). */
-  UPLOAD_STORAGE_BUCKET: z.preprocess(
-    trimmedOrUndefined,
-    z.string().min(1).default("uploads"),
-  ),
+  UPLOAD_STORAGE_BUCKET: z.preprocess(trimmedOrUndefined, z.string().min(1).default('uploads')),
   /** Media: retention days for soft-deleted media before hard purge. */
-  MEDIA_RETENTION_DAYS: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("30"),
-  ),
+  MEDIA_RETENTION_DAYS: z.preprocess(trimmedOrUndefined, z.string().default('30')),
   /** Media: signed URL short TTL (seconds) when strict/single-use mode. */
-  MEDIA_SIGNED_URL_TTL_SHORT: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("300"),
-  ),
+  MEDIA_SIGNED_URL_TTL_SHORT: z.preprocess(trimmedOrUndefined, z.string().default('300')),
   /** Media: enable EXIF strip and recompression on upload. */
-  MEDIA_STRIP_EXIF: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("true"),
-  ),
+  MEDIA_STRIP_EXIF: z.preprocess(trimmedOrUndefined, z.string().default('true')),
   /** Media: enable magic-byte validation (reject MIME mismatch). */
-  MEDIA_VALIDATE_MAGIC_BYTES: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("true"),
-  ),
+  MEDIA_VALIDATE_MAGIC_BYTES: z.preprocess(trimmedOrUndefined, z.string().default('true')),
   /** BigDataCloud geo APIs: optional key for higher limits / IP lookup when required. */
   BIGDATACLOUD_API_KEY: z.preprocess(trimmedOrUndefined, z.string().optional()),
   /** Nominatim geocoding base URL (optional; fallback from constants). */
   NOMINATIM_URL: optionalUrl,
   /** OSRM routing server URL (optional; when unset, internal graph/fallback is used). */
   OSRM_URL: optionalUrl,
-  FEATURE_PAYMENT_CANARY: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("true"),
-  ),
-  FEATURE_RESCHEDULE: z.preprocess(
-    trimmedOrUndefined,
-    z.string().default("true"),
-  ),
-  FEATURE_NO_SHOW: z.preprocess(trimmedOrUndefined, z.string().default("true")),
+  FEATURE_PAYMENT_CANARY: z.preprocess(trimmedOrUndefined, z.string().default('true')),
+  FEATURE_RESCHEDULE: z.preprocess(trimmedOrUndefined, z.string().default('true')),
+  FEATURE_NO_SHOW: z.preprocess(trimmedOrUndefined, z.string().default('true')),
   /** Redis URL for caching (optional; caching disabled if not set). */
   REDIS_URL: optionalUrl,
   /** Enable Redis caching (set to 'false' to disable even if REDIS_URL is set). */
-  REDIS_ENABLED: z.preprocess(trimmedOrUndefined, z.string().default("true")),
+  REDIS_ENABLED: z.preprocess(trimmedOrUndefined, z.string().default('true')),
   /** Vercel deployment metadata (auto-populated by Vercel). */
-  NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: z.preprocess(
-    trimmedOrUndefined,
-    z.string().optional(),
-  ),
-  NEXT_PUBLIC_VERCEL_ENV: z.preprocess(
-    trimmedOrUndefined,
-    z.string().optional(),
-  ),
-  NEXT_PUBLIC_VERCEL_URL: z.preprocess(
-    trimmedOrUndefined,
-    z.string().optional(),
-  ),
+  NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: z.preprocess(trimmedOrUndefined, z.string().optional()),
+  NEXT_PUBLIC_VERCEL_ENV: z.preprocess(trimmedOrUndefined, z.string().optional()),
+  NEXT_PUBLIC_VERCEL_URL: z.preprocess(trimmedOrUndefined, z.string().optional()),
 });
 
 /**
@@ -355,31 +258,28 @@ const envSchema = z.object({
  */
 if (IS_PRODUCTION && IS_SERVER_BUNDLE && !IS_NEXT_PRODUCTION_BUILD) {
   const requiredVars = [
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "SUPABASE_SERVICE_ROLE_KEY",
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
   ];
   const missing = requiredVars.filter((key) => !process.env[key]?.trim());
   if (missing.length > 0) {
     console.error(
-      `[env] CRITICAL: Missing required environment variables in production: ${missing.join(", ")}. ` +
-        "Set these in your deployment environment (Vercel, AWS, Docker, etc.):\n" +
-        missing.map((key) => `  - ${key}`).join("\n"),
+      `[env] CRITICAL: Missing required environment variables in production: ${missing.join(', ')}. ` +
+        'Set these in your deployment environment (Vercel, AWS, Docker, etc.):\n' +
+        missing.map((key) => `  - ${key}`).join('\n')
     );
   }
 }
 
-const rawEnv =
-  typeof window === "undefined"
-    ? envSchema.parse(process.env)
-    : (process.env as any);
+const rawEnv = typeof window === 'undefined' ? envSchema.parse(process.env) : (process.env as any);
 
 export const env = {
   nodeEnv: rawEnv.NODE_ENV,
   featureFlags: {
-    paymentCanary: rawEnv.FEATURE_PAYMENT_CANARY !== "false",
-    reschedule: rawEnv.FEATURE_RESCHEDULE !== "false",
-    noShow: rawEnv.FEATURE_NO_SHOW !== "false",
+    paymentCanary: rawEnv.FEATURE_PAYMENT_CANARY !== 'false',
+    reschedule: rawEnv.FEATURE_RESCHEDULE !== 'false',
+    noShow: rawEnv.FEATURE_NO_SHOW !== 'false',
   },
   supabase: {
     url: rawEnv.NEXT_PUBLIC_SUPABASE_URL,
@@ -396,8 +296,8 @@ export const env = {
   security: {
     /** Single source: SALON_TOKEN_SECRET only (see salonTokenSecretSchema). */
     salonTokenSecret: rawEnv.SALON_TOKEN_SECRET,
-    razorpayWebhookSecret: rawEnv.RAZORPAY_WEBHOOK_SECRET || "",
-    stripeWebhookSecret: rawEnv.STRIPE_WEBHOOK_SECRET || "",
+    razorpayWebhookSecret: rawEnv.RAZORPAY_WEBHOOK_SECRET || '',
+    stripeWebhookSecret: rawEnv.STRIPE_WEBHOOK_SECRET || '',
     /** Phase 5: Signed URL TTL (seconds). Tokens cannot escalate privilege (resourceType in HMAC). */
     signedUrlTtlSeconds: parseInt(rawEnv.SIGNED_URL_TTL_SECONDS, 10), // 24h default
   },
@@ -406,34 +306,31 @@ export const env = {
     retentionDays: parseInt(rawEnv.AUDIT_RETENTION_DAYS, 10),
   },
   monitoring: {
-    sentryDsn: rawEnv.NEXT_PUBLIC_SENTRY_DSN || "",
+    sentryDsn: rawEnv.NEXT_PUBLIC_SENTRY_DSN || '',
   },
   email: {
-    serviceUrl: rawEnv.EMAIL_SERVICE_URL || "",
-    apiKey: rawEnv.EMAIL_API_KEY || "",
+    serviceUrl: rawEnv.EMAIL_SERVICE_URL || '',
+    apiKey: rawEnv.EMAIL_API_KEY || '',
   },
   sms: {
-    twilioAccountSid: rawEnv.TWILIO_ACCOUNT_SID || "",
-    twilioAuthToken: rawEnv.TWILIO_AUTH_TOKEN || "",
-    twilioPhoneNumber: rawEnv.TWILIO_PHONE_NUMBER || "",
+    twilioAccountSid: rawEnv.TWILIO_ACCOUNT_SID || '',
+    twilioAuthToken: rawEnv.TWILIO_AUTH_TOKEN || '',
+    twilioPhoneNumber: rawEnv.TWILIO_PHONE_NUMBER || '',
   },
   payment: {
     slotExpiryMinutes: parseInt(rawEnv.SLOT_EXPIRY_MINUTES, 10),
     paymentExpiryMinutes: parseInt(rawEnv.PAYMENT_EXPIRY_MINUTES, 10),
     maxPaymentAttempts: parseInt(rawEnv.MAX_PAYMENT_ATTEMPTS, 10),
-    autoRefundOnLateSuccess: rawEnv.AUTO_REFUND_ON_LATE_SUCCESS === "true",
-    upiMerchantVpa: rawEnv.UPI_MERCHANT_VPA || "",
+    autoRefundOnLateSuccess: rawEnv.AUTO_REFUND_ON_LATE_SUCCESS === 'true',
+    upiMerchantVpa: rawEnv.UPI_MERCHANT_VPA || '',
     upiMerchantName: rawEnv.UPI_MERCHANT_NAME,
-    upiWebhookSecret: rawEnv.UPI_WEBHOOK_SECRET || "",
+    upiWebhookSecret: rawEnv.UPI_WEBHOOK_SECRET || '',
   },
   booking: {
     expiryHours: parseInt(rawEnv.BOOKING_EXPIRY_HOURS, 10),
     reminder24hBeforeHours: parseInt(rawEnv.REMINDER_24H_BEFORE_HOURS, 10),
     reminder2hBeforeHours: parseInt(rawEnv.REMINDER_2H_BEFORE_HOURS, 10),
-    cancellationMinHoursBefore: parseInt(
-      rawEnv.CANCELLATION_MIN_HOURS_BEFORE,
-      10,
-    ),
+    cancellationMinHoursBefore: parseInt(rawEnv.CANCELLATION_MIN_HOURS_BEFORE, 10),
     noShowAutoMarkMinutes: parseInt(rawEnv.NO_SHOW_AUTO_MARK_MINUTES, 10),
     maxRescheduleCount: parseInt(rawEnv.MAX_RESCHEDULE_COUNT, 10),
   },
@@ -443,36 +340,35 @@ export const env = {
   media: {
     retentionDays: parseInt(rawEnv.MEDIA_RETENTION_DAYS, 10),
     signedUrlTtlShortSeconds: parseInt(rawEnv.MEDIA_SIGNED_URL_TTL_SHORT, 10),
-    stripExif: rawEnv.MEDIA_STRIP_EXIF === "true",
-    validateMagicBytes: rawEnv.MEDIA_VALIDATE_MAGIC_BYTES === "true",
+    stripExif: rawEnv.MEDIA_STRIP_EXIF === 'true',
+    validateMagicBytes: rawEnv.MEDIA_VALIDATE_MAGIC_BYTES === 'true',
   },
   geo: {
-    bigDataCloudApiKey: rawEnv.BIGDATACLOUD_API_KEY || "",
-    nominatimUrl: rawEnv.NOMINATIM_URL || "",
-    osrmUrl: rawEnv.OSRM_URL || "",
+    bigDataCloudApiKey: rawEnv.BIGDATACLOUD_API_KEY || '',
+    nominatimUrl: rawEnv.NOMINATIM_URL || '',
+    osrmUrl: rawEnv.OSRM_URL || '',
   },
   redis: {
-    url: rawEnv.REDIS_URL || "",
-    enabled: rawEnv.REDIS_ENABLED !== "false",
+    url: rawEnv.REDIS_URL || '',
+    enabled: rawEnv.REDIS_ENABLED !== 'false',
   },
   deployment: {
     gitCommitSha: rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
     environment: rawEnv.NEXT_PUBLIC_VERCEL_ENV || null,
     url: rawEnv.NEXT_PUBLIC_VERCEL_URL || null,
   },
-  nextPublicVercelGitCommitSha:
-    rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
+  nextPublicVercelGitCommitSha: rawEnv.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
 } as const;
 
 function assertValidProductionSupabaseEnv(): void {
   const pairs: { key: string; value: string }[] = [
-    { key: "NEXT_PUBLIC_SUPABASE_URL", value: env.supabase.url },
-    { key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", value: env.supabase.anonKey },
+    { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
+    { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },
   ];
 
   if (IS_SERVER_BUNDLE) {
     pairs.push({
-      key: "SUPABASE_SERVICE_ROLE_KEY",
+      key: 'SUPABASE_SERVICE_ROLE_KEY',
       value: env.supabase.serviceRoleKey,
     });
   }
@@ -482,14 +378,14 @@ function assertValidProductionSupabaseEnv(): void {
       throw new Error(
         `[env] Production server requires ${key}. ` +
           `Set it in your deployment environment (Vercel, AWS, Docker, etc.) ` +
-          `or in a .env.production file.`,
+          `or in a .env.production file.`
       );
     }
     if (looksLikePlaceholderEnvValue(value)) {
       throw new Error(
         `[env] Production ${key} uses a placeholder or template value. ` +
           `Replace it with a real Supabase project value. ` +
-          `Placeholder indicators: placeholder, your-project-id, your-anon-key, etc.`,
+          `Placeholder indicators: placeholder, your-project-id, your-anon-key, etc.`
       );
     }
   }
@@ -498,62 +394,62 @@ function assertValidProductionSupabaseEnv(): void {
 function warnDevIfSupabaseLooksLikePlaceholders(): void {
   if (IS_PRODUCTION) return;
   const checks: { key: string; value: string }[] = [
-    { key: "NEXT_PUBLIC_SUPABASE_URL", value: env.supabase.url },
-    { key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", value: env.supabase.anonKey },
+    { key: 'NEXT_PUBLIC_SUPABASE_URL', value: env.supabase.url },
+    { key: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: env.supabase.anonKey },
   ];
   if (IS_SERVER_BUNDLE) {
     checks.push({
-      key: "SUPABASE_SERVICE_ROLE_KEY",
+      key: 'SUPABASE_SERVICE_ROLE_KEY',
       value: env.supabase.serviceRoleKey,
     });
   }
   for (const { key, value } of checks) {
     if (value && looksLikePlaceholderEnvValue(value)) {
       console.warn(
-        `[env] ${key} appears to use a template or placeholder; set real values in .env.local for integration against Supabase.`,
+        `[env] ${key} appears to use a template or placeholder; set real values in .env.local for integration against Supabase.`
       );
     }
   }
 }
 
 function assertValidProductionSalonTokenSecret(): void {
-  const st = env.security.salonTokenSecret?.trim() ?? "";
+  const st = env.security.salonTokenSecret?.trim() ?? '';
   if (!st) {
     console.error(
-      "[env] SALON_TOKEN_SECRET is required in production for signed booking/owner links and signed cookies. Generate a value with: openssl rand -hex 32",
+      '[env] SALON_TOKEN_SECRET is required in production for signed booking/owner links and signed cookies. Generate a value with: openssl rand -hex 32'
     );
-    throw new Error("Missing SALON_TOKEN_SECRET");
+    throw new Error('Missing SALON_TOKEN_SECRET');
   }
   if (looksLikePlaceholderEnvValue(st)) {
     console.error(
-      "[env] SALON_TOKEN_SECRET must not use placeholder or template values; use a long random secret.",
+      '[env] SALON_TOKEN_SECRET must not use placeholder or template values; use a long random secret.'
     );
-    throw new Error("Invalid SALON_TOKEN_SECRET");
+    throw new Error('Invalid SALON_TOKEN_SECRET');
   }
   if (st.length < SALON_TOKEN_SECRET_WARN_MIN_LEN) {
     console.warn(
-      `[env] SALON_TOKEN_SECRET is shorter than ${SALON_TOKEN_SECRET_WARN_MIN_LEN} characters; prefer a longer random secret in production.`,
+      `[env] SALON_TOKEN_SECRET is shorter than ${SALON_TOKEN_SECRET_WARN_MIN_LEN} characters; prefer a longer random secret in production.`
     );
   }
 }
 
 function assertValidProductionCronSecret(): void {
-  const s = env.cron.secret?.trim() ?? "";
+  const s = env.cron.secret?.trim() ?? '';
   if (!s) {
     console.error(
-      "[env] CRON_SECRET is required in production. Cron and booking-expiry endpoints require Authorization: Bearer <CRON_SECRET>. Set CRON_SECRET in your host environment (e.g. Vercel project settings).",
+      '[env] CRON_SECRET is required in production. Cron and booking-expiry endpoints require Authorization: Bearer <CRON_SECRET>. Set CRON_SECRET in your host environment (e.g. Vercel project settings).'
     );
-    throw new Error("Missing CRON_SECRET");
+    throw new Error('Missing CRON_SECRET');
   }
   if (looksLikePlaceholderEnvValue(s)) {
     console.error(
-      "[env] CRON_SECRET must not use placeholder or template values; use a long random secret.",
+      '[env] CRON_SECRET must not use placeholder or template values; use a long random secret.'
     );
-    throw new Error("Invalid CRON_SECRET");
+    throw new Error('Invalid CRON_SECRET');
   }
   if (s.length < CRON_SECRET_WARN_MIN_LEN) {
     console.warn(
-      `[env] CRON_SECRET is shorter than ${CRON_SECRET_WARN_MIN_LEN} characters; prefer a longer random secret in production.`,
+      `[env] CRON_SECRET is shorter than ${CRON_SECRET_WARN_MIN_LEN} characters; prefer a longer random secret in production.`
     );
   }
 }
@@ -573,11 +469,7 @@ export function isSupabaseConfigured(): boolean {
   const url = env.supabase.url;
   const anonKey = env.supabase.anonKey;
   if (!url || !anonKey) return false;
-  if (
-    looksLikePlaceholderEnvValue(url) ||
-    looksLikePlaceholderEnvValue(anonKey)
-  )
-    return false;
+  if (looksLikePlaceholderEnvValue(url) || looksLikePlaceholderEnvValue(anonKey)) return false;
   return true;
 }
 

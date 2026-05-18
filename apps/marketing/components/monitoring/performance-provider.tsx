@@ -1,29 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
-import { initWebVitals } from "@cusown/shared";
-import {
-  recordNavigationTimings,
-  markHydrationStart,
-  markHydrationEnd,
-} from "@cusown/shared";
-import {
-  startRouteTransition,
-  endRouteTransition,
-  recordHardNavigation,
-} from "@cusown/shared";
-import {
-  startInteractionTracking,
-  stopInteractionTracking,
-} from "@cusown/shared";
+import { useEffect, useRef, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { initWebVitals } from '@cusown/shared';
+import { recordNavigationTimings, markHydrationStart, markHydrationEnd } from '@cusown/shared';
+import { startRouteTransition, endRouteTransition, recordHardNavigation } from '@cusown/shared';
+import { startInteractionTracking, stopInteractionTracking } from '@cusown/shared';
 import {
   loadBaselines,
   checkForRegressions,
   getPerformanceSummary,
   reportToServer,
-} from "@cusown/shared";
-import { performanceMonitor } from "@cusown/shared";
+} from '@cusown/shared';
+import { performanceMonitor } from '@cusown/shared';
 
 interface PerformanceProviderProps {
   children: React.ReactNode;
@@ -45,9 +34,7 @@ export function PerformanceProvider({
   const previousPathname = useRef<string | null>(null);
   const isInitialized = useRef(false);
   const reportingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const regressionTimerRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
-  );
+  const regressionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleReport = useCallback(() => {
     const summary = getPerformanceSummary();
@@ -62,8 +49,8 @@ export function PerformanceProvider({
 
     void initWebVitals();
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("load", () => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('load', () => {
         markHydrationEnd();
         recordNavigationTimings();
         recordHardNavigation();
@@ -77,10 +64,7 @@ export function PerformanceProvider({
         loadBaselines();
       }
 
-      reportingTimerRef.current = setInterval(
-        handleReport,
-        reportingIntervalMs,
-      );
+      reportingTimerRef.current = setInterval(handleReport, reportingIntervalMs);
 
       if (enableRegressionDetection) {
         regressionTimerRef.current = setInterval(() => {
@@ -88,8 +72,8 @@ export function PerformanceProvider({
         }, REGRESSION_CHECK_INTERVAL_MS);
       }
 
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
           handleReport();
         }
       });
@@ -108,19 +92,10 @@ export function PerformanceProvider({
         clearInterval(regressionTimerRef.current);
       }
     };
-  }, [
-    enableInteractionTracking,
-    enableRegressionDetection,
-    reportingIntervalMs,
-    handleReport,
-  ]);
+  }, [enableInteractionTracking, enableRegressionDetection, reportingIntervalMs, handleReport]);
 
   useEffect(() => {
-    if (
-      previousPathname.current !== null &&
-      previousPathname.current !== pathname &&
-      pathname
-    ) {
+    if (previousPathname.current !== null && previousPathname.current !== pathname && pathname) {
       endRouteTransition(pathname);
     }
 
@@ -137,10 +112,7 @@ export function PerformanceProvider({
 }
 
 export function usePerformanceMonitor() {
-  const getStats = useCallback(
-    () => performanceMonitor.getAggregatedStats("web-vital"),
-    [],
-  );
+  const getStats = useCallback(() => performanceMonitor.getAggregatedStats('web-vital'), []);
   const getSummary = useCallback(() => getPerformanceSummary(), []);
 
   return {

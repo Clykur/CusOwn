@@ -13,10 +13,10 @@
 
 /* eslint-disable no-console */
 
-import "ts-node/register";
-import { createClient } from "@supabase/supabase-js";
+import 'ts-node/register';
+import { createClient } from '@supabase/supabase-js';
 
-type ProjectEnv = "staging" | "production";
+type ProjectEnv = 'staging' | 'production';
 
 interface ProjectConfig {
   url: string;
@@ -28,24 +28,22 @@ function getConfig(prefix: ProjectEnv): ProjectConfig {
   const url = process.env[`SUPABASE_${upper}_URL`];
   const key = process.env[`SUPABASE_${upper}_SERVICE_ROLE_KEY`];
   if (!url || !key) {
-    throw new Error(
-      `Missing SUPABASE_${upper}_URL or SUPABASE_${upper}_SERVICE_ROLE_KEY`,
-    );
+    throw new Error(`Missing SUPABASE_${upper}_URL or SUPABASE_${upper}_SERVICE_ROLE_KEY`);
   }
   return { url, serviceRoleKey: key };
 }
 
 async function fetchPolicies(client: ReturnType<typeof createClient>) {
   const { data, error } = await client
-    .from("pg_policies" as any)
-    .select("schemaname, tablename, policyname, cmd");
+    .from('pg_policies' as any)
+    .select('schemaname, tablename, policyname, cmd');
   if (error) throw error;
   return data ?? [];
 }
 
 async function main() {
-  const stagingCfg = getConfig("staging");
-  const prodCfg = getConfig("production");
+  const stagingCfg = getConfig('staging');
+  const prodCfg = getConfig('production');
 
   const staging = createClient(stagingCfg.url, stagingCfg.serviceRoleKey, {
     auth: { persistSession: false },
@@ -60,9 +58,7 @@ async function main() {
   ]);
 
   const normalize = (rows: any[]) =>
-    rows
-      .map((r) => `${r.schemaname}.${r.tablename}:${r.policyname}:${r.cmd}`)
-      .sort();
+    rows.map((r) => `${r.schemaname}.${r.tablename}:${r.policyname}:${r.cmd}`).sort();
 
   const sSet = new Set(normalize(stagingPolicies));
   const pSet = new Set(normalize(prodPolicies));
@@ -77,8 +73,8 @@ async function main() {
         rls_only_in_production: onlyProd,
       },
       null,
-      2,
-    ),
+      2
+    )
   );
 }
 

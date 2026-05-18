@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { formatDate } from "@cusown/shared";
-import CreateBusinessIcon from "@cusown/shared/icons/create-business.svg";
-import DateFilter from "@/components/owner/date-filter";
+import { memo } from 'react';
+import { formatDate } from '@cusown/shared';
+import CreateBusinessIcon from '@cusown/shared/icons/create-business.svg';
+import DateFilter from '@/components/owner/date-filter';
 
 interface Holiday {
   id: string;
@@ -62,9 +62,7 @@ function DowntimeManagementComponent({
 
         <div className="space-y-3 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Holiday Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Holiday Date</label>
             <DateFilter value={newHolidayDate} onChange={onHolidayDateChange} />
           </div>
 
@@ -99,13 +97,9 @@ function DowntimeManagementComponent({
                 className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
               >
                 <div>
-                  <p className="font-medium text-gray-900">
-                    {formatDate(holiday.holiday_date)}
-                  </p>
+                  <p className="font-medium text-gray-900">{formatDate(holiday.holiday_date)}</p>
                   {holiday.holiday_name && (
-                    <p className="text-sm text-gray-600">
-                      {holiday.holiday_name}
-                    </p>
+                    <p className="text-sm text-gray-600">{holiday.holiday_name}</p>
                   )}
                 </div>
                 {onRemoveHoliday && (
@@ -128,19 +122,12 @@ function DowntimeManagementComponent({
 
         <div className="space-y-3 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Start Date
-            </label>
-            <DateFilter
-              value={newClosureStart}
-              onChange={onClosureStartChange}
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <DateFilter value={newClosureStart} onChange={onClosureStartChange} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              End Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
             <DateFilter value={newClosureEnd} onChange={onClosureEndChange} />
           </div>
 
@@ -176,12 +163,9 @@ function DowntimeManagementComponent({
               >
                 <div>
                   <p className="font-medium text-gray-900">
-                    {formatDate(closure.start_date)} -{" "}
-                    {formatDate(closure.end_date)}
+                    {formatDate(closure.start_date)} - {formatDate(closure.end_date)}
                   </p>
-                  {closure.reason && (
-                    <p className="text-sm text-gray-600">{closure.reason}</p>
-                  )}
+                  {closure.reason && <p className="text-sm text-gray-600">{closure.reason}</p>}
                 </div>
                 {onRemoveClosure && (
                   <button

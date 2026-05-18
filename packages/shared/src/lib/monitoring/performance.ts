@@ -4,19 +4,19 @@
  */
 
 export type MetricType =
-  | "web-vital"
-  | "api-latency"
-  | "cache"
-  | "hydration"
-  | "render"
-  | "navigation"
-  | "resource";
+  | 'web-vital'
+  | 'api-latency'
+  | 'cache'
+  | 'hydration'
+  | 'render'
+  | 'navigation'
+  | 'resource';
 
 export interface PerformanceMetric {
   name: string;
   type: MetricType;
   value: number;
-  unit: "ms" | "score" | "count" | "bytes" | "ratio";
+  unit: 'ms' | 'score' | 'count' | 'bytes' | 'ratio';
   timestamp: number;
   page?: string;
   metadata?: Record<string, unknown>;
@@ -51,34 +51,33 @@ class PerformanceMonitor {
   private sessionId: string;
 
   constructor() {
-    this.isEnabled = typeof window !== "undefined";
+    this.isEnabled = typeof window !== 'undefined';
     this.sessionId = this.generateSessionId();
   }
 
   private generateSessionId(): string {
     const cryptoApi =
-      typeof globalThis !== "undefined" && "crypto" in globalThis
+      typeof globalThis !== 'undefined' && 'crypto' in globalThis
         ? (globalThis as typeof globalThis & { crypto?: Crypto }).crypto
         : undefined;
     if (!cryptoApi?.getRandomValues) {
       return `sess-${Date.now()}`;
     }
     const buf = cryptoApi.getRandomValues(new Uint8Array(8));
-    let randomPart = "";
+    let randomPart = '';
     for (const byte of buf) {
-      randomPart += byte.toString(16).padStart(2, "0");
+      randomPart += byte.toString(16).padStart(2, '0');
     }
     return `${Date.now()}-${randomPart}`;
   }
 
-  record(metric: Omit<PerformanceMetric, "timestamp">): void {
+  record(metric: Omit<PerformanceMetric, 'timestamp'>): void {
     if (!this.isEnabled) return;
 
     const fullMetric: PerformanceMetric = {
       ...metric,
       timestamp: Date.now(),
-      page:
-        typeof window !== "undefined" ? window.location.pathname : undefined,
+      page: typeof window !== 'undefined' ? window.location.pathname : undefined,
     };
 
     this.metrics.push(fullMetric);
@@ -90,23 +89,22 @@ class PerformanceMonitor {
     this.listeners.forEach((listener) => listener(fullMetric));
   }
 
-  getRating(metric: PerformanceMetric): "good" | "needs-improvement" | "poor" {
+  getRating(metric: PerformanceMetric): 'good' | 'needs-improvement' | 'poor' {
     const name = metric.name.toLowerCase();
     let threshold: { good: number; needsImprovement: number } | undefined;
 
-    if (name === "lcp") threshold = this.thresholds.lcp;
-    else if (name === "fid" || name === "inp") threshold = this.thresholds.fid;
-    else if (name === "cls") threshold = this.thresholds.cls;
-    else if (name === "fcp") threshold = this.thresholds.fcp;
-    else if (name === "ttfb") threshold = this.thresholds.ttfb;
-    else if (metric.type === "api-latency")
-      threshold = this.thresholds.apiLatency;
+    if (name === 'lcp') threshold = this.thresholds.lcp;
+    else if (name === 'fid' || name === 'inp') threshold = this.thresholds.fid;
+    else if (name === 'cls') threshold = this.thresholds.cls;
+    else if (name === 'fcp') threshold = this.thresholds.fcp;
+    else if (name === 'ttfb') threshold = this.thresholds.ttfb;
+    else if (metric.type === 'api-latency') threshold = this.thresholds.apiLatency;
 
-    if (!threshold) return "good";
+    if (!threshold) return 'good';
 
-    if (metric.value <= threshold.good) return "good";
-    if (metric.value <= threshold.needsImprovement) return "needs-improvement";
-    return "poor";
+    if (metric.value <= threshold.good) return 'good';
+    if (metric.value <= threshold.needsImprovement) return 'needs-improvement';
+    return 'poor';
   }
 
   subscribe(listener: MetricListener): () => void {
@@ -116,11 +114,7 @@ class PerformanceMonitor {
     };
   }
 
-  getMetrics(filter?: {
-    type?: MetricType;
-    page?: string;
-    since?: number;
-  }): PerformanceMetric[] {
+  getMetrics(filter?: { type?: MetricType; page?: string; since?: number }): PerformanceMetric[] {
     let result = [...this.metrics];
 
     if (filter?.type) {
@@ -139,7 +133,7 @@ class PerformanceMonitor {
 
   getAggregatedStats(
     type: MetricType,
-    name?: string,
+    name?: string
   ): {
     count: number;
     avg: number;
@@ -186,10 +180,10 @@ class PerformanceMonitor {
 
   async recordHealthCheck(healthy: boolean, durationMs: number): Promise<void> {
     this.record({
-      name: "health-check",
-      type: "api-latency",
+      name: 'health-check',
+      type: 'api-latency',
       value: durationMs,
-      unit: "ms",
+      unit: 'ms',
       metadata: { healthy },
     });
   }
@@ -197,44 +191,42 @@ class PerformanceMonitor {
 
 export const performanceMonitor = new PerformanceMonitor();
 
-export function recordMetric(
-  metric: Omit<PerformanceMetric, "timestamp">,
-): void {
+export function recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>): void {
   performanceMonitor.record(metric);
 }
 
 export function measureAsync<T>(
   name: string,
   fn: () => Promise<T>,
-  type: MetricType = "render",
-  metadata?: Record<string, unknown>,
+  type: MetricType = 'render',
+  metadata?: Record<string, unknown>
 ): Promise<T> {
   const start = performance.now();
   return fn().finally(() => {
     const duration = performance.now() - start;
-    recordMetric({ name, type, value: duration, unit: "ms", metadata });
+    recordMetric({ name, type, value: duration, unit: 'ms', metadata });
   });
 }
 
 export function measureSync<T>(
   name: string,
   fn: () => T,
-  type: MetricType = "render",
-  metadata?: Record<string, unknown>,
+  type: MetricType = 'render',
+  metadata?: Record<string, unknown>
 ): T {
   const start = performance.now();
   try {
     return fn();
   } finally {
     const duration = performance.now() - start;
-    recordMetric({ name, type, value: duration, unit: "ms", metadata });
+    recordMetric({ name, type, value: duration, unit: 'ms', metadata });
   }
 }
 
 export async function runWithTiming<T>(
   name: string,
   fn: () => Promise<T>,
-  metadata?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ): Promise<T> {
   const start = Date.now();
   try {
@@ -243,9 +235,9 @@ export async function runWithTiming<T>(
     const duration = Date.now() - start;
     recordMetric({
       name,
-      type: "api-latency",
+      type: 'api-latency',
       value: duration,
-      unit: "ms",
+      unit: 'ms',
       metadata,
     });
   }

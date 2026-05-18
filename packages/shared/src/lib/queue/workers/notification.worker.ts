@@ -3,60 +3,51 @@
  * Handles: send-notification
  */
 
-import { Worker, Job } from "bullmq";
-import { getQueueConnection, isQueueAvailable } from "../connection";
-import { QUEUE_NAMES, NotificationJobData } from "../queue";
+import { Worker, Job } from 'bullmq';
+import { getQueueConnection, isQueueAvailable } from '../connection';
+import { QUEUE_NAMES, NotificationJobData } from '../queue';
 
 let notificationWorker: Worker<NotificationJobData> | null = null;
 
 /**
  * Process a notification job.
  */
-async function processNotificationJob(
-  job: Job<NotificationJobData>,
-): Promise<void> {
+async function processNotificationJob(job: Job<NotificationJobData>): Promise<void> {
   const { bookingId, type, recipientType } = job.data;
 
   // Dynamically import services to avoid circular dependencies
-  const { bookingService } = await import("../../../services/booking.service");
-  const { whatsappService } =
-    await import("../../../services/whatsapp.service");
+  const { bookingService } = await import('../../../services/booking.service');
+  const { whatsappService } = await import('../../../services/whatsapp.service');
 
   const booking = await bookingService.getBookingByUuidWithDetails(bookingId);
   if (!booking || !booking.salon) {
-    console.warn(
-      `[Notification Worker] Booking ${bookingId} not found or missing salon`,
-    );
+    console.warn(`[Notification Worker] Booking ${bookingId} not found or missing salon`);
     return;
   }
 
   switch (type) {
-    case "booking-created":
+    case 'booking-created':
       // Generate WhatsApp URL for owner notification
-      if (recipientType === "owner" && booking.slot) {
+      if (recipientType === 'owner' && booking.slot) {
         whatsappService.generateBookingRequestMessage(booking, booking.salon);
       }
       break;
 
-    case "booking-confirmed":
+    case 'booking-confirmed':
       // Generate confirmation WhatsApp URL for customer
-      if (
-        recipientType === "customer" &&
-        booking.slot &&
-        booking.salon.address
-      ) {
+      if (recipientType === 'customer' && booking.slot && booking.salon.address) {
         whatsappService.getConfirmationWhatsAppUrl(booking, booking.salon);
       }
       break;
 
-    case "booking-rejected":
+    case 'booking-rejected':
       // Generate rejection WhatsApp URL for customer
-      if (recipientType === "customer" && booking.slot) {
+      if (recipientType === 'customer' && booking.slot) {
         whatsappService.getRejectionWhatsAppUrl(booking, booking.salon);
       }
       break;
 
-    case "booking-cancelled":
+    case 'booking-cancelled':
       // Could send cancellation notification
       break;
 
@@ -92,26 +83,26 @@ export function startNotificationWorker(): Worker<NotificationJobData> | null {
         max: 20,
         duration: 1000, // Max 20 notifications per second
       },
-    },
+    }
   );
 
-  notificationWorker.on("completed", (job) => {
+  notificationWorker.on('completed', (job) => {
     const { bookingId, type, recipientType } = job.data;
     console.warn(
-      `[Notification Worker] Job completed bullmq_job_id=${job.id} booking_id=${bookingId} type=${type} recipient=${recipientType}`,
+      `[Notification Worker] Job completed bullmq_job_id=${job.id} booking_id=${bookingId} type=${type} recipient=${recipientType}`
     );
   });
 
-  notificationWorker.on("failed", (job, err) => {
+  notificationWorker.on('failed', (job, err) => {
     const { bookingId, type } = job?.data ?? {};
     console.error(
-      `[Notification Worker] Job failed bullmq_job_id=${job?.id ?? "?"} booking_id=${bookingId ?? "?"} type=${type ?? "?"}:`,
-      err?.message ?? err,
+      `[Notification Worker] Job failed bullmq_job_id=${job?.id ?? '?'} booking_id=${bookingId ?? '?'} type=${type ?? '?'}:`,
+      err?.message ?? err
     );
   });
 
-  notificationWorker.on("error", (err) => {
-    console.error("[Notification Worker] Worker error:", err);
+  notificationWorker.on('error', (err) => {
+    console.error('[Notification Worker] Worker error:', err);
   });
 
   return notificationWorker;

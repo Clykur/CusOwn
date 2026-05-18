@@ -3,7 +3,7 @@
  * This file is kept for backward compatibility but redirects to the new canonical system
  */
 
-import { shouldRedirectUser } from "./user-state";
+import { shouldRedirectUser } from './user-state';
 
 export interface UserRedirectResult {
   shouldRedirect: boolean;
@@ -15,9 +15,7 @@ export interface UserRedirectResult {
  * @deprecated Use shouldRedirectUser() from './user-state' instead
  * This function now delegates to the canonical user state system
  */
-export async function getUserRedirectUrl(
-  userId: string,
-): Promise<UserRedirectResult> {
+export async function getUserRedirectUrl(userId: string): Promise<UserRedirectResult> {
   const result = await shouldRedirectUser(userId);
   return {
     shouldRedirect: result.shouldRedirect,

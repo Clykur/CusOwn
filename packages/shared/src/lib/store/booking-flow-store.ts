@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
-import { PHONE_DIGITS } from "@cusown/config";
-import type { PublicBusiness, Slot } from "../../types";
+import { create } from 'zustand';
+import { PHONE_DIGITS } from '@cusown/config';
+import type { PublicBusiness, Slot } from '../../types';
 
 interface BookingFlowState {
   business: PublicBusiness | null;
@@ -56,20 +56,20 @@ interface BookingFlowState {
 
 const getLocalTodayStr = () => {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
 const initialState = {
   business: null,
-  businessSlug: "",
+  businessSlug: '',
   selectedDate: getLocalTodayStr(),
   selectedSlot: null,
   slots: [],
   slotCache: new Map<string, Slot[]>(),
   closedDates: new Set<string>(),
   closedMessage: null,
-  customerName: "",
-  customerPhone: "",
+  customerName: '',
+  customerPhone: '',
   isLoading: true,
   dateLoading: false,
   validatingSlot: false,
@@ -100,15 +100,14 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
     });
   },
 
-  setSelectedSlot: (selectedSlot) =>
-    set({ selectedSlot, slotValidationError: null }),
+  setSelectedSlot: (selectedSlot) => set({ selectedSlot, slotValidationError: null }),
 
   setSlots: (slots) => set({ slots }),
 
   updateSlot: (slotId, updates) =>
     set((state) => {
       const nextSlots = state.slots.map((slot) =>
-        slot.id === slotId ? { ...slot, ...updates } : slot,
+        slot.id === slotId ? { ...slot, ...updates } : slot
       );
 
       const nextCache = new Map(state.slotCache);
@@ -163,7 +162,7 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
 
   setCustomerPhone: (customerPhone) =>
     set({
-      customerPhone: customerPhone.replace(/\D/g, "").slice(-PHONE_DIGITS),
+      customerPhone: customerPhone.replace(/\D/g, '').slice(-PHONE_DIGITS),
     }),
 
   setIsLoading: (isLoading) => set({ isLoading }),
@@ -180,7 +179,7 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
 
   clearSelection: () => set({ selectedSlot: null, slotValidationError: null }),
 
-  clearForm: () => set({ customerName: "", customerPhone: "" }),
+  clearForm: () => set({ customerName: '', customerPhone: '' }),
 
   reset: () =>
     set({
@@ -192,7 +191,7 @@ export const useBookingFlowStore = create<BookingFlowState>()((set, get) => ({
 }));
 
 export const selectAvailableSlots = (state: BookingFlowState) =>
-  state.slots.filter((s) => s.status === "available");
+  state.slots.filter((s) => s.status === 'available');
 
 export const selectIsDateClosed = (state: BookingFlowState) =>
   state.closedDates.has(state.selectedDate);

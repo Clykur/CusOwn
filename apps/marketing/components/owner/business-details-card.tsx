@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { memo, type ReactNode } from "react";
-import type { Salon } from "@cusown/shared";
-import { cn } from "@cusown/shared";
+import { memo, type ReactNode } from 'react';
+import type { Salon } from '@cusown/shared';
+import { cn } from '@cusown/shared';
 
 interface BusinessDetailsCardProps {
   salon: Salon;
@@ -21,7 +21,7 @@ function DetailField({
   className?: string;
 }) {
   return (
-    <div className={cn("min-w-0", className)}>
+    <div className={cn('min-w-0', className)}>
       <dt className="text-xs font-medium text-slate-500">{label}</dt>
       <dd className="mt-1 break-words text-sm font-semibold leading-snug text-slate-900 md:font-medium">
         {children}
@@ -39,9 +39,9 @@ function BusinessDetailsCardComponent({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200/90 bg-white p-4",
-        "shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]",
-        "md:rounded-lg md:p-5 md:shadow-none md:ring-0 lg:p-6",
+        'rounded-2xl border border-slate-200/90 bg-white p-4',
+        'shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]',
+        'md:rounded-lg md:p-5 md:shadow-none md:ring-0 lg:p-6'
       )}
     >
       <div className="mb-4 flex flex-row items-center justify-between gap-3 border-b border-slate-100 pb-3 md:mb-5 md:pb-4">
@@ -62,7 +62,7 @@ function BusinessDetailsCardComponent({
             disabled={deleteSaving}
             className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 md:px-4 md:py-2 md:text-sm"
           >
-            {deleteSaving ? "Deleting..." : "Delete"}
+            {deleteSaving ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
@@ -72,15 +72,10 @@ function BusinessDetailsCardComponent({
         <DetailField label="Owner name">{salon.owner_name}</DetailField>
         <DetailField label="WhatsApp">{salon.whatsapp_number}</DetailField>
         <DetailField label="Hours">
-          {salon.opening_time?.substring(0, 5)} –{" "}
-          {salon.closing_time?.substring(0, 5)}
+          {salon.opening_time?.substring(0, 5)} – {salon.closing_time?.substring(0, 5)}
         </DetailField>
-        <DetailField label="Slot duration">
-          {salon.slot_duration} min
-        </DetailField>
-        {salon.location ? (
-          <DetailField label="Location">{salon.location}</DetailField>
-        ) : null}
+        <DetailField label="Slot duration">{salon.slot_duration} min</DetailField>
+        {salon.location ? <DetailField label="Location">{salon.location}</DetailField> : null}
         {salon.address ? (
           <DetailField label="Address" className="col-span-2">
             {salon.address}

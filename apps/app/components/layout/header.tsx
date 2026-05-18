@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useLogoNavigation } from "@cusown/shared/client";
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useLogoNavigation } from '@cusown/shared/client';
 
 function Header() {
   const pathname = usePathname();
@@ -10,23 +10,23 @@ function Header() {
   const [, setChecking] = useState(true);
   const [, setUserState] = useState<any>(null);
 
-  const onOwnerRoute = pathname?.startsWith("/owner");
-  const onCustomerRoute = pathname?.startsWith("/customer");
+  const onOwnerRoute = pathname?.startsWith('/owner');
+  const onCustomerRoute = pathname?.startsWith('/customer');
 
-  const hiddenRoutes = ["/select-role"];
+  const hiddenRoutes = ['/select-role'];
 
   const hideCompletely =
-    pathname?.startsWith("/admin") ||
-    pathname?.startsWith("/booking") ||
-    hiddenRoutes.includes(pathname || "");
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/booking') ||
+    hiddenRoutes.includes(pathname || '');
 
   useEffect(() => {
     let mounted = true;
 
     const loadState = async () => {
       try {
-        const stateRes = await fetch("/api/user/state", {
-          credentials: "include",
+        const stateRes = await fetch('/api/user/state', {
+          credentials: 'include',
         });
         if (!stateRes.ok) {
           if (!mounted) return;

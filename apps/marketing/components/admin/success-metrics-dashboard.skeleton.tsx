@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
 /** Fills viewport to avoid white gap below. */
 export default function SuccessMetricsDashboardSkeleton() {

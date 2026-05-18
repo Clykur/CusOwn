@@ -1,8 +1,8 @@
-import { NextRequest } from "next/server";
-import { safeMetrics } from "@cusown/shared/server";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { getServerUser } from "@cusown/shared/server";
-import { isAdmin } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { safeMetrics } from '@cusown/shared/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { getServerUser } from '@cusown/shared/server';
+import { isAdmin } from '@cusown/shared/server';
 import {
   METRICS_BOOKING_CREATED,
   METRICS_BOOKING_CONFIRMED,
@@ -14,19 +14,19 @@ import {
   METRICS_PAYMENT_CREATED,
   METRICS_PAYMENT_SUCCEEDED,
   METRICS_PAYMENT_FAILED,
-} from "@cusown/config";
+} from '@cusown/config';
 
 /** Phase 4: Dashboard API — booking funnel, expiry rate, payment success rate. */
 export async function GET(request: NextRequest) {
   try {
     const user = await getServerUser(request);
     if (!user) {
-      return errorResponse("Unauthorized", 401);
+      return errorResponse('Unauthorized', 401);
     }
 
     const adminCheck = await isAdmin(user.id);
     if (!adminCheck) {
-      return errorResponse("Forbidden", 403);
+      return errorResponse('Forbidden', 403);
     }
 
     const [
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     const paymentSuccessRate = paymentSucceeded / paymentTotal;
     const paymentFailureRate = paymentFailed / paymentTotal;
 
-    const slotFetchTimings = await safeMetrics.getTimings("slots.fetch");
+    const slotFetchTimings = await safeMetrics.getTimings('slots.fetch');
     const avgSlotFetchTime =
       slotFetchTimings.length > 0
         ? slotFetchTimings.reduce((a, b) => a + b, 0) / slotFetchTimings.length
@@ -97,8 +97,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch metrics";
+    const message = error instanceof Error ? error.message : 'Failed to fetch metrics';
     return errorResponse(message, 500);
   }
 }

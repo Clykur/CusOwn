@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
 /** In-dashboard loading: mirrors sticky filter strip + KPI grid + chart grid (no outer filter card). */
 export default function AnalyticsSkeleton() {
@@ -28,10 +28,7 @@ export default function AnalyticsSkeleton() {
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 8 }).map((_, idx) => (
-          <Skeleton
-            key={idx}
-            className="h-[88px] rounded-xl border border-gray-200/80"
-          />
+          <Skeleton key={idx} className="h-[88px] rounded-xl border border-gray-200/80" />
         ))}
       </div>
 

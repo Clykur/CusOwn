@@ -4,17 +4,17 @@ export function cn(
   return classes
     .filter(Boolean)
     .map((cls) => {
-      if (typeof cls === "string") {
+      if (typeof cls === 'string') {
         return cls;
       }
-      if (typeof cls === "object" && cls !== null) {
+      if (typeof cls === 'object' && cls !== null) {
         return Object.entries(cls)
           .filter(([, value]) => value)
           .map(([key]) => key)
-          .join(" ");
+          .join(' ');
       }
-      return "";
+      return '';
     })
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 }

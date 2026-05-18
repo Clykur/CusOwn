@@ -1,16 +1,14 @@
-import { createBrowserClient } from "@supabase/ssr";
-import { AUTH_COOKIE_MAX_AGE_SECONDS } from "@cusown/config";
-import { publicEnv } from "@cusown/config";
+import { createBrowserClient } from '@supabase/ssr';
+import { AUTH_COOKIE_MAX_AGE_SECONDS } from '@cusown/config';
+import { publicEnv } from '@cusown/config';
 
 /**
  * Client-side Supabase client for authentication
  * Use this in client components for login/logout
  * Refresh is throttled by global fetch patch (see layout.tsx script).
  */
-const supabaseUrl =
-  typeof window !== "undefined" ? publicEnv.supabase.url || "" : "";
-const supabaseAnonKey =
-  typeof window !== "undefined" ? publicEnv.supabase.anonKey || "" : "";
+const supabaseUrl = typeof window !== 'undefined' ? publicEnv.supabase.url || '' : '';
+const supabaseAnonKey = typeof window !== 'undefined' ? publicEnv.supabase.anonKey || '' : '';
 
 // Only create client if we have valid credentials
 // Use a dummy client if credentials are missing to prevent crashes
@@ -21,58 +19,44 @@ if (supabaseUrl && supabaseAnonKey) {
     supabaseAuth = createBrowserClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         get(name) {
-          if (typeof document === "undefined") return undefined;
-          const cookies = document.cookie.split(";").map((c) => c.trim());
+          if (typeof document === 'undefined') return undefined;
+          const cookies = document.cookie.split(';').map((c) => c.trim());
           const match = cookies.find((c) => c.startsWith(`${name}=`));
-          return match
-            ? decodeURIComponent(match.split("=").slice(1).join("="))
-            : undefined;
+          return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : undefined;
         },
         // Auth/session cookies are set only server-side. No client writes to prevent XSS stealing.
         set(name, _value, _options) {
-          if (typeof document === "undefined") return;
+          if (typeof document === 'undefined') return;
           const n = name.toLowerCase();
-          if (
-            n.startsWith("sb-") ||
-            n.includes("auth") ||
-            n.includes("session")
-          )
-            return;
+          if (n.startsWith('sb-') || n.includes('auth') || n.includes('session')) return;
           const opts = _options ?? {};
           const maxAge =
-            opts.maxAge ??
-            (n.includes("auth") ? AUTH_COOKIE_MAX_AGE_SECONDS : undefined);
+            opts.maxAge ?? (n.includes('auth') ? AUTH_COOKIE_MAX_AGE_SECONDS : undefined);
           const parts = [`${name}=${encodeURIComponent(_value)}`];
-          parts.push(`Path=${opts.path ?? "/"}`);
+          parts.push(`Path=${opts.path ?? '/'}`);
           if (maxAge != null) parts.push(`Max-Age=${maxAge}`);
-          if (opts.expires)
-            parts.push(`Expires=${(opts.expires as Date).toUTCString()}`);
+          if (opts.expires) parts.push(`Expires=${(opts.expires as Date).toUTCString()}`);
           if (opts.sameSite) parts.push(`SameSite=${opts.sameSite}`);
-          if (opts.secure) parts.push("Secure");
-          document.cookie = parts.join("; ");
+          if (opts.secure) parts.push('Secure');
+          document.cookie = parts.join('; ');
         },
         remove(name, _options) {
-          if (typeof document === "undefined") return;
+          if (typeof document === 'undefined') return;
           const n = name.toLowerCase();
-          if (
-            n.startsWith("sb-") ||
-            n.includes("auth") ||
-            n.includes("session")
-          )
-            return;
+          if (n.startsWith('sb-') || n.includes('auth') || n.includes('session')) return;
           const opts = _options ?? {};
-          document.cookie = `${name}=; Path=${opts.path ?? "/"}; Max-Age=0`;
+          document.cookie = `${name}=; Path=${opts.path ?? '/'}; Max-Age=0`;
         },
       },
       auth: {
         autoRefreshToken: false,
         persistSession: true,
         detectSessionInUrl: true,
-        flowType: "pkce",
+        flowType: 'pkce',
       },
     });
   } catch (error) {
-    console.error("Failed to initialize Supabase client:", error);
+    console.error('Failed to initialize Supabase client:', error);
     supabaseAuth = null;
   }
 }
@@ -83,10 +67,9 @@ export { supabaseAuth };
  * Get current authenticated user. Client: server-only via /api/auth/session.
  */
 export const getCurrentUser = async () => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
-    const { getServerSessionClient } =
-      await import("../auth/server-session-client");
+    const { getServerSessionClient } = await import('../auth/server-session-client');
     const { user } = await getServerSessionClient();
     return user;
   } catch {
@@ -98,10 +81,9 @@ export const getCurrentUser = async () => {
  * Get user profile with role information. Client: server-only via /api/auth/session.
  */
 export const getUserProfile = async (userId: string) => {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
-    const { getServerSessionClient } =
-      await import("../auth/server-session-client");
+    const { getServerSessionClient } = await import('../auth/server-session-client');
     const { user, profile } = await getServerSessionClient();
     if (!user || user.id !== userId) return null;
     return profile;
@@ -110,19 +92,19 @@ export const getUserProfile = async (userId: string) => {
   }
 };
 
-import { getOAuthRedirect } from "../auth/getOAuthRedirect";
+import { getOAuthRedirect } from '../auth/getOAuthRedirect';
 
 /**
  * Sign in with Google
  */
 export const signInWithGoogle = async (redirectTo?: string) => {
   if (!supabaseAuth) {
-    return { data: null, error: { message: "Supabase not configured" } };
+    return { data: null, error: { message: 'Supabase not configured' } };
   }
   try {
-    let baseUrl = redirectTo || getOAuthRedirect("/auth/callback");
+    let baseUrl = redirectTo || getOAuthRedirect('/auth/callback');
 
-    if (typeof window !== "undefined" && window.location?.origin) {
+    if (typeof window !== 'undefined' && window.location?.origin) {
       const currentOrigin = window.location.origin;
       try {
         const parsed = new URL(baseUrl);
@@ -135,25 +117,25 @@ export const signInWithGoogle = async (redirectTo?: string) => {
     }
 
     if (
-      process.env.NODE_ENV === "development" &&
-      typeof window !== "undefined" &&
+      process.env.NODE_ENV === 'development' &&
+      typeof window !== 'undefined' &&
       window.location?.origin
     ) {
       const redirectOrigin = new URL(baseUrl).origin;
       if (redirectOrigin !== window.location.origin) {
         throw new Error(
-          `OAuth redirect must match current origin (dev guard). Current: ${window.location.origin}, redirect: ${redirectOrigin}`,
+          `OAuth redirect must match current origin (dev guard). Current: ${window.location.origin}, redirect: ${redirectOrigin}`
         );
       }
     }
 
     const { data, error } = await supabaseAuth.auth.signInWithOAuth({
-      provider: "google",
+      provider: 'google',
       options: {
         redirectTo: baseUrl,
         queryParams: {
-          access_type: "offline",
-          prompt: "consent",
+          access_type: 'offline',
+          prompt: 'consent',
         },
       },
     });
@@ -168,12 +150,11 @@ export const signInWithGoogle = async (redirectTo?: string) => {
  * Sign out: server-only. Redirects to /api/auth/signout so server clears session.
  */
 export const signOut = async () => {
-  if (typeof window === "undefined") return { error: null };
+  if (typeof window === 'undefined') return { error: null };
   try {
-    const { clearServerSessionCache } =
-      await import("../auth/server-session-client");
+    const { clearServerSessionCache } = await import('../auth/server-session-client');
     clearServerSessionCache();
-    window.location.href = "/api/auth/signout";
+    window.location.href = '/api/auth/signout';
     return { error: null };
   } catch (error: unknown) {
     return { error: error as { message?: string } };
@@ -187,7 +168,7 @@ export const isOwner = async (userId: string): Promise<boolean> => {
   const profile = await getUserProfile(userId);
   if (!profile) return false;
   const userType = (profile as any).user_type;
-  return userType === "owner" || userType === "both" || userType === "admin";
+  return userType === 'owner' || userType === 'both' || userType === 'admin';
 };
 
 /**
@@ -197,7 +178,7 @@ export const isCustomer = async (userId: string): Promise<boolean> => {
   const profile = await getUserProfile(userId);
   if (!profile) return true; // Default to customer
   const userType = (profile as any).user_type;
-  return userType === "customer" || userType === "both" || userType === "admin";
+  return userType === 'customer' || userType === 'both' || userType === 'admin';
 };
 
 /**
@@ -206,5 +187,5 @@ export const isCustomer = async (userId: string): Promise<boolean> => {
 export const isAdmin = async (userId: string): Promise<boolean> => {
   const profile = await getUserProfile(userId);
   if (!profile) return false;
-  return (profile as any).user_type === "admin";
+  return (profile as any).user_type === 'admin';
 };

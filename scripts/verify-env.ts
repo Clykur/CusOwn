@@ -1,18 +1,18 @@
-import * as dotenv from "dotenv";
-import * as path from "path";
-import { EXIT_ENV, MSG } from "../config/quality/local-quality.constants";
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import { EXIT_ENV, MSG } from '../config/quality/local-quality.constants';
 
 /**
  * Keep aligned with config/env.ts PLACEHOLDER_MARKERS (production cannot use these).
  */
 const PLACEHOLDER_MARKERS = [
-  "placeholder",
-  "your-project-id",
-  "your-anon-key",
-  "your-service-role",
-  "your-cron-secret",
-  "your-random-secret",
-  "changeme",
+  'placeholder',
+  'your-project-id',
+  'your-anon-key',
+  'your-service-role',
+  'your-cron-secret',
+  'your-random-secret',
+  'changeme',
 ] as const;
 
 function looksLikePlaceholderEnvValue(value: string): boolean {
@@ -21,19 +21,19 @@ function looksLikePlaceholderEnvValue(value: string): boolean {
 }
 
 const REQUIRED = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "SALON_TOKEN_SECRET",
-  "CRON_SECRET",
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'SALON_TOKEN_SECRET',
+  'CRON_SECRET',
 ] as const;
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, '..');
 // Same merge order as scripts/test-utils.ts and other tooling
-dotenv.config({ path: path.join(root, ".env.test") });
-dotenv.config({ path: path.join(root, ".env.local") });
+dotenv.config({ path: path.join(root, '.env.test') });
+dotenv.config({ path: path.join(root, '.env.local') });
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === 'production';
 
 /**
  * In development/test, config/env.ts supplies Zod fallbacks for unset vars.
@@ -41,8 +41,8 @@ const isProduction = process.env.NODE_ENV === "production";
  */
 if (!isProduction) {
   console.log(
-    "Environment validation passed (development).\n" +
-      "Loaded .env.test and .env.local when present; unset keys use dev fallbacks from config/env.ts.\n",
+    'Environment validation passed (development).\n' +
+      'Loaded .env.test and .env.local when present; unset keys use dev fallbacks from config/env.ts.\n'
   );
   process.exit(0);
 }
@@ -50,7 +50,7 @@ if (!isProduction) {
 const missing = REQUIRED.filter((key) => !process.env[key]?.trim());
 if (missing.length > 0) {
   console.error(MSG.ENV_FAIL);
-  console.error("Missing:", missing.join(", "));
+  console.error('Missing:', missing.join(', '));
   process.exit(EXIT_ENV);
 }
 
@@ -59,10 +59,10 @@ for (const key of REQUIRED) {
   if (looksLikePlaceholderEnvValue(v)) {
     console.error(MSG.ENV_FAIL);
     console.error(
-      `Invalid placeholder or template value for ${key} (production must use real credentials).`,
+      `Invalid placeholder or template value for ${key} (production must use real credentials).`
     );
     process.exit(EXIT_ENV);
   }
 }
 
-console.log("Environment validation passed.\n");
+console.log('Environment validation passed.\n');

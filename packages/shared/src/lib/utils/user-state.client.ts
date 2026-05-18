@@ -5,7 +5,7 @@
 
 export async function fetchUserState(): Promise<any | null> {
   try {
-    const res = await fetch("/api/user/state", { credentials: "include" });
+    const res = await fetch('/api/user/state', { credentials: 'include' });
     if (!res.ok) return null;
     const json = await res.json();
     return json?.data ?? null;

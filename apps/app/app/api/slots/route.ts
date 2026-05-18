@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   slotService,
   salonService,
@@ -22,50 +22,49 @@ import {
   userOwnsBusiness,
   isAdminProfile,
   type MinuteInterval,
-} from "@cusown/shared/server";
+} from '@cusown/shared/server';
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   DEFAULT_CONCURRENT_BOOKING_CAPACITY,
-} from "@cusown/config";
+} from '@cusown/config';
 
-const ROUTE_POST = "POST /api/slots";
+const ROUTE_POST = 'POST /api/slots';
 
 /** Sanitize user-controlled values for logging to prevent log injection (newlines, etc.). */
 function sanitizeForLog(value: unknown): string {
-  const str = String(value ?? "");
-  return str.replace(/[\r\n]/g, "");
+  const str = String(value ?? '');
+  return str.replace(/[\r\n]/g, '');
 }
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const salonId = searchParams.get("salon_id");
-    const date = searchParams.get("date") || getISTDateString();
-    const rawServiceIds =
-      searchParams.get("service_ids") ?? searchParams.get("serviceIds") ?? "";
+    const salonId = searchParams.get('salon_id');
+    const date = searchParams.get('date') || getISTDateString();
+    const rawServiceIds = searchParams.get('service_ids') ?? searchParams.get('serviceIds') ?? '';
     const serviceFingerprint =
       rawServiceIds
-        .split(",")
+        .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
         .sort()
-        .join(",") || "default";
+        .join(',') || 'default';
 
     if (!salonId) {
-      return errorResponse("Salon ID is required", 400);
+      return errorResponse('Salon ID is required', 400);
     }
 
     if (!isValidUUID(salonId)) {
-      return errorResponse("Invalid salon ID", 400);
+      return errorResponse('Invalid salon ID', 400);
     }
 
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
-      return errorResponse("Invalid date format", 400);
+      return errorResponse('Invalid date format', 400);
     }
 
-    const redisKey = buildApiRedisKeyFromPath("/api/slots", {
+    const redisKey = buildApiRedisKeyFromPath('/api/slots', {
       salon_id: salonId,
       date,
       svc: serviceFingerprint.slice(0, 200),
@@ -94,19 +93,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (!hours || hours.isClosed) {
-      const isHoliday = hours && "isHoliday" in hours && hours.isHoliday;
-      const holidayName =
-        isHoliday && "holidayName" in hours ? hours.holidayName : null;
+      const isHoliday = hours && 'isHoliday' in hours && hours.isHoliday;
+      const holidayName = isHoliday && 'holidayName' in hours ? hours.holidayName : null;
       let message: string;
       if (isHoliday) {
         message = holidayName
           ? `Holiday today   ${holidayName}. Shop is closed.`
-          : "Holiday today. Shop is closed.";
+          : 'Holiday today. Shop is closed.';
       } else {
-        message =
-          date === getISTDateString()
-            ? "Shop closed today"
-            : "Shop closed on selected day";
+        message = date === getISTDateString() ? 'Shop closed today' : 'Shop closed on selected day';
       }
       const closedData = {
         closed: true,
@@ -123,9 +118,9 @@ export async function GET(request: NextRequest) {
       const ids = [
         ...new Set(
           rawServiceIds
-            .split(",")
+            .split(',')
             .map((s) => s.trim())
-            .filter(Boolean),
+            .filter(Boolean)
         ),
       ].slice(0, 10);
       if (ids.some((id) => !isValidUUID(id))) {
@@ -166,8 +161,7 @@ export async function GET(request: NextRequest) {
         closing_time: hours.closing_time,
         slot_duration: salon.slot_duration,
         concurrent_booking_capacity:
-          salon.concurrent_booking_capacity ??
-          DEFAULT_CONCURRENT_BOOKING_CAPACITY,
+          salon.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY,
       },
       {
         skipCleanup: true,
@@ -175,7 +169,7 @@ export async function GET(request: NextRequest) {
         todayDateStringIST: todayStr,
         nowMinutesIST: currentMinutes,
         blockedIntervalsMin: blocked,
-      },
+      }
     );
 
     const slotsData = {
@@ -191,8 +185,7 @@ export async function GET(request: NextRequest) {
     setCacheHeaders(response, API_REDIS_TTL.SLOTS, API_REDIS_TTL.SLOTS * 2);
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
 
     return errorResponse(message, 500);
   }
@@ -209,16 +202,16 @@ export async function POST(request: NextRequest) {
     const { salon_id, date } = body;
 
     if (!salon_id || !date) {
-      return errorResponse("Salon ID and date are required", 400);
+      return errorResponse('Salon ID and date are required', 400);
     }
 
     if (!isValidUUID(salon_id)) {
-      return errorResponse("Invalid salon ID", 400);
+      return errorResponse('Invalid salon ID', 400);
     }
 
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
-      return errorResponse("Invalid date format", 400);
+      return errorResponse('Invalid date format', 400);
     }
 
     const salon = await salonService.getSalonById(salon_id);
@@ -234,9 +227,9 @@ export async function POST(request: NextRequest) {
 
     if (!hasAccess && !isAdmin) {
       console.warn(
-        `[SECURITY] Unauthorized slot generation attempt from IP: ${sanitizeForLog(clientIP)}, User: ${sanitizeForLog(auth.user.id.substring(0, 8))}..., Salon: ${sanitizeForLog(salon_id.substring(0, 8))}...`,
+        `[SECURITY] Unauthorized slot generation attempt from IP: ${sanitizeForLog(clientIP)}, User: ${sanitizeForLog(auth.user.id.substring(0, 8))}..., Salon: ${sanitizeForLog(salon_id.substring(0, 8))}...`
       );
-      return errorResponse("Access denied", 403);
+      return errorResponse('Access denied', 403);
     }
 
     await slotService.generateSlotsForDate(salon_id, date, {
@@ -246,7 +239,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Audit Log
-    await auditService.createAuditLog(auth.user.id, "slots_generated", "slot", {
+    await auditService.createAuditLog(auth.user.id, 'slots_generated', 'slot', {
       entityId: salon_id,
       newData: { date },
       description: `Slots generated for business ${salon_id} on ${date}`,
@@ -254,10 +247,9 @@ export async function POST(request: NextRequest) {
 
     return successResponse(null, SUCCESS_MESSAGES.SLOTS_GENERATED);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     console.error(
-      `[SECURITY] Slot generation error: IP: ${sanitizeForLog(clientIP)}, Error: ${sanitizeForLog(message)}`,
+      `[SECURITY] Slot generation error: IP: ${sanitizeForLog(clientIP)}, Error: ${sanitizeForLog(message)}`
     );
     return errorResponse(message, 500);
   }

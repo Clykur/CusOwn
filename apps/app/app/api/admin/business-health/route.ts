@@ -1,17 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireAdmin,
   successResponse,
   errorResponse,
   parseAdminDateRange,
   adminAnalyticsService,
-} from "@cusown/shared/server";
-import {
-  ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT,
-  ERROR_MESSAGES,
-} from "@cusown/config";
+} from '@cusown/shared/server';
+import { ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT, ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/admin/business-health";
+const ROUTE = 'GET /api/admin/business-health';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,23 +16,16 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const searchParams = request.nextUrl.searchParams;
-    const limitParam = searchParams.get("limit");
+    const limitParam = searchParams.get('limit');
     const limit = limitParam
-      ? Math.min(
-          100,
-          Math.max(
-            1,
-            parseInt(limitParam, 10) || ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT,
-          ),
-        )
+      ? Math.min(100, Math.max(1, parseInt(limitParam, 10) || ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT))
       : ADMIN_BUSINESS_HEALTH_DEFAULT_LIMIT;
 
     const range = parseAdminDateRange(searchParams);
     const data = await adminAnalyticsService.getBusinessHealth(range, limit);
     return successResponse(data);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

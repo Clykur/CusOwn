@@ -1,38 +1,35 @@
-"use client";
+'use client';
 
-import { useState, useCallback } from "react";
-import { useOptimisticMutation } from "@cusown/shared/client";
-import CloseIcon from "@cusown/shared/icons/close.svg";
-import CheckIcon from "@cusown/shared/icons/check.svg";
+import { useState, useCallback } from 'react';
+import { useOptimisticMutation } from '@cusown/shared/client';
+import CloseIcon from '@cusown/shared/icons/close.svg';
+import CheckIcon from '@cusown/shared/icons/check.svg';
 
 interface NoShowButtonProps {
   bookingId: string;
   onMarked?: () => void;
 }
 
-export default function NoShowButton({
-  bookingId,
-  onMarked,
-}: NoShowButtonProps) {
+export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps) {
   const [isMarked, setIsMarked] = useState(false);
 
   const noShowMutation = useOptimisticMutation({
     mutationFn: async () => {
-      const csrfToken = await (await import("@cusown/shared")).getCSRFToken();
+      const csrfToken = await (await import('@cusown/shared')).getCSRFToken();
       const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       };
-      if (csrfToken) headers["x-csrf-token"] = csrfToken;
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const response = await fetch(`/api/bookings/${bookingId}/no-show`, {
-        method: "POST",
+        method: 'POST',
         headers,
-        credentials: "include",
+        credentials: 'include',
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to mark no-show");
+        throw new Error(result.error || 'Failed to mark no-show');
       }
 
       return result;
@@ -50,7 +47,7 @@ export default function NoShowButton({
 
   const handleMarkNoShow = useCallback(async () => {
     if (noShowMutation.isPending || isMarked) return;
-    if (!confirm("Mark this booking as no-show? The slot will be released.")) {
+    if (!confirm('Mark this booking as no-show? The slot will be released.')) {
       return;
     }
 

@@ -1,5 +1,5 @@
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 export type CreateReviewInput = {
   booking_id: string;
@@ -32,12 +32,10 @@ export type ListReviewsResult = {
  */
 export async function createReview(
   userId: string,
-  input: CreateReviewInput,
-): Promise<
-  { success: true; review_id: string } | { success: false; error: string }
-> {
+  input: CreateReviewInput
+): Promise<{ success: true; review_id: string } | { success: false; error: string }> {
   const supabase = requireSupabaseAdmin();
-  const result = await supabase.rpc("create_review_atomically", {
+  const result = await supabase.rpc('create_review_atomically', {
     p_booking_id: input.booking_id,
     p_user_id: userId,
     p_rating: input.rating,
@@ -67,19 +65,17 @@ export async function createReview(
 export async function listReviewsByBusiness(
   businessId: string,
   page: number,
-  limit: number,
+  limit: number
 ): Promise<ListReviewsResult> {
   const supabase = requireSupabaseAdmin();
   const offset = (page - 1) * limit;
 
   const { data: rows, error } = await supabase
-    .from("reviews")
-    .select(
-      "id, booking_id, business_id, user_id, rating, comment, is_hidden, created_at",
-    )
-    .eq("business_id", businessId)
-    .eq("is_hidden", false)
-    .order("created_at", { ascending: false })
+    .from('reviews')
+    .select('id, booking_id, business_id, user_id, rating, comment, is_hidden, created_at')
+    .eq('business_id', businessId)
+    .eq('is_hidden', false)
+    .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) {
@@ -90,19 +86,17 @@ export async function listReviewsByBusiness(
   const hasMore = reviews.length === limit;
   const total = hasMore ? offset + reviews.length + 1 : offset + reviews.length;
 
-  const userIds = [
-    ...new Set(reviews.map((r) => r.user_id).filter(Boolean)),
-  ] as string[];
+  const userIds = [...new Set(reviews.map((r) => r.user_id).filter(Boolean))] as string[];
   let deletedIds = new Set<string>();
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
-      .from("user_profiles")
-      .select("id, deleted_at")
-      .in("id", userIds);
+      .from('user_profiles')
+      .select('id, deleted_at')
+      .in('id', userIds);
     deletedIds = new Set(
       (profiles ?? [])
         .filter((p: { deleted_at: string | null }) => p.deleted_at != null)
-        .map((p: { id: string }) => p.id),
+        .map((p: { id: string }) => p.id)
     );
   }
 
@@ -127,14 +121,14 @@ export async function listReviewsByBusiness(
  * Star histogram for a business (all visible reviews). Used by public business profile API.
  */
 export async function getReviewRatingCountsForBusiness(
-  businessId: string,
+  businessId: string
 ): Promise<Record<number, number>> {
   const supabase = requireSupabaseAdmin();
   const { data, error } = await supabase
-    .from("reviews")
-    .select("rating")
-    .eq("business_id", businessId)
-    .eq("is_hidden", false);
+    .from('reviews')
+    .select('rating')
+    .eq('business_id', businessId)
+    .eq('is_hidden', false);
 
   if (error) {
     return { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -155,38 +149,30 @@ export async function getReviewRatingCountsForBusiness(
 }
 
 export async function getReviewsByBookingIds(
-  bookingIds: string[],
+  bookingIds: string[]
 ): Promise<Map<string, { rating: number; comment: string | null }>> {
   if (bookingIds.length === 0) return new Map();
   const supabase = requireSupabaseAdmin();
   const { data: rows, error } = await supabase
-    .from("reviews")
-    .select("booking_id, rating, comment")
-    .in("booking_id", bookingIds)
-    .eq("is_hidden", false);
+    .from('reviews')
+    .select('booking_id, rating, comment')
+    .in('booking_id', bookingIds)
+    .eq('is_hidden', false);
 
   if (error) {
-    console.error(
-      "[REVIEW SERVICE] Error fetching reviews by booking IDs:",
-      error,
-    );
+    console.error('[REVIEW SERVICE] Error fetching reviews by booking IDs:', error);
     return new Map();
   }
 
   if (error) {
-    console.error(
-      "[REVIEW SERVICE] Error fetching reviews by booking IDs:",
-      error,
-    );
+    console.error('[REVIEW SERVICE] Error fetching reviews by booking IDs:', error);
     return new Map();
   }
 
   const map = new Map<string, { rating: number; comment: string | null }>();
-  (rows ?? []).forEach(
-    (r: { booking_id: string; rating: number; comment: string | null }) => {
-      map.set(r.booking_id, { rating: r.rating, comment: r.comment ?? null });
-    },
-  );
+  (rows ?? []).forEach((r: { booking_id: string; rating: number; comment: string | null }) => {
+    map.set(r.booking_id, { rating: r.rating, comment: r.comment ?? null });
+  });
   return map;
 }
 
@@ -195,10 +181,10 @@ export async function getReviewsByBookingIds(
  */
 export async function setReviewHidden(
   reviewId: string,
-  isHidden: boolean,
+  isHidden: boolean
 ): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = requireSupabaseAdmin();
-  const result = await supabase.rpc("set_review_hidden_atomically", {
+  const result = await supabase.rpc('set_review_hidden_atomically', {
     p_review_id: reviewId,
     p_is_hidden: isHidden,
   });

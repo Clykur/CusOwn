@@ -1,5 +1,5 @@
-import { MetadataRoute } from "next";
-import { getBaseUrl } from "@cusown/shared";
+import { MetadataRoute } from 'next';
+import { getBaseUrl } from '@cusown/shared';
 
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = getBaseUrl();
@@ -7,9 +7,9 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        userAgent: "*",
-        allow: "/",
-        disallow: ["/api/", "/accept/", "/reject/", "/dashboard/", "/setup"],
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/api/', '/accept/', '/reject/', '/dashboard/', '/setup'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

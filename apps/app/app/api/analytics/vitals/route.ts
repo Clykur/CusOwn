@@ -3,15 +3,15 @@
  * Lightweight endpoint for beacon API calls.
  */
 
-import { NextRequest } from "next/server";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { logStructured } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { logStructured } from '@cusown/shared/server';
 
 interface VitalsPayload {
   name: string;
   value: number;
-  rating: "good" | "needs-improvement" | "poor";
+  rating: 'good' | 'needs-improvement' | 'poor';
   delta: number;
   id: string;
   navigationType: string;
@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       vitalsData.shift();
     }
 
-    if (body.rating === "poor") {
-      logStructured("warn", `Poor ${body.name} detected`, {
+    if (body.rating === 'poor') {
+      logStructured('warn', `Poor ${body.name} detected`, {
         metric: body.name,
         value: body.value,
         rating: body.rating,
@@ -70,10 +70,7 @@ export async function GET() {
     }
   > = {};
 
-  const grouped = new Map<
-    string,
-    Array<VitalsPayload & { timestamp: number }>
-  >();
+  const grouped = new Map<string, Array<VitalsPayload & { timestamp: number }>>();
 
   recentData.forEach((vital) => {
     const existing = grouped.get(vital.name) || [];
@@ -87,22 +84,17 @@ export async function GET() {
 
     stats[name] = {
       count: values.length,
-      avg:
-        Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) /
-        100,
+      avg: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100,
       p50: values[Math.floor(values.length * 0.5)] || 0,
-      p95:
-        values[Math.floor(values.length * 0.95)] ||
-        values[values.length - 1] ||
-        0,
-      good: ratings.filter((r) => r === "good").length,
-      needsImprovement: ratings.filter((r) => r === "needs-improvement").length,
-      poor: ratings.filter((r) => r === "poor").length,
+      p95: values[Math.floor(values.length * 0.95)] || values[values.length - 1] || 0,
+      good: ratings.filter((r) => r === 'good').length,
+      needsImprovement: ratings.filter((r) => r === 'needs-improvement').length,
+      poor: ratings.filter((r) => r === 'poor').length,
     };
   });
 
   return successResponse({
-    period: "last_hour",
+    period: 'last_hour',
     totalSamples: recentData.length,
     metrics: stats,
   });

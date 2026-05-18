@@ -1,4 +1,4 @@
-import { requireSupabaseAdmin } from "../supabase/server";
+import { requireSupabaseAdmin } from '../supabase/server';
 
 /** Sample size for p95 latency from metric_timings; keep low for fast response. */
 const METRIC_TIMINGS_SAMPLE = 500;
@@ -27,45 +27,32 @@ export class SuccessMetricsService {
   async getTechnicalMetrics(): Promise<TechnicalMetrics> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error("Database not configured");
+      throw new Error('Database not configured');
     }
 
-    const [
-      timingsRes,
-      errorCountRes,
-      requestCountRes,
-      dbTimingsRes,
-      healthChecksRes,
-    ] = await Promise.all([
-      supabaseAdmin
-        .from("metric_timings")
-        .select("duration_ms")
-        .like("metric", "api.%")
-        .order("recorded_at", { ascending: false })
-        .limit(METRIC_TIMINGS_SAMPLE),
-      supabaseAdmin
-        .from("metrics")
-        .select("value")
-        .eq("metric", "api.errors.total")
-        .single(),
-      supabaseAdmin
-        .from("metrics")
-        .select("value")
-        .eq("metric", "api.requests.total")
-        .single(),
-      supabaseAdmin
-        .from("metric_timings")
-        .select("duration_ms")
-        .like("metric", "db.%")
-        .order("recorded_at", { ascending: false })
-        .limit(METRIC_TIMINGS_SAMPLE),
-      supabaseAdmin
-        .from("metric_timings")
-        .select("duration_ms, recorded_at")
-        .eq("metric", "health.check")
-        .order("recorded_at", { ascending: false })
-        .limit(100),
-    ]);
+    const [timingsRes, errorCountRes, requestCountRes, dbTimingsRes, healthChecksRes] =
+      await Promise.all([
+        supabaseAdmin
+          .from('metric_timings')
+          .select('duration_ms')
+          .like('metric', 'api.%')
+          .order('recorded_at', { ascending: false })
+          .limit(METRIC_TIMINGS_SAMPLE),
+        supabaseAdmin.from('metrics').select('value').eq('metric', 'api.errors.total').single(),
+        supabaseAdmin.from('metrics').select('value').eq('metric', 'api.requests.total').single(),
+        supabaseAdmin
+          .from('metric_timings')
+          .select('duration_ms')
+          .like('metric', 'db.%')
+          .order('recorded_at', { ascending: false })
+          .limit(METRIC_TIMINGS_SAMPLE),
+        supabaseAdmin
+          .from('metric_timings')
+          .select('duration_ms, recorded_at')
+          .eq('metric', 'health.check')
+          .order('recorded_at', { ascending: false })
+          .limit(100),
+      ]);
 
     const timings = timingsRes.data ?? [];
     const durations = (timings as { duration_ms: number }[])
@@ -87,21 +74,16 @@ export class SuccessMetricsService {
 
     const healthChecks = healthChecksRes.data ?? [];
 
-    const recentChecks = (
-      healthChecks as { duration_ms: number; recorded_at: string }[]
-    ).filter((h) => {
-      const checkTime = new Date(h.recorded_at).getTime();
-      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      return checkTime > dayAgo;
-    });
+    const recentChecks = (healthChecks as { duration_ms: number; recorded_at: string }[]).filter(
+      (h) => {
+        const checkTime = new Date(h.recorded_at).getTime();
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        return checkTime > dayAgo;
+      }
+    );
 
-    const successfulChecks = recentChecks.filter(
-      (h) => h.duration_ms < 1000,
-    ).length;
-    const uptime =
-      recentChecks.length > 0
-        ? (successfulChecks / recentChecks.length) * 100
-        : 100;
+    const successfulChecks = recentChecks.filter((h) => h.duration_ms < 1000).length;
+    const uptime = recentChecks.length > 0 ? (successfulChecks / recentChecks.length) * 100 : 100;
 
     return {
       apiResponseTimeP95: Math.round(apiResponseTimeP95),
@@ -111,86 +93,67 @@ export class SuccessMetricsService {
     };
   }
 
-  async getBusinessMetrics(
-    startDate: string,
-    endDate: string,
-  ): Promise<BusinessMetrics> {
+  async getBusinessMetrics(startDate: string, endDate: string): Promise<BusinessMetrics> {
     const supabaseAdmin = requireSupabaseAdmin();
     if (!supabaseAdmin) {
-      throw new Error("Database not configured");
+      throw new Error('Database not configured');
     }
 
-    const [
-      totalRes,
-      confirmedRes,
-      noShowRes,
-      ownersRes,
-      recentBizRes,
-      supportRes,
-    ] = await Promise.all([
-      supabaseAdmin
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", startDate)
-        .lte("created_at", endDate),
-      supabaseAdmin
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "confirmed")
-        .gte("created_at", startDate)
-        .lte("created_at", endDate),
-      supabaseAdmin
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("no_show", true)
-        .gte("created_at", startDate)
-        .lte("created_at", endDate),
-      supabaseAdmin.from("businesses").select("id, owner_user_id"),
-      supabaseAdmin
-        .from("bookings")
-        .select("business_id")
-        .gte(
-          "created_at",
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        )
-        .limit(5000),
-      supabaseAdmin
-        .from("metrics")
-        .select("value")
-        .eq("metric", "support.queries.reduction")
-        .single(),
-    ]);
+    const [totalRes, confirmedRes, noShowRes, ownersRes, recentBizRes, supportRes] =
+      await Promise.all([
+        supabaseAdmin
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', startDate)
+          .lte('created_at', endDate),
+        supabaseAdmin
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'confirmed')
+          .gte('created_at', startDate)
+          .lte('created_at', endDate),
+        supabaseAdmin
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .eq('no_show', true)
+          .gte('created_at', startDate)
+          .lte('created_at', endDate),
+        supabaseAdmin.from('businesses').select('id, owner_user_id'),
+        supabaseAdmin
+          .from('bookings')
+          .select('business_id')
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+          .limit(5000),
+        supabaseAdmin
+          .from('metrics')
+          .select('value')
+          .eq('metric', 'support.queries.reduction')
+          .single(),
+      ]);
 
     const totalBookings = totalRes.count ?? 0;
     const confirmedBookings = confirmedRes.count ?? 0;
     const noShowCount = noShowRes.count ?? 0;
-    const bookingCompletionRate =
-      totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
-    const noShowRate =
-      confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
+    const bookingCompletionRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
+    const noShowRate = confirmedBookings > 0 ? (noShowCount / confirmedBookings) * 100 : 0;
 
     const owners = (ownersRes.data ?? []) as {
       id: string;
       owner_user_id: string | null;
     }[];
     const activeOwners = new Set(
-      owners.filter((o) => o.owner_user_id).map((o) => o.owner_user_id!),
+      owners.filter((o) => o.owner_user_id).map((o) => o.owner_user_id!)
     );
     const businessIdsWithRecentBookings = new Set(
-      (recentBizRes.data ?? []).map(
-        (b: { business_id: string }) => b.business_id,
-      ),
+      (recentBizRes.data ?? []).map((b: { business_id: string }) => b.business_id)
     );
     const retainedOwnerIds = new Set(
       owners
-        .filter(
-          (o) => o.owner_user_id && businessIdsWithRecentBookings.has(o.id),
-        )
-        .map((o) => o.owner_user_id!),
+        .filter((o) => o.owner_user_id && businessIdsWithRecentBookings.has(o.id))
+        .map((o) => o.owner_user_id!)
     );
     const retainedOwners = retainedOwnerIds.size;
-    const ownerRetention =
-      activeOwners.size > 0 ? (retainedOwners / activeOwners.size) * 100 : 0;
+    const ownerRetention = activeOwners.size > 0 ? (retainedOwners / activeOwners.size) * 100 : 0;
     const supportQueriesReduction =
       Number((supportRes.data as { value?: number } | null)?.value) ?? 0;
 
@@ -202,10 +165,7 @@ export class SuccessMetricsService {
     };
   }
 
-  async getSuccessMetrics(
-    startDate: string,
-    endDate: string,
-  ): Promise<SuccessMetrics> {
+  async getSuccessMetrics(startDate: string, endDate: string): Promise<SuccessMetrics> {
     const [technical, business] = await Promise.all([
       this.getTechnicalMetrics(),
       this.getBusinessMetrics(startDate, endDate),
@@ -222,7 +182,7 @@ export class SuccessMetricsService {
   async checkThresholds(metrics: SuccessMetrics): Promise<
     Array<{
       metric: string;
-      status: "pass" | "fail";
+      status: 'pass' | 'fail';
       value: number;
       threshold: number;
       reason: string;
@@ -230,63 +190,62 @@ export class SuccessMetricsService {
   > {
     const configs = [
       {
-        metric: "API Response Time (p95)",
+        metric: 'API Response Time (p95)',
         value: metrics.technical.apiResponseTimeP95,
         threshold: 200,
-        type: "max" as const,
-        unit: "ms",
+        type: 'max' as const,
+        unit: 'ms',
       },
       {
-        metric: "Uptime",
+        metric: 'Uptime',
         value: metrics.technical.uptime,
         threshold: 99.9,
-        type: "min" as const,
-        unit: "%",
+        type: 'min' as const,
+        unit: '%',
       },
       {
-        metric: "Error Rate",
+        metric: 'Error Rate',
         value: metrics.technical.errorRate,
         threshold: 0.1,
-        type: "max" as const,
-        unit: "%",
+        type: 'max' as const,
+        unit: '%',
       },
       {
-        metric: "DB Query Time (p95)",
+        metric: 'DB Query Time (p95)',
         value: metrics.technical.dbQueryTimeP95,
         threshold: 100,
-        type: "max" as const,
-        unit: "ms",
+        type: 'max' as const,
+        unit: 'ms',
       },
       {
-        metric: "No-Show Rate",
+        metric: 'No-Show Rate',
         value: metrics.business.noShowRate,
         threshold: 10,
-        type: "max" as const,
-        unit: "%",
+        type: 'max' as const,
+        unit: '%',
       },
       {
-        metric: "Owner Retention",
+        metric: 'Owner Retention',
         value: metrics.business.ownerRetention,
         threshold: 80,
-        type: "min" as const,
-        unit: "%",
+        type: 'min' as const,
+        unit: '%',
       },
       {
-        metric: "Booking Completion Rate",
+        metric: 'Booking Completion Rate',
         value: metrics.business.bookingCompletionRate,
         threshold: 90,
-        type: "min" as const,
-        unit: "%",
+        type: 'min' as const,
+        unit: '%',
       },
     ];
 
     return configs.map((t) => {
-      const pass =
-        t.type === "max" ? t.value <= t.threshold : t.value >= t.threshold;
-      const v = t.unit === "ms" ? Math.round(t.value) : t.value.toFixed(2);
-      const th = t.unit === "ms" ? t.threshold : t.threshold.toFixed(1);
+      const pass = t.type === 'max' ? t.value <= t.threshold : t.value >= t.threshold;
+      const v = t.unit === 'ms' ? Math.round(t.value) : t.value.toFixed(2);
+      const th = t.unit === 'ms' ? t.threshold : t.threshold.toFixed(1);
       const reason =
-        t.type === "max"
+        t.type === 'max'
           ? pass
             ? `${v}${t.unit} ≤ ${th}${t.unit} target — within limit`
             : `${v}${t.unit} > ${th}${t.unit} target — exceeds limit`
@@ -295,7 +254,7 @@ export class SuccessMetricsService {
             : `${v}${t.unit} < ${th}${t.unit} target — below target`;
       return {
         metric: t.metric,
-        status: pass ? "pass" : "fail",
+        status: pass ? 'pass' : 'fail',
         value: t.value,
         threshold: t.threshold,
         reason,

@@ -6,7 +6,7 @@ export interface ProfileData {
   last_sign_in: string | null;
   profile: {
     id: string;
-    user_type: "owner" | "customer" | "both" | "admin";
+    user_type: 'owner' | 'customer' | 'both' | 'admin';
     full_name: string | null;
     phone_number: string | null;
     created_at: string;
@@ -45,30 +45,30 @@ export interface ProfileFormData {
 
 export function getUserTypeLabel(type: string): string {
   switch (type) {
-    case "owner":
-      return "Business Owner";
-    case "customer":
-      return "Customer";
-    case "both":
-      return "Owner & Customer";
-    case "admin":
-      return "Administrator";
+    case 'owner':
+      return 'Business Owner';
+    case 'customer':
+      return 'Customer';
+    case 'both':
+      return 'Owner & Customer';
+    case 'admin':
+      return 'Administrator';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
 }
 
 export function getUserTypeColor(type: string): string {
   switch (type) {
-    case "owner":
-      return "bg-slate-100 text-slate-800";
-    case "customer":
-      return "bg-slate-100 text-slate-800";
-    case "both":
-      return "bg-slate-200 text-slate-900";
-    case "admin":
-      return "bg-slate-900 text-white";
+    case 'owner':
+      return 'bg-slate-100 text-slate-800';
+    case 'customer':
+      return 'bg-slate-100 text-slate-800';
+    case 'both':
+      return 'bg-slate-200 text-slate-900';
+    case 'admin':
+      return 'bg-slate-900 text-white';
     default:
-      return "bg-slate-100 text-slate-800";
+      return 'bg-slate-100 text-slate-800';
   }
 }

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import CreateBusinessForm from "@/components/setup/create-business-form";
-import { OwnerSetupSkeleton } from "@/components/ui/skeleton";
-import { ROUTES } from "@cusown/shared";
-import Breadcrumb from "@/components/ui/breadcrumb";
+import { useEffect, useState } from 'react';
+import CreateBusinessForm from '@/components/setup/create-business-form';
+import { OwnerSetupSkeleton } from '@/components/ui/skeleton';
+import { ROUTES } from '@cusown/shared';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 const SKELETON_MIN_DISPLAY_MS = 400;
 
@@ -25,8 +25,8 @@ export default function OwnerSetupPage() {
     <div className="w-full pb-24">
       <Breadcrumb
         items={[
-          { label: "Businesses", href: "/owner/businesses" },
-          { label: "Create Business", href: "/owner/setup" },
+          { label: 'Businesses', href: '/owner/businesses' },
+          { label: 'Create Business', href: '/owner/setup' },
         ]}
       />
       <CreateBusinessForm

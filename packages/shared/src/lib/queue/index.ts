@@ -14,14 +14,10 @@ export {
   enqueueAnalyticsEvent,
   enqueueNotification,
   closeQueues,
-} from "./queue";
+} from './queue';
 
-export type {
-  ReminderJobData,
-  AnalyticsJobData,
-  NotificationJobData,
-} from "./queue";
+export type { ReminderJobData, AnalyticsJobData, NotificationJobData } from './queue';
 
-export { getQueueConnection, isQueueAvailable } from "./connection";
+export { getQueueConnection, isQueueAvailable } from './connection';
 
-export { startAllWorkers, stopAllWorkers } from "./workers";
+export { startAllWorkers, stopAllWorkers } from './workers';

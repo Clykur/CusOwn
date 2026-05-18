@@ -1,18 +1,14 @@
-import { redirect } from "next/navigation";
-import { resolveUserAccess } from "@cusown/shared";
-import { CAPABILITIES } from "@cusown/config";
-import { AdminLayoutShell } from "@/components/admin/admin-layout-shell";
+import { redirect } from 'next/navigation';
+import { resolveUserAccess } from '@cusown/shared';
+import { CAPABILITIES } from '@cusown/config';
+import { AdminLayoutShell } from '@/components/admin/admin-layout-shell';
 
 /**
  * Admin layout: access via resolveUserAccess only. No business logic.
  */
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  if (process.env.NODE_ENV === "development") {
-    console.log("[admin layout] Rendering at", Date.now());
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[admin layout] Rendering at', Date.now());
   }
   const result = await resolveUserAccess(null, {
     requiredCapability: CAPABILITIES.ACCESS_ADMIN_DASHBOARD,

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { API_ROUTES } from "@cusown/config";
-import { ROUTES } from "@cusown/shared";
-import { RedirectSkeleton } from "@/components/ui/skeleton";
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { API_ROUTES } from '@cusown/config';
+import { ROUTES } from '@cusown/shared';
+import { RedirectSkeleton } from '@/components/ui/skeleton';
 
 /**
  * Legacy route: /dashboard/[salonId] is deprecated.
@@ -14,7 +14,7 @@ import { RedirectSkeleton } from "@/components/ui/skeleton";
 export default function DashboardPage() {
   const params = useParams();
   const router = useRouter();
-  const salonId = typeof params?.salonId === "string" ? params.salonId : "";
+  const salonId = typeof params?.salonId === 'string' ? params.salonId : '';
   useEffect(() => {
     if (!salonId) {
       router.replace(ROUTES.OWNER_DASHBOARD_BASE);

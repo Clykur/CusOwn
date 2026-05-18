@@ -1,26 +1,23 @@
-"use client";
+'use client';
 
-import { memo, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { getCSRFToken, clearCSRFToken } from "@cusown/shared";
-import { useOptimisticMutation } from "@cusown/shared/client";
-import { Slot } from "@cusown/shared";
+import { memo, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { getCSRFToken, clearCSRFToken } from '@cusown/shared';
+import { useOptimisticMutation } from '@cusown/shared/client';
+import { Slot } from '@cusown/shared';
 
-const RescheduleButton = dynamic(
-  () => import("@/components/booking/reschedule-button"),
-  {
-    ssr: false,
-    loading: () => (
-      <button
-        disabled
-        className="flex-1 py-3 px-4 rounded-xl font-medium bg-slate-100 text-slate-400 cursor-not-allowed"
-      >
-        Loading...
-      </button>
-    ),
-  },
-);
+const RescheduleButton = dynamic(() => import('@/components/booking/reschedule-button'), {
+  ssr: false,
+  loading: () => (
+    <button
+      disabled
+      className="flex-1 py-3 px-4 rounded-xl font-medium bg-slate-100 text-slate-400 cursor-not-allowed"
+    >
+      Loading...
+    </button>
+  ),
+});
 
 interface BookingSlot {
   id: string;
@@ -57,13 +54,12 @@ function BookingActionsComponent({
 }: BookingActionsProps) {
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
 
-  const canCancelByStatus =
-    booking.status === "confirmed" || booking.status === "pending";
+  const canCancelByStatus = booking.status === 'confirmed' || booking.status === 'pending';
 
   const appointmentDateTime = (() => {
     if (!booking?.slot?.date || !booking?.slot?.start_time) return null;
     const startTimeRaw = String(booking.slot.start_time);
-    const startTime = startTimeRaw.includes("T")
+    const startTime = startTimeRaw.includes('T')
       ? new Date(startTimeRaw)
       : new Date(`${booking.slot.date}T${startTimeRaw}`);
     const timeMs = startTime.getTime();
@@ -84,26 +80,26 @@ function BookingActionsComponent({
     mutationFn: async () => {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       };
       if (csrfToken) {
-        headers["x-csrf-token"] = csrfToken;
+        headers['x-csrf-token'] = csrfToken;
       }
       const response = await fetch(`/api/bookings/${booking.id}/cancel`, {
-        method: "POST",
+        method: 'POST',
         headers,
-        credentials: "include",
-        body: JSON.stringify({ cancelled_by: "customer" }),
+        credentials: 'include',
+        body: JSON.stringify({ cancelled_by: 'customer' }),
       });
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.error || "Failed to cancel booking");
+        throw new Error(result.error || 'Failed to cancel booking');
       }
       return result;
     },
     onMutate: () => {
-      setOptimisticStatus("cancelled");
+      setOptimisticStatus('cancelled');
     },
     onSuccess: () => {
       onCancelled();
@@ -117,7 +113,7 @@ function BookingActionsComponent({
   const handleCancel = useCallback(async () => {
     if (cancelMutation.isPending) return;
     if (isCancellationTooLate) return;
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
 
     try {
       await cancelMutation.mutate(undefined);
@@ -127,16 +123,14 @@ function BookingActionsComponent({
   }, [cancelMutation, isCancellationTooLate]);
 
   const displayStatus = optimisticStatus || booking.status;
-  const showCancelled = displayStatus === "cancelled";
+  const showCancelled = displayStatus === 'cancelled';
 
   return (
     <>
       {showCancelled ? (
         <div className="mb-6 p-4 bg-slate-100 rounded-xl text-center">
           <p className="text-slate-600 font-medium">
-            {cancelMutation.isPending
-              ? "Cancelling your booking..."
-              : "Booking cancelled"}
+            {cancelMutation.isPending ? 'Cancelling your booking...' : 'Booking cancelled'}
           </p>
         </div>
       ) : (
@@ -146,39 +140,29 @@ function BookingActionsComponent({
               type="button"
               onClick={handleCancel}
               disabled={cancelMutation.isPending || isCancellationTooLate}
-              title={
-                isCancellationTooLate
-                  ? ERROR_MESSAGES.CANCELLATION_TOO_LATE
-                  : undefined
-              }
+              title={isCancellationTooLate ? ERROR_MESSAGES.CANCELLATION_TOO_LATE : undefined}
               className="w-full bg-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {cancelMutation.isPending ? "Cancelling..." : "Cancel Booking"}
+              {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Booking'}
             </button>
             {cancelMutation.isError && (
-              <p className="text-sm text-red-600">
-                {cancelMutation.error?.message}
-              </p>
+              <p className="text-sm text-red-600">{cancelMutation.error?.message}</p>
             )}
             {isCancellationTooLate && (
-              <p className="text-sm text-slate-500">
-                {ERROR_MESSAGES.CANCELLATION_TOO_LATE}
-              </p>
+              <p className="text-sm text-slate-500">{ERROR_MESSAGES.CANCELLATION_TOO_LATE}</p>
             )}
-            {booking.slot &&
-              !booking.no_show &&
-              booking.status !== "cancelled" && (
-                <div className="flex justify-center">
-                  <RescheduleButton
-                    bookingId={booking.id}
-                    currentSlot={booking.slot as Slot}
-                    businessId={booking.business_id}
-                    availableSlots={availableSlots ?? []}
-                    onRescheduled={onRescheduled}
-                    rescheduledBy="customer"
-                  />
-                </div>
-              )}
+            {booking.slot && !booking.no_show && booking.status !== 'cancelled' && (
+              <div className="flex justify-center">
+                <RescheduleButton
+                  bookingId={booking.id}
+                  currentSlot={booking.slot as Slot}
+                  businessId={booking.business_id}
+                  availableSlots={availableSlots ?? []}
+                  onRescheduled={onRescheduled}
+                  rescheduledBy="customer"
+                />
+              </div>
+            )}
           </div>
         )
       )}

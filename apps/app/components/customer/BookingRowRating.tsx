@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import StarRating from "@/components/booking/star-rating";
-import { useRating } from "@/components/customer/booking-card/use-rating";
+import { useRouter } from 'next/navigation';
+import StarRating from '@/components/booking/star-rating';
+import { useRating } from '@/components/customer/booking-card/use-rating';
 
 interface BookingRowRatingProps {
   bookingId: string;
@@ -26,13 +26,7 @@ export default function BookingRowRating({
   });
 
   if (existingRating || displayedRating) {
-    return (
-      <StarRating
-        value={displayedRating || existingRating || 0}
-        readonly
-        size="sm"
-      />
-    );
+    return <StarRating value={displayedRating || existingRating || 0} readonly size="sm" />;
   }
 
   if (!canRate) {
@@ -41,12 +35,7 @@ export default function BookingRowRating({
 
   return (
     <div className="flex items-center gap-2">
-      <StarRating
-        value={0}
-        readonly={submittingRating}
-        size="sm"
-        onChange={handleRating}
-      />
+      <StarRating value={0} readonly={submittingRating} size="sm" onChange={handleRating} />
     </div>
   );
 }

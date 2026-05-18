@@ -2,9 +2,9 @@
  * GET /book/complete — after login from public booking: read pending cookie, create booking, redirect to booking details.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createHash } from "crypto";
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createHash } from 'crypto';
 import {
   getServerUser,
   ROUTES,
@@ -20,29 +20,25 @@ import {
   logBookingLifecycle,
   getBookingStatusUrl,
   requireSupabaseAdmin,
-} from "@cusown/shared/server";
-import {
-  PENDING_BOOKING_COOKIE,
-  env,
-  METRICS_BOOKING_CREATED,
-} from "@cusown/config";
+} from '@cusown/shared/server';
+import { PENDING_BOOKING_COOKIE, env, METRICS_BOOKING_CREATED } from '@cusown/config';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 function clearPendingCookie(res: NextResponse): void {
-  res.cookies.set(PENDING_BOOKING_COOKIE, "", {
-    path: "/",
+  res.cookies.set(PENDING_BOOKING_COOKIE, '', {
+    path: '/',
     maxAge: 0,
     httpOnly: true,
-    secure: env.nodeEnv === "production",
-    sameSite: "lax",
+    secure: env.nodeEnv === 'production',
+    sameSite: 'lax',
   });
 }
 
 export async function GET(request: NextRequest) {
   const user = await getServerUser();
   if (!user) {
-    const loginUrl = ROUTES.AUTH_LOGIN("/book/complete") + "&role=customer";
+    const loginUrl = ROUTES.AUTH_LOGIN('/book/complete') + '&role=customer';
     const res = NextResponse.redirect(new URL(loginUrl, request.url));
     clearPendingCookie(res);
     return res;
@@ -53,19 +49,13 @@ export async function GET(request: NextRequest) {
   const payload = verifyPendingBookingCookie(cookieValue);
 
   if (!payload) {
-    const res = NextResponse.redirect(
-      new URL(ROUTES.CUSTOMER_DASHBOARD, request.url),
-    );
+    const res = NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, request.url));
     clearPendingCookie(res);
     return res;
   }
 
   const idempotencyKey =
-    "pending-" +
-    createHash("sha256")
-      .update(JSON.stringify(payload))
-      .digest("hex")
-      .slice(0, 64);
+    'pending-' + createHash('sha256').update(JSON.stringify(payload)).digest('hex').slice(0, 64);
 
   try {
     await bookingService.runLazyExpireIfNeeded();
@@ -78,11 +68,11 @@ export async function GET(request: NextRequest) {
         customer_phone: payload.customer_phone,
       },
       user.id,
-      undefined,
+      undefined
     );
 
     const { data: idemResult, error: idemError } = await supabase.rpc(
-      "create_booking_idempotent_reserve",
+      'create_booking_idempotent_reserve',
       {
         p_key: idempotencyKey,
         p_ttl_hours: 24,
@@ -96,7 +86,7 @@ export async function GET(request: NextRequest) {
         p_total_price_cents: params.p_total_price_cents,
         p_services_count: params.p_services_count,
         p_service_data: params.p_service_data,
-      },
+      }
     );
 
     if (idemError) throw new Error(idemError.message);
@@ -104,27 +94,22 @@ export async function GET(request: NextRequest) {
     const status = row?.status as string | undefined;
     const createdBookingId = row?.booking_id as string | undefined;
 
-    if (status === "duplicate" && createdBookingId) {
+    if (status === 'duplicate' && createdBookingId) {
       const res = NextResponse.redirect(
-        new URL(getBookingStatusUrl(createdBookingId), request.url),
+        new URL(getBookingStatusUrl(createdBookingId), request.url)
       );
       clearPendingCookie(res);
       return res;
     }
-    if (status !== "created" || !createdBookingId) {
-      const res = NextResponse.redirect(
-        new URL(ROUTES.CUSTOMER_DASHBOARD, request.url),
-      );
+    if (status !== 'created' || !createdBookingId) {
+      const res = NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, request.url));
       clearPendingCookie(res);
       return res;
     }
 
-    const booking =
-      await bookingService.getBookingByUuidWithDetails(createdBookingId);
+    const booking = await bookingService.getBookingByUuidWithDetails(createdBookingId);
     if (!booking) {
-      const res = NextResponse.redirect(
-        new URL(ROUTES.CUSTOMER_DASHBOARD, request.url),
-      );
+      const res = NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, request.url));
       clearPendingCookie(res);
       return res;
     }
@@ -137,27 +122,23 @@ export async function GET(request: NextRequest) {
       await emitBookingCreated(bookingWithDetails);
       await reminderService.scheduleBookingReminders(booking.id);
       try {
-        whatsappService.generateBookingRequestMessage(
-          bookingWithDetails,
-          salon,
-          request,
-        );
+        whatsappService.generateBookingRequestMessage(bookingWithDetails, salon, request);
       } catch {
         // non-fatal
       }
     }
 
-    safeMetrics.increment("bookings.created");
+    safeMetrics.increment('bookings.created');
     safeMetrics.increment(METRICS_BOOKING_CREATED);
     logBookingLifecycle({
       booking_id: booking.id,
       slot_id: booking.slot_id,
-      action: "booking_created",
+      action: 'booking_created',
       actor: user.id,
-      source: "api",
+      source: 'api',
     });
     try {
-      await auditService.createAuditLog(user.id, "booking_created", "booking", {
+      await auditService.createAuditLog(user.id, 'booking_created', 'booking', {
         entityId: booking.id,
         description: `Booking created for ${payload.customer_name} (post-login complete)`,
         request,
@@ -168,17 +149,12 @@ export async function GET(request: NextRequest) {
 
     // Redirect to booking status. If we have a generated WhatsApp URL/message, attach them
     // as query parameters so the client can show the Open WhatsApp CTA immediately.
-    const statusRedirectUrl = new URL(
-      getBookingStatusUrl(booking.booking_id),
-      request.url,
-    );
+    const statusRedirectUrl = new URL(getBookingStatusUrl(booking.booking_id), request.url);
     const res = NextResponse.redirect(statusRedirectUrl);
     clearPendingCookie(res);
     return res;
   } catch {
-    const res = NextResponse.redirect(
-      new URL(ROUTES.CUSTOMER_DASHBOARD, request.url),
-    );
+    const res = NextResponse.redirect(new URL(ROUTES.CUSTOMER_DASHBOARD, request.url));
     clearPendingCookie(res);
     return res;
   }

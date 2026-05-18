@@ -18,7 +18,13 @@ const DANGEROUS_PATTERNS = [
   { pattern: /document\.write/i, name: 'document.write' },
 ];
 
-const DIRS = ['app', 'lib', 'components'];
+const DIRS = [
+  path.join('apps', 'app', 'app'),
+  path.join('apps', 'app', 'components'),
+  path.join('apps', 'marketing', 'app'),
+  path.join('apps', 'marketing', 'components'),
+  path.join('packages', 'shared', 'src'),
+];
 
 function checkLockfile() {
   const lockPath = path.join(ROOT, 'package-lock.json');
@@ -73,7 +79,7 @@ function checkDangerousPatterns() {
     console.error('Fix or justify dangerous patterns before pushing.');
     return false;
   }
-  console.log('OK no dangerous patterns in app/lib/components');
+  console.log('OK no dangerous patterns in app/packages source trees');
   return true;
 }
 

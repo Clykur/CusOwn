@@ -1,4 +1,4 @@
-import AdminDashboardClient from "./dashboard-client";
+import AdminDashboardClient from './dashboard-client';
 
 type Props = { searchParams: Promise<{ tab?: string }> };
 

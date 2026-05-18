@@ -3,9 +3,9 @@
  * Handles: schedule-reminders, send-reminder, cancel-reminders
  */
 
-import { Worker, Job } from "bullmq";
-import { getQueueConnection, isQueueAvailable } from "../connection";
-import { QUEUE_NAMES, ReminderJobData } from "../queue";
+import { Worker, Job } from 'bullmq';
+import { getQueueConnection, isQueueAvailable } from '../connection';
+import { QUEUE_NAMES, ReminderJobData } from '../queue';
 
 let reminderWorker: Worker<ReminderJobData> | null = null;
 
@@ -16,22 +16,21 @@ async function processReminderJob(job: Job<ReminderJobData>): Promise<void> {
   const { bookingId, reminderId, type } = job.data;
 
   // Dynamically import services to avoid circular dependencies
-  const { reminderService } =
-    await import("../../../services/reminder.service");
+  const { reminderService } = await import('../../../services/reminder.service');
 
   switch (type) {
-    case "schedule-reminders":
+    case 'schedule-reminders':
       await reminderService.scheduleBookingReminders(bookingId);
       break;
 
-    case "send-reminder":
+    case 'send-reminder':
       if (!reminderId) {
-        throw new Error("reminderId is required for send-reminder job");
+        throw new Error('reminderId is required for send-reminder job');
       }
       await reminderService.sendReminder(reminderId);
       break;
 
-    case "cancel-reminders":
+    case 'cancel-reminders':
       await reminderService.cancelRemindersForBooking(bookingId);
       break;
 
@@ -57,36 +56,32 @@ export function startReminderWorker(): Worker<ReminderJobData> | null {
     return null;
   }
 
-  reminderWorker = new Worker<ReminderJobData>(
-    QUEUE_NAMES.BOOKING_REMINDERS,
-    processReminderJob,
-    {
-      connection,
-      concurrency: 5,
-      limiter: {
-        max: 10,
-        duration: 1000, // Max 10 jobs per second
-      },
+  reminderWorker = new Worker<ReminderJobData>(QUEUE_NAMES.BOOKING_REMINDERS, processReminderJob, {
+    connection,
+    concurrency: 5,
+    limiter: {
+      max: 10,
+      duration: 1000, // Max 10 jobs per second
     },
-  );
+  });
 
-  reminderWorker.on("completed", (job) => {
+  reminderWorker.on('completed', (job) => {
     const { bookingId, type, reminderId } = job.data;
     console.warn(
-      `[Reminder Worker] Job completed bullmq_job_id=${job.id} type=${type} booking_id=${bookingId}${reminderId ? ` reminder_id=${reminderId}` : ""}`,
+      `[Reminder Worker] Job completed bullmq_job_id=${job.id} type=${type} booking_id=${bookingId}${reminderId ? ` reminder_id=${reminderId}` : ''}`
     );
   });
 
-  reminderWorker.on("failed", (job, err) => {
+  reminderWorker.on('failed', (job, err) => {
     const { bookingId, type, reminderId } = job?.data ?? {};
     console.error(
-      `[Reminder Worker] Job failed bullmq_job_id=${job?.id ?? "?"} type=${type ?? "?"} booking_id=${bookingId ?? "?"}${reminderId ? ` reminder_id=${reminderId}` : ""}:`,
-      err?.message ?? err,
+      `[Reminder Worker] Job failed bullmq_job_id=${job?.id ?? '?'} type=${type ?? '?'} booking_id=${bookingId ?? '?'}${reminderId ? ` reminder_id=${reminderId}` : ''}:`,
+      err?.message ?? err
     );
   });
 
-  reminderWorker.on("error", (err) => {
-    console.error("[Reminder Worker] Worker error:", err);
+  reminderWorker.on('error', (err) => {
+    console.error('[Reminder Worker] Worker error:', err);
   });
 
   return reminderWorker;

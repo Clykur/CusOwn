@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useEffect, useCallback, useRef, memo } from "react";
-import Link from "next/link";
+import { useEffect, useCallback, useRef, memo } from 'react';
+import Link from 'next/link';
 
-import { ROUTES, dedupFetch, cancelRequests, cn } from "@cusown/shared";
+import { ROUTES, dedupFetch, cancelRequests, cn } from '@cusown/shared';
 import {
   useVisibilityRefresh,
   useCustomerBookingsStore,
   useBookingsStats,
   type CustomerBookingsState,
-} from "@cusown/shared/client";
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from "@cusown/config";
-import { useCustomerSession } from "@/components/customer/customer-session-context";
-import CustomerBookingsTable from "@/components/customer/CustomerBookingsTable";
-import BookingsIcon from "@cusown/shared/icons/bookings.svg";
-import { CustomerDashboardInitialLoadSkeleton } from "@/components/customer/customer-dashboard-initial.skeleton";
+} from '@cusown/shared/client';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@cusown/config';
+import { useCustomerSession } from '@/components/customer/customer-session-context';
+import CustomerBookingsTable from '@/components/customer/CustomerBookingsTable';
+import BookingsIcon from '@cusown/shared/icons/bookings.svg';
+import { CustomerDashboardInitialLoadSkeleton } from '@/components/customer/customer-dashboard-initial.skeleton';
 
 const CACHE_TTL = 30000;
 
@@ -31,9 +31,7 @@ const StatCard = memo(function StatCard({
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm transition-all duration-200">
       <div className="text-sm text-slate-500">{label}</div>
       <div className="flex items-center gap-2">
-        <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">
-          {value}
-        </div>
+        <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{value}</div>
         {isRefreshing && (
           <div className="w-4 h-4 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
         )}
@@ -45,7 +43,7 @@ const StatCard = memo(function StatCard({
 function StatsSection() {
   const stats = useBookingsStats();
   const isRefreshing = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.isRefreshing,
+    (state: CustomerBookingsState) => state.isRefreshing
   );
 
   return (
@@ -64,26 +62,22 @@ function StatsSection() {
 export default function CustomerDashboardPage() {
   const { initialUser } = useCustomerSession();
 
-  const bookings = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.bookings,
-  );
+  const bookings = useCustomerBookingsStore((state: CustomerBookingsState) => state.bookings);
   const isInitialLoad = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.isInitialLoad,
+    (state: CustomerBookingsState) => state.isInitialLoad
   );
   const shouldRefetch = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.shouldRefetch,
+    (state: CustomerBookingsState) => state.shouldRefetch
   );
-  const setBookings = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.setBookings,
-  );
+  const setBookings = useCustomerBookingsStore((state: CustomerBookingsState) => state.setBookings);
   const setIsInitialLoad = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.setIsInitialLoad,
+    (state: CustomerBookingsState) => state.setIsInitialLoad
   );
   const setIsRefreshing = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.setIsRefreshing,
+    (state: CustomerBookingsState) => state.setIsRefreshing
   );
   const setLastFetchedAt = useCustomerBookingsStore(
-    (state: CustomerBookingsState) => state.setLastFetchedAt,
+    (state: CustomerBookingsState) => state.setLastFetchedAt
   );
   const lastRefetchRef = useRef(0);
   const MIN_REFETCH_INTERVAL = 3000;
@@ -107,11 +101,11 @@ export default function CustomerDashboardPage() {
           setIsInitialLoad(true);
         }
 
-        cancelRequests("customer-dashboard");
+        cancelRequests('customer-dashboard');
 
-        const response = await dedupFetch("/api/customer/bookings", {
-          credentials: "include",
-          dedupKey: "customer-dashboard:bookings",
+        const response = await dedupFetch('/api/customer/bookings', {
+          credentials: 'include',
+          dedupKey: 'customer-dashboard:bookings',
           cancelPrevious: true,
         });
 
@@ -124,15 +118,15 @@ export default function CustomerDashboardPage() {
         setBookings(bookingsData);
         setLastFetchedAt(Date.now());
       } catch (err) {
-        if ((err as Error)?.name !== "AbortError") {
-          console.error("[CUSTOMER_DASHBOARD] Refetch failed:", err);
+        if ((err as Error)?.name !== 'AbortError') {
+          console.error('[CUSTOMER_DASHBOARD] Refetch failed:', err);
         }
       } finally {
         setIsInitialLoad(false);
         setIsRefreshing(false);
       }
     },
-    [setBookings, setIsInitialLoad, setIsRefreshing, setLastFetchedAt],
+    [setBookings, setIsInitialLoad, setIsRefreshing, setLastFetchedAt]
   );
 
   // Load bookings whenever the dashboard is shown with a logged-in user.
@@ -142,14 +136,14 @@ export default function CustomerDashboardPage() {
     if (!hasMountedRef.current || !initialUser?.id) return;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const justBookedParam = urlParams.get("justBooked") === "true";
+    const justBookedParam = urlParams.get('justBooked') === 'true';
 
     void refetchBookings(true);
 
     if (justBookedParam) {
       const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete("justBooked");
-      window.history.replaceState({}, "", newUrl);
+      newUrl.searchParams.delete('justBooked');
+      window.history.replaceState({}, '', newUrl);
     }
   }, [initialUser?.id, refetchBookings]);
 
@@ -182,21 +176,16 @@ export default function CustomerDashboardPage() {
       <StatsSection />
 
       <div>
-        <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, "mb-4")}>
+        <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-4')}>
           {UI_CUSTOMER.SECTION_APPOINTMENTS}
         </h2>
         {bookings.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="text-center py-12">
               <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <BookingsIcon
-                  className="w-8 h-8 text-slate-400"
-                  aria-hidden="true"
-                />
+                <BookingsIcon className="w-8 h-8 text-slate-400" aria-hidden="true" />
               </div>
-              <p className="text-slate-500 mb-4">
-                {UI_CUSTOMER.EMPTY_ACTIVITY}
-              </p>
+              <p className="text-slate-500 mb-4">{UI_CUSTOMER.EMPTY_ACTIVITY}</p>
               <Link
                 href={ROUTES.CUSTOMER_CATEGORIES}
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm"

@@ -4,15 +4,15 @@
  * Uses atomic Redis INCR with TTL for minimal round trips.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { getClientIp } from "../utils/security.server";
-import { getRedisClient } from "../cache/redis";
+import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp } from '../utils/security.server';
+import { getRedisClient } from '../cache/redis';
 import {
   RATE_LIMIT_BOOKING_WINDOW_MS,
   RATE_LIMIT_BOOKING_MAX_PER_WINDOW,
   RATE_LIMIT_ADMIN_WINDOW_MS,
   RATE_LIMIT_ADMIN_MAX_PER_WINDOW,
-} from "@cusown/config";
+} from '@cusown/config';
 /** Rate limit configuration */
 export interface RedisRateLimitOptions {
   /** Time window in milliseconds */
@@ -63,7 +63,7 @@ function cleanupFallbackStore(): void {
 function checkFallbackRateLimit(
   key: string,
   windowMs: number,
-  maxRequests: number,
+  maxRequests: number
 ): { allowed: boolean; count: number; resetAt: number } {
   if (fallbackStore.size > 10000) {
     cleanupFallbackStore();
@@ -94,17 +94,13 @@ function checkFallbackRateLimit(
 async function checkRedisRateLimit(
   key: string,
   windowSeconds: number,
-  maxRequests: number,
+  maxRequests: number
 ): Promise<{ allowed: boolean; count: number; ttl: number }> {
   const redis = getRedisClient();
 
   if (!redis) {
     // Fallback to in-memory if Redis unavailable
-    const result = checkFallbackRateLimit(
-      key,
-      windowSeconds * 1000,
-      maxRequests,
-    );
+    const result = checkFallbackRateLimit(key, windowSeconds * 1000, maxRequests);
     return {
       allowed: result.allowed,
       count: result.count,
@@ -129,11 +125,7 @@ async function checkRedisRateLimit(
     return { allowed, count, ttl: ttl > 0 ? ttl : windowSeconds };
   } catch {
     // Fallback to in-memory on Redis error
-    const result = checkFallbackRateLimit(
-      key,
-      windowSeconds * 1000,
-      maxRequests,
-    );
+    const result = checkFallbackRateLimit(key, windowSeconds * 1000, maxRequests);
     return {
       allowed: result.allowed,
       count: result.count,
@@ -151,7 +143,7 @@ export const redisRateLimit = (options: RedisRateLimitOptions) => {
 
   return async (request: NextRequest): Promise<NextResponse | null> => {
     const keys: string[] = [];
-    const prefix = options.keyPrefix || "ratelimit";
+    const prefix = options.keyPrefix || 'ratelimit';
 
     // Build rate limit key based on options
     if (options.perIP !== false) {
@@ -160,7 +152,7 @@ export const redisRateLimit = (options: RedisRateLimitOptions) => {
 
     if (options.perUser) {
       try {
-        const { getServerUser } = await import("../supabase/server-auth");
+        const { getServerUser } = await import('../supabase/server-auth');
         const user = await getServerUser(request);
         if (user) {
           keys.push(`user:${user.id}`);
@@ -176,32 +168,29 @@ export const redisRateLimit = (options: RedisRateLimitOptions) => {
     }
 
     // Create composite key
-    const rateLimitKey = `ratelimit:${prefix}:${keys.join(":")}`;
+    const rateLimitKey = `ratelimit:${prefix}:${keys.join(':')}`;
 
     const { allowed, ttl } = await checkRedisRateLimit(
       rateLimitKey,
       windowSeconds,
-      options.maxRequests,
+      options.maxRequests
     );
 
     if (!allowed) {
       const response = NextResponse.json(
         {
           success: false,
-          error: "Too many requests. Please try again later.",
+          error: 'Too many requests. Please try again later.',
           retryAfter: ttl,
         },
-        { status: 429 },
+        { status: 429 }
       );
 
       // Add rate limit headers
-      response.headers.set("X-RateLimit-Limit", String(options.maxRequests));
-      response.headers.set("X-RateLimit-Remaining", "0");
-      response.headers.set(
-        "X-RateLimit-Reset",
-        String(Math.ceil(Date.now() / 1000) + ttl),
-      );
-      response.headers.set("Retry-After", String(ttl));
+      response.headers.set('X-RateLimit-Limit', String(options.maxRequests));
+      response.headers.set('X-RateLimit-Remaining', '0');
+      response.headers.set('X-RateLimit-Reset', String(Math.ceil(Date.now() / 1000) + ttl));
+      response.headers.set('Retry-After', String(ttl));
 
       return response;
     }
@@ -224,7 +213,7 @@ export const userRateLimit = redisRateLimit({
   maxRequests: 100,
   perUser: true,
   perIP: true,
-  keyPrefix: "user_api",
+  keyPrefix: 'user_api',
 });
 
 /** IP-only rate limit: 200 per minute */
@@ -232,7 +221,7 @@ export const ipRateLimit = redisRateLimit({
   windowMs: 60000,
   maxRequests: 200,
   perIP: true,
-  keyPrefix: "ip_api",
+  keyPrefix: 'ip_api',
 });
 
 /** Booking creation: 10 per minute per user+IP */
@@ -241,7 +230,7 @@ export const bookingRateLimitEnhanced = redisRateLimit({
   maxRequests: RATE_LIMIT_BOOKING_MAX_PER_WINDOW,
   perUser: true,
   perIP: true,
-  keyPrefix: "booking",
+  keyPrefix: 'booking',
 });
 
 /** Admin endpoints: config-driven per user+IP */
@@ -250,7 +239,7 @@ export const adminRateLimit = redisRateLimit({
   maxRequests: RATE_LIMIT_ADMIN_MAX_PER_WINDOW,
   perUser: true,
   perIP: true,
-  keyPrefix: "admin",
+  keyPrefix: 'admin',
 });
 
 /** Login attempts: 5 per minute per IP */
@@ -258,7 +247,7 @@ export const loginRateLimit = redisRateLimit({
   windowMs: RATE_LIMITS.LOGIN.windowMs,
   maxRequests: RATE_LIMITS.LOGIN.maxRequests,
   perIP: true,
-  keyPrefix: "login",
+  keyPrefix: 'login',
 });
 
 /** Public API rate limit: 60 per minute per IP */
@@ -266,5 +255,5 @@ export const publicApiRateLimit = redisRateLimit({
   windowMs: RATE_LIMITS.PUBLIC.windowMs,
   maxRequests: RATE_LIMITS.PUBLIC.maxRequests,
   perIP: true,
-  keyPrefix: "public_api",
+  keyPrefix: 'public_api',
 });

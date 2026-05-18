@@ -1,16 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import SalonRow from "@/components/customer/SalonRow";
-import SalonBookingCard from "@/components/customer/SalonBookingCard";
-import Pagination from "@/components/ui/pagination";
-import {
-  CUSTOMER_DASHBOARD_SALONS_PER_PAGE,
-  UI_CUSTOMER,
-} from "@cusown/config";
-import type { BookingForSalonRow } from "@/components/customer/customer-bookings-types";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import SalonRow from '@/components/customer/SalonRow';
+import SalonBookingCard from '@/components/customer/SalonBookingCard';
+import Pagination from '@/components/ui/pagination';
+import { CUSTOMER_DASHBOARD_SALONS_PER_PAGE, UI_CUSTOMER } from '@cusown/config';
+import type { BookingForSalonRow } from '@/components/customer/customer-bookings-types';
 
-export type { BookingForSalonRow } from "@/components/customer/customer-bookings-types";
+export type { BookingForSalonRow } from '@/components/customer/customer-bookings-types';
 
 export interface CustomerBookingsTableProps {
   bookings: BookingForSalonRow[];
@@ -19,45 +16,29 @@ export interface CustomerBookingsTableProps {
 /**
  * One row per unique salon; representative booking per salon (most recent) for status/display.
  */
-function getUniqueSalonBookings(
-  bookings: BookingForSalonRow[],
-): BookingForSalonRow[] {
-  const bySalon = bookings.reduce<Record<string, BookingForSalonRow>>(
-    (acc, booking) => {
-      const salonId = booking.business_id;
-      if (!salonId) return acc;
-      const existing = acc[salonId];
-      if (!existing || booking.created_at > existing.created_at) {
-        acc[salonId] = booking;
-      }
-      return acc;
-    },
-    {},
-  );
+function getUniqueSalonBookings(bookings: BookingForSalonRow[]): BookingForSalonRow[] {
+  const bySalon = bookings.reduce<Record<string, BookingForSalonRow>>((acc, booking) => {
+    const salonId = booking.business_id;
+    if (!salonId) return acc;
+    const existing = acc[salonId];
+    if (!existing || booking.created_at > existing.created_at) {
+      acc[salonId] = booking;
+    }
+    return acc;
+  }, {});
   return Object.values(bySalon);
 }
 
-export default function CustomerBookingsTable({
-  bookings,
-}: CustomerBookingsTableProps) {
-  const uniqueSalons = useMemo(
-    () => getUniqueSalonBookings(bookings),
-    [bookings],
-  );
+export default function CustomerBookingsTable({ bookings }: CustomerBookingsTableProps) {
+  const uniqueSalons = useMemo(() => getUniqueSalonBookings(bookings), [bookings]);
   const [page, setPage] = useState(1);
 
   const totalItems = uniqueSalons.length;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalItems / CUSTOMER_DASHBOARD_SALONS_PER_PAGE),
-  );
+  const totalPages = Math.max(1, Math.ceil(totalItems / CUSTOMER_DASHBOARD_SALONS_PER_PAGE));
 
   const paginatedSalons = useMemo(() => {
     const start = (page - 1) * CUSTOMER_DASHBOARD_SALONS_PER_PAGE;
-    return uniqueSalons.slice(
-      start,
-      start + CUSTOMER_DASHBOARD_SALONS_PER_PAGE,
-    );
+    return uniqueSalons.slice(start, start + CUSTOMER_DASHBOARD_SALONS_PER_PAGE);
   }, [uniqueSalons, page]);
 
   useEffect(() => {

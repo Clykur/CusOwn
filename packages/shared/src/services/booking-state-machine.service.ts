@@ -4,7 +4,7 @@
  * No hardcoded status if-else trees.
  */
 
-import { requireSupabaseAdmin } from "../lib/supabase/server";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
 
 /** Adjacency: from_state_name -> (event -> to_state_name). Refreshed by TTL. */
 let transitionMap: Map<string, Map<string, string>> | null = null;
@@ -12,12 +12,7 @@ let terminalStates: Set<string> | null = null;
 let stateMachineBuiltAt = 0;
 const STATE_MACHINE_TTL_MS = 60_000;
 
-export type BookingEvent =
-  | "confirm"
-  | "reject"
-  | "cancel"
-  | "expire"
-  | "restore";
+export type BookingEvent = 'confirm' | 'reject' | 'cancel' | 'expire' | 'restore';
 
 /**
  * Load states and transitions from DB; build adjacency map and terminal set.
@@ -28,17 +23,12 @@ async function buildTransitionGraph(): Promise<{
 }> {
   const supabase = requireSupabaseAdmin();
   const [statesRes, transRes] = await Promise.all([
-    supabase.from("booking_states").select("id, name, is_terminal"),
-    supabase
-      .from("booking_state_transitions")
-      .select("from_state_id, event, to_state_id"),
+    supabase.from('booking_states').select('id, name, is_terminal'),
+    supabase.from('booking_state_transitions').select('from_state_id, event, to_state_id'),
   ]);
-  if (statesRes.error)
-    throw new Error(statesRes.error.message || "Failed to load booking_states");
+  if (statesRes.error) throw new Error(statesRes.error.message || 'Failed to load booking_states');
   if (transRes.error)
-    throw new Error(
-      transRes.error.message || "Failed to load booking_state_transitions",
-    );
+    throw new Error(transRes.error.message || 'Failed to load booking_state_transitions');
 
   const idToName = new Map<string, string>();
   const terminal = new Set<string>();
@@ -67,11 +57,7 @@ async function getGraph(): Promise<{
   terminal: Set<string>;
 }> {
   const now = Date.now();
-  if (
-    transitionMap &&
-    terminalStates &&
-    now - stateMachineBuiltAt < STATE_MACHINE_TTL_MS
-  ) {
+  if (transitionMap && terminalStates && now - stateMachineBuiltAt < STATE_MACHINE_TTL_MS) {
     return { map: transitionMap, terminal: terminalStates };
   }
   const built = await buildTransitionGraph();
@@ -84,10 +70,7 @@ async function getGraph(): Promise<{
 /**
  * O(1): whether transition from state with event is allowed.
  */
-export async function canTransition(
-  fromStateName: string,
-  event: string,
-): Promise<boolean> {
+export async function canTransition(fromStateName: string, event: string): Promise<boolean> {
   const { map } = await getGraph();
   const events = map.get(fromStateName);
   return events?.has(event) ?? false;
@@ -96,10 +79,7 @@ export async function canTransition(
 /**
  * O(1): next state name for (fromState, event) or null if invalid.
  */
-export async function getNextState(
-  fromStateName: string,
-  event: string,
-): Promise<string | null> {
+export async function getNextState(fromStateName: string, event: string): Promise<string | null> {
   const { map } = await getGraph();
   const events = map.get(fromStateName);
   return events?.get(event) ?? null;

@@ -1,15 +1,15 @@
-import { requireSupabaseAdmin } from "../supabase/server";
+import { requireSupabaseAdmin } from '../supabase/server';
 import {
   GEO_DEGRADATION_COOLDOWN_MS,
   GEO_CIRCUIT_BREAKER_THRESHOLD,
   GEO_COOLDOWN_KEY,
-} from "@cusown/config";
+} from '@cusown/config';
 
 export async function isGeoCircuitOpen(): Promise<boolean> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (!supabaseAdmin) return false;
   try {
-    const { data, error } = await supabaseAdmin.rpc("get_geo_circuit_status", {
+    const { data, error } = await supabaseAdmin.rpc('get_geo_circuit_status', {
       p_key: GEO_COOLDOWN_KEY,
     });
     if (error || !data || data.length === 0) return false;
@@ -25,7 +25,7 @@ export async function recordGeoFailure(): Promise<void> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (!supabaseAdmin) return;
   try {
-    await supabaseAdmin.rpc("record_geo_failure", {
+    await supabaseAdmin.rpc('record_geo_failure', {
       p_key: GEO_COOLDOWN_KEY,
       p_cooldown_seconds: Math.ceil(GEO_DEGRADATION_COOLDOWN_MS / 1000),
       p_threshold: GEO_CIRCUIT_BREAKER_THRESHOLD,
@@ -37,7 +37,7 @@ export async function recordGeoSuccess(): Promise<void> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (!supabaseAdmin) return;
   try {
-    await supabaseAdmin.rpc("record_geo_success", { p_key: GEO_COOLDOWN_KEY });
+    await supabaseAdmin.rpc('record_geo_success', { p_key: GEO_COOLDOWN_KEY });
   } catch {}
 }
 
@@ -45,11 +45,9 @@ export async function cleanupExpiredGeoCooldown(): Promise<number> {
   const supabaseAdmin = requireSupabaseAdmin();
   if (!supabaseAdmin) return 0;
   try {
-    const { data, error } = await supabaseAdmin.rpc(
-      "cleanup_expired_geo_cooldown",
-    );
+    const { data, error } = await supabaseAdmin.rpc('cleanup_expired_geo_cooldown');
     if (error) return 0;
-    return typeof data === "number" ? data : Number(data) || 0;
+    return typeof data === 'number' ? data : Number(data) || 0;
   } catch {
     return 0;
   }

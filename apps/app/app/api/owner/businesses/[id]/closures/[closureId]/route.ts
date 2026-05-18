@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireOwner,
   successResponse,
@@ -8,14 +8,14 @@ import {
   downtimeService,
   invalidateBusinessCache,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
 
-const ROUTE = "DELETE /api/owner/businesses/[id]/closures/[closureId]";
+const ROUTE = 'DELETE /api/owner/businesses/[id]/closures/[closureId]';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; closureId: string }> },
+  { params }: { params: Promise<{ id: string; closureId: string }> }
 ) {
   try {
     const auth = await requireOwner(request, ROUTE);
@@ -30,10 +30,7 @@ export async function DELETE(
       return errorResponse(ERROR_MESSAGES.FORBIDDEN, 403);
     }
 
-    const removed = await downtimeService.removeClosureForBusiness(
-      closureId,
-      businessId,
-    );
+    const removed = await downtimeService.removeClosureForBusiness(closureId, businessId);
     if (!removed) {
       return errorResponse(ERROR_MESSAGES.NOT_FOUND, 404);
     }

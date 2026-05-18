@@ -1,20 +1,20 @@
-import { NextRequest } from "next/server";
-import { slotService } from "@cusown/shared/server";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
-import { getClientIp, isValidUUID } from "@cusown/shared/server";
-import { enhancedRateLimit } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { slotService } from '@cusown/shared/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
+import { getClientIp, isValidUUID } from '@cusown/shared/server';
+import { enhancedRateLimit } from '@cusown/shared/server';
 
 const releaseRateLimit = enhancedRateLimit({
   maxRequests: 20,
   windowMs: 60000,
   perIP: true,
-  keyPrefix: "slot_release",
+  keyPrefix: 'slot_release',
 });
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ slotId: string }> },
+  { params }: { params: Promise<{ slotId: string }> }
 ) {
   const clientIP = getClientIp(request);
 
@@ -28,7 +28,7 @@ export async function POST(
 
     if (!isValidUUID(slotId)) {
       console.warn(`[SECURITY] Invalid slot ID format from IP: ${clientIP}`);
-      return errorResponse("Invalid slot ID", 400);
+      return errorResponse('Invalid slot ID', 400);
     }
 
     // Note: Slot release is intentionally public for booking flow
@@ -37,16 +37,11 @@ export async function POST(
 
     await slotService.releaseSlot(slotId);
 
-    console.log(
-      `[SECURITY] Slot released: IP: ${clientIP}, Slot: ${slotId.substring(0, 8)}...`,
-    );
-    return successResponse({ slot_id: slotId }, "Slot released successfully");
+    console.log(`[SECURITY] Slot released: IP: ${clientIP}, Slot: ${slotId.substring(0, 8)}...`);
+    return successResponse({ slot_id: slotId }, 'Slot released successfully');
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
-    console.error(
-      `[SECURITY] Slot release error: IP: ${clientIP}, Error: ${message}`,
-    );
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    console.error(`[SECURITY] Slot release error: IP: ${clientIP}, Error: ${message}`);
     return errorResponse(message, 500);
   }
 }

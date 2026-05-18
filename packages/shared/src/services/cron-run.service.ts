@@ -2,16 +2,11 @@
  * Cron run logging and listing for admin cron monitor.
  */
 
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import {
-  CRON_RUN_STATUS_FAILED,
-  CRON_RUN_STATUS_SUCCESS,
-} from "@cusown/config";
-import type { CronJobName } from "@cusown/config";
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { CRON_RUN_STATUS_FAILED, CRON_RUN_STATUS_SUCCESS } from '@cusown/config';
+import type { CronJobName } from '@cusown/config';
 
-export type CronRunStatus =
-  | typeof CRON_RUN_STATUS_SUCCESS
-  | typeof CRON_RUN_STATUS_FAILED;
+export type CronRunStatus = typeof CRON_RUN_STATUS_SUCCESS | typeof CRON_RUN_STATUS_FAILED;
 
 export interface CronRunLog {
   id: string;
@@ -54,7 +49,7 @@ export class CronRunService {
   async insertRun(entry: CronRunLogInsert): Promise<CronRunLog | null> {
     const supabase = requireSupabaseAdmin();
     const { data, error } = await supabase
-      .from("cron_run_logs")
+      .from('cron_run_logs')
       .insert({
         job_name: entry.job_name,
         started_at: entry.started_at,
@@ -67,7 +62,7 @@ export class CronRunService {
       .single();
 
     if (error) {
-      console.error("[CRON_RUN] Insert failed:", error);
+      console.error('[CRON_RUN] Insert failed:', error);
       return null;
     }
     return data as CronRunLog;
@@ -84,21 +79,21 @@ export class CronRunService {
       const offset = Math.max(0, filters.offset ?? 0);
 
       let query = supabase
-        .from("cron_run_logs")
-        .select("*", { count: "exact" })
-        .order("started_at", { ascending: false });
+        .from('cron_run_logs')
+        .select('*', { count: 'exact' })
+        .order('started_at', { ascending: false });
 
       if (filters.job_name) {
-        query = query.eq("job_name", filters.job_name);
+        query = query.eq('job_name', filters.job_name);
       }
       if (filters.status) {
-        query = query.eq("status", filters.status);
+        query = query.eq('status', filters.status);
       }
       if (filters.start_date) {
-        query = query.gte("started_at", filters.start_date);
+        query = query.gte('started_at', filters.start_date);
       }
       if (filters.end_date) {
-        query = query.lte("started_at", filters.end_date);
+        query = query.lte('started_at', filters.end_date);
       }
 
       query = query.range(offset, offset + limit - 1);
@@ -106,10 +101,7 @@ export class CronRunService {
       const { data, error, count } = await query;
 
       if (error) {
-        console.warn(
-          "[CRON_RUN] getCronRuns error (table may not exist):",
-          error.message,
-        );
+        console.warn('[CRON_RUN] getCronRuns error (table may not exist):', error.message);
         return { runs: [], total: 0 };
       }
 
@@ -118,7 +110,7 @@ export class CronRunService {
         total: count ?? 0,
       };
     } catch (err) {
-      console.warn("[CRON_RUN] getCronRuns exception:", err);
+      console.warn('[CRON_RUN] getCronRuns exception:', err);
       return { runs: [], total: 0 };
     }
   }
@@ -129,17 +121,12 @@ export const cronRunService = new CronRunService();
 /**
  * Wraps a cron handler to log start/end and duration. Does not modify response.
  */
-export async function withCronRunLog<T>(
-  jobName: CronJobName,
-  fn: () => Promise<T>,
-): Promise<T> {
+export async function withCronRunLog<T>(jobName: CronJobName, fn: () => Promise<T>): Promise<T> {
   const startedAt = new Date().toISOString();
   try {
     const result = await fn();
     const completedAt = new Date().toISOString();
-    const durationMs = Math.round(
-      new Date(completedAt).getTime() - new Date(startedAt).getTime(),
-    );
+    const durationMs = Math.round(new Date(completedAt).getTime() - new Date(startedAt).getTime());
     await cronRunService.insertRun({
       job_name: jobName,
       started_at: startedAt,
@@ -151,9 +138,7 @@ export async function withCronRunLog<T>(
     return result;
   } catch (err) {
     const completedAt = new Date().toISOString();
-    const durationMs = Math.round(
-      new Date(completedAt).getTime() - new Date(startedAt).getTime(),
-    );
+    const durationMs = Math.round(new Date(completedAt).getTime() - new Date(startedAt).getTime());
     await cronRunService.insertRun({
       job_name: jobName,
       started_at: startedAt,

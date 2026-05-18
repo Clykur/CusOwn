@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireAdmin,
   requireSupabaseAdmin,
@@ -15,17 +15,14 @@ import {
   filterBookingUpdateFields,
   validateStringLength,
   validateEnum,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES, BOOKING_STATUS } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, BOOKING_STATUS } from '@cusown/config';
 
-const ROUTE_GET = "GET /api/admin/bookings/[id]";
-const ROUTE_PATCH = "PATCH /api/admin/bookings/[id]";
-const ROUTE_POST = "POST /api/admin/bookings/[id]";
+const ROUTE_GET = 'GET /api/admin/bookings/[id]';
+const ROUTE_PATCH = 'PATCH /api/admin/bookings/[id]';
+const ROUTE_POST = 'POST /api/admin/bookings/[id]';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_GET);
     if (auth instanceof Response) return auth;
@@ -34,40 +31,36 @@ export async function GET(
     const supabase = requireSupabaseAdmin();
 
     const { data: booking, error } = await supabase
-      .from("bookings")
+      .from('bookings')
       .select(
         `
         *,
         business:business_id (*),
         slot:slot_id (*)
-      `,
+      `
       )
-      .eq("id", id)
+      .eq('id', id)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") {
-        return errorResponse("Booking not found", 404);
+      if (error.code === 'PGRST116') {
+        return errorResponse('Booking not found', 404);
       }
       return errorResponse(error.message || ERROR_MESSAGES.DATABASE_ERROR, 500);
     }
 
     if (!booking) {
-      return errorResponse("Booking not found", 404);
+      return errorResponse('Booking not found', 404);
     }
 
     return successResponse(booking);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_PATCH);
     if (auth instanceof Response) return auth;
@@ -80,52 +73,41 @@ export async function PATCH(
 
     // SECURITY: Validate enum values
     if (filteredBody.status !== undefined) {
-      const validStatuses = [
-        "pending",
-        "confirmed",
-        "rejected",
-        "cancelled",
-      ] as const;
+      const validStatuses = ['pending', 'confirmed', 'rejected', 'cancelled'] as const;
       if (!validateEnum(filteredBody.status, validStatuses)) {
-        return errorResponse("Invalid booking status", 400);
+        return errorResponse('Invalid booking status', 400);
       }
     }
 
     // SECURITY: Validate string lengths
-    if (
-      filteredBody.customer_name &&
-      !validateStringLength(filteredBody.customer_name, 200)
-    ) {
-      return errorResponse("Customer name is too long", 400);
+    if (filteredBody.customer_name && !validateStringLength(filteredBody.customer_name, 200)) {
+      return errorResponse('Customer name is too long', 400);
     }
-    if (
-      filteredBody.customer_phone &&
-      !validateStringLength(filteredBody.customer_phone, 20)
-    ) {
-      return errorResponse("Customer phone is too long", 400);
+    if (filteredBody.customer_phone && !validateStringLength(filteredBody.customer_phone, 20)) {
+      return errorResponse('Customer phone is too long', 400);
     }
     if (
       filteredBody.cancellation_reason &&
       !validateStringLength(filteredBody.cancellation_reason, 500)
     ) {
-      return errorResponse("Cancellation reason is too long", 400);
+      return errorResponse('Cancellation reason is too long', 400);
     }
 
     // Get old booking data
     const { data: oldBooking } = await supabase
-      .from("bookings")
+      .from('bookings')
       .select(
         `
         *,
         business:business_id (*),
         slot:slot_id (*)
-      `,
+      `
       )
-      .eq("id", id)
+      .eq('id', id)
       .single();
 
     if (!oldBooking) {
-      return errorResponse("Booking not found", 404);
+      return errorResponse('Booking not found', 404);
     }
 
     // Prepare update data from filtered input only
@@ -137,21 +119,19 @@ export async function PATCH(
       updateData.customer_name = filteredBody.customer_name;
     }
     if (filteredBody.customer_phone !== undefined) {
-      updateData.customer_phone = formatPhoneNumber(
-        filteredBody.customer_phone,
-      );
+      updateData.customer_phone = formatPhoneNumber(filteredBody.customer_phone);
     }
 
     const { data: updatedBooking, error } = await supabase
-      .from("bookings")
+      .from('bookings')
       .update(updateData)
-      .eq("id", id)
+      .eq('id', id)
       .select(
         `
         *,
         business:business_id (*),
         slot:slot_id (*)
-      `,
+      `
       )
       .single();
 
@@ -166,13 +146,13 @@ export async function PATCH(
         oldBooking.status === BOOKING_STATUS.PENDING
       ) {
         // Mark slot as booked
-        await slotService.updateSlotStatus(oldBooking.slot_id, "booked");
+        await slotService.updateSlotStatus(oldBooking.slot_id, 'booked');
       } else if (
         body.status === BOOKING_STATUS.REJECTED ||
         body.status === BOOKING_STATUS.CANCELLED
       ) {
         // Release slot if rejected or cancelled
-        await slotService.updateSlotStatus(oldBooking.slot_id, "available");
+        await slotService.updateSlotStatus(oldBooking.slot_id, 'available');
       }
     }
 
@@ -184,18 +164,13 @@ export async function PATCH(
       }
     });
 
-    if (!auth?.user?.id) throw new Error("Unauthorized");
-    await auditService.createAuditLog(
-      auth.user.id,
-      "booking_updated",
-      "booking",
-      {
-        entityId: id,
-        oldData: oldBooking,
-        newData: updatedBooking,
-        description: `Booking updated: ${changes.join(", ")}`,
-      },
-    );
+    if (!auth?.user?.id) throw new Error('Unauthorized');
+    await auditService.createAuditLog(auth.user.id, 'booking_updated', 'booking', {
+      entityId: id,
+      oldData: oldBooking,
+      newData: updatedBooking,
+      description: `Booking updated: ${changes.join(', ')}`,
+    });
 
     // Send notification to customer if status changed
     if (
@@ -215,38 +190,31 @@ export async function PATCH(
           time,
           body.status,
           body.reason,
-          request,
+          request
         );
 
-        const whatsappUrl = adminNotificationService.notifyCustomer(
-          id,
-          message,
-        );
-        invalidateApiCacheByPrefix("GET|/api/admin/bookings");
-        invalidateApiCacheByPrefix("GET|/api/admin/metrics");
+        const whatsappUrl = adminNotificationService.notifyCustomer(id, message);
+        invalidateApiCacheByPrefix('GET|/api/admin/bookings');
+        invalidateApiCacheByPrefix('GET|/api/admin/metrics');
         return successResponse(
           { ...updatedBooking, whatsapp_url: await whatsappUrl },
-          "Booking updated and notification prepared",
+          'Booking updated and notification prepared'
         );
       } catch {
         // Continue even if notification fails
       }
     }
 
-    invalidateApiCacheByPrefix("GET|/api/admin/bookings");
-    invalidateApiCacheByPrefix("GET|/api/admin/metrics");
-    return successResponse(updatedBooking, "Booking updated successfully");
+    invalidateApiCacheByPrefix('GET|/api/admin/bookings');
+    invalidateApiCacheByPrefix('GET|/api/admin/metrics');
+    return successResponse(updatedBooking, 'Booking updated successfully');
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin(request, ROUTE_POST);
     if (auth instanceof Response) return auth;
@@ -255,66 +223,48 @@ export async function POST(
     const body = await request.json();
     const action = body.action; // 'resend_notification'
 
-    if (action === "resend_notification") {
+    if (action === 'resend_notification') {
       const supabase = requireSupabaseAdmin();
 
       const { data: booking } = await supabase
-        .from("bookings")
+        .from('bookings')
         .select(
           `
           *,
           business:business_id (*),
           slot:slot_id (*)
-        `,
+        `
         )
-        .eq("id", id)
+        .eq('id', id)
         .single();
 
       if (!booking || !booking.slot || !booking.business) {
-        return errorResponse("Booking not found or incomplete", 404);
+        return errorResponse('Booking not found or incomplete', 404);
       }
 
       let whatsappUrl: string;
 
       if (booking.status === BOOKING_STATUS.CONFIRMED) {
-        whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(
-          booking,
-          booking.business,
-        );
+        whatsappUrl = whatsappService.getConfirmationWhatsAppUrl(booking, booking.business);
       } else if (booking.status === BOOKING_STATUS.REJECTED) {
-        whatsappUrl = whatsappService.getRejectionWhatsAppUrl(
-          booking,
-          booking.business,
-        );
+        whatsappUrl = whatsappService.getRejectionWhatsAppUrl(booking, booking.business);
       } else {
-        return errorResponse(
-          "Cannot resend notification for this booking status",
-          400,
-        );
+        return errorResponse('Cannot resend notification for this booking status', 400);
       }
 
       // Create audit log
-      if (!auth?.user?.id) throw new Error("Unauthorized");
-      await auditService.createAuditLog(
-        auth.user.id,
-        "notification_sent",
-        "booking",
-        {
-          entityId: id,
-          description: `Notification resent for booking ${id}`,
-        },
-      );
+      if (!auth?.user?.id) throw new Error('Unauthorized');
+      await auditService.createAuditLog(auth.user.id, 'notification_sent', 'booking', {
+        entityId: id,
+        description: `Notification resent for booking ${id}`,
+      });
 
-      return successResponse(
-        { whatsapp_url: whatsappUrl },
-        "Notification prepared",
-      );
+      return successResponse({ whatsapp_url: whatsappUrl }, 'Notification prepared');
     }
 
-    return errorResponse("Invalid action", 400);
+    return errorResponse('Invalid action', 400);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

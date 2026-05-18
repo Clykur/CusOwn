@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { OwnerBusinessesSkeleton } from "@/components/ui/skeleton";
-import { Toast } from "@/components/ui/toast";
-import { ROUTES } from "@cusown/shared";
-import { formatDate } from "@cusown/shared";
-import { Salon } from "@cusown/shared";
-import { getCachedSession } from "@cusown/shared";
-import MapPinIcon from "@cusown/shared/icons/map-pin.svg";
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { OwnerBusinessesSkeleton } from '@/components/ui/skeleton';
+import { Toast } from '@/components/ui/toast';
+import { ROUTES } from '@cusown/shared';
+import { formatDate } from '@cusown/shared';
+import { Salon } from '@cusown/shared';
+import { getCachedSession } from '@cusown/shared';
+import MapPinIcon from '@cusown/shared/icons/map-pin.svg';
 
 export default function OwnerBusinessesPage() {
   const router = useRouter();
@@ -19,10 +19,10 @@ export default function OwnerBusinessesPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const deleted = searchParams?.get("deleted");
-    if (deleted === "1") {
-      setToastMessage("Business deleted successfully");
-      router.replace("/owner/businesses", { scroll: false });
+    const deleted = searchParams?.get('deleted');
+    if (deleted === '1') {
+      setToastMessage('Business deleted successfully');
+      router.replace('/owner/businesses', { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -31,11 +31,11 @@ export default function OwnerBusinessesPage() {
       try {
         const [user, businessesRes] = await Promise.all([
           getCachedSession(),
-          fetch("/api/owner/businesses", { credentials: "include" }),
+          fetch('/api/owner/businesses', { credentials: 'include' }),
         ]);
 
         if (!user) {
-          router.replace(ROUTES.AUTH_LOGIN("/owner/businesses"));
+          router.replace(ROUTES.AUTH_LOGIN('/owner/businesses'));
           return;
         }
 
@@ -53,9 +53,7 @@ export default function OwnerBusinessesPage() {
 
   return (
     <div className="flex w-full flex-col gap-4 pb-24 md:gap-6">
-      {toastMessage && (
-        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
-      )}
+      {toastMessage && <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
         {businesses.map((b) => (
           <Link
@@ -71,10 +69,7 @@ export default function OwnerBusinessesPage() {
 
                 {b.location && (
                   <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 md:mt-2 md:text-sm">
-                    <MapPinIcon
-                      className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4"
-                      aria-hidden="true"
-                    />
+                    <MapPinIcon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" aria-hidden="true" />
                     <span className="min-w-0 truncate">{b.location}</span>
                   </p>
                 )}
@@ -92,9 +87,7 @@ export default function OwnerBusinessesPage() {
               <span className="text-xs text-gray-500 md:text-sm">
                 Created {formatDate(b.created_at)}
               </span>
-              <span className="text-xs font-semibold text-slate-900 md:text-sm">
-                Manage
-              </span>
+              <span className="text-xs font-semibold text-slate-900 md:text-sm">Manage</span>
             </div>
           </Link>
         ))}

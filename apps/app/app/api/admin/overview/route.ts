@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   adminService,
   FullAdminOverview,
@@ -11,10 +11,10 @@ import {
   buildCacheKey,
   CACHE_PREFIX,
   CACHE_TTL,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "GET /api/admin/overview";
+const ROUTE = 'GET /api/admin/overview';
 const AGGREGATED_OVERVIEW_TTL = 30;
 
 export async function GET(request: NextRequest) {
@@ -23,28 +23,16 @@ export async function GET(request: NextRequest) {
     if (auth instanceof Response) return auth;
 
     const { searchParams } = new URL(request.url);
-    const aggregated = searchParams.get("aggregated") === "true";
-    const days = Math.min(
-      Math.max(1, parseInt(searchParams.get("days") ?? "30", 10)),
-      90,
-    );
+    const aggregated = searchParams.get('aggregated') === 'true';
+    const days = Math.min(Math.max(1, parseInt(searchParams.get('days') ?? '30', 10)), 90);
 
     if (aggregated) {
-      const cacheKey = buildCacheKey(
-        CACHE_PREFIX.DASHBOARD,
-        "admin-full-overview",
-        String(days),
-      );
+      const cacheKey = buildCacheKey(CACHE_PREFIX.DASHBOARD, 'admin-full-overview', String(days));
 
-      const { hit, data: cachedData } =
-        await getCache<FullAdminOverview>(cacheKey);
+      const { hit, data: cachedData } = await getCache<FullAdminOverview>(cacheKey);
       if (hit && cachedData) {
         const response = successResponse(cachedData);
-        setCacheHeaders(
-          response,
-          AGGREGATED_OVERVIEW_TTL,
-          AGGREGATED_OVERVIEW_TTL * 2,
-        );
+        setCacheHeaders(response, AGGREGATED_OVERVIEW_TTL, AGGREGATED_OVERVIEW_TTL * 2);
         return response;
       }
 
@@ -52,15 +40,11 @@ export async function GET(request: NextRequest) {
       await setCache(cacheKey, data, AGGREGATED_OVERVIEW_TTL);
 
       const response = successResponse(data);
-      setCacheHeaders(
-        response,
-        AGGREGATED_OVERVIEW_TTL,
-        AGGREGATED_OVERVIEW_TTL * 2,
-      );
+      setCacheHeaders(response, AGGREGATED_OVERVIEW_TTL, AGGREGATED_OVERVIEW_TTL * 2);
       return response;
     }
 
-    const cacheKey = buildCacheKey(CACHE_PREFIX.DASHBOARD, "admin-overview");
+    const cacheKey = buildCacheKey(CACHE_PREFIX.DASHBOARD, 'admin-overview');
 
     const { hit, data: cachedData } = await getCache<unknown>(cacheKey);
     if (hit && cachedData) {
@@ -77,8 +61,7 @@ export async function GET(request: NextRequest) {
     setCacheHeaders(response, CACHE_TTL.DASHBOARD, CACHE_TTL.DASHBOARD * 2);
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

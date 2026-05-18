@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 import {
   initWebVitals,
   markHydrationStart,
@@ -8,8 +8,8 @@ import {
   recordNavigationTimings,
   performanceMonitor,
   type PerformanceMetric,
-} from "@cusown/shared";
-import { publicEnv } from "@cusown/config";
+} from '@cusown/shared';
+import { publicEnv } from '@cusown/config';
 
 interface PerformanceMonitorProps {
   enableDevTools?: boolean;
@@ -18,7 +18,7 @@ interface PerformanceMonitorProps {
 }
 
 export function PerformanceMonitor({
-  enableDevTools = publicEnv.nodeEnv === "development",
+  enableDevTools = publicEnv.nodeEnv === 'development',
   reportEndpoint,
   sampleRate = 1.0,
 }: PerformanceMonitorProps) {
@@ -38,10 +38,10 @@ export function PerformanceMonitor({
       recordNavigationTimings();
     };
 
-    if (document.readyState === "complete") {
+    if (document.readyState === 'complete') {
       handleLoad();
     } else {
-      window.addEventListener("load", handleLoad);
+      window.addEventListener('load', handleLoad);
     }
 
     let unsubscribe: (() => void) | undefined;
@@ -67,10 +67,10 @@ export function PerformanceMonitor({
           navigator.sendBeacon(reportEndpoint, JSON.stringify(payload));
         } else {
           fetch(reportEndpoint, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(payload),
             keepalive: true,
-            headers: { "Content-Type": "application/json" },
+            headers: { 'Content-Type': 'application/json' },
           }).catch(() => {});
         }
       };
@@ -87,24 +87,24 @@ export function PerformanceMonitor({
         }
       });
 
-      window.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
+      window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
           flushMetrics();
         }
       });
 
-      window.addEventListener("beforeunload", flushMetrics);
+      window.addEventListener('beforeunload', flushMetrics);
     }
 
-    if (enableDevTools && typeof window !== "undefined") {
+    if (enableDevTools && typeof window !== 'undefined') {
       (window as unknown as Record<string, unknown>).__PERF_MONITOR__ = {
         getMetrics: () => performanceMonitor.getMetrics(),
         getApiStats: () => {
-          const { getApiStats } = require("@cusown/shared");
+          const { getApiStats } = require('@cusown/shared');
           return getApiStats();
         },
         getHydrationStats: () => {
-          const { getHydrationStats } = require("@cusown/shared");
+          const { getHydrationStats } = require('@cusown/shared');
           return getHydrationStats();
         },
         exportMetrics: () => performanceMonitor.exportMetrics(),
@@ -113,7 +113,7 @@ export function PerformanceMonitor({
     }
 
     return () => {
-      window.removeEventListener("load", handleLoad);
+      window.removeEventListener('load', handleLoad);
       if (unsubscribe) unsubscribe();
     };
   }, [enableDevTools, reportEndpoint, sampleRate]);
@@ -143,16 +143,14 @@ export function useRenderTracking(componentName: string) {
   useEffect(() => {
     renderCount.current++;
     const now = performance.now();
-    const timeSinceLastRender = lastRenderTime.current
-      ? now - lastRenderTime.current
-      : 0;
+    const timeSinceLastRender = lastRenderTime.current ? now - lastRenderTime.current : 0;
     lastRenderTime.current = now;
 
-    if (publicEnv.nodeEnv === "development" && renderCount.current > 1) {
+    if (publicEnv.nodeEnv === 'development' && renderCount.current > 1) {
       if (timeSinceLastRender < 100 && renderCount.current > 3) {
         console.warn(
           `[PERF] Rapid re-renders detected in ${componentName}: ` +
-            `${renderCount.current} renders, last interval: ${timeSinceLastRender.toFixed(2)}ms`,
+            `${renderCount.current} renders, last interval: ${timeSinceLastRender.toFixed(2)}ms`
         );
       }
     }

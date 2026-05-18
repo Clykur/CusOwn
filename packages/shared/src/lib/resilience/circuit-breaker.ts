@@ -5,9 +5,9 @@ export interface CircuitBreakerOptions {
 }
 
 export enum CircuitState {
-  CLOSED = "closed",
-  OPEN = "open",
-  HALF_OPEN = "half_open",
+  CLOSED = 'closed',
+  OPEN = 'open',
+  HALF_OPEN = 'half_open',
 }
 
 export class CircuitBreaker {
@@ -22,7 +22,7 @@ export class CircuitBreaker {
     this.updateState();
 
     if (this.state === CircuitState.OPEN) {
-      throw new Error("Circuit breaker is OPEN");
+      throw new Error('Circuit breaker is OPEN');
     }
 
     try {

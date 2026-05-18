@@ -1,14 +1,11 @@
-import { NextRequest } from "next/server";
-import { getClientIp } from "@cusown/shared/server";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { paymentService } from "@cusown/shared/server";
-import {
-  verifyUPIWebhookSignature,
-  parseUPIWebhookPayload,
-} from "@cusown/shared/server";
-import { createHash } from "crypto";
-import { env } from "@cusown/config";
-import { requireSupabaseAdmin, sanitizeForLog } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { getClientIp } from '@cusown/shared/server';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { paymentService } from '@cusown/shared/server';
+import { verifyUPIWebhookSignature, parseUPIWebhookPayload } from '@cusown/shared/server';
+import { createHash } from 'crypto';
+import { env } from '@cusown/config';
+import { requireSupabaseAdmin, sanitizeForLog } from '@cusown/shared/server';
 
 /** Phase 2: Payment handlers do not modify booking/slot lifecycle. Observational linkage only. */
 
@@ -17,113 +14,93 @@ export async function POST(request: NextRequest) {
 
   try {
     const signature =
-      request.headers.get("x-upi-signature") ||
-      request.headers.get("x-webhook-signature");
+      request.headers.get('x-upi-signature') || request.headers.get('x-webhook-signature');
     if (!signature) {
-      console.warn(
-        `[WEBHOOK] Missing signature from IP: ${sanitizeForLog(clientIP)}`,
-      );
-      return errorResponse("Missing signature", 401);
+      console.warn(`[WEBHOOK] Missing signature from IP: ${sanitizeForLog(clientIP)}`);
+      return errorResponse('Missing signature', 401);
     }
 
     const body = await request.text();
     const secret = env.payment.upiWebhookSecret;
 
     if (!secret) {
-      console.error("[WEBHOOK] UPI webhook secret not configured");
-      return errorResponse("Webhook not configured", 500);
+      console.error('[WEBHOOK] UPI webhook secret not configured');
+      return errorResponse('Webhook not configured', 500);
     }
 
     if (!verifyUPIWebhookSignature(body, signature, secret)) {
-      console.warn(
-        `[SECURITY] Invalid UPI webhook signature from IP: ${sanitizeForLog(clientIP)}`,
-      );
-      return errorResponse("Invalid signature", 401);
+      console.warn(`[SECURITY] Invalid UPI webhook signature from IP: ${sanitizeForLog(clientIP)}`);
+      return errorResponse('Invalid signature', 401);
     }
 
     const payload = JSON.parse(body);
     const webhookData = parseUPIWebhookPayload(payload);
 
     if (!webhookData) {
-      return errorResponse("Invalid webhook payload", 400);
+      return errorResponse('Invalid webhook payload', 400);
     }
 
-    const payloadHash = createHash("sha256").update(body).digest("hex");
+    const payloadHash = createHash('sha256').update(body).digest('hex');
     const supabaseAdmin = requireSupabaseAdmin();
 
-    const { transactionId, amountCents, status, upiAppUsed, paymentReference } =
-      webhookData;
+    const { transactionId, amountCents, status, upiAppUsed, paymentReference } = webhookData;
 
-    const payment =
-      await paymentService.getPaymentByTransactionId(transactionId);
+    const payment = await paymentService.getPaymentByTransactionId(transactionId);
     if (!payment) {
       console.warn(
-        `[WEBHOOK] Payment not found for transaction (length: ${sanitizeForLog(transactionId).length})`,
+        `[WEBHOOK] Payment not found for transaction (length: ${sanitizeForLog(transactionId).length})`
       );
-      return errorResponse("Payment not found", 404);
+      return errorResponse('Payment not found', 404);
     }
 
     if (payment.webhook_payload_hash === payloadHash) {
-      return successResponse({ success: true, message: "Already processed" });
+      return successResponse({ success: true, message: 'Already processed' });
     }
 
-    if (payment.status === "completed") {
+    if (payment.status === 'completed') {
       return successResponse({ success: true, payment_id: payment.payment_id });
     }
 
-    if (status === "failed") {
-      await paymentService.markPaymentFailed(
-        payment.id,
-        "Payment failed via webhook",
-        undefined,
-      );
+    if (status === 'failed') {
+      await paymentService.markPaymentFailed(payment.id, 'Payment failed via webhook', undefined);
       return successResponse({
         success: true,
-        message: "Payment marked as failed",
+        message: 'Payment marked as failed',
       });
     }
 
-    if (status === "success") {
+    if (status === 'success') {
       if (amountCents !== payment.amount_cents) {
         console.error(`[SECURITY] Amount mismatch for payment ${payment.id}`);
-        return errorResponse("Amount verification failed", 400);
+        return errorResponse('Amount verification failed', 400);
       }
 
       if (payment.expires_at && new Date(payment.expires_at) < new Date()) {
         if (!env.payment.autoRefundOnLateSuccess) {
-          console.warn(
-            `[WEBHOOK] Payment ${payment.id} expired but webhook received`,
-          );
-          return errorResponse("Payment expired", 400);
+          console.warn(`[WEBHOOK] Payment ${payment.id} expired but webhook received`);
+          return errorResponse('Payment expired', 400);
         }
       }
 
-      await paymentService.verifyUPIPayment(
-        payment.id,
-        transactionId,
-        "system",
-        "webhook",
-        {
-          upiAppUsed,
-          paymentReference,
-        },
-      );
+      await paymentService.verifyUPIPayment(payment.id, transactionId, 'system', 'webhook', {
+        upiAppUsed,
+        paymentReference,
+      });
 
       await supabaseAdmin
-        .from("payments")
+        .from('payments')
         .update({
           webhook_payload_hash: payloadHash,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", payment.id);
+        .eq('id', payment.id);
 
       return successResponse({ success: true, payment_id: payment.payment_id });
     }
 
-    return errorResponse("Unknown payment status", 400);
+    return errorResponse('Unknown payment status', 400);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Webhook processing failed";
+    const message = error instanceof Error ? error.message : 'Webhook processing failed';
     console.error(`[WEBHOOK] Error: ${sanitizeForLog(error)}`);
     return errorResponse(message, 500);
   }

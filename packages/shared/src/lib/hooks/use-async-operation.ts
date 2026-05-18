@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from 'react';
 
 interface UseAsyncOperationOptions {
   onSuccess?: (data: any) => void;
@@ -7,9 +7,7 @@ interface UseAsyncOperationOptions {
   preventConcurrent?: boolean;
 }
 
-export function useAsyncOperation<T = any>(
-  options: UseAsyncOperationOptions = {},
-) {
+export function useAsyncOperation<T = any>(options: UseAsyncOperationOptions = {}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<T | null>(null);
@@ -39,8 +37,7 @@ export function useAsyncOperation<T = any>(
               if (options.onSuccess) options.onSuccess(result);
               resolve(result);
             } catch (err) {
-              const error =
-                err instanceof Error ? err : new Error("Operation failed");
+              const error = err instanceof Error ? err : new Error('Operation failed');
               setError(error.message);
               setLoading(false);
               executingRef.current = false;
@@ -62,8 +59,7 @@ export function useAsyncOperation<T = any>(
         if (options.onSuccess) options.onSuccess(result);
         return result;
       } catch (err) {
-        const error =
-          err instanceof Error ? err : new Error("Operation failed");
+        const error = err instanceof Error ? err : new Error('Operation failed');
         setError(error.message);
         setLoading(false);
         executingRef.current = false;
@@ -71,7 +67,7 @@ export function useAsyncOperation<T = any>(
         throw error;
       }
     },
-    [options],
+    [options]
   );
 
   const reset = useCallback(() => {

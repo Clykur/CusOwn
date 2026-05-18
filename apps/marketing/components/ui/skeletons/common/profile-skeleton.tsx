@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { skeletonBase } from "../base-skeleton";
+import { skeletonBase } from '../base-skeleton';
 
 export function ProfileSkeleton() {
   return (
@@ -25,9 +25,7 @@ export function ProfileSkeleton() {
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i}>
                     <div className={`h-3 ${skeletonBase} w-20 rounded mb-2`} />
-                    <div
-                      className={`h-10 ${skeletonBase} w-full rounded-lg mt-1`}
-                    />
+                    <div className={`h-10 ${skeletonBase} w-full rounded-lg mt-1`} />
                   </div>
                 ))}
               </div>
@@ -38,10 +36,7 @@ export function ProfileSkeleton() {
               <div className={`h-4 ${skeletonBase} w-40 rounded mb-6`} />
               <div className="grid grid-cols-2 gap-4">
                 {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5"
-                  >
+                  <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
                     <div className={`h-3 ${skeletonBase} w-28 rounded`} />
                     <div className={`h-8 ${skeletonBase} w-12 rounded mt-2`} />
                   </div>
@@ -60,10 +55,7 @@ export function ProfileSkeleton() {
               <div className="overflow-hidden rounded-xl border border-slate-200">
                 <div className="bg-slate-50 px-5 py-3.5 flex gap-4 border-b border-slate-200">
                   {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className={`h-4 ${skeletonBase} flex-1 rounded`}
-                    />
+                    <div key={i} className={`h-4 ${skeletonBase} flex-1 rounded`} />
                   ))}
                 </div>
                 {[1, 2, 3, 4].map((i) => (
@@ -72,10 +64,7 @@ export function ProfileSkeleton() {
                     className="px-5 py-4 flex gap-4 border-b border-slate-100 last:border-0"
                   >
                     {[1, 2, 3, 4].map((j) => (
-                      <div
-                        key={j}
-                        className={`h-4 ${skeletonBase} flex-1 rounded`}
-                      />
+                      <div key={j} className={`h-4 ${skeletonBase} flex-1 rounded`} />
                     ))}
                   </div>
                 ))}
@@ -87,10 +76,7 @@ export function ProfileSkeleton() {
               <div className={`h-4 ${skeletonBase} w-48 rounded mb-6`} />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-slate-200 bg-slate-50/50 p-5"
-                  >
+                  <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
                     <div className={`h-5 ${skeletonBase} w-36 rounded`} />
                     <div className={`h-4 ${skeletonBase} w-28 rounded mt-2`} />
                   </div>

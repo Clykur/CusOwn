@@ -1,20 +1,17 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   downtimeService,
   successResponse,
   errorResponse,
   isValidUUID,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
 /**
  * Public/Customer or Owner-scoped GET for business holidays.
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 

@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from "@cusown/config";
-import { BookingWithDetails } from "@cusown/shared";
-import { setRebookData } from "@/components/booking/booking-utils";
-import SalonDetailsHeader from "@/components/customer/SalonDetailsHeader";
-import SalonShopPhotos from "@/components/customer/SalonShopPhotos";
-import SalonBookingHistoryTable from "@/components/customer/SalonBookingHistoryTable";
-import Breadcrumb from "@/components/ui/breadcrumb";
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@cusown/config';
+import { BookingWithDetails } from '@cusown/shared';
+import { setRebookData } from '@/components/booking/booking-utils';
+import SalonDetailsHeader from '@/components/customer/SalonDetailsHeader';
+import SalonShopPhotos from '@/components/customer/SalonShopPhotos';
+import SalonBookingHistoryTable from '@/components/customer/SalonBookingHistoryTable';
+import Breadcrumb from '@/components/ui/breadcrumb';
 
 interface SalonPayload {
   id: string;
@@ -23,7 +23,7 @@ interface SalonPayload {
 
 export default function CustomerSalonDetailsPage() {
   const params = useParams<{ salonId: string }>();
-  const salonId = params?.salonId ?? "";
+  const salonId = params?.salonId ?? '';
   const router = useRouter();
 
   const [salon, setSalon] = useState<SalonPayload | null>(null);
@@ -46,23 +46,23 @@ export default function CustomerSalonDetailsPage() {
 
         const [salonRes, bookingsRes] = await Promise.all([
           fetch(`/api/salons/${encodeURIComponent(salonId)}`, {
-            credentials: "include",
+            credentials: 'include',
           }),
-          fetch("/api/customer/bookings", { credentials: "include" }),
+          fetch('/api/customer/bookings', { credentials: 'include' }),
         ]);
 
         if (cancelled) return;
 
         if (!salonRes.ok) {
           const json = await salonRes.json().catch(() => ({}));
-          setError(json.error || "Salon not found");
+          setError(json.error || 'Salon not found');
           setLoading(false);
           return;
         }
 
         const salonJson = await salonRes.json();
         if (!salonJson.success || !salonJson.data) {
-          setError("Salon not found");
+          setError('Salon not found');
           setLoading(false);
           return;
         }
@@ -75,11 +75,9 @@ export default function CustomerSalonDetailsPage() {
           const bookingsJson = await bookingsRes.json();
           const all: BookingWithDetails[] = bookingsJson.data || [];
           const forSalon = all
-            .filter(
-              (b: BookingWithDetails) => b.business_id === salonJson.data.id,
-            )
+            .filter((b: BookingWithDetails) => b.business_id === salonJson.data.id)
             .sort((a: BookingWithDetails, b: BookingWithDetails) =>
-              a.created_at < b.created_at ? 1 : -1,
+              a.created_at < b.created_at ? 1 : -1
             );
           setBookings(forSalon);
         }
@@ -87,8 +85,8 @@ export default function CustomerSalonDetailsPage() {
         const mediaRes = await fetch(
           `/api/media/business/${encodeURIComponent(salonJson.data.id)}`,
           {
-            credentials: "include",
-          },
+            credentials: 'include',
+          }
         );
         if (cancelled) return;
 
@@ -101,11 +99,11 @@ export default function CustomerSalonDetailsPage() {
               items.map(async (item: { id: string }) => {
                 const signedRes = await fetch(
                   `/api/media/signed-url?mediaId=${encodeURIComponent(item.id)}`,
-                  { credentials: "include" },
+                  { credentials: 'include' }
                 );
                 const signedJson = await signedRes.json();
                 return signedJson?.data?.url ?? null;
-              }),
+              })
             );
             photoUrls = urls.filter(Boolean);
           }
@@ -113,7 +111,7 @@ export default function CustomerSalonDetailsPage() {
         if (!cancelled) setPhotos(photoUrls);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Something went wrong");
+          setError(e instanceof Error ? e.message : 'Something went wrong');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -128,7 +126,7 @@ export default function CustomerSalonDetailsPage() {
   const handleRebook = () => {
     const latest = bookings[0];
     if (latest?.customer_name || latest?.customer_phone) {
-      setRebookData(latest.customer_name ?? "", latest.customer_phone ?? "");
+      setRebookData(latest.customer_name ?? '', latest.customer_phone ?? '');
     }
     router.push(`/customer/book/${encodeURIComponent(salonId)}`);
   };
@@ -141,14 +139,13 @@ export default function CustomerSalonDetailsPage() {
 
   const breadcrumbItems = useMemo(
     () => [
-      { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: "/customer/dashboard" },
+      { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: '/customer/dashboard' },
       {
-        label:
-          salon?.salon_name || UI_CUSTOMER.SALON_DETAILS_BREADCRUMB_FALLBACK,
+        label: salon?.salon_name || UI_CUSTOMER.SALON_DETAILS_BREADCRUMB_FALLBACK,
         href: `/customer/salon/${salonId}`,
       },
     ],
-    [salon?.salon_name, salonId],
+    [salon?.salon_name, salonId]
   );
 
   if (loading) {
@@ -160,8 +157,8 @@ export default function CustomerSalonDetailsPage() {
       >
         <Breadcrumb
           items={[
-            { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: "/customer/dashboard" },
-            { label: "…", href: `/customer/salon/${salonId}` },
+            { label: UI_CUSTOMER.NAV_MY_ACTIVITY, href: '/customer/dashboard' },
+            { label: '…', href: `/customer/salon/${salonId}` },
           ]}
         />
         <div className="h-10 w-64 rounded-lg image-skeleton-shine" />
@@ -190,8 +187,8 @@ export default function CustomerSalonDetailsPage() {
       <div className="w-full pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         <Breadcrumb
           items={[
-            { label: "My Activity", href: "/customer/dashboard" },
-            { label: "Salon Details", href: `/customer/salon/${salonId}` },
+            { label: 'My Activity', href: '/customer/dashboard' },
+            { label: 'Salon Details', href: `/customer/salon/${salonId}` },
           ]}
         />
         <div className="py-16 flex flex-col items-center justify-center gap-4">
@@ -210,12 +207,10 @@ export default function CustomerSalonDetailsPage() {
               />
             </svg>
           </div>
-          <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
-            Salon No Longer Available
-          </h2>
+          <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>Salon No Longer Available</h2>
           <p className="text-slate-500 text-center max-w-sm">
-            This salon has been removed from our platform. Your booking history
-            with this salon is still saved in your activity.
+            This salon has been removed from our platform. Your booking history with this salon is
+            still saved in your activity.
           </p>
           <Link
             href="/customer/dashboard"
@@ -237,8 +232,8 @@ export default function CustomerSalonDetailsPage() {
         ownerName={salon.owner_name ?? null}
         ownerPhone={salon.whatsapp_number ?? null}
         ownerImage={salon.owner_image ?? null}
-        openingTime={salon.opening_time ?? "09:00"}
-        closingTime={salon.closing_time ?? "21:00"}
+        openingTime={salon.opening_time ?? '09:00'}
+        closingTime={salon.closing_time ?? '21:00'}
       />
 
       <SalonShopPhotos photos={photos} />

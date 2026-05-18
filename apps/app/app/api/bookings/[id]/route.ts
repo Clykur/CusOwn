@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import {
   bookingService,
   successResponse,
@@ -17,7 +17,7 @@ import {
   dedupe,
   runWithTiming,
   parseBookingActionQueryToken,
-} from "@cusown/shared/server";
+} from '@cusown/shared/server';
 import {
   ERROR_MESSAGES,
   UI_ERROR_CONTEXT,
@@ -25,21 +25,18 @@ import {
   RATE_LIMIT_ACTION_LINK_WINDOW_MS,
   RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW,
   CACHE_TTL_BOOKING_MS,
-} from "@cusown/config";
+} from '@cusown/config';
 
-const ROUTE = "GET /api/bookings/[id]";
+const ROUTE = 'GET /api/bookings/[id]';
 
 const getBookingWithTokenRateLimit = enhancedRateLimit({
   maxRequests: RATE_LIMIT_ACTION_LINK_MAX_PER_WINDOW,
   windowMs: RATE_LIMIT_ACTION_LINK_WINDOW_MS,
   perIP: true,
-  keyPrefix: "booking_get_token",
+  keyPrefix: 'booking_get_token',
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await bookingService.runLazyExpireIfNeeded();
 
@@ -56,10 +53,10 @@ export async function GET(
     let decodedToken: string | null = null;
     let tokenValid = false;
 
-    if (tokenParse.kind === "malformed") {
+    if (tokenParse.kind === 'malformed') {
       logAuthDeny({
         route: ROUTE,
-        reason: "auth_invalid_token",
+        reason: 'auth_invalid_token',
         resource: id,
       });
 
@@ -69,25 +66,21 @@ export async function GET(
           error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
           code: SECURE_LINK_RESPONSE_CODE,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    if (tokenParse.kind === "present") {
+    if (tokenParse.kind === 'present') {
       decodedToken = tokenParse.decoded;
 
-      const statusValid = validateResourceToken(
-        "booking-status",
-        id,
-        decodedToken,
-      );
+      const statusValid = validateResourceToken('booking-status', id, decodedToken);
 
       if (statusValid) {
         tokenValid = true;
       } else {
         const [acceptValid, rejectValid] = await Promise.all([
-          validateOwnerActionLink("accept", id, decodedToken),
-          validateOwnerActionLink("reject", id, decodedToken),
+          validateOwnerActionLink('accept', id, decodedToken),
+          validateOwnerActionLink('reject', id, decodedToken),
         ]);
 
         if (acceptValid.valid || rejectValid.valid) {
@@ -95,7 +88,7 @@ export async function GET(
         } else {
           logAuthDeny({
             route: ROUTE,
-            reason: "auth_invalid_token",
+            reason: 'auth_invalid_token',
             resource: id,
           });
 
@@ -105,13 +98,13 @@ export async function GET(
               error: UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE,
               code: SECURE_LINK_RESPONSE_CODE,
             },
-            { status: 403 },
+            { status: 403 }
           );
         }
       }
     }
 
-    const cacheKey = buildApiCacheKey("GET", `/api/bookings/${id}`);
+    const cacheKey = buildApiCacheKey('GET', `/api/bookings/${id}`);
     const cached = getCachedApiResponse<{ data: unknown }>(cacheKey);
     type BookingWithDetails = Awaited<
       ReturnType<typeof bookingService.getBookingByUuidWithDetails>
@@ -124,14 +117,11 @@ export async function GET(
           runWithTiming(
             `getBookingWithDetails:${id}`,
             () => bookingService.getBookingByUuidWithDetails(id),
-            { route: ROUTE },
-          ),
+            { route: ROUTE }
+          )
         );
 
-    const [booking, ctx] = await Promise.all([
-      bookingPromise,
-      getAuthContext(request),
-    ]);
+    const [booking, ctx] = await Promise.all([bookingPromise, getAuthContext(request)]);
 
     if (!booking) {
       return errorResponse(ERROR_MESSAGES.BOOKING_NOT_FOUND, 404);
@@ -142,8 +132,7 @@ export async function GET(
 
     if (ctx) {
       const isCustomer =
-        (booking as { customer_user_id?: string }).customer_user_id ===
-        ctx.user.id;
+        (booking as { customer_user_id?: string }).customer_user_id === ctx.user.id;
       let isOwner = false;
       const businessId = (booking as { business_id?: string }).business_id;
       if (businessId) {
@@ -155,23 +144,20 @@ export async function GET(
         logAuthDeny({
           user_id: ctx.user.id,
           route: ROUTE,
-          reason: "auth_denied",
-          role:
-            (ctx.profile as { user_type?: string } | null)?.user_type ??
-            "unknown",
+          reason: 'auth_denied',
+          role: (ctx.profile as { user_type?: string } | null)?.user_type ?? 'unknown',
           resource: id,
         });
-        return errorResponse("Access denied", 403);
+        return errorResponse('Access denied', 403);
       }
     } else if (!tokenValid) {
-      logAuthDeny({ route: ROUTE, reason: "auth_missing", resource: id });
-      return errorResponse("Authentication required", 401);
+      logAuthDeny({ route: ROUTE, reason: 'auth_missing', resource: id });
+      return errorResponse('Authentication required', 401);
     }
 
     return successResponse(booking);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

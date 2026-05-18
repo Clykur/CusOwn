@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, Loader2, Star, X } from "lucide-react";
-import { useUIStore } from "@cusown/shared/client";
-import type { PendingRatingBooking } from "@cusown/shared";
-import { RATING_MESSAGES } from "@cusown/config";
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, Loader2, Star, X } from 'lucide-react';
+import { useUIStore } from '@cusown/shared/client';
+import type { PendingRatingBooking } from '@cusown/shared';
+import { RATING_MESSAGES } from '@cusown/config';
 
 interface RatingModalProps {
   booking: PendingRatingBooking;
@@ -16,9 +16,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [actionType, setActionType] = useState<"submit" | "ignore" | null>(
-    null,
-  );
+  const [actionType, setActionType] = useState<'submit' | 'ignore' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const showToast = useUIStore((state) => state.showToast);
 
@@ -31,13 +29,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
         return `${booking.service_date} at ${booking.service_time}`;
       }
 
-      return new Intl.DateTimeFormat("en-IN", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
+      return new Intl.DateTimeFormat('en-IN', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
       }).format(date);
     } catch {
       return `${booking.service_date} at ${booking.service_time}`;
@@ -46,33 +44,33 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
 
   const helperText = useMemo(() => {
     if (displayRating) return RATING_MESSAGES[displayRating];
-    return "Tap a star to rate";
+    return 'Tap a star to rate';
   }, [displayRating]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isLoading) return;
-      if (event.key === "Escape") onClose();
+      if (event.key === 'Escape') onClose();
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLoading, onClose]);
 
   const handleSubmitRating = async () => {
     if (!rating) {
-      setError("Please select a rating");
+      setError('Please select a rating');
       return;
     }
 
     setIsLoading(true);
-    setActionType("submit");
+    setActionType('submit');
     setError(null);
 
     try {
-      const response = await fetch("/api/reviews/pending-rating", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/reviews/pending-rating', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           booking_id: booking.id,
           rating,
@@ -82,13 +80,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to submit rating");
+        throw new Error(data?.error || 'Failed to submit rating');
       }
 
-      showToast("Thanks for your review", "success");
+      showToast('Thanks for your review', 'success');
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
       setActionType(null);
@@ -97,13 +95,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
 
   const handleIgnore = async () => {
     setIsLoading(true);
-    setActionType("ignore");
+    setActionType('ignore');
     setError(null);
 
     try {
-      const response = await fetch("/api/reviews/ignore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/reviews/ignore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           booking_id: booking.id,
         }),
@@ -112,13 +110,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to ignore rating");
+        throw new Error(data?.error || 'Failed to ignore rating');
       }
 
-      showToast("Review skipped", "success");
+      showToast('Review skipped', 'success');
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
       setActionType(null);
@@ -147,9 +145,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
             >
               Rate your experience
             </h2>
-            <p className="mt-1 text-sm font-medium text-gray-500">
-              {booking.salon_name}
-            </p>
+            <p className="mt-1 text-sm font-medium text-gray-500">{booking.salon_name}</p>
           </div>
 
           <button
@@ -173,9 +169,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">
                 Service date
               </p>
-              <p className="mt-1 text-sm font-medium text-gray-800">
-                {formattedServiceDate}
-              </p>
+              <p className="mt-1 text-sm font-medium text-gray-800">{formattedServiceDate}</p>
             </div>
           </div>
         </div>
@@ -200,16 +194,16 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(null)}
                   disabled={isLoading}
-                  aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                  aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 disabled:opacity-50 ${
-                    active ? "scale-105" : "hover:scale-105"
+                    active ? 'scale-105' : 'hover:scale-105'
                   }`}
                 >
                   <Star
                     className={`h-8 w-8 transition-all duration-200 ${
                       active
-                        ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_2px_8px_rgba(250,204,21,0.28)]"
-                        : "text-gray-300 hover:text-yellow-300"
+                        ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_2px_8px_rgba(250,204,21,0.28)]'
+                        : 'text-gray-300 hover:text-yellow-300'
                     }`}
                   />
                 </button>
@@ -219,7 +213,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
 
           <p
             className={`mt-3 min-h-[20px] text-center text-sm font-medium ${
-              displayRating ? "text-gray-700" : "text-gray-400"
+              displayRating ? 'text-gray-700' : 'text-gray-400'
             }`}
           >
             {helperText}
@@ -239,13 +233,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
             disabled={isLoading || !rating}
             className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
           >
-            {isLoading && actionType === "submit" ? (
+            {isLoading && actionType === 'submit' ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...
               </>
             ) : (
-              "Submit review"
+              'Submit review'
             )}
           </button>
 
@@ -255,13 +249,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
             disabled={isLoading}
             className="inline-flex h-11 w-full items-center justify-center rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isLoading && actionType === "ignore" ? (
+            {isLoading && actionType === 'ignore' ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (
-              "Ignore"
+              'Ignore'
             )}
           </button>
         </div>

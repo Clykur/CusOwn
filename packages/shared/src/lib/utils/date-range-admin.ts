@@ -3,10 +3,7 @@
  * UTC-normalized; max range 365 days; defensive for null/undefined.
  */
 
-import {
-  ADMIN_ANALYTICS_MAX_DAYS,
-  ADMIN_DEFAULT_ANALYTICS_DAYS,
-} from "@cusown/config";
+import { ADMIN_ANALYTICS_MAX_DAYS, ADMIN_DEFAULT_ANALYTICS_DAYS } from '@cusown/config';
 
 export interface AdminDateRange {
   startDate: Date;
@@ -18,9 +15,7 @@ export interface AdminDateRange {
  * Start of day UTC for a given date string (YYYY-MM-DD) or Date.
  */
 function startOfDayUTC(d: Date): Date {
-  const t = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0),
-  );
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
   return t;
 }
 
@@ -29,15 +24,7 @@ function startOfDayUTC(d: Date): Date {
  */
 function endOfDayUTC(d: Date): Date {
   const t = new Date(
-    Date.UTC(
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate(),
-      23,
-      59,
-      59,
-      999,
-    ),
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999)
   );
   return t;
 }
@@ -46,15 +33,13 @@ function endOfDayUTC(d: Date): Date {
  * Parse startDate and endDate from search params (ISO date or date-only).
  * Clamps range to ADMIN_ANALYTICS_MAX_DAYS. Defaults to last ADMIN_DEFAULT_ANALYTICS_DAYS.
  */
-export function parseAdminDateRange(
-  searchParams: URLSearchParams,
-): AdminDateRange {
+export function parseAdminDateRange(searchParams: URLSearchParams): AdminDateRange {
   const now = new Date();
   const maxDays = ADMIN_ANALYTICS_MAX_DAYS;
   const defaultDays = ADMIN_DEFAULT_ANALYTICS_DAYS;
 
-  const startParam = searchParams.get("startDate")?.trim() || null;
-  const endParam = searchParams.get("endDate")?.trim() || null;
+  const startParam = searchParams.get('startDate')?.trim() || null;
+  const endParam = searchParams.get('endDate')?.trim() || null;
 
   let startDate: Date;
   let endDate: Date;
@@ -76,16 +61,14 @@ export function parseAdminDateRange(
       startDate = endDate;
       endDate = swap;
     }
-    const days = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
-    );
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
     if (days > maxDays) {
       startDate = new Date(endDate);
       startDate.setUTCDate(startDate.getUTCDate() - maxDays);
       startDate = startOfDayUTC(startDate);
     }
   } else {
-    const daysParam = searchParams.get("days");
+    const daysParam = searchParams.get('days');
     const days = daysParam
       ? Math.min(Math.max(1, parseInt(daysParam, 10) || defaultDays), maxDays)
       : defaultDays;
@@ -95,9 +78,7 @@ export function parseAdminDateRange(
     startDate = startOfDayUTC(startDate);
   }
 
-  const days = Math.ceil(
-    (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
-  );
+  const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
   return { startDate, endDate, days };
 }
 

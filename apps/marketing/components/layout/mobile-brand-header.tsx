@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useLogoNavigation } from "@cusown/shared/client";
+import { useLogoNavigation } from '@cusown/shared/client';
 
 /**
  * Mobile-only top bar: same CusOwn treatment as the landing page (PublicHeader).
@@ -12,10 +12,7 @@ export function MobileBrandHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/50 bg-white/80 shadow-sm backdrop-blur-xl md:hidden">
       <div className="relative flex h-16 items-center justify-center px-4">
-        <button
-          onClick={handleLogoClick}
-          className="group flex items-center gap-2 text-left"
-        >
+        <button onClick={handleLogoClick} className="group flex items-center gap-2 text-left">
           <div className="relative">
             <span className="bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text font-calegar text-2xl font-bold uppercase tracking-wide text-transparent">
               CusOwn

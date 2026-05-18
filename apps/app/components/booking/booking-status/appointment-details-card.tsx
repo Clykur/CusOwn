@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { memo, useState } from "react";
-import { formatDate, formatTime } from "@cusown/shared";
-import { UI_CUSTOMER, ERROR_MESSAGES } from "@cusown/config";
-import BookingsIcon from "@cusown/shared/icons/bookings.svg";
-import StarRating from "@/components/booking/star-rating";
+import { memo, useState } from 'react';
+import { formatDate, formatTime } from '@cusown/shared';
+import { UI_CUSTOMER, ERROR_MESSAGES } from '@cusown/config';
+import BookingsIcon from '@cusown/shared/icons/bookings.svg';
+import StarRating from '@/components/booking/star-rating';
 
 interface AppointmentDetailsCardProps {
   slot: {
@@ -31,7 +31,7 @@ function AppointmentDetailsCardComponent({
   onReviewSubmitted,
 }: AppointmentDetailsCardProps) {
   const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState("");
+  const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
@@ -41,10 +41,10 @@ function AppointmentDetailsCardComponent({
     setReviewError(null);
     setSubmittingReview(true);
     try {
-      const res = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           booking_id: bookingId,
           rating: reviewRating,
@@ -53,11 +53,11 @@ function AppointmentDetailsCardComponent({
       });
       const data = await res.json();
       if (!res.ok) {
-        setReviewError(data?.error || "Failed to submit rating");
+        setReviewError(data?.error || 'Failed to submit rating');
         return;
       }
       setReviewRating(0);
-      setReviewComment("");
+      setReviewComment('');
       onReviewSubmitted();
     } catch {
       setReviewError(ERROR_MESSAGES.DATABASE_ERROR);
@@ -74,29 +74,19 @@ function AppointmentDetailsCardComponent({
       </h2>
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-            Date
-          </p>
-          <p className="font-semibold text-slate-900">
-            {formatDate(slot.date)}
-          </p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Date</p>
+          <p className="font-semibold text-slate-900">{formatDate(slot.date)}</p>
         </div>
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-            Service
-          </p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Service</p>
           <div className="font-semibold text-slate-900">
             {services && services.length > 0
-              ? services.map((service, index) => (
-                  <p key={index}>{service.name}</p>
-                ))
-              : "—"}
-          </div>{" "}
+              ? services.map((service, index) => <p key={index}>{service.name}</p>)
+              : '—'}
+          </div>{' '}
         </div>
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-            Time
-          </p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Time</p>
           <p className="font-semibold text-slate-900">
             {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
           </p>
@@ -108,20 +98,16 @@ function AppointmentDetailsCardComponent({
           {review ? (
             <div className="space-y-2">
               <StarRating value={review.rating} readonly size="md" />
-              <p className="text-sm font-semibold text-slate-900">
-                {review.rating} out of 5
-              </p>
+              <p className="text-sm font-semibold text-slate-900">{review.rating} out of 5</p>
               {review.comment && (
                 <p className="text-sm text-slate-600 mt-2 p-3 bg-slate-100 rounded-lg">
                   {review.comment}
                 </p>
               )}
             </div>
-          ) : status === "confirmed" ? (
+          ) : status === 'confirmed' ? (
             <form onSubmit={handleSubmitReview} className="space-y-3">
-              <p className="text-sm text-slate-600 mb-2">
-                {UI_CUSTOMER.RATE_YOUR_VISIT}
-              </p>
+              <p className="text-sm text-slate-600 mb-2">{UI_CUSTOMER.RATE_YOUR_VISIT}</p>
               <StarRating
                 value={reviewRating}
                 readonly={false}
@@ -142,23 +128,17 @@ function AppointmentDetailsCardComponent({
                   placeholder="Share your experience..."
                 />
               </label>
-              {reviewError && (
-                <p className="text-sm text-red-600">{reviewError}</p>
-              )}
+              {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
               <button
                 type="submit"
                 disabled={submittingReview || reviewRating < 1}
                 className="px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                {submittingReview
-                  ? UI_CUSTOMER.SUBMITTING_RATING
-                  : UI_CUSTOMER.SUBMIT_RATING}
+                {submittingReview ? UI_CUSTOMER.SUBMITTING_RATING : UI_CUSTOMER.SUBMIT_RATING}
               </button>
             </form>
           ) : (
-            <p className="text-sm text-slate-500">
-              {UI_CUSTOMER.LABEL_NOT_RATED}
-            </p>
+            <p className="text-sm text-slate-500">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
           )}
         </div>
       </div>

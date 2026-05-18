@@ -1,62 +1,50 @@
-"use client";
+'use client';
 
-import { useEffect, useCallback, useRef, useMemo, useState, memo } from "react";
-import { createPortal } from "react-dom";
-import dynamic from "next/dynamic";
-import { ListFilter, Search, X } from "lucide-react";
-import { OwnerDashboardSkeleton } from "@/components/ui/skeleton";
-import { useOwnerSession } from "@/components/owner/owner-session-context";
-import { BookingWithDetails } from "@cusown/shared";
-import { IconCheck, IconCross } from "@/components/ui/status-icons";
+import { useEffect, useCallback, useRef, useMemo, useState, memo } from 'react';
+import { createPortal } from 'react-dom';
+import dynamic from 'next/dynamic';
+import { ListFilter, Search, X } from 'lucide-react';
+import { OwnerDashboardSkeleton } from '@/components/ui/skeleton';
+import { useOwnerSession } from '@/components/owner/owner-session-context';
+import { BookingWithDetails } from '@cusown/shared';
+import { IconCheck, IconCross } from '@/components/ui/status-icons';
 import {
   BOOKING_STATUS,
   OWNER_DASHBOARD_MOBILE_BOOKINGS_PER_PAGE,
   OWNER_SCREEN_TITLE_CLASSNAME,
   UNDO_ACCEPT_REJECT_WINDOW_MINUTES,
   UI_CONTEXT,
-} from "@cusown/config";
-import FilterDropdown from "@/components/analytics/FilterDropdown";
-import Pagination from "@/components/ui/pagination";
-import { Toast } from "@/components/ui/toast";
-import UndoIcon from "@cusown/shared/icons/undo.svg";
-import { useBookingSyncChannel } from "@cusown/shared/client";
-import { dedupFetch, cancelRequests } from "@cusown/shared";
-import { type OwnerDashboardStatusFilter } from "@cusown/shared";
-import { useOwnerDashboardStore, useUIStore } from "@cusown/shared/client";
-import StarRating from "@/components/booking/star-rating";
-import { cn } from "@cusown/shared";
+} from '@cusown/config';
+import FilterDropdown from '@/components/analytics/FilterDropdown';
+import Pagination from '@/components/ui/pagination';
+import { Toast } from '@/components/ui/toast';
+import UndoIcon from '@cusown/shared/icons/undo.svg';
+import { useBookingSyncChannel } from '@cusown/shared/client';
+import { dedupFetch, cancelRequests } from '@cusown/shared';
+import { type OwnerDashboardStatusFilter } from '@cusown/shared';
+import { useOwnerDashboardStore, useUIStore } from '@cusown/shared/client';
+import StarRating from '@/components/booking/star-rating';
+import { cn } from '@cusown/shared';
 
-const DateFilter = dynamic(() => import("@/components/owner/date-filter"), {
+const DateFilter = dynamic(() => import('@/components/owner/date-filter'), {
   ssr: false,
   loading: () => (
     <div className="h-11 w-full rounded-xl bg-slate-100 animate-pulse md:h-9 md:w-32 md:rounded-lg" />
   ),
 });
 
-const NoShowButton = dynamic(
-  () => import("@/components/booking/no-show-button"),
-  {
-    ssr: false,
-    loading: () => (
-      <button
-        disabled
-        className="px-3 py-1.5 text-xs bg-slate-100 text-slate-400 rounded-lg"
-      >
-        Loading...
-      </button>
-    ),
-  },
-);
+const NoShowButton = dynamic(() => import('@/components/booking/no-show-button'), {
+  ssr: false,
+  loading: () => (
+    <button disabled className="px-3 py-1.5 text-xs bg-slate-100 text-slate-400 rounded-lg">
+      Loading...
+    </button>
+  ),
+});
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const Stat = memo(function Stat({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
+const Stat = memo(function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="overflow-visible rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] md:rounded-lg md:p-6 md:shadow-none">
       <div className="text-sm text-slate-500">{label}</div>
@@ -83,7 +71,7 @@ const StatsGrid = memo(function StatsGrid() {
 function SearchInput() {
   const setSearchTerm = useOwnerDashboardStore((state) => state.setSearchTerm);
   const searchTermStore = useOwnerDashboardStore((state) => state.searchTerm);
-  const [localValue, setLocalValue] = useState("");
+  const [localValue, setLocalValue] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -107,7 +95,7 @@ function SearchInput() {
         setSearchTerm(value);
       }, SEARCH_DEBOUNCE_MS);
     },
-    [setSearchTerm],
+    [setSearchTerm]
   );
 
   useEffect(() => {
@@ -142,23 +130,13 @@ export default function OwnerDashboardPage() {
   const toDate = useOwnerDashboardStore((state) => state.toDate);
   const setFromDate = useOwnerDashboardStore((state) => state.setFromDate);
   const setToDate = useOwnerDashboardStore((state) => state.setToDate);
-  const businessIdFilter = useOwnerDashboardStore(
-    (state) => state.businessIdFilter,
-  );
-  const setBusinessIdFilter = useOwnerDashboardStore(
-    (state) => state.setBusinessIdFilter,
-  );
+  const businessIdFilter = useOwnerDashboardStore((state) => state.businessIdFilter);
+  const setBusinessIdFilter = useOwnerDashboardStore((state) => state.setBusinessIdFilter);
   const statusFilter = useOwnerDashboardStore((state) => state.statusFilter);
-  const setStatusFilter = useOwnerDashboardStore(
-    (state) => state.setStatusFilter,
-  );
+  const setStatusFilter = useOwnerDashboardStore((state) => state.setStatusFilter);
   const searchTerm = useOwnerDashboardStore((state) => state.searchTerm);
-  const processingBookingId = useOwnerDashboardStore(
-    (state) => state.processingBookingId,
-  );
-  const setProcessingBookingId = useOwnerDashboardStore(
-    (state) => state.setProcessingBookingId,
-  );
+  const processingBookingId = useOwnerDashboardStore((state) => state.processingBookingId);
+  const setProcessingBookingId = useOwnerDashboardStore((state) => state.setProcessingBookingId);
 
   const showToast = useUIStore((state) => state.showToast);
   const toasts = useUIStore((state) => state.toasts);
@@ -177,14 +155,14 @@ export default function OwnerDashboardPage() {
   useEffect(() => {
     if (!mobileFilterSheetOpen) return;
     const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileFilterSheetOpen(false);
+      if (e.key === 'Escape') setMobileFilterSheetOpen(false);
     };
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, [mobileFilterSheetOpen]);
 
@@ -209,24 +187,15 @@ export default function OwnerDashboardPage() {
         booking.booking_id?.toLowerCase().includes(normalizedSearch) ||
         booking.salon?.salon_name?.toLowerCase().includes(normalizedSearch);
 
-      const bookingDate = booking.slot?.date ?? "";
-      const matchesFromDate =
-        !fromDate || (!!bookingDate && bookingDate >= fromDate);
+      const bookingDate = booking.slot?.date ?? '';
+      const matchesFromDate = !fromDate || (!!bookingDate && bookingDate >= fromDate);
       const matchesToDate = !toDate || (!!bookingDate && bookingDate <= toDate);
 
-      const matchesStatus =
-        statusFilter === "all" || booking.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
 
-      const matchesBusiness =
-        !businessIdFilter || booking.business_id === businessIdFilter;
+      const matchesBusiness = !businessIdFilter || booking.business_id === businessIdFilter;
 
-      return (
-        matchesSearch &&
-        matchesFromDate &&
-        matchesToDate &&
-        matchesStatus &&
-        matchesBusiness
-      );
+      return matchesSearch && matchesFromDate && matchesToDate && matchesStatus && matchesBusiness;
     });
   }, [bookings, searchTerm, fromDate, toDate, statusFilter, businessIdFilter]);
 
@@ -235,17 +204,14 @@ export default function OwnerDashboardPage() {
       fromDate ||
       toDate ||
       businessIdFilter ||
-      statusFilter !== "all" ||
+      statusFilter !== 'all' ||
       searchTerm.trim()
     );
   }, [fromDate, toDate, businessIdFilter, statusFilter, searchTerm]);
 
   const [mobileListPage, setMobileListPage] = useState(1);
   const mobilePageSize = OWNER_DASHBOARD_MOBILE_BOOKINGS_PER_PAGE;
-  const mobileTotalPages = Math.max(
-    1,
-    Math.ceil(filteredBookings.length / mobilePageSize),
-  );
+  const mobileTotalPages = Math.max(1, Math.ceil(filteredBookings.length / mobilePageSize));
 
   useEffect(() => {
     setMobileListPage(1);
@@ -254,9 +220,7 @@ export default function OwnerDashboardPage() {
   useEffect(() => {
     const tp = Math.max(
       1,
-      Math.ceil(
-        filteredBookings.length / OWNER_DASHBOARD_MOBILE_BOOKINGS_PER_PAGE,
-      ),
+      Math.ceil(filteredBookings.length / OWNER_DASHBOARD_MOBILE_BOOKINGS_PER_PAGE)
     );
     setMobileListPage((prev) => Math.min(prev, tp));
   }, [filteredBookings.length]);
@@ -269,9 +233,9 @@ export default function OwnerDashboardPage() {
   const statusFilterDropdownOptions = useMemo(
     () => [
       {
-        value: "all",
+        value: 'all',
         label: UI_CONTEXT.OWNER_DASHBOARD_STATUS_ALL,
-        checked: statusFilter === "all",
+        checked: statusFilter === 'all',
       },
       {
         value: BOOKING_STATUS.PENDING,
@@ -294,7 +258,7 @@ export default function OwnerDashboardPage() {
         checked: statusFilter === BOOKING_STATUS.CANCELLED,
       },
     ],
-    [statusFilter],
+    [statusFilter]
   );
 
   const handleStatusFilterToggle = useCallback(
@@ -302,15 +266,15 @@ export default function OwnerDashboardPage() {
       if (!checked) return;
       setStatusFilter(value as OwnerDashboardStatusFilter);
     },
-    [setStatusFilter],
+    [setStatusFilter]
   );
 
   const businessFilterDropdownOptions = useMemo(
     () => [
       {
-        value: "",
+        value: '',
         label: UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL,
-        checked: businessIdFilter === "",
+        checked: businessIdFilter === '',
       },
       ...businessOptions.map(([id, name]) => ({
         value: id,
@@ -318,7 +282,7 @@ export default function OwnerDashboardPage() {
         checked: businessIdFilter === id,
       })),
     ],
-    [businessIdFilter, businessOptions],
+    [businessIdFilter, businessOptions]
   );
 
   const handleBusinessFilterToggle = useCallback(
@@ -326,13 +290,11 @@ export default function OwnerDashboardPage() {
       if (!checked) return;
       setBusinessIdFilter(value);
     },
-    [setBusinessIdFilter],
+    [setBusinessIdFilter]
   );
 
   const getBookingById = useCallback((bookingId: string) => {
-    return useOwnerDashboardStore
-      .getState()
-      .bookings.find((b) => b.id === bookingId);
+    return useOwnerDashboardStore.getState().bookings.find((b) => b.id === bookingId);
   }, []);
 
   const fetchDashboard = useCallback(async () => {
@@ -342,12 +304,12 @@ export default function OwnerDashboardPage() {
     }
 
     try {
-      cancelRequests("owner-dashboard");
+      cancelRequests('owner-dashboard');
 
-      const url = "/api/owner/dashboard";
+      const url = '/api/owner/dashboard';
       const response = await dedupFetch(url, {
-        credentials: "include",
-        dedupKey: "owner-dashboard:all",
+        credentials: 'include',
+        dedupKey: 'owner-dashboard:all',
         cancelPrevious: true,
       });
 
@@ -358,11 +320,7 @@ export default function OwnerDashboardPage() {
 
       const json = await response.json();
       if (json?.data) {
-        const {
-          stats: dashboardStats,
-          recentBookings,
-          bookingsByBusiness,
-        } = json.data;
+        const { stats: dashboardStats, recentBookings, bookingsByBusiness } = json.data;
 
         setStats({
           totalBusinesses: dashboardStats?.totalBusinesses ?? 0,
@@ -387,8 +345,8 @@ export default function OwnerDashboardPage() {
         setBookings(allBookings);
       }
     } catch (err) {
-      if ((err as Error)?.name !== "AbortError") {
-        console.error("[OwnerDashboard] Failed to fetch dashboard:", err);
+      if ((err as Error)?.name !== 'AbortError') {
+        console.error('[OwnerDashboard] Failed to fetch dashboard:', err);
       }
     } finally {
       setIsLoading(false);
@@ -402,7 +360,7 @@ export default function OwnerDashboardPage() {
   const { publishBookingUpdated } = useBookingSyncChannel({
     onBookingUpdated: (event) => {
       updateBooking(event.bookingId, {
-        status: event.status as BookingWithDetails["status"],
+        status: event.status as BookingWithDetails['status'],
       });
     },
     onRefreshAll: () => {
@@ -422,7 +380,7 @@ export default function OwnerDashboardPage() {
 
   const handleAccept = async (bookingId: string) => {
     if (processingBookingId) return;
-    if (!confirm("Are you sure you want to accept this booking?")) return;
+    if (!confirm('Are you sure you want to accept this booking?')) return;
 
     const prevBooking = getBookingById(bookingId);
     if (!prevBooking) return;
@@ -430,24 +388,24 @@ export default function OwnerDashboardPage() {
     setProcessingBookingId(bookingId);
 
     updateBooking(bookingId, {
-      status: "confirmed",
+      status: 'confirmed',
       updated_at: new Date().toISOString(),
     });
 
     try {
-      const csrfToken = await (await import("@cusown/shared")).getCSRFToken();
+      const csrfToken = await (await import('@cusown/shared')).getCSRFToken();
       const headers: Record<string, string> = {};
-      if (csrfToken) headers["x-csrf-token"] = csrfToken;
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch(`/api/bookings/${bookingId}/accept`, {
-        method: "POST",
+        method: 'POST',
         headers,
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (response.ok) {
-        showToast("Booking accepted", "success", 2000);
-        publishBookingUpdated(bookingId, "confirmed");
+        showToast('Booking accepted', 'success', 2000);
+        publishBookingUpdated(bookingId, 'confirmed');
       } else {
         updateBooking(bookingId, {
           status: prevBooking.status,
@@ -455,7 +413,7 @@ export default function OwnerDashboardPage() {
           undo_used_at: prevBooking.undo_used_at,
         });
         const result = await response.json();
-        showToast(result.error || "Failed to accept booking", "error", 2000);
+        showToast(result.error || 'Failed to accept booking', 'error', 2000);
       }
     } catch {
       updateBooking(bookingId, {
@@ -463,7 +421,7 @@ export default function OwnerDashboardPage() {
         updated_at: prevBooking.updated_at,
         undo_used_at: prevBooking.undo_used_at,
       });
-      showToast("Failed to accept booking", "error", 2000);
+      showToast('Failed to accept booking', 'error', 2000);
     } finally {
       setProcessingBookingId(null);
     }
@@ -471,7 +429,7 @@ export default function OwnerDashboardPage() {
 
   const handleReject = async (bookingId: string) => {
     if (processingBookingId) return;
-    if (!confirm("Are you sure you want to reject this booking?")) return;
+    if (!confirm('Are you sure you want to reject this booking?')) return;
 
     const prevBooking = getBookingById(bookingId);
     if (!prevBooking) return;
@@ -479,24 +437,24 @@ export default function OwnerDashboardPage() {
     setProcessingBookingId(bookingId);
 
     updateBooking(bookingId, {
-      status: "rejected",
+      status: 'rejected',
       updated_at: new Date().toISOString(),
     });
 
     try {
-      const csrfToken = await (await import("@cusown/shared")).getCSRFToken();
+      const csrfToken = await (await import('@cusown/shared')).getCSRFToken();
       const headers: Record<string, string> = {};
-      if (csrfToken) headers["x-csrf-token"] = csrfToken;
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
       const response = await fetch(`/api/bookings/${bookingId}/reject`, {
-        method: "POST",
+        method: 'POST',
         headers,
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (response.ok) {
-        showToast("Booking rejected", "success", 2000);
-        publishBookingUpdated(bookingId, "rejected");
+        showToast('Booking rejected', 'success', 2000);
+        publishBookingUpdated(bookingId, 'rejected');
       } else {
         updateBooking(bookingId, {
           status: prevBooking.status,
@@ -504,7 +462,7 @@ export default function OwnerDashboardPage() {
           undo_used_at: prevBooking.undo_used_at,
         });
         const result = await response.json();
-        showToast(result.error || "Failed to reject booking", "error", 2000);
+        showToast(result.error || 'Failed to reject booking', 'error', 2000);
       }
     } catch {
       updateBooking(bookingId, {
@@ -512,7 +470,7 @@ export default function OwnerDashboardPage() {
         updated_at: prevBooking.updated_at,
         undo_used_at: prevBooking.undo_used_at,
       });
-      showToast("Failed to reject booking", "error", 2000);
+      showToast('Failed to reject booking', 'error', 2000);
     } finally {
       setProcessingBookingId(null);
     }
@@ -533,33 +491,33 @@ export default function OwnerDashboardPage() {
       }
 
       updateBooking(bookingId, {
-        status: "pending",
+        status: 'pending',
         updated_at: new Date().toISOString(),
       });
 
       try {
-        const csrfToken = await (await import("@cusown/shared")).getCSRFToken();
+        const csrfToken = await (await import('@cusown/shared')).getCSRFToken();
         const headers: Record<string, string> = {};
-        if (csrfToken) headers["x-csrf-token"] = csrfToken;
+        if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
         const res = await fetch(`/api/bookings/${bookingId}/undo-accept`, {
-          method: "POST",
+          method: 'POST',
           headers,
-          credentials: "include",
+          credentials: 'include',
         });
         const json = await res.json();
 
         if (res.ok) {
           updateBooking(bookingId, json);
-          showToast(UI_CONTEXT.REVERTED_TO_PENDING, "success", 2000);
-          publishBookingUpdated(bookingId, "pending");
+          showToast(UI_CONTEXT.REVERTED_TO_PENDING, 'success', 2000);
+          publishBookingUpdated(bookingId, 'pending');
         } else {
           updateBooking(bookingId, {
             status: prevBooking.status,
             undo_used_at: prevBooking.undo_used_at ?? null,
             updated_at: prevBooking.updated_at,
           });
-          showToast(json.error || "Failed to undo", "error", 2000);
+          showToast(json.error || 'Failed to undo', 'error', 2000);
         }
       } catch {
         updateBooking(bookingId, {
@@ -567,7 +525,7 @@ export default function OwnerDashboardPage() {
           undo_used_at: prevBooking.undo_used_at,
           updated_at: prevBooking.updated_at,
         });
-        showToast("Failed to undo", "error", 2000);
+        showToast('Failed to undo', 'error', 2000);
       } finally {
         setProcessingBookingId(null);
       }
@@ -579,7 +537,7 @@ export default function OwnerDashboardPage() {
       setProcessingBookingId,
       showToast,
       publishBookingUpdated,
-    ],
+    ]
   );
 
   const handleUndoReject = useCallback(
@@ -597,32 +555,32 @@ export default function OwnerDashboardPage() {
       }
 
       updateBooking(bookingId, {
-        status: "pending",
+        status: 'pending',
         updated_at: new Date().toISOString(),
       });
 
       try {
-        const csrfToken = await (await import("@cusown/shared")).getCSRFToken();
+        const csrfToken = await (await import('@cusown/shared')).getCSRFToken();
         const headers: Record<string, string> = {};
-        if (csrfToken) headers["x-csrf-token"] = csrfToken;
+        if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
         const res = await fetch(`/api/bookings/${bookingId}/undo-reject`, {
-          method: "POST",
+          method: 'POST',
           headers,
-          credentials: "include",
+          credentials: 'include',
         });
         const json = await res.json();
 
         if (res.ok) {
-          showToast(UI_CONTEXT.REVERTED_TO_PENDING, "success", 2000);
-          publishBookingUpdated(bookingId, "pending");
+          showToast(UI_CONTEXT.REVERTED_TO_PENDING, 'success', 2000);
+          publishBookingUpdated(bookingId, 'pending');
         } else {
           updateBooking(bookingId, {
             status: prevBooking.status,
             undo_used_at: prevBooking.undo_used_at,
             updated_at: prevBooking.updated_at,
           });
-          showToast(json.error || "Failed to undo", "error", 2000);
+          showToast(json.error || 'Failed to undo', 'error', 2000);
         }
       } catch {
         updateBooking(bookingId, {
@@ -630,7 +588,7 @@ export default function OwnerDashboardPage() {
           undo_used_at: prevBooking.undo_used_at,
           updated_at: prevBooking.updated_at,
         });
-        showToast("Failed to undo", "error", 2000);
+        showToast('Failed to undo', 'error', 2000);
       } finally {
         setProcessingBookingId(null);
       }
@@ -642,18 +600,18 @@ export default function OwnerDashboardPage() {
       setProcessingBookingId,
       showToast,
       publishBookingUpdated,
-    ],
+    ]
   );
 
   const handleNoShowMarked = useCallback(
     (bookingId: string) => {
       updateBooking(bookingId, { no_show: true });
     },
-    [updateBooking],
+    [updateBooking]
   );
 
   const canUndo = useCallback((b: BookingWithDetails) => {
-    if (b.status !== "confirmed" && b.status !== "rejected") return false;
+    if (b.status !== 'confirmed' && b.status !== 'rejected') return false;
     if (b.undo_used_at) return false;
     const windowMs = UNDO_ACCEPT_REJECT_WINDOW_MINUTES * 60 * 1000;
     return Date.now() - new Date(b.updated_at).getTime() < windowMs;
@@ -676,9 +634,7 @@ export default function OwnerDashboardPage() {
       <StatsGrid />
 
       <div>
-        <h2 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, "mb-3 md:mb-4")}>
-          Your Customers
-        </h2>
+        <h2 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-3 md:mb-4')}>Your Customers</h2>
         <div className="overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none md:rounded-lg md:border md:border-slate-200/90 md:bg-white md:p-6 md:shadow-none">
           <p className="mb-4 hidden text-sm leading-relaxed text-slate-500 md:block">
             {UI_CONTEXT.OWNER_DASHBOARD_FILTERS_HINT}
@@ -697,17 +653,11 @@ export default function OwnerDashboardPage() {
                   </span>
                   <select
                     value={statusFilter}
-                    onChange={(e) =>
-                      setStatusFilter(
-                        e.target.value as OwnerDashboardStatusFilter,
-                      )
-                    }
+                    onChange={(e) => setStatusFilter(e.target.value as OwnerDashboardStatusFilter)}
                     className="h-10 w-full min-w-[9.5rem] rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     aria-label={UI_CONTEXT.OWNER_DASHBOARD_STATUS}
                   >
-                    <option value="all">
-                      {UI_CONTEXT.OWNER_DASHBOARD_STATUS_ALL}
-                    </option>
+                    <option value="all">{UI_CONTEXT.OWNER_DASHBOARD_STATUS_ALL}</option>
                     <option value={BOOKING_STATUS.PENDING}>
                       {UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_PENDING}
                     </option>
@@ -734,9 +684,7 @@ export default function OwnerDashboardPage() {
                       className="h-10 w-full min-w-[10rem] rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       aria-label={UI_CONTEXT.OWNER_DASHBOARD_BUSINESS}
                     >
-                      <option value="">
-                        {UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL}
-                      </option>
+                      <option value="">{UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL}</option>
                       {businessOptions.map(([id, name]) => (
                         <option key={id} value={id}>
                           {name}
@@ -805,9 +753,8 @@ export default function OwnerDashboardPage() {
                   type="button"
                   onClick={() => setMobileSearchExpanded((open) => !open)}
                   className={cn(
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50",
-                    mobileSearchExpanded &&
-                      "border-slate-900 ring-2 ring-slate-900/10",
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50',
+                    mobileSearchExpanded && 'border-slate-900 ring-2 ring-slate-900/10'
                   )}
                   aria-expanded={mobileSearchExpanded}
                   aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_OPEN_SEARCH}
@@ -818,8 +765,8 @@ export default function OwnerDashboardPage() {
                   type="button"
                   onClick={() => setMobileFilterSheetOpen(true)}
                   className={cn(
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50",
-                    hasActiveFilters && "border-slate-900/40 bg-slate-50",
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50',
+                    hasActiveFilters && 'border-slate-900/40 bg-slate-50'
                   )}
                   aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_OPEN_FILTERS}
                 >
@@ -846,9 +793,7 @@ export default function OwnerDashboardPage() {
                 <button
                   type="button"
                   className="absolute inset-0 bg-black/40"
-                  aria-label={
-                    UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY
-                  }
+                  aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
                   onClick={() => setMobileFilterSheetOpen(false)}
                 />
                 <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-6 pt-4 shadow-xl">
@@ -863,9 +808,7 @@ export default function OwnerDashboardPage() {
                       type="button"
                       onClick={() => setMobileFilterSheetOpen(false)}
                       className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
-                      aria-label={
-                        UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY
-                      }
+                      aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
                     >
                       <X className="h-5 w-5" aria-hidden="true" />
                     </button>
@@ -929,18 +872,15 @@ export default function OwnerDashboardPage() {
                   </div>
                 </div>
               </div>,
-              document.body,
+              document.body
             )}
 
           {bookings.length > 0 && (
             <p className="mb-3 text-center text-sm text-slate-600 md:text-left">
-              {UI_CONTEXT.OWNER_DASHBOARD_SHOWING_COUNT(
-                filteredBookings.length,
-                bookings.length,
-              )}
+              {UI_CONTEXT.OWNER_DASHBOARD_SHOWING_COUNT(filteredBookings.length, bookings.length)}
               {hasActiveFilters ? (
                 <span className="text-slate-400">
-                  {" "}
+                  {' '}
                   · {UI_CONTEXT.OWNER_DASHBOARD_FILTERS_ACTIVE}
                 </span>
               ) : null}
@@ -1071,32 +1011,29 @@ function BookingStatusActions({
   processingBookingId: string | null;
   isSlotExpired: boolean;
   canUndoBooking: boolean;
-  variant: "table" | "card";
+  variant: 'table' | 'card';
   omitStatusPills?: boolean;
 } & BookingHandlers) {
-  const { onAccept, onReject, onUndoAccept, onUndoReject, onNoShowMarked } =
-    handlers;
-  const hidePills = omitStatusPills && variant === "card";
+  const { onAccept, onReject, onUndoAccept, onUndoReject, onNoShowMarked } = handlers;
+  const hidePills = omitStatusPills && variant === 'card';
   const iconBtn =
-    variant === "card"
-      ? "flex h-10 w-10 min-h-10 min-w-10 items-center justify-center"
-      : "flex h-9 w-9 items-center justify-center";
+    variant === 'card'
+      ? 'flex h-10 w-10 min-h-10 min-w-10 items-center justify-center'
+      : 'flex h-9 w-9 items-center justify-center';
   const undoBtn =
-    variant === "card"
-      ? "flex h-10 w-10 min-h-10 min-w-10 items-center justify-center rounded-lg"
-      : "flex h-9 w-9 items-center justify-center rounded-lg";
+    variant === 'card'
+      ? 'flex h-10 w-10 min-h-10 min-w-10 items-center justify-center rounded-lg'
+      : 'flex h-9 w-9 items-center justify-center rounded-lg';
 
   return (
     <div
       className={cn(
-        "flex items-center gap-2",
-        variant === "table"
-          ? "whitespace-nowrap"
-          : "mt-2 w-full flex-wrap justify-end gap-1.5",
+        'flex items-center gap-2',
+        variant === 'table' ? 'whitespace-nowrap' : 'mt-2 w-full flex-wrap justify-end gap-1.5'
       )}
     >
       {(() => {
-        if (booking.status === "pending" && !isSlotExpired) {
+        if (booking.status === 'pending' && !isSlotExpired) {
           return (
             <>
               {!hidePills ? (
@@ -1110,7 +1047,7 @@ function BookingStatusActions({
                 disabled={processingBookingId === booking.id}
                 className={cn(
                   iconBtn,
-                  "text-green-600 transition hover:text-green-700 disabled:opacity-50",
+                  'text-green-600 transition hover:text-green-700 disabled:opacity-50'
                 )}
                 title="Accept"
                 aria-label="Accept booking"
@@ -1123,7 +1060,7 @@ function BookingStatusActions({
                 disabled={processingBookingId === booking.id}
                 className={cn(
                   iconBtn,
-                  "text-red-600 transition hover:text-red-700 disabled:opacity-50",
+                  'text-red-600 transition hover:text-red-700 disabled:opacity-50'
                 )}
                 title="Reject"
                 aria-label="Reject booking"
@@ -1133,7 +1070,7 @@ function BookingStatusActions({
             </>
           );
         }
-        if (booking.status === "pending" && isSlotExpired) {
+        if (booking.status === 'pending' && isSlotExpired) {
           return hidePills ? null : (
             <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
               Expired
@@ -1143,7 +1080,7 @@ function BookingStatusActions({
         return null;
       })()}
 
-      {booking.status === "confirmed" && (
+      {booking.status === 'confirmed' && (
         <>
           {!hidePills ? (
             <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
@@ -1158,7 +1095,7 @@ function BookingStatusActions({
               title={UI_CONTEXT.UNDO_LABEL}
               className={cn(
                 undoBtn,
-                "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 disabled:opacity-50",
+                'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 disabled:opacity-50'
               )}
             >
               <UndoIcon className="h-5 w-5" aria-hidden="true" />
@@ -1166,23 +1103,17 @@ function BookingStatusActions({
           )}
           {!booking.no_show &&
             !isSlotExpired &&
-            (variant === "card" ? (
+            (variant === 'card' ? (
               <div className="w-full basis-full">
-                <NoShowButton
-                  bookingId={booking.id}
-                  onMarked={() => onNoShowMarked(booking.id)}
-                />
+                <NoShowButton bookingId={booking.id} onMarked={() => onNoShowMarked(booking.id)} />
               </div>
             ) : (
-              <NoShowButton
-                bookingId={booking.id}
-                onMarked={() => onNoShowMarked(booking.id)}
-              />
+              <NoShowButton bookingId={booking.id} onMarked={() => onNoShowMarked(booking.id)} />
             ))}
         </>
       )}
 
-      {booking.status === "rejected" && canUndoBooking && (
+      {booking.status === 'rejected' && canUndoBooking && (
         <>
           {!hidePills ? (
             <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-900">
@@ -1196,7 +1127,7 @@ function BookingStatusActions({
             title={UI_CONTEXT.UNDO_LABEL}
             className={cn(
               undoBtn,
-              "bg-rose-100 text-rose-900 hover:bg-rose-200 disabled:opacity-50",
+              'bg-rose-100 text-rose-900 hover:bg-rose-200 disabled:opacity-50'
             )}
           >
             <UndoIcon className="h-5 w-5" aria-hidden="true" />
@@ -1204,25 +1135,25 @@ function BookingStatusActions({
         </>
       )}
 
-      {((booking.status === "rejected" && !canUndoBooking) ||
-        booking.status === "cancelled" ||
-        String(booking.status) === "expired") &&
+      {((booking.status === 'rejected' && !canUndoBooking) ||
+        booking.status === 'cancelled' ||
+        String(booking.status) === 'expired') &&
         !hidePills && (
           <span
             className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-semibold",
-              booking.status === "rejected"
-                ? "bg-rose-100 text-rose-900"
-                : "bg-gray-100 text-gray-700",
+              'rounded-full px-2.5 py-1 text-xs font-semibold',
+              booking.status === 'rejected'
+                ? 'bg-rose-100 text-rose-900'
+                : 'bg-gray-100 text-gray-700'
             )}
           >
-            {booking.status === "rejected"
-              ? "Rejected"
-              : booking.status === "cancelled"
-                ? booking.cancelled_by === "customer"
+            {booking.status === 'rejected'
+              ? 'Rejected'
+              : booking.status === 'cancelled'
+                ? booking.cancelled_by === 'customer'
                   ? UI_CONTEXT.CANCELLED_BY_CUSTOMER
-                  : "Cancelled"
-                : "Expired"}
+                  : 'Cancelled'
+                : 'Expired'}
           </span>
         )}
     </div>
@@ -1232,42 +1163,36 @@ function BookingStatusActions({
 function formatAppointmentDate(dateStr: string) {
   try {
     return new Date(dateStr).toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
     });
   } catch {
     return dateStr;
   }
 }
 
-function getMobileCardStatusBadge(
-  booking: BookingWithDetails,
-  isSlotExpired: boolean,
-) {
-  if (booking.status === "pending" && !isSlotExpired) {
-    return { label: "Pending", className: "bg-gray-100 text-gray-700" };
+function getMobileCardStatusBadge(booking: BookingWithDetails, isSlotExpired: boolean) {
+  if (booking.status === 'pending' && !isSlotExpired) {
+    return { label: 'Pending', className: 'bg-gray-100 text-gray-700' };
   }
-  if (booking.status === "pending" && isSlotExpired) {
-    return { label: "Expired", className: "bg-gray-100 text-gray-700" };
+  if (booking.status === 'pending' && isSlotExpired) {
+    return { label: 'Expired', className: 'bg-gray-100 text-gray-700' };
   }
-  if (booking.status === "confirmed") {
-    return { label: "Accepted", className: "bg-emerald-100 text-emerald-800" };
+  if (booking.status === 'confirmed') {
+    return { label: 'Accepted', className: 'bg-emerald-100 text-emerald-800' };
   }
-  if (booking.status === "rejected") {
-    return { label: "Rejected", className: "bg-rose-100 text-rose-900" };
+  if (booking.status === 'rejected') {
+    return { label: 'Rejected', className: 'bg-rose-100 text-rose-900' };
   }
-  if (booking.status === "cancelled") {
+  if (booking.status === 'cancelled') {
     return {
-      label:
-        booking.cancelled_by === "customer"
-          ? UI_CONTEXT.CANCELLED_BY_CUSTOMER
-          : "Cancelled",
-      className: "bg-gray-100 text-gray-700",
+      label: booking.cancelled_by === 'customer' ? UI_CONTEXT.CANCELLED_BY_CUSTOMER : 'Cancelled',
+      className: 'bg-gray-100 text-gray-700',
     };
   }
-  if (String(booking.status) === "expired") {
-    return { label: "Expired", className: "bg-gray-100 text-gray-700" };
+  if (String(booking.status) === 'expired') {
+    return { label: 'Expired', className: 'bg-gray-100 text-gray-700' };
   }
   return null;
 }
@@ -1298,9 +1223,7 @@ const BookingMobileCard = memo(function BookingMobileCard({
           <div className="truncate text-sm font-semibold leading-tight text-slate-900">
             {booking.customer_name}
           </div>
-          <div className="mt-0.5 text-xs text-slate-500">
-            {booking.customer_phone}
-          </div>
+          <div className="mt-0.5 text-xs text-slate-500">{booking.customer_phone}</div>
         </div>
         <div className="shrink-0 text-right text-xs leading-tight">
           {booking.slot ? (
@@ -1331,8 +1254,8 @@ const BookingMobileCard = memo(function BookingMobileCard({
         {statusBadge ? (
           <span
             className={cn(
-              "max-w-[48%] shrink-0 truncate rounded-full px-2 py-0.5 text-center text-[10px] font-semibold leading-tight",
-              statusBadge.className,
+              'max-w-[48%] shrink-0 truncate rounded-full px-2 py-0.5 text-center text-[10px] font-semibold leading-tight',
+              statusBadge.className
             )}
             title={statusBadge.label}
           >
@@ -1389,9 +1312,7 @@ const BookingTableRow = memo(function BookingTableRow({
   return (
     <tr className="transition-colors hover:bg-gray-50">
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
-        <div className="text-sm font-medium text-gray-900">
-          {booking.customer_name}
-        </div>
+        <div className="text-sm font-medium text-gray-900">{booking.customer_name}</div>
         <div className="text-sm text-gray-500">{booking.customer_phone}</div>
       </td>
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
@@ -1409,9 +1330,7 @@ const BookingTableRow = memo(function BookingTableRow({
         )}
       </td>
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
-        <span className="font-mono text-sm text-gray-500">
-          {booking.booking_id}
-        </span>
+        <span className="font-mono text-sm text-gray-500">{booking.booking_id}</span>
       </td>
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
         <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
@@ -1420,7 +1339,7 @@ const BookingTableRow = memo(function BookingTableRow({
         {booking.review?.rating ? (
           <StarRating value={booking.review.rating} readonly size="sm" />
         ) : (
-          "—"
+          '—'
         )}
       </td>
       <td className="px-4 py-4 text-sm font-medium sm:px-6">

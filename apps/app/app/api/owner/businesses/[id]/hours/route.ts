@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireOwner,
   successResponse,
@@ -12,15 +12,12 @@ import {
   breakWithinWorkingHours,
   invalidateBusinessCache,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
 
-const ROUTE = "PUT /api/owner/businesses/[id]/hours";
+const ROUTE = 'PUT /api/owner/businesses/[id]/hours';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireOwner(request, ROUTE);
     if (auth instanceof Response) return auth;
@@ -59,8 +56,8 @@ export async function PUT(
         });
         continue;
       }
-      const o = normalizeTime(String(day.opening_time ?? ""));
-      const c = normalizeTime(String(day.closing_time ?? ""));
+      const o = normalizeTime(String(day.opening_time ?? ''));
+      const c = normalizeTime(String(day.closing_time ?? ''));
       if (!o || !c) {
         return errorResponse(ERROR_MESSAGES.INVALID_INPUT, 400);
       }
@@ -77,14 +74,7 @@ export async function PUT(
         const cMin = timeToMinutes(c);
         const bsk = normalizeTime(bs);
         const bek = normalizeTime(be);
-        if (
-          !breakWithinWorkingHours(
-            oMin,
-            cMin,
-            timeToMinutes(bsk),
-            timeToMinutes(bek),
-          )
-        ) {
+        if (!breakWithinWorkingHours(oMin, cMin, timeToMinutes(bsk), timeToMinutes(bek))) {
           bs = null;
           be = null;
         }

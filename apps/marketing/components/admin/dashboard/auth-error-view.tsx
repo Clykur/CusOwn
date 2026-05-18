@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { memo } from "react";
-import { useRouter } from "next/navigation";
-import { ROUTES } from "@cusown/shared";
-import { getCSRFToken } from "@cusown/shared";
+import { memo } from 'react';
+import { useRouter } from 'next/navigation';
+import { ROUTES } from '@cusown/shared';
+import { getCSRFToken } from '@cusown/shared';
 
 interface AuthErrorViewProps {
   authError: string;
@@ -11,39 +11,34 @@ interface AuthErrorViewProps {
   onRetry: () => void;
 }
 
-function AuthErrorViewComponent({
-  authError,
-  userEmail,
-  onRetry,
-}: AuthErrorViewProps) {
+function AuthErrorViewComponent({ authError, userEmail, onRetry }: AuthErrorViewProps) {
   const router = useRouter();
   const isAllowedAdmin =
-    userEmail === "chinnuk0521@gmail.com" ||
-    userEmail === "karthiknaramala9949@gmail.com";
+    userEmail === 'chinnuk0521@gmail.com' || userEmail === 'karthiknaramala9949@gmail.com';
 
   const handleTrySetAdmin = async () => {
     try {
       const csrfToken = await getCSRFToken();
       const headers: Record<string, string> = {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       };
       if (csrfToken) {
-        headers["x-csrf-token"] = csrfToken;
+        headers['x-csrf-token'] = csrfToken;
       }
-      const res = await fetch("/api/admin/check-status", {
-        method: "POST",
+      const res = await fetch('/api/admin/check-status', {
+        method: 'POST',
         headers,
-        credentials: "include",
+        credentials: 'include',
         body: JSON.stringify({ email: userEmail }),
       });
       const data = await res.json();
       if (data.success) {
         onRetry();
       } else {
-        alert("Failed to set admin status: " + (data.error || "Unknown error"));
+        alert('Failed to set admin status: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : "Unknown error"));
+      alert('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
@@ -51,12 +46,10 @@ function AuthErrorViewComponent({
     <div className="min-h-screen bg-white flex">
       <div className="flex-1 w-full flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Access Denied
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-4">{authError}</p>
 
-          {authError.includes("migration") && (
+          {authError.includes('migration') && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left">
               <p className="text-sm text-yellow-800 mb-2">
                 <strong>To fix this:</strong>
@@ -64,7 +57,7 @@ function AuthErrorViewComponent({
               <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
                 <li>Go to Supabase Dashboard → SQL Editor</li>
                 <li>
-                  Run the migration query from{" "}
+                  Run the migration query from{' '}
                   <code className="bg-yellow-100 px-1 rounded">
                     database/migration_set_admin_quick.sql
                   </code>

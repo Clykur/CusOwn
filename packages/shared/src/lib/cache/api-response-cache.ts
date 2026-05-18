@@ -2,7 +2,7 @@ import {
   API_CACHE_MAX_KEYS,
   CACHE_TTL_API_DEFAULT_MS,
   CACHE_TTL_API_LONG_MS,
-} from "@cusown/config";
+} from '@cusown/config';
 
 type CacheEntry = {
   data: unknown;
@@ -32,22 +32,20 @@ export function buildApiCacheKey(
   method: string,
   path: string,
   searchParams?: Record<string, string> | URLSearchParams,
-  scope?: string,
+  scope?: string
 ): string {
   const parts = [method.toUpperCase(), path];
   if (searchParams) {
     const params =
-      searchParams instanceof URLSearchParams
-        ? Object.fromEntries(searchParams)
-        : searchParams;
+      searchParams instanceof URLSearchParams ? Object.fromEntries(searchParams) : searchParams;
     const sorted = Object.keys(params)
       .sort()
       .map((k) => `${k}=${params[k]}`)
-      .join("&");
+      .join('&');
     if (sorted) parts.push(sorted);
   }
   if (scope) parts.push(scope);
-  return parts.join("|");
+  return parts.join('|');
 }
 
 export function getCachedApiResponse<T>(key: string): T | null {
@@ -71,14 +69,14 @@ export function getCachedApiResponse<T>(key: string): T | null {
 }
 
 function recordCacheHit(): void {
-  import("../monitoring/safe-metrics").then(({ safeMetrics }) => {
-    safeMetrics.increment("api.cache.hit");
+  import('../monitoring/safe-metrics').then(({ safeMetrics }) => {
+    safeMetrics.increment('api.cache.hit');
   });
 }
 
 function recordCacheMiss(): void {
-  import("../monitoring/safe-metrics").then(({ safeMetrics }) => {
-    safeMetrics.increment("api.cache.miss");
+  import('../monitoring/safe-metrics').then(({ safeMetrics }) => {
+    safeMetrics.increment('api.cache.miss');
   });
 }
 
@@ -86,9 +84,7 @@ function recordCacheMiss(): void {
  * Returns cached data if present (even if expired, for stale-while-revalidate).
  * Use getCachedApiResponse for strict TTL; use this when you want to return stale and revalidate.
  */
-export function getCachedApiResponseStale<T>(
-  key: string,
-): { data: T; stale: boolean } | null {
+export function getCachedApiResponseStale<T>(key: string): { data: T; stale: boolean } | null {
   const entry = cache.get(key);
   if (!entry) return null;
   touch(key);
@@ -100,7 +96,7 @@ export function getCachedApiResponseStale<T>(
 export function setCachedApiResponse(
   key: string,
   data: unknown,
-  ttlMs: number = CACHE_TTL_API_DEFAULT_MS,
+  ttlMs: number = CACHE_TTL_API_DEFAULT_MS
 ): void {
   if (cache.size >= API_CACHE_MAX_KEYS && !cache.has(key)) evictOne();
   touch(key);
@@ -131,20 +127,18 @@ export function invalidateApiCacheByPrefix(prefix: string): void {
 
 /** Invalidate cached GET booking response after mutation (accept/reject/cancel/reschedule). */
 export function invalidateBookingCache(bookingId: string): void {
-  invalidateApiCacheKey(buildApiCacheKey("GET", `/api/bookings/${bookingId}`));
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/bookings/${bookingId}`));
 }
 
 /** Invalidate cached GET business/salon by slug after business update. */
 export function invalidateBusinessCacheBySlug(bookingLink: string): void {
-  invalidateApiCacheKey(
-    buildApiCacheKey("GET", `/api/book/business/${bookingLink}`),
-  );
-  invalidateApiCacheKey(buildApiCacheKey("GET", `/api/salons/${bookingLink}`));
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/book/business/${bookingLink}`));
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/salons/${bookingLink}`));
 }
 
 /** Invalidate cached GET salon by UUID after mutation. */
 export function invalidateBusinessCache(businessId: string): void {
-  invalidateApiCacheKey(buildApiCacheKey("GET", `/api/salons/${businessId}`));
+  invalidateApiCacheKey(buildApiCacheKey('GET', `/api/salons/${businessId}`));
 }
 
 export const API_CACHE_TTL = {

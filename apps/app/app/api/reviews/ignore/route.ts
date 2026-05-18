@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   successResponse,
   errorResponse,
@@ -6,10 +6,10 @@ import {
   ignoreRatingPrompt,
   auditService,
   isValidUUID,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES } from '@cusown/config';
 
-const ROUTE = "POST /api/reviews/ignore";
+const ROUTE = 'POST /api/reviews/ignore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { booking_id } = body;
 
     if (!booking_id || !isValidUUID(booking_id)) {
-      return errorResponse("Invalid booking_id", 400);
+      return errorResponse('Invalid booking_id', 400);
     }
 
     const result = await ignoreRatingPrompt(booking_id, auth.user.id);
@@ -30,22 +30,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Audit Log
-    await auditService.createAuditLog(
-      auth.user.id,
-      "review_prompt_ignored",
-      "review",
-      {
-        entityId: booking_id,
-        description: `User ignored review prompt for booking ${booking_id}`,
-      },
-    );
+    await auditService.createAuditLog(auth.user.id, 'review_prompt_ignored', 'review', {
+      entityId: booking_id,
+      description: `User ignored review prompt for booking ${booking_id}`,
+    });
 
     return successResponse({
       success: true,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.DATABASE_ERROR;
     return errorResponse(message, 500);
   }
 }

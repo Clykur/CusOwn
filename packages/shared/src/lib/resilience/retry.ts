@@ -13,10 +13,10 @@ const defaultRetryable = (error: unknown): boolean => {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     return (
-      message.includes("timeout") ||
-      message.includes("network") ||
-      message.includes("econnreset") ||
-      message.includes("etimedout")
+      message.includes('timeout') ||
+      message.includes('network') ||
+      message.includes('econnreset') ||
+      message.includes('etimedout')
     );
   }
   return false;
@@ -24,7 +24,7 @@ const defaultRetryable = (error: unknown): boolean => {
 
 export const retry = async <T>(
   fn: () => Promise<T>,
-  options: Partial<RetryOptions> = {},
+  options: Partial<RetryOptions> = {}
 ): Promise<T> => {
   const opts: RetryOptions = {
     maxAttempts: 3,
@@ -34,10 +34,7 @@ export const retry = async <T>(
     retryable: defaultRetryable,
     ...options,
   };
-  const cappedAttempts = Math.min(
-    Math.max(1, opts.maxAttempts),
-    RETRY_MAX_SAFE_ATTEMPTS,
-  );
+  const cappedAttempts = Math.min(Math.max(1, opts.maxAttempts), RETRY_MAX_SAFE_ATTEMPTS);
 
   let lastError: unknown;
   let delay = opts.initialDelayMs;

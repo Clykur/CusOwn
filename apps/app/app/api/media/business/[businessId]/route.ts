@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   successResponse,
   errorResponse,
@@ -9,7 +9,7 @@ import {
   isValidUUID,
   auditService,
   salonService,
-} from "@cusown/shared/server";
+} from '@cusown/shared/server';
 import {
   RATE_LIMIT_MEDIA_UPLOAD_WINDOW_MS,
   RATE_LIMIT_MEDIA_UPLOAD_MAX_PER_WINDOW,
@@ -18,21 +18,21 @@ import {
   API_PAGINATION_DEFAULT_LIMIT,
   API_PAGINATION_MAX_LIMIT,
   IDEMPOTENCY_KEY_HEADER,
-} from "@cusown/config";
+} from '@cusown/config';
 
-const ROUTE_POST = "POST /api/media/business/[businessId]";
+const ROUTE_POST = 'POST /api/media/business/[businessId]';
 
 const uploadRateLimit = enhancedRateLimit({
   windowMs: RATE_LIMIT_MEDIA_UPLOAD_WINDOW_MS,
   maxRequests: RATE_LIMIT_MEDIA_UPLOAD_MAX_PER_WINDOW,
   perUser: true,
   perIP: true,
-  keyPrefix: "media_upload",
+  keyPrefix: 'media_upload',
 });
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ businessId: string }> },
+  context: { params: Promise<{ businessId: string }> }
 ) {
   try {
     let { businessId } = await context.params;
@@ -46,16 +46,11 @@ export async function GET(
 
     const url = new URL(request.url);
     const limit = Math.min(
-      parseInt(
-        url.searchParams.get("limit") ?? String(API_PAGINATION_DEFAULT_LIMIT),
-        10,
-      ) || API_PAGINATION_DEFAULT_LIMIT,
-      API_PAGINATION_MAX_LIMIT,
+      parseInt(url.searchParams.get('limit') ?? String(API_PAGINATION_DEFAULT_LIMIT), 10) ||
+        API_PAGINATION_DEFAULT_LIMIT,
+      API_PAGINATION_MAX_LIMIT
     );
-    const offset = Math.max(
-      parseInt(url.searchParams.get("offset") ?? "0", 10) || 0,
-      0,
-    );
+    const offset = Math.max(parseInt(url.searchParams.get('offset') ?? '0', 10) || 0, 0);
 
     const list = await mediaService.listBusinessMedia(businessId, {
       limit,
@@ -63,15 +58,14 @@ export async function GET(
     });
     return successResponse({ items: list, limit, offset });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : ERROR_MESSAGES.LOADING_ERROR;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.LOADING_ERROR;
     return errorResponse(message, 500);
   }
 }
 
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ businessId: string }> },
+  context: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const rateLimitRes = await uploadRateLimit(request);
@@ -96,48 +90,39 @@ export async function POST(
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
+    const file = formData.get('file');
     if (!file || !(file instanceof File)) {
       return errorResponse(ERROR_MESSAGES.MEDIA_FILE_TYPE_INVALID, 400);
     }
 
-    const contentType = file.type || "application/octet-stream";
+    const contentType = file.type || 'application/octet-stream';
     const sizeBytes = file.size;
     const valid = mediaService.validateUpload(contentType, sizeBytes);
     if (!valid.ok) {
-      return errorResponse(
-        valid.error ?? ERROR_MESSAGES.MEDIA_FILE_TYPE_INVALID,
-        400,
-      );
+      return errorResponse(valid.error ?? ERROR_MESSAGES.MEDIA_FILE_TYPE_INVALID, 400);
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const sortOrderStr = formData.get("sortOrder");
+    const sortOrderStr = formData.get('sortOrder');
     const sortOrder =
       sortOrderStr !== null && sortOrderStr !== undefined
         ? parseInt(String(sortOrderStr), 10)
         : undefined;
-    const idempotencyKey =
-      request.headers.get(IDEMPOTENCY_KEY_HEADER)?.trim() || undefined;
+    const idempotencyKey = request.headers.get(IDEMPOTENCY_KEY_HEADER)?.trim() || undefined;
     const media = await mediaService.uploadBusinessImage({
       businessId,
       file: buffer,
       contentType,
       sizeBytes,
       originalFilename: file.name || undefined,
-      sortOrder: Number.isNaN(sortOrder as number)
-        ? undefined
-        : (sortOrder as number),
+      sortOrder: Number.isNaN(sortOrder as number) ? undefined : (sortOrder as number),
       actorId: auth.user.id,
-      idempotencyKey:
-        idempotencyKey && idempotencyKey.length <= 512
-          ? idempotencyKey
-          : undefined,
+      idempotencyKey: idempotencyKey && idempotencyKey.length <= 512 ? idempotencyKey : undefined,
       request,
     });
 
     // Audit Log
-    await auditService.createAuditLog(auth.user.id, "media_uploaded", "media", {
+    await auditService.createAuditLog(auth.user.id, 'media_uploaded', 'media', {
       entityId: media.id,
       newData: media,
       description: `Business media uploaded for business ${businessId}`,
@@ -145,10 +130,7 @@ export async function POST(
 
     return successResponse({ media }, SUCCESS_MESSAGES.MEDIA_UPLOADED);
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : ERROR_MESSAGES.MEDIA_UPLOAD_FAILED;
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.MEDIA_UPLOAD_FAILED;
     return errorResponse(message, 400);
   }
 }

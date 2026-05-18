@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 /** Minimal session shape from server layout only. No client fetch. */
 export type RootSessionLike = {
@@ -15,7 +15,7 @@ declare global {
 }
 
 function getSessionFromWindow(): RootSessionLike {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   return window.__CUSOWN_SESSION__ ?? null;
 }
 

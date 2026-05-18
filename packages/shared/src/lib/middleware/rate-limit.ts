@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getClientIp } from "../utils/security.server";
+import { NextRequest, NextResponse } from 'next/server';
+import { getClientIp } from '../utils/security.server';
 
 interface RateLimitEntry {
   key: string;
@@ -43,8 +43,8 @@ export const rateLimit = (options: RateLimitOptions) => {
       entry.count++;
       if (entry.count > options.maxRequests) {
         return NextResponse.json(
-          { error: "Too many requests. Please try again later." },
-          { status: 429 },
+          { error: 'Too many requests. Please try again later.' },
+          { status: 429 }
         );
       }
     } else {

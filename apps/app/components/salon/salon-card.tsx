@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect, memo, useMemo } from "react";
-import Link from "next/link";
-import { Salon } from "@cusown/shared";
-import { getSecureSalonUrlClient } from "@cusown/shared";
-import { isValidUUID } from "@cusown/shared";
-import { getCachedReviews, getReviewsFromCache } from "@cusown/shared";
-import MapPinIcon from "@cusown/shared/icons/map-pin.svg";
-import ClockIcon from "@cusown/shared/icons/clock.svg";
-import StarRating from "@/components/booking/star-rating";
+import { useState, useEffect, memo, useMemo } from 'react';
+import Link from 'next/link';
+import { Salon } from '@cusown/shared';
+import { getSecureSalonUrlClient } from '@cusown/shared';
+import { isValidUUID } from '@cusown/shared';
+import { getCachedReviews, getReviewsFromCache } from '@cusown/shared';
+import MapPinIcon from '@cusown/shared/icons/map-pin.svg';
+import ClockIcon from '@cusown/shared/icons/clock.svg';
+import StarRating from '@/components/booking/star-rating';
 
 const formatTime = (time: string) => time.substring(0, 5);
 
@@ -30,7 +30,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
   const bookingLink = salon?.booking_link;
 
   const [, setSecureUrl] = useState<string>(
-    bookingLink ? `/salon/${bookingLink}` : "/salon/unknown",
+    bookingLink ? `/salon/${bookingLink}` : '/salon/unknown'
   );
   // Use rating_avg from salon prop (comes from API) - more efficient than fetching separately
   const [ratingAvg, setRatingAvg] = useState<number | null>(null);
@@ -56,7 +56,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
             setSecureUrl(url);
           }
         } catch (error) {
-          console.error("Failed to generate secure URL:", error);
+          console.error('Failed to generate secure URL:', error);
           if (bookingLink && isMounted && !cancelled) {
             setSecureUrl(`/salon/${bookingLink}`);
           }
@@ -114,16 +114,12 @@ function SalonCardComponent({ salon }: SalonCardProps) {
         <div className="flex items-start justify-between mb-3">
           {/* Salon Name + Rating */}
           <div>
-            <h3 className="text-xl font-bold text-gray-900 pr-2">
-              {salon.salon_name}
-            </h3>
+            <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
 
             {ratingAvg != null && ratingAvg > 0 && (
               <div className="flex items-center gap-1 mt-1">
                 <StarRating value={ratingAvg} readonly size="sm" />
-                <span className="text-sm font-semibold text-gray-800">
-                  {ratingAvg.toFixed(1)}
-                </span>
+                <span className="text-sm font-semibold text-gray-800">{ratingAvg.toFixed(1)}</span>
               </div>
             )}
           </div>
@@ -133,7 +129,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
             <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
               {salon.distance_km < 1
                 ? `${(salon.distance_km * 1000).toFixed(0)}m`
-                : `${salon.distance_km.toFixed(1)}km`}{" "}
+                : `${salon.distance_km.toFixed(1)}km`}{' '}
               away
             </span>
           )}
@@ -174,8 +170,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
             <div className="flex items-center gap-1.5">
               <ClockIcon className="w-4 h-4" />
               <span>
-                {formatTime(salon.opening_time)} -{" "}
-                {formatTime(salon.closing_time)}
+                {formatTime(salon.opening_time)} - {formatTime(salon.closing_time)}
               </span>
             </div>
           )}

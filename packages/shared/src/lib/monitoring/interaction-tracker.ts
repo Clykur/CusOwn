@@ -3,10 +3,10 @@
  * Monitors click, input, and form interactions to identify performance issues.
  */
 
-import { recordMetric } from "./performance";
+import { recordMetric } from './performance';
 
 interface InteractionEvent {
-  type: "click" | "input" | "submit" | "change";
+  type: 'click' | 'input' | 'submit' | 'change';
   target: string;
   startTime: number;
   endTime?: number;
@@ -25,9 +25,7 @@ let isTracking = false;
 type InteractionListener = (event: InteractionEvent) => void;
 const listeners: InteractionListener[] = [];
 
-export function subscribeToInteractions(
-  listener: InteractionListener,
-): () => void {
+export function subscribeToInteractions(listener: InteractionListener): () => void {
   listeners.push(listener);
   return () => {
     const index = listeners.indexOf(listener);
@@ -36,23 +34,19 @@ export function subscribeToInteractions(
 }
 
 function getTargetIdentifier(element: EventTarget | null): string {
-  if (!element || !(element instanceof HTMLElement)) return "unknown";
+  if (!element || !(element instanceof HTMLElement)) return 'unknown';
 
   const tag = element.tagName.toLowerCase();
-  const id = element.id ? `#${element.id}` : "";
+  const id = element.id ? `#${element.id}` : '';
   const className = element.className
-    ? `.${element.className.split(" ").filter(Boolean).slice(0, 2).join(".")}`
-    : "";
-  const dataTestId = element.dataset?.testid
-    ? `[data-testid="${element.dataset.testid}"]`
-    : "";
-  const ariaLabel = element.getAttribute("aria-label")
-    ? `[aria-label="${element.getAttribute("aria-label")?.slice(0, 20)}"]`
-    : "";
+    ? `.${element.className.split(' ').filter(Boolean).slice(0, 2).join('.')}`
+    : '';
+  const dataTestId = element.dataset?.testid ? `[data-testid="${element.dataset.testid}"]` : '';
+  const ariaLabel = element.getAttribute('aria-label')
+    ? `[aria-label="${element.getAttribute('aria-label')?.slice(0, 20)}"]`
+    : '';
 
-  return (
-    dataTestId || `${tag}${id}${className}${ariaLabel}`.slice(0, 50) || tag
-  );
+  return dataTestId || `${tag}${id}${className}${ariaLabel}`.slice(0, 50) || tag;
 }
 
 function handleInteractionStart(event: Event): void {
@@ -60,7 +54,7 @@ function handleInteractionStart(event: Event): void {
 
   const now = performance.now();
   const target = getTargetIdentifier(event.target);
-  const type = event.type as InteractionEvent["type"];
+  const type = event.type as InteractionEvent['type'];
 
   pendingInteraction = {
     type,
@@ -83,10 +77,10 @@ function handleInteractionEnd(): void {
 
   if (duration > SLOW_INTERACTION_THRESHOLD_MS) {
     recordMetric({
-      name: "slow-interaction",
-      type: "render",
+      name: 'slow-interaction',
+      type: 'render',
       value: duration,
-      unit: "ms",
+      unit: 'ms',
       metadata: {
         type: interaction.type,
         target: interaction.target,
@@ -96,10 +90,10 @@ function handleInteractionEnd(): void {
   }
 
   recordMetric({
-    name: "interaction",
-    type: "render",
+    name: 'interaction',
+    type: 'render',
     value: duration,
-    unit: "ms",
+    unit: 'ms',
     metadata: {
       type: interaction.type,
       target: interaction.target,
@@ -117,11 +111,11 @@ function handleInteractionEnd(): void {
 }
 
 export function startInteractionTracking(): void {
-  if (typeof window === "undefined" || isTracking) return;
+  if (typeof window === 'undefined' || isTracking) return;
 
   isTracking = true;
 
-  const interactionEvents = ["click", "input", "submit", "change"] as const;
+  const interactionEvents = ['click', 'input', 'submit', 'change'] as const;
 
   interactionEvents.forEach((eventType) => {
     document.addEventListener(eventType, handleInteractionStart, {
@@ -141,11 +135,11 @@ export function startInteractionTracking(): void {
 }
 
 export function stopInteractionTracking(): void {
-  if (typeof window === "undefined" || !isTracking) return;
+  if (typeof window === 'undefined' || !isTracking) return;
 
   isTracking = false;
 
-  const interactionEvents = ["click", "input", "submit", "change"] as const;
+  const interactionEvents = ['click', 'input', 'submit', 'change'] as const;
   interactionEvents.forEach((eventType) => {
     document.removeEventListener(eventType, handleInteractionStart, {
       capture: true,
@@ -180,11 +174,9 @@ export function getInteractionStats(): {
   const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
   const p95Index = Math.floor(durations.length * 0.95);
   const p95Duration = durations[p95Index] || durations[durations.length - 1];
-  const slowInteractions = durations.filter(
-    (d) => d > SLOW_INTERACTION_THRESHOLD_MS,
-  ).length;
+  const slowInteractions = durations.filter((d) => d > SLOW_INTERACTION_THRESHOLD_MS).length;
   const verySlowInteractions = durations.filter(
-    (d) => d > VERY_SLOW_INTERACTION_THRESHOLD_MS,
+    (d) => d > VERY_SLOW_INTERACTION_THRESHOLD_MS
   ).length;
 
   const targetDurations = new Map<string, number[]>();
@@ -219,19 +211,16 @@ export function clearInteractionHistory(): void {
   interactionHistory.length = 0;
 }
 
-export function measureInteraction<T>(
-  name: string,
-  fn: () => T | Promise<T>,
-): T | Promise<T> {
+export function measureInteraction<T>(name: string, fn: () => T | Promise<T>): T | Promise<T> {
   const start = performance.now();
 
   const recordDuration = () => {
     const duration = performance.now() - start;
     recordMetric({
       name,
-      type: "render",
+      type: 'render',
       value: duration,
-      unit: "ms",
+      unit: 'ms',
       metadata: { measured: true },
     });
   };

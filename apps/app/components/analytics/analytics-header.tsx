@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import DateFilter from "@/components/owner/date-filter";
+import DateFilter from '@/components/owner/date-filter';
 
 export default function AnalyticsHeader({
   startDate,
@@ -19,17 +19,15 @@ export default function AnalyticsHeader({
     const end = new Date();
     const start = new Date();
     start.setDate(end.getDate() - (days - 1));
-    setStartDate(start.toISOString().split("T")[0]);
-    setEndDate(end.toISOString().split("T")[0]);
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
   };
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">
-            Analytics Window
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">Analytics Window</h2>
           <p className="text-sm text-slate-500">
             Choose date range and export your performance report.
           </p>

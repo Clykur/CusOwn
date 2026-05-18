@@ -1,15 +1,8 @@
-"use client";
+'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-type UserType = "owner" | "customer" | "both" | "admin";
+type UserType = 'owner' | 'customer' | 'both' | 'admin';
 
 export type CustomerInitialUser = {
   id: string;
@@ -24,8 +17,7 @@ type CustomerSessionContextValue = {
   refreshSession: () => Promise<void>;
 };
 
-const CustomerSessionContext =
-  createContext<CustomerSessionContextValue | null>(null);
+const CustomerSessionContext = createContext<CustomerSessionContextValue | null>(null);
 
 export function CustomerSessionProvider({
   children,
@@ -34,9 +26,7 @@ export function CustomerSessionProvider({
   children: React.ReactNode;
   initialUser?: CustomerInitialUser;
 }) {
-  const [sessionUser, setSessionUser] = useState<CustomerInitialUser>(
-    initialUser ?? null,
-  );
+  const [sessionUser, setSessionUser] = useState<CustomerInitialUser>(initialUser ?? null);
 
   useEffect(() => {
     setSessionUser(initialUser ?? null);
@@ -44,9 +34,9 @@ export function CustomerSessionProvider({
 
   const refreshSession = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/session", {
-        credentials: "include",
-        cache: "no-store",
+      const response = await fetch('/api/auth/session', {
+        credentials: 'include',
+        cache: 'no-store',
       });
       if (!response.ok) {
         setSessionUser(null);
@@ -65,12 +55,10 @@ export function CustomerSessionProvider({
       setSessionUser({
         id: user.id,
         email: user.email ?? undefined,
-        full_name:
-          (profile as { full_name?: string } | null)?.full_name ?? undefined,
+        full_name: (profile as { full_name?: string } | null)?.full_name ?? undefined,
         user_type: (profile as { user_type?: UserType } | null)?.user_type,
         profile_media_id:
-          (profile as { profile_media_id?: string | null } | null)
-            ?.profile_media_id ?? null,
+          (profile as { profile_media_id?: string | null } | null)?.profile_media_id ?? null,
       });
     } catch {
       setSessionUser(null);
@@ -79,12 +67,10 @@ export function CustomerSessionProvider({
 
   const value = useMemo(
     () => ({ initialUser: sessionUser, refreshSession }),
-    [refreshSession, sessionUser],
+    [refreshSession, sessionUser]
   );
   return (
-    <CustomerSessionContext.Provider value={value}>
-      {children}
-    </CustomerSessionContext.Provider>
+    <CustomerSessionContext.Provider value={value}>{children}</CustomerSessionContext.Provider>
   );
 }
 

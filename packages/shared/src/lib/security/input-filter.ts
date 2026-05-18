@@ -5,7 +5,7 @@
 
 export const filterFields = <T extends Record<string, any>>(
   data: T,
-  allowedFields: readonly (keyof T)[],
+  allowedFields: readonly (keyof T)[]
 ): Partial<T> => {
   const filtered: Partial<T> = {};
   for (const field of allowedFields) {
@@ -17,7 +17,7 @@ export const filterFields = <T extends Record<string, any>>(
 };
 
 export const filterBookingUpdateFields = (
-  body: any,
+  body: any
 ): Partial<{
   status: string;
   customer_name: string;
@@ -26,17 +26,17 @@ export const filterBookingUpdateFields = (
   reason: string;
 }> => {
   const allowedFields = [
-    "status",
-    "customer_name",
-    "customer_phone",
-    "cancellation_reason",
-    "reason",
+    'status',
+    'customer_name',
+    'customer_phone',
+    'cancellation_reason',
+    'reason',
   ] as const;
   return filterFields(body, allowedFields);
 };
 
 export const filterBusinessUpdateFields = (
-  body: any,
+  body: any
 ): Partial<{
   salon_name: string;
   owner_name: string;
@@ -51,24 +51,24 @@ export const filterBusinessUpdateFields = (
   suspended_reason: string;
 }> => {
   const allowedFields = [
-    "salon_name",
-    "owner_name",
-    "whatsapp_number",
-    "opening_time",
-    "closing_time",
-    "slot_duration",
-    "address",
-    "location",
-    "category",
-    "suspended",
-    "suspended_reason",
+    'salon_name',
+    'owner_name',
+    'whatsapp_number',
+    'opening_time',
+    'closing_time',
+    'slot_duration',
+    'address',
+    'location',
+    'category',
+    'suspended',
+    'suspended_reason',
   ] as const;
   return filterFields(body, allowedFields);
 };
 
 /** Owner can update only these fields (no suspended/suspended_reason). */
 export const filterOwnerBusinessUpdateFields = (
-  body: any,
+  body: any
 ): Partial<{
   salon_name: string;
   owner_name: string;
@@ -92,51 +92,48 @@ export const filterOwnerBusinessUpdateFields = (
   postal_code: string;
 }> => {
   const allowedFields = [
-    "salon_name",
-    "owner_name",
-    "whatsapp_number",
-    "opening_time",
-    "closing_time",
-    "slot_duration",
-    "concurrent_booking_capacity",
-    "address",
-    "location",
-    "category",
-    "city",
-    "area",
-    "pincode",
-    "latitude",
-    "longitude",
-    "address_line1",
-    "address_line2",
-    "state",
-    "country",
-    "postal_code",
+    'salon_name',
+    'owner_name',
+    'whatsapp_number',
+    'opening_time',
+    'closing_time',
+    'slot_duration',
+    'concurrent_booking_capacity',
+    'address',
+    'location',
+    'category',
+    'city',
+    'area',
+    'pincode',
+    'latitude',
+    'longitude',
+    'address_line1',
+    'address_line2',
+    'state',
+    'country',
+    'postal_code',
   ] as const;
   return filterFields(body, allowedFields);
 };
 
 export const filterUserProfileUpdateFields = (
-  body: any,
+  body: any
 ): Partial<{
   user_type: string;
   full_name: string;
   phone_number: string;
 }> => {
-  const allowedFields = ["user_type", "full_name", "phone_number"] as const;
+  const allowedFields = ['user_type', 'full_name', 'phone_number'] as const;
   return filterFields(body, allowedFields);
 };
 
-export const validateStringLength = (
-  value: string,
-  maxLength: number,
-): boolean => {
-  return typeof value === "string" && value.length <= maxLength;
+export const validateStringLength = (value: string, maxLength: number): boolean => {
+  return typeof value === 'string' && value.length <= maxLength;
 };
 
 export const validateEnum = <T extends string>(
   value: unknown,
-  allowedValues: readonly T[],
+  allowedValues: readonly T[]
 ): value is T => {
-  return typeof value === "string" && allowedValues.includes(value as T);
+  return typeof value === 'string' && allowedValues.includes(value as T);
 };

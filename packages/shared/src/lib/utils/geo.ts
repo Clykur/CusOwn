@@ -30,20 +30,12 @@ export function validateSearchRadius(radius: number, maxKm: number): boolean {
   return radius > 0 && radius <= maxKm;
 }
 
-export function isCoordinatePairConsistent(
-  latPresent: boolean,
-  lngPresent: boolean,
-): boolean {
+export function isCoordinatePairConsistent(latPresent: boolean, lngPresent: boolean): boolean {
   return latPresent === lngPresent;
 }
 
 // Haversine formula (inputs in degrees). Returns distance in kilometers.
-export function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
+export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   // Defensive: ensure numeric inputs
   if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return NaN;
 
@@ -67,7 +59,7 @@ export function haversineDistance(
 // Uses simple approximations suitable for small-to-moderate radii.
 export function boundingBox(lat: number, lng: number, radiusKm: number) {
   assertValidCoordinates(lat, lng);
-  if (!validateRadius(radiusKm)) throw new Error("Invalid radius");
+  if (!validateRadius(radiusKm)) throw new Error('Invalid radius');
 
   const degLat = radiusKm / 111.32; // approx km per degree latitude
   // longitude degrees per km depends on latitude
@@ -83,13 +75,11 @@ export function boundingBox(lat: number, lng: number, radiusKm: number) {
 
 // Parse and validate coordinate inputs (strings or numbers). Throws on invalid input.
 export function parseAndValidateCoordinates(latRaw: unknown, lngRaw: unknown) {
-  const lat =
-    typeof latRaw === "string" ? parseFloat(latRaw) : (latRaw as number);
-  const lng =
-    typeof lngRaw === "string" ? parseFloat(lngRaw) : (lngRaw as number);
+  const lat = typeof latRaw === 'string' ? parseFloat(latRaw) : (latRaw as number);
+  const lng = typeof lngRaw === 'string' ? parseFloat(lngRaw) : (lngRaw as number);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    throw new Error("Malformed coordinates");
+    throw new Error('Malformed coordinates');
   }
   assertValidCoordinates(lat, lng);
   return { lat, lng };

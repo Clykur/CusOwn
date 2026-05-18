@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useCallback } from "react";
+import { createContext, useContext, useCallback } from 'react';
 import {
   setAdminCache,
   getAdminCached,
   ADMIN_CACHE_KEYS,
   getAdminAnalyticsCacheKey,
-} from "@/components/admin/admin-cache";
-import { adminFetch } from "@cusown/shared";
+} from '@/components/admin/admin-cache';
+import { adminFetch } from '@cusown/shared';
 
 const LIST_LIMIT = 25;
 const OVERVIEW_DAYS = 30;
@@ -28,11 +28,11 @@ export function AdminPrefetchProvider({
   const prefetchTab = useCallback(
     (tab: string) => {
       if (!sessionReady) return;
-      const opts = { credentials: "include" as RequestCredentials };
+      const opts = { credentials: 'include' as RequestCredentials };
       switch (tab) {
-        case "businesses":
+        case 'businesses':
           if (getAdminCached(ADMIN_CACHE_KEYS.BUSINESSES)) return;
-          adminFetch("/api/admin/businesses", opts)
+          adminFetch('/api/admin/businesses', opts)
             .then((r) => r.json())
             .then((data) => {
               if (data?.success !== false)
@@ -40,7 +40,7 @@ export function AdminPrefetchProvider({
             })
             .catch(() => {});
           break;
-        case "users":
+        case 'users':
           if (getAdminCached(ADMIN_CACHE_KEYS.USERS)) return;
           adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, opts)
             .then((r) => r.json())
@@ -50,7 +50,7 @@ export function AdminPrefetchProvider({
             })
             .catch(() => {});
           break;
-        case "bookings":
+        case 'bookings':
           if (getAdminCached(ADMIN_CACHE_KEYS.BOOKINGS)) return;
           adminFetch(`/api/admin/bookings?limit=${LIST_LIMIT}`, opts)
             .then((r) => r.json())
@@ -60,7 +60,7 @@ export function AdminPrefetchProvider({
             })
             .catch(() => {});
           break;
-        case "audit":
+        case 'audit':
           if (getAdminCached(ADMIN_CACHE_KEYS.AUDIT)) return;
           adminFetch(`/api/admin/audit-logs?limit=${LIST_LIMIT}`, opts)
             .then((r) => r.json())
@@ -70,12 +70,12 @@ export function AdminPrefetchProvider({
             })
             .catch(() => {});
           break;
-        case "analytics": {
+        case 'analytics': {
           const end = new Date();
           const start = new Date();
           start.setDate(start.getDate() - OVERVIEW_DAYS);
-          const defaultStart = start.toISOString().split("T")[0];
-          const defaultEnd = end.toISOString().split("T")[0];
+          const defaultStart = start.toISOString().split('T')[0];
+          const defaultEnd = end.toISOString().split('T')[0];
           const key = getAdminAnalyticsCacheKey(defaultStart, defaultEnd);
           if (getAdminCached(key)) return;
           const params = new URLSearchParams({
@@ -83,36 +83,18 @@ export function AdminPrefetchProvider({
             endDate: `${defaultEnd}T23:59:59.999Z`,
           });
           Promise.allSettled([
-            adminFetch(`/api/admin/revenue-metrics?${params}`, opts).then((r) =>
-              r.json(),
-            ),
-            adminFetch(`/api/admin/booking-funnel?${params}`, opts).then((r) =>
-              r.json(),
-            ),
-            adminFetch(
-              `/api/admin/business-health?${params}&limit=20`,
-              opts,
-            ).then((r) => r.json()),
-            adminFetch("/api/admin/system-metrics", opts).then((r) => r.json()),
+            adminFetch(`/api/admin/revenue-metrics?${params}`, opts).then((r) => r.json()),
+            adminFetch(`/api/admin/booking-funnel?${params}`, opts).then((r) => r.json()),
+            adminFetch(`/api/admin/business-health?${params}&limit=20`, opts).then((r) => r.json()),
+            adminFetch('/api/admin/system-metrics', opts).then((r) => r.json()),
           ])
             .then(([rev, fun, health, sys]) => {
               setAdminCache(key, {
-                revenue:
-                  rev.status === "fulfilled" && rev.value?.success
-                    ? rev.value.data
-                    : null,
-                funnel:
-                  fun.status === "fulfilled" && fun.value?.success
-                    ? fun.value.data
-                    : null,
+                revenue: rev.status === 'fulfilled' && rev.value?.success ? rev.value.data : null,
+                funnel: fun.status === 'fulfilled' && fun.value?.success ? fun.value.data : null,
                 health:
-                  health.status === "fulfilled" && health.value?.success
-                    ? health.value.data
-                    : null,
-                system:
-                  sys.status === "fulfilled" && sys.value?.success
-                    ? sys.value.data
-                    : null,
+                  health.status === 'fulfilled' && health.value?.success ? health.value.data : null,
+                system: sys.status === 'fulfilled' && sys.value?.success ? sys.value.data : null,
               });
             })
             .catch(() => {});
@@ -122,7 +104,7 @@ export function AdminPrefetchProvider({
           break;
       }
     },
-    [sessionReady],
+    [sessionReady]
   );
 
   return (

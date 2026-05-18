@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { ProfilePageContent } from "@/components/profile/profile-page-content";
+import { ProfilePageContent } from '@/components/profile/profile-page-content';
 
 /**
  * Standalone profile page at /profile. Uses shared content with default (non-embedded) layout.

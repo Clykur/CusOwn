@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import CheckIcon from "@cusown/shared/icons/check.svg";
+import CheckIcon from '@cusown/shared/icons/check.svg';
 
 interface RoleCardProps {
   title: string;
@@ -33,8 +33,8 @@ export default function RoleCard({
       type="button"
       className={`relative p-8 rounded-xl border-2 transition-all text-left w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${
         selected
-          ? "border-black bg-gray-50 shadow-lg ring-2 ring-black ring-offset-2"
-          : "border-gray-200 hover:border-gray-400 hover:shadow-md active:scale-[0.98]"
+          ? 'border-black bg-gray-50 shadow-lg ring-2 ring-black ring-offset-2'
+          : 'border-gray-200 hover:border-gray-400 hover:shadow-md active:scale-[0.98]'
       }`}
       aria-pressed={selected}
       aria-label={`Select ${title} role`}
@@ -46,7 +46,7 @@ export default function RoleCard({
       )}
       <div
         className={`mb-4 flex h-16 w-16 items-center justify-center rounded-lg ${
-          selected ? "bg-black text-white" : "bg-gray-100 text-gray-700"
+          selected ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'
         }`}
       >
         {icon}
@@ -57,10 +57,7 @@ export default function RoleCard({
       <ul className="text-sm text-gray-600 space-y-2">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-2">
-            <CheckIcon
-              className="w-5 h-5 text-black mt-0.5 flex-shrink-0"
-              aria-hidden="true"
-            />
+            <CheckIcon className="w-5 h-5 text-black mt-0.5 flex-shrink-0" aria-hidden="true" />
             <span>{feature}</span>
           </li>
         ))}

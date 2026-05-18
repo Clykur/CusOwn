@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { usePathname, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { ROUTES } from "@cusown/shared";
-import DashboardIcon from "@cusown/shared/icons/dashboard.svg";
-import BusinessesIcon from "@cusown/shared/icons/businesses.svg";
-import AnalyticsIcon from "@cusown/shared/icons/analytics.svg";
-import ProfileIcon from "@cusown/shared/icons/profile.svg";
+import { usePathname, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { ROUTES } from '@cusown/shared';
+import DashboardIcon from '@cusown/shared/icons/dashboard.svg';
+import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
+import AnalyticsIcon from '@cusown/shared/icons/analytics.svg';
+import ProfileIcon from '@cusown/shared/icons/profile.svg';
 
 interface NavItem {
   name: string;
@@ -14,63 +14,59 @@ interface NavItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
-export default function MobileBottomNav({
-  sidebarOpen,
-}: {
-  sidebarOpen?: boolean;
-}) {
+export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   if (sidebarOpen) return null;
 
-  const tabParam = searchParams?.get("tab") ?? null;
+  const tabParam = searchParams?.get('tab') ?? null;
 
   let activeTab: string | null = null;
 
   if (tabParam) {
     activeTab = tabParam;
-  } else if (pathname?.startsWith("/owner/services")) {
-    activeTab = "services";
-  } else if (pathname?.startsWith("/owner/businesses")) {
-    activeTab = "businesses";
-  } else if (pathname?.startsWith("/owner/analytics")) {
-    activeTab = "analytics";
-  } else if (pathname?.startsWith("/owner/dashboard")) {
-    activeTab = "dashboard";
-  } else if (pathname?.startsWith("/owner/profile")) {
-    activeTab = "profile";
+  } else if (pathname?.startsWith('/owner/services')) {
+    activeTab = 'services';
+  } else if (pathname?.startsWith('/owner/businesses')) {
+    activeTab = 'businesses';
+  } else if (pathname?.startsWith('/owner/analytics')) {
+    activeTab = 'analytics';
+  } else if (pathname?.startsWith('/owner/dashboard')) {
+    activeTab = 'dashboard';
+  } else if (pathname?.startsWith('/owner/profile')) {
+    activeTab = 'profile';
   }
 
   const navigation: NavItem[] = [
     {
-      name: "Dashboard",
+      name: 'Dashboard',
       href: `${ROUTES.OWNER_DASHBOARD_BASE}?tab=dashboard`,
       icon: DashboardIcon,
     },
     {
-      name: "Businesses",
-      href: "/owner/businesses",
+      name: 'Businesses',
+      href: '/owner/businesses',
       icon: BusinessesIcon,
     },
     {
-      name: "Analytics",
-      href: "/owner/analytics",
+      name: 'Analytics',
+      href: '/owner/analytics',
       icon: AnalyticsIcon,
     },
     {
-      name: "Profile",
+      name: 'Profile',
       href: ROUTES.OWNER_PROFILE,
       icon: ProfileIcon,
     },
   ];
 
   const isActive = (href: string) => {
-    const basePath = href.split("?")[0];
+    const basePath = href.split('?')[0];
 
     return (
       pathname === basePath ||
-      pathname?.startsWith(basePath + "/") ||
-      (href.includes("?tab=") && activeTab === href.split("tab=")[1])
+      pathname?.startsWith(basePath + '/') ||
+      (href.includes('?tab=') && activeTab === href.split('tab=')[1])
     );
   };
 
@@ -84,18 +80,18 @@ export default function MobileBottomNav({
               key={item.name}
               href={item.href}
               className={`flex flex-1 min-w-0 flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${
-                active ? "text-gray-900" : "text-gray-500"
+                active ? 'text-gray-900' : 'text-gray-500'
               }`}
             >
               <span className="flex items-center justify-center">
                 <item.icon
                   aria-hidden="true"
-                  className={`h-5 w-5 ${active ? "text-gray-900" : "text-gray-500"}`}
+                  className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
                 />
               </span>
               <span
                 className={`text-xs font-medium leading-none ${
-                  active ? "text-gray-900" : "text-gray-500"
+                  active ? 'text-gray-900' : 'text-gray-500'
                 }`}
               >
                 {item.name}

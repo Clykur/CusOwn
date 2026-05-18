@@ -22,8 +22,13 @@ function getSizeKB(filePath) {
 }
 
 function main() {
-  const nextDir = path.join(ROOT, '.next');
-  if (!fs.existsSync(nextDir)) {
+  const nextDirs = [
+    path.join(ROOT, '.next'),
+    path.join(ROOT, 'apps', 'app', '.next'),
+    path.join(ROOT, 'apps', 'marketing', '.next'),
+  ].filter((dir) => fs.existsSync(dir));
+
+  if (nextDirs.length === 0) {
     console.warn('No .next directory; skipping bundle size check. Run build first.');
     return;
   }
@@ -45,7 +50,9 @@ function main() {
     }
   }
 
-  walk(nextDir);
+  for (const nextDir of nextDirs) {
+    walk(nextDir);
+  }
   const totalKb = Math.round(total * 10) / 10;
 
   if (totalKb > limitKb) {

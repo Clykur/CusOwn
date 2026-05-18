@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { ProfilePageContent } from "@/components/profile/profile-page-content";
+import { ProfilePageContent } from '@/components/profile/profile-page-content';
 
 /**
  * Admin profile under admin layout so sidebar stays visible.

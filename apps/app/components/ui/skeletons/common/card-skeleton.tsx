@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { skeletonBase } from "../base-skeleton";
+import { skeletonBase } from '../base-skeleton';
 
 export function DashboardStatSkeleton() {
   return (

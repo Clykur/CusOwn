@@ -4,22 +4,19 @@
  * RLS-ready: role names align with DB roles.name; user_roles is source of truth.
  */
 
-import type { NextRequest } from "next/server";
-import {
-  getServerUser,
-  getServerUserProfile,
-} from "../lib/supabase/server-auth";
-import { userService } from "./user.service";
-import { ROUTES } from "../lib/utils/navigation";
+import type { NextRequest } from 'next/server';
+import { getServerUser, getServerUserProfile } from '../lib/supabase/server-auth';
+import { userService } from './user.service';
+import { ROUTES } from '../lib/utils/navigation';
 import {
   ROLES,
   CAPABILITIES,
   ROLE_CAPABILITIES,
   type RoleName,
   type CapabilityName,
-} from "@cusown/config";
-import { requireSupabaseAdmin } from "../lib/supabase/server";
-import { env } from "@cusown/config";
+} from '@cusown/config';
+import { requireSupabaseAdmin } from '../lib/supabase/server';
+import { env } from '@cusown/config';
 
 const VALID_ROLES = new Set<string>(ROLES);
 const VALID_CAPABILITIES = new Set<string>(Object.values(CAPABILITIES));
@@ -28,14 +25,14 @@ const VALID_CAPABILITIES = new Set<string>(Object.values(CAPABILITIES));
 function userTypeToRoles(userType: string | null): string[] {
   if (!userType) return [];
   switch (userType) {
-    case "admin":
-      return ["admin"];
-    case "owner":
-      return ["owner"];
-    case "customer":
-      return ["customer"];
-    case "both":
-      return ["customer", "owner"];
+    case 'admin':
+      return ['admin'];
+    case 'owner':
+      return ['owner'];
+    case 'customer':
+      return ['customer'];
+    case 'both':
+      return ['customer', 'owner'];
     default:
       return [];
   }
@@ -49,9 +46,9 @@ export async function getRoles(userId: string): Promise<string[]> {
   const supabaseAdmin = requireSupabaseAdmin();
 
   const { data: rows, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role_id, roles(name)")
-    .eq("user_id", userId);
+    .from('user_roles')
+    .select('role_id, roles(name)')
+    .eq('user_id', userId);
 
   if (error) {
     const profile = await getServerUserProfile(userId);
@@ -65,7 +62,7 @@ export async function getRoles(userId: string): Promise<string[]> {
       if (Array.isArray(roles)) return roles[0]?.name;
       return roles?.name;
     })
-    .filter((n): n is string => typeof n === "string" && VALID_ROLES.has(n));
+    .filter((n): n is string => typeof n === 'string' && VALID_ROLES.has(n));
   if (names.length > 0) return [...new Set(names)];
 
   const profile = await getServerUserProfile(userId);
@@ -85,13 +82,9 @@ export async function hasRole(userId: string, role: string): Promise<boolean> {
  * (user_roles with user_type fallback) plus ROLE_CAPABILITIES. Keeps API aligned with
  * requireCustomer when RBAC rows are missing but profile.user_type is set.
  */
-export async function hasCustomerDashboardAccess(
-  userId: string,
-): Promise<boolean> {
+export async function hasCustomerDashboardAccess(userId: string): Promise<boolean> {
   const roles = await getRoles(userId);
-  return getCapabilitiesFromRoles(roles).has(
-    CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD,
-  );
+  return getCapabilitiesFromRoles(roles).has(CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD);
 }
 
 /**
@@ -123,26 +116,23 @@ export type ResolveAccessOptions = {
 
 /** Normalize host so duplicated hostnames (e.g. proxy misconfig) become a single host. */
 function normalizeHost(host: string): string {
-  const h = host.split(":")[0]?.toLowerCase() ?? host;
+  const h = host.split(':')[0]?.toLowerCase() ?? host;
   // If host looks like "domain.comdomain.com", use first segment only.
   const mid = h.length / 2;
   if (mid >= 2 && h.slice(0, mid) === h.slice(mid)) {
-    return host.replace(new RegExp(h.slice(mid) + "(?=:|$)", "i"), "");
+    return host.replace(new RegExp(h.slice(mid) + '(?=:|$)', 'i'), '');
   }
   return host;
 }
 
 function buildBaseUrl(headers: Headers): string {
-  let host =
-    headers.get("x-forwarded-host") ?? headers.get("host") ?? "localhost";
+  let host = headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost';
   host = normalizeHost(host);
-  const proto = headers.get("x-forwarded-proto") ?? "http";
-  const h = host.split(":")[0]?.toLowerCase();
+  const proto = headers.get('x-forwarded-proto') ?? 'http';
+  const h = host.split(':')[0]?.toLowerCase();
   const port =
-    env.nodeEnv === "development" && h === "localhost" && !host.includes(":")
-      ? ":3000"
-      : "";
-  return `${proto}://${h}${port ? (host.includes(":") ? host : host + port) : host}/`;
+    env.nodeEnv === 'development' && h === 'localhost' && !host.includes(':') ? ':3000' : '';
+  return `${proto}://${h}${port ? (host.includes(':') ? host : host + port) : host}/`;
 }
 
 /**
@@ -151,7 +141,7 @@ function buildBaseUrl(headers: Headers): string {
  */
 export async function resolveUserAccess(
   requestOrContext: NextRequest | null,
-  options: ResolveAccessOptions,
+  options: ResolveAccessOptions
 ): Promise<ResolveAccessResult> {
   const { requiredCapability, baseUrl: optionBaseUrl } = options;
   if (!VALID_CAPABILITIES.has(requiredCapability)) {
@@ -168,11 +158,11 @@ export async function resolveUserAccess(
   let baseUrl: string;
   let request: Request;
 
-  if (requestOrContext && "url" in requestOrContext) {
+  if (requestOrContext && 'url' in requestOrContext) {
     baseUrl = optionBaseUrl ?? `${new URL(requestOrContext.url).origin}/`;
     request = requestOrContext as Request;
   } else {
-    const { headers } = await import("next/headers");
+    const { headers } = await import('next/headers');
     const headersList = await headers();
     baseUrl = optionBaseUrl ?? buildBaseUrl(headersList as Headers);
     request = new Request(baseUrl, {
@@ -181,19 +171,15 @@ export async function resolveUserAccess(
   }
 
   const user = await getServerUser(request);
-  const isLayoutContext = !requestOrContext || !("url" in requestOrContext);
+  const isLayoutContext = !requestOrContext || !('url' in requestOrContext);
 
   if (!user) {
     const pathname =
-      request && "nextUrl" in request
-        ? (request as NextRequest).nextUrl?.pathname
-        : undefined;
+      request && 'nextUrl' in request ? (request as NextRequest).nextUrl?.pathname : undefined;
     const loginPath =
-      typeof ROUTES.AUTH_LOGIN === "function"
-        ? ROUTES.AUTH_LOGIN(pathname)
-        : "/auth/login";
+      typeof ROUTES.AUTH_LOGIN === 'function' ? ROUTES.AUTH_LOGIN(pathname) : '/auth/login';
     const loginUrl = new URL(loginPath, baseUrl);
-    loginUrl.searchParams.set("redirect_from", "guard");
+    loginUrl.searchParams.set('redirect_from', 'guard');
     const redirectToLogin = loginUrl.toString();
     return {
       allowed: false,
@@ -214,17 +200,11 @@ export async function resolveUserAccess(
 
   let allowed = hasCapability;
 
-  if (
-    requiredCapability === CAPABILITIES.ACCESS_OWNER_DASHBOARD &&
-    roles.includes("owner")
-  ) {
+  if (requiredCapability === CAPABILITIES.ACCESS_OWNER_DASHBOARD && roles.includes('owner')) {
     const businesses = await userService.getUserBusinesses(user.id);
     allowed = businesses.length >= 1;
   }
-  if (
-    requiredCapability === CAPABILITIES.ACCESS_SETUP &&
-    roles.includes("owner")
-  ) {
+  if (requiredCapability === CAPABILITIES.ACCESS_SETUP && roles.includes('owner')) {
     const businesses = await userService.getUserBusinesses(user.id);
     allowed = businesses.length === 0;
   }
@@ -239,18 +219,18 @@ export async function resolveUserAccess(
     if (!profile) {
       redirectUrl = ROUTES.SELECT_ROLE();
     } else if (requiredCapability === CAPABILITIES.ACCESS_ADMIN_DASHBOARD) {
-      void import("./audit.service").then(({ auditService }) =>
-        auditService.createAuditLog(user.id, "admin_access_denied", "user", {
+      void import('./audit.service').then(({ auditService }) =>
+        auditService.createAuditLog(user.id, 'admin_access_denied', 'user', {
           entityId: user.id,
-          description: "Attempted admin area without admin role",
+          description: 'Attempted admin area without admin role',
           request: request as NextRequest,
-        }),
+        })
       );
       redirectUrl = ROUTES.HOME;
     } else if (requiredCapability === CAPABILITIES.ACCESS_OWNER_DASHBOARD) {
-      redirectUrl = `${ROUTES.SELECT_ROLE("owner")}&error=not_owner`;
+      redirectUrl = `${ROUTES.SELECT_ROLE('owner')}&error=not_owner`;
     } else if (requiredCapability === CAPABILITIES.ACCESS_CUSTOMER_DASHBOARD) {
-      redirectUrl = `${ROUTES.SELECT_ROLE("customer")}&error=not_customer`;
+      redirectUrl = `${ROUTES.SELECT_ROLE('customer')}&error=not_customer`;
     } else if (requiredCapability === CAPABILITIES.ACCESS_SETUP) {
       redirectUrl = ROUTES.OWNER_DASHBOARD_BASE;
     }

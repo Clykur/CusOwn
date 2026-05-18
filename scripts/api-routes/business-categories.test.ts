@@ -3,53 +3,51 @@
  * Mocks: getBusinessCategories, next-cache.
  */
 
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-vi.mock("@/lib/cache/next-cache", () => ({
+vi.mock('@/lib/cache/next-cache', () => ({
   setCacheHeaders: vi.fn(),
   setNoCacheHeaders: vi.fn(),
   getCachedBusiness: vi.fn().mockResolvedValue(null),
   getCachedBusinessByLink: vi.fn().mockResolvedValue(null),
 }));
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 
 const mockGetBusinessCategories = vi.fn();
 
-vi.mock("@/services/business-category.service", () => ({
-  getBusinessCategories: (...args: unknown[]) =>
-    mockGetBusinessCategories(...args),
+vi.mock('@/services/business-category.service', () => ({
+  getBusinessCategories: (...args: unknown[]) => mockGetBusinessCategories(...args),
 }));
 
 const mockGetCachedApiResponse = vi.fn();
-vi.mock("@/lib/cache/api-response-cache", () => ({
+vi.mock('@/lib/cache/api-response-cache', () => ({
   buildApiCacheKey: (method: string, path: string) => `mock:${method}:${path}`,
-  getCachedApiResponse: (...args: unknown[]) =>
-    mockGetCachedApiResponse(...args),
+  getCachedApiResponse: (...args: unknown[]) => mockGetCachedApiResponse(...args),
   setCachedApiResponse: () => {},
 }));
 
 const mockGetApiRedisCache = vi.fn();
 const mockSetApiRedisCache = vi.fn();
-vi.mock("@/lib/cache/api-redis-cache", () => ({
+vi.mock('@/lib/cache/api-redis-cache', () => ({
   buildApiRedisKeyFromPath: (path: string) => `redis:${path}`,
   getApiRedisCache: (...args: unknown[]) => mockGetApiRedisCache(...args),
   setApiRedisCache: (...args: unknown[]) => mockSetApiRedisCache(...args),
   API_REDIS_TTL: { CATEGORIES: 600 },
 }));
 
-describe("GET /api/business-categories", () => {
+describe('GET /api/business-categories', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetCachedApiResponse.mockReturnValue(null);
     mockGetApiRedisCache.mockResolvedValue(null);
   });
 
-  it("returns 200 from Redis cache when getApiRedisCache returns data", async () => {
-    const redisCached = [{ value: "salon", label: "Salon" }];
+  it('returns 200 from Redis cache when getApiRedisCache returns data', async () => {
+    const redisCached = [{ value: 'salon', label: 'Salon' }];
     mockGetApiRedisCache.mockResolvedValue(redisCached);
-    const { GET } = await import("@/app/api/business-categories/route");
-    const req = new NextRequest("http://localhost/api/business-categories", {
-      method: "GET",
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
     });
     const res = await GET(req);
     expect(res.status).toBe(200);
@@ -60,12 +58,12 @@ describe("GET /api/business-categories", () => {
     expect(mockGetCachedApiResponse).not.toHaveBeenCalled();
   });
 
-  it("returns 200 from in-memory cache when getCachedApiResponse returns data", async () => {
-    const cached = [{ value: "salon", label: "Salon" }];
+  it('returns 200 from in-memory cache when getCachedApiResponse returns data', async () => {
+    const cached = [{ value: 'salon', label: 'Salon' }];
     mockGetCachedApiResponse.mockReturnValue({ data: cached });
-    const { GET } = await import("@/app/api/business-categories/route");
-    const req = new NextRequest("http://localhost/api/business-categories", {
-      method: "GET",
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
     });
     const res = await GET(req);
     expect(res.status).toBe(200);
@@ -75,15 +73,15 @@ describe("GET /api/business-categories", () => {
     expect(mockGetBusinessCategories).not.toHaveBeenCalled();
   });
 
-  it("returns 200 with categories on success", async () => {
+  it('returns 200 with categories on success', async () => {
     const categories = [
-      { id: "1", name: "Salon", slug: "salon" },
-      { id: "2", name: "Spa", slug: "spa" },
+      { id: '1', name: 'Salon', slug: 'salon' },
+      { id: '2', name: 'Spa', slug: 'spa' },
     ];
     mockGetBusinessCategories.mockResolvedValue(categories);
-    const { GET } = await import("@/app/api/business-categories/route");
-    const req = new NextRequest("http://localhost/api/business-categories", {
-      method: "GET",
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
     });
     const res = await GET(req);
     expect(res.status).toBe(200);
@@ -92,40 +90,38 @@ describe("GET /api/business-categories", () => {
     expect(body.data).toEqual(categories);
   });
 
-  it("response structure is consistent", async () => {
+  it('response structure is consistent', async () => {
     mockGetBusinessCategories.mockResolvedValue([]);
-    const { GET } = await import("@/app/api/business-categories/route");
-    const req = new NextRequest("http://localhost/api/business-categories", {
-      method: "GET",
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
     });
     const res = await GET(req);
     const body = await res.json();
-    expect(body).toHaveProperty("success", true);
-    expect(body).toHaveProperty("data");
+    expect(body).toHaveProperty('success', true);
+    expect(body).toHaveProperty('data');
     expect(Array.isArray(body.data)).toBe(true);
   });
 
-  it("returns 500 and error when downstream service throws", async () => {
-    mockGetBusinessCategories.mockRejectedValue(
-      new Error("DB connection failed"),
-    );
-    const { GET } = await import("@/app/api/business-categories/route");
-    const req = new NextRequest("http://localhost/api/business-categories", {
-      method: "GET",
+  it('returns 500 and error when downstream service throws', async () => {
+    mockGetBusinessCategories.mockRejectedValue(new Error('DB connection failed'));
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
     });
     const res = await GET(req);
     expect(res.status).toBe(500);
     const body = (await res.json()) as { success?: boolean; error?: string };
     expect(body.success).toBe(false);
     expect(body.error).toBeDefined();
-    expect(body.error).toBe("DB connection failed");
+    expect(body.error).toBe('DB connection failed');
   });
 
-  it("returns 500 with generic message when error is not Error instance", async () => {
-    mockGetBusinessCategories.mockRejectedValue("string error");
-    const { GET } = await import("@/app/api/business-categories/route");
-    const req = new NextRequest("http://localhost/api/business-categories", {
-      method: "GET",
+  it('returns 500 with generic message when error is not Error instance', async () => {
+    mockGetBusinessCategories.mockRejectedValue('string error');
+    const { GET } = await import('@/app/api/business-categories/route');
+    const req = new NextRequest('http://localhost/api/business-categories', {
+      method: 'GET',
     });
     const res = await GET(req);
     expect(res.status).toBe(500);

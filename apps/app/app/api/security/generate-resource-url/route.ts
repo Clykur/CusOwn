@@ -1,29 +1,29 @@
-import { NextRequest } from "next/server";
-import { getSecureResourceUrl, isValidUUID } from "@cusown/shared/server";
-import { env } from "@cusown/config";
-import { successResponse, errorResponse } from "@cusown/shared/server";
-import { enhancedRateLimit } from "@cusown/shared/server";
-import { getServerUser } from "@cusown/shared/server";
-import { userService } from "@cusown/shared/server";
-import { salonService } from "@cusown/shared/server";
-import { bookingService } from "@cusown/shared/server";
+import { NextRequest } from 'next/server';
+import { getSecureResourceUrl, isValidUUID } from '@cusown/shared/server';
+import { env } from '@cusown/config';
+import { successResponse, errorResponse } from '@cusown/shared/server';
+import { enhancedRateLimit } from '@cusown/shared/server';
+import { getServerUser } from '@cusown/shared/server';
+import { userService } from '@cusown/shared/server';
+import { salonService } from '@cusown/shared/server';
+import { bookingService } from '@cusown/shared/server';
 
 const resourceUrlRateLimit = enhancedRateLimit({
   maxRequests: 50,
   windowMs: 60000,
   perIP: true,
-  keyPrefix: "resource_url_gen",
+  keyPrefix: 'resource_url_gen',
 });
 
 const RESOURCE_TYPES = [
-  "salon",
-  "booking",
-  "booking-status",
-  "owner-dashboard",
-  "accept",
-  "reject",
-  "admin-business",
-  "admin-booking",
+  'salon',
+  'booking',
+  'booking-status',
+  'owner-dashboard',
+  'accept',
+  'reject',
+  'admin-business',
+  'admin-booking',
 ] as const;
 type ResourceType = (typeof RESOURCE_TYPES)[number];
 
@@ -37,24 +37,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { resourceType, resourceId } = body;
 
-    if (
-      !resourceType ||
-      !RESOURCE_TYPES.includes(resourceType as ResourceType)
-    ) {
-      return errorResponse("Invalid resource type", 400);
+    if (!resourceType || !RESOURCE_TYPES.includes(resourceType as ResourceType)) {
+      return errorResponse('Invalid resource type', 400);
     }
 
-    if (!resourceId || typeof resourceId !== "string") {
-      return errorResponse("Resource ID is required", 400);
+    if (!resourceId || typeof resourceId !== 'string') {
+      return errorResponse('Resource ID is required', 400);
     }
 
     // Authorization checks based on resource type
     const user = await getServerUser(request);
 
-    if (resourceType === "owner-dashboard") {
+    if (resourceType === 'owner-dashboard') {
       // Verify user owns the business
       if (!user) {
-        return errorResponse("Authentication required", 401);
+        return errorResponse('Authentication required', 401);
       }
 
       // Check if bookingLink is UUID or slug
@@ -68,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!business) {
-        return errorResponse("Business not found", 404);
+        return errorResponse('Business not found', 404);
       }
 
       // Verify ownership
@@ -77,24 +74,24 @@ export async function POST(request: NextRequest) {
 
       if (!hasAccess) {
         const profile = await userService.getUserProfile(user.id);
-        const isAdmin = profile?.user_type === "admin";
+        const isAdmin = profile?.user_type === 'admin';
         if (!isAdmin) {
-          return errorResponse("Access denied", 403);
+          return errorResponse('Access denied', 403);
         }
       }
     } else if (
-      resourceType === "booking-status" ||
-      resourceType === "accept" ||
-      resourceType === "reject"
+      resourceType === 'booking-status' ||
+      resourceType === 'accept' ||
+      resourceType === 'reject'
     ) {
       // Verify user has access to booking. resourceId is short booking_id for booking-status; UUID for accept/reject.
       if (user) {
         const booking =
-          resourceType === "booking-status"
+          resourceType === 'booking-status'
             ? await bookingService.getBookingById(resourceId)
             : await bookingService.getBookingByUuidWithDetails(resourceId);
         if (!booking) {
-          return errorResponse("Booking not found", 404);
+          return errorResponse('Booking not found', 404);
         }
 
         const isCustomer = booking.customer_user_id === user.id;
@@ -104,31 +101,25 @@ export async function POST(request: NextRequest) {
           isOwner = userBusinesses.some((b) => b.id === booking.business_id);
         }
         const profile = await userService.getUserProfile(user.id);
-        const isAdmin = profile?.user_type === "admin";
+        const isAdmin = profile?.user_type === 'admin';
 
         if (!isCustomer && !isOwner && !isAdmin) {
-          return errorResponse("Access denied", 403);
+          return errorResponse('Access denied', 403);
         }
       }
-    } else if (
-      resourceType === "admin-business" ||
-      resourceType === "admin-booking"
-    ) {
+    } else if (resourceType === 'admin-business' || resourceType === 'admin-booking') {
       // Verify user is admin
       if (!user) {
-        return errorResponse("Authentication required", 401);
+        return errorResponse('Authentication required', 401);
       }
       const profile = await userService.getUserProfile(user.id);
-      if (profile?.user_type !== "admin") {
-        return errorResponse("Admin access required", 403);
+      if (profile?.user_type !== 'admin') {
+        return errorResponse('Admin access required', 403);
       }
     }
 
-    const secureUrl = getSecureResourceUrl(
-      resourceType as ResourceType,
-      resourceId,
-    );
-    const urlPath = secureUrl.replace(/^https?:\/\/[^/]+/, "");
+    const secureUrl = getSecureResourceUrl(resourceType as ResourceType, resourceId);
+    const urlPath = secureUrl.replace(/^https?:\/\/[^/]+/, '');
     const ttlMs = (env.security.signedUrlTtlSeconds ?? 86400) * 1000;
     const expiresAt = new Date(Date.now() + ttlMs);
 
@@ -137,7 +128,7 @@ export async function POST(request: NextRequest) {
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error("Error generating secure resource URL:", error);
-    return errorResponse("Failed to generate secure URL", 500);
+    console.error('Error generating secure resource URL:', error);
+    return errorResponse('Failed to generate secure URL', 500);
   }
 }

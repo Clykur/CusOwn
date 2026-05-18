@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   requireOwner,
   successResponse,
@@ -8,14 +8,14 @@ import {
   downtimeService,
   invalidateBusinessCache,
   getUserFriendlyError,
-} from "@cusown/shared/server";
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@cusown/config";
+} from '@cusown/shared/server';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
 
-const ROUTE = "DELETE /api/owner/businesses/[id]/holidays/[holidayId]";
+const ROUTE = 'DELETE /api/owner/businesses/[id]/holidays/[holidayId]';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; holidayId: string }> },
+  { params }: { params: Promise<{ id: string; holidayId: string }> }
 ) {
   try {
     const auth = await requireOwner(request, ROUTE);
@@ -30,10 +30,7 @@ export async function DELETE(
       return errorResponse(ERROR_MESSAGES.FORBIDDEN, 403);
     }
 
-    const removed = await downtimeService.removeHolidayForBusiness(
-      holidayId,
-      businessId,
-    );
+    const removed = await downtimeService.removeHolidayForBusiness(holidayId, businessId);
     if (!removed) {
       return errorResponse(ERROR_MESSAGES.NOT_FOUND, 404);
     }

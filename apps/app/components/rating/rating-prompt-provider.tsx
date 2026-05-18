@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useCustomerSession } from "@/components/customer/customer-session-context";
-import { RatingModal } from "./rating-modal";
-import type { PendingRatingBooking } from "@cusown/shared";
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCustomerSession } from '@/components/customer/customer-session-context';
+import { RatingModal } from './rating-modal';
+import type { PendingRatingBooking } from '@cusown/shared';
 
 type PendingRatingApiResponse = {
   success?: boolean;
@@ -16,7 +16,7 @@ type PendingRatingApiResponse = {
 };
 
 function normalizePendingBookingsResponse(
-  response: PendingRatingApiResponse | null | undefined,
+  response: PendingRatingApiResponse | null | undefined
 ): PendingRatingBooking[] {
   if (!response) return [];
 
@@ -35,9 +35,7 @@ function normalizePendingBookingsResponse(
 export function RatingPromptProvider() {
   const { initialUser: user } = useCustomerSession();
 
-  const [pendingBookings, setPendingBookings] = useState<
-    PendingRatingBooking[]
-  >([]);
+  const [pendingBookings, setPendingBookings] = useState<PendingRatingBooking[]>([]);
   const [dismissedBookingIds, setDismissedBookingIds] = useState<string[]>([]);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,24 +48,19 @@ export function RatingPromptProvider() {
     }
 
     try {
-      const response = await fetch("/api/reviews/pending-rating", {
-        credentials: "include",
-        cache: "no-store",
+      const response = await fetch('/api/reviews/pending-rating', {
+        credentials: 'include',
+        cache: 'no-store',
       });
 
       const data: PendingRatingApiResponse = await response.json();
       const bookings = normalizePendingBookingsResponse(data);
 
-      const filtered = bookings.filter(
-        (booking) => !dismissedBookingIds.includes(booking.id),
-      );
+      const filtered = bookings.filter((booking) => !dismissedBookingIds.includes(booking.id));
 
       setPendingBookings(filtered);
     } catch (error) {
-      console.error(
-        "[RATING PROMPT CLIENT] Error fetching pending rating:",
-        error,
-      );
+      console.error('[RATING PROMPT CLIENT] Error fetching pending rating:', error);
       setPendingBookings([]);
     }
   }, [user?.id, dismissedBookingIds]);
@@ -91,7 +84,7 @@ export function RatingPromptProvider() {
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && user?.id) {
+      if (document.visibilityState === 'visible' && user?.id) {
         fetchPendingRating();
       }
     };
@@ -102,12 +95,12 @@ export function RatingPromptProvider() {
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [fetchPendingRating, user?.id]);
 
@@ -115,17 +108,13 @@ export function RatingPromptProvider() {
     if (!pendingBooking) return;
 
     setDismissedBookingIds((prev) => [...prev, pendingBooking.id]);
-    setPendingBookings((prev) =>
-      prev.filter((b) => b.id !== pendingBooking.id),
-    );
+    setPendingBookings((prev) => prev.filter((b) => b.id !== pendingBooking.id));
   };
 
   const handleSuccess = () => {
     if (!pendingBooking) return;
 
-    setPendingBookings((prev) =>
-      prev.filter((b) => b.id !== pendingBooking.id),
-    );
+    setPendingBookings((prev) => prev.filter((b) => b.id !== pendingBooking.id));
   };
 
   if (!user?.id || !pendingBooking) {

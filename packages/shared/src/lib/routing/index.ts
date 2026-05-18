@@ -9,19 +9,13 @@ export {
   type GraphNode,
   type GraphEdge,
   type AdjacencyListEntry,
-} from "./graph-data-structures";
+} from './graph-data-structures';
 
 // Algorithms
-export {
-  dijkstra,
-  aStar,
-  reconstructPath,
-  computeTravelTime,
-  computeRoute,
-} from "./shortest-path";
+export { dijkstra, aStar, reconstructPath, computeTravelTime, computeRoute } from './shortest-path';
 
 // Spatial indexing
-export { KDTree } from "./spatial-index";
+export { KDTree } from './spatial-index';
 
 // Road network loading
 export {
@@ -29,12 +23,12 @@ export {
   createTestNetwork,
   createCitySampleNetwork,
   addBusinessNodesToGraph,
-} from "./road-network-loader";
+} from './road-network-loader';
 
 // OSM loader not re-exported here (optional dep osm-pbf-parser). Import from './osm-loader' when needed.
 
 // Service layer
-export { RoutingService, getRoute } from "./routing-service";
+export { RoutingService, getRoute } from './routing-service';
 
 // Initialization
 export {
@@ -43,4 +37,4 @@ export {
   isRoutingServiceReady,
   getRoutingHealth,
   resetRouting,
-} from "./init";
+} from './init';

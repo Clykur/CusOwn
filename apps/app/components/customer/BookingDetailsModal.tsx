@@ -1,39 +1,32 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from "@cusown/config";
-import { formatDate, formatTime } from "@cusown/shared";
-import { BookingWithDetails, Slot } from "@cusown/shared";
-import { BookingActions } from "@/components/booking/booking-status/booking-actions";
+import { useEffect, useMemo, useState } from 'react';
+import { CUSTOMER_SCREEN_TITLE_CLASSNAME, UI_CUSTOMER } from '@cusown/config';
+import { formatDate, formatTime } from '@cusown/shared';
+import { BookingWithDetails, Slot } from '@cusown/shared';
+import { BookingActions } from '@/components/booking/booking-status/booking-actions';
 
-const ALLOWED_STATUSES = [
-  "pending",
-  "confirmed",
-  "rejected",
-  "cancelled",
-] as const;
+const ALLOWED_STATUSES = ['pending', 'confirmed', 'rejected', 'cancelled'] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
 
 function normalizeStatus(status: string): AllowedStatus {
-  return ALLOWED_STATUSES.includes(status as AllowedStatus)
-    ? (status as AllowedStatus)
-    : "pending";
+  return ALLOWED_STATUSES.includes(status as AllowedStatus) ? (status as AllowedStatus) : 'pending';
 }
 
 function getStatusLabel(booking: BookingWithDetails): string {
   const status = normalizeStatus(booking.status);
 
   switch (status) {
-    case "confirmed":
-      return "Confirmed";
-    case "pending":
-      return "Pending";
-    case "rejected":
-      return "Rejected";
-    case "cancelled":
-      return "Cancelled";
+    case 'confirmed':
+      return 'Confirmed';
+    case 'pending':
+      return 'Pending';
+    case 'rejected':
+      return 'Rejected';
+    case 'cancelled':
+      return 'Cancelled';
     default:
-      return "Pending";
+      return 'Pending';
   }
 }
 
@@ -80,19 +73,17 @@ export default function BookingDetailsModal({
         const params = new URLSearchParams({
           salon_id: String(salonId),
           date,
-          status: "available",
+          status: 'available',
         });
 
         const res = await fetch(`/api/slots?${params}`, {
-          credentials: "include",
+          credentials: 'include',
         });
 
         const json = await res.json();
 
         if (!cancelled && res.ok && json?.success) {
-          const slotData = Array.isArray(json.data)
-            ? json.data
-            : json.data?.slots || [];
+          const slotData = Array.isArray(json.data) ? json.data : json.data?.slots || [];
 
           setSlots(slotData);
         }
@@ -113,7 +104,7 @@ export default function BookingDetailsModal({
 
     const endTimeRaw = String(booking.slot.end_time);
 
-    const d = endTimeRaw.includes("T")
+    const d = endTimeRaw.includes('T')
       ? new Date(endTimeRaw)
       : new Date(`${booking.slot.date}T${endTimeRaw}`);
 
@@ -125,8 +116,7 @@ export default function BookingDetailsModal({
     return slotEnd.getTime() <= Date.now();
   }, [slotEnd]);
 
-  const cancelledByCustomer =
-    booking.status === "cancelled" && booking.cancelled_by === "customer";
+  const cancelledByCustomer = booking.status === 'cancelled' && booking.cancelled_by === 'customer';
 
   const disableWhatsApp = slotTimeExpired || cancelledByCustomer;
 
@@ -146,12 +136,9 @@ export default function BookingDetailsModal({
       try {
         setWhatsappLoading(true);
 
-        const res = await fetch(
-          `/api/bookings/${booking.booking_id}/whatsapp`,
-          {
-            credentials: "include",
-          },
-        );
+        const res = await fetch(`/api/bookings/${booking.booking_id}/whatsapp`, {
+          credentials: 'include',
+        });
 
         const json = await res.json();
 
@@ -174,12 +161,12 @@ export default function BookingDetailsModal({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
 
-    window.addEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
 
-    return () => window.removeEventListener("keydown", handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
   /* ---------------- UI ---------------- */
@@ -199,9 +186,7 @@ export default function BookingDetailsModal({
 
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
-              {UI_CUSTOMER.VIEW_DETAILS}
-            </h2>
+            <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{UI_CUSTOMER.VIEW_DETAILS}</h2>
 
             <p className="mt-0.5 text-sm text-slate-500">Booking details</p>
           </div>
@@ -231,9 +216,7 @@ export default function BookingDetailsModal({
 
         <div className="grid gap-4 sm:grid-cols-2 mb-4">
           <div className="rounded-xl border bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase text-slate-500 mb-2">
-              Customer
-            </p>
+            <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Customer</p>
 
             <p className="text-sm text-slate-700">{booking.customer_name}</p>
 
@@ -252,15 +235,15 @@ export default function BookingDetailsModal({
 
             <p className="text-sm">Booking ID: {booking.booking_id}</p>
 
-            <p className="text-sm">Date: {slotDate ?? "—"}</p>
+            <p className="text-sm">Date: {slotDate ?? '—'}</p>
 
-            <p className="text-sm">Slot: {slotTime ?? "—"}</p>
+            <p className="text-sm">Slot: {slotTime ?? '—'}</p>
 
             <p className="text-sm">
-              Service:{" "}
+              Service:{' '}
               {booking.services && booking.services.length > 0
-                ? booking.services.map((s) => s.name).join(", ")
-                : (booking.service_name ?? "—")}
+                ? booking.services.map((s) => s.name).join(', ')
+                : (booking.service_name ?? '—')}
             </p>
           </div>
         </div>
@@ -287,7 +270,7 @@ export default function BookingDetailsModal({
             type="button"
             onClick={() => {
               if (!whatsappUrl || disableWhatsApp || whatsappLoading) return;
-              window.open(whatsappUrl, "_blank");
+              window.open(whatsappUrl, '_blank');
             }}
             disabled={disableWhatsApp || whatsappLoading || !whatsappUrl}
             className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-white disabled:cursor-not-allowed disabled:opacity-50"

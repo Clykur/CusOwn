@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
-import { useRouter } from "next/navigation";
-import { useAdminSession } from "./admin-session-context";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAdminSession } from './admin-session-context';
 import {
   getAdminCached,
   getAdminCachedStale,
   setAdminCache,
   ADMIN_CACHE_KEYS,
-} from "./admin-cache";
-import { adminFetch } from "@cusown/shared";
-import { ROUTES } from "@cusown/shared";
-import { UsersTableBodySkeleton } from "@/components/ui/skeleton";
+} from './admin-cache';
+import { adminFetch } from '@cusown/shared';
+import { ROUTES } from '@cusown/shared';
+import { UsersTableBodySkeleton } from '@/components/ui/skeleton';
 
 const TABLE_PAGE_SIZE = 10;
 const LIST_LIMIT = 25;
@@ -31,12 +31,8 @@ const UserRow = memo(function UserRow({
 }) {
   return (
     <tr className="hover:bg-slate-50/80 transition-colors">
-      <td className="px-5 py-4 text-sm font-medium text-slate-900">
-        {user.full_name || "N/A"}
-      </td>
-      <td className="px-5 py-4 text-sm text-slate-600 break-all max-w-[280px]">
-        {user.email}
-      </td>
+      <td className="px-5 py-4 text-sm font-medium text-slate-900">{user.full_name || 'N/A'}</td>
+      <td className="px-5 py-4 text-sm text-slate-600 break-all max-w-[280px]">{user.email}</td>
       <td className="px-5 py-4 whitespace-nowrap">
         <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-800">
           {user.user_type}
@@ -60,20 +56,17 @@ const UserRow = memo(function UserRow({
   );
 });
 
-export function AdminUsersTab({
-  page: controlledPage,
-  onPageChange,
-}: ListTabPageProps = {}) {
+export function AdminUsersTab({ page: controlledPage, onPageChange }: ListTabPageProps = {}) {
   const router = useRouter();
   const { session, ready } = useAdminSession();
   const [users, setUsers] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [internalPage, setInternalPage] = useState(1);
   const page = controlledPage ?? internalPage;
   const setPage = onPageChange
     ? (p: number | ((prev: number) => number)) =>
-        onPageChange(typeof p === "function" ? p(page) : p)
+        onPageChange(typeof p === 'function' ? p(page) : p)
     : setInternalPage;
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,7 +89,7 @@ export function AdminUsersTab({
 
   const handleManage = useCallback(
     (userId: string) => router.push(ROUTES.ADMIN_USER(userId)),
-    [router],
+    [router]
   );
 
   useEffect(() => {
@@ -113,7 +106,7 @@ export function AdminUsersTab({
       setLoading(false);
       if (!ready || !session) return;
       adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
-        credentials: "include",
+        credentials: 'include',
       })
         .then((r) => r.json())
         .then((data) => {
@@ -127,14 +120,14 @@ export function AdminUsersTab({
       return;
     }
     if (!ready || !session) {
-      setError("Session expired. Please log in again.");
+      setError('Session expired. Please log in again.');
       setLoading(false);
       return;
     }
     setLoading(true);
     const ac = new AbortController();
     adminFetch(`/api/admin/users?limit=${LIST_LIMIT}`, {
-      credentials: "include",
+      credentials: 'include',
       signal: ac.signal,
     })
       .then((r) => r.json())
@@ -145,12 +138,12 @@ export function AdminUsersTab({
           setUsers(list);
           setAdminCache(ADMIN_CACHE_KEYS.USERS, list);
         } else {
-          setError(data.error || "Failed to load users");
+          setError(data.error || 'Failed to load users');
         }
       })
       .catch((err) => {
-        if (err instanceof Error && err.name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Failed to load users");
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : 'Failed to load users');
       })
       .finally(() => {
         if (!ac.signal.aborted) setLoading(false);
@@ -163,9 +156,9 @@ export function AdminUsersTab({
     if (!q) return users;
     return users.filter(
       (u) =>
-        (u.full_name || "").toLowerCase().includes(q) ||
-        (u.email || "").toLowerCase().includes(q) ||
-        (u.user_type || "").toLowerCase().includes(q),
+        (u.full_name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.user_type || '').toLowerCase().includes(q)
     );
   }, [users, debouncedQuery]);
 
@@ -174,7 +167,7 @@ export function AdminUsersTab({
   const start = (page - 1) * TABLE_PAGE_SIZE;
   const paginated = useMemo(
     () => filtered.slice(start, start + TABLE_PAGE_SIZE),
-    [filtered, start],
+    [filtered, start]
   );
   const end = Math.min(start + TABLE_PAGE_SIZE, totalItems);
   const isSearching = searchQuery !== debouncedQuery;
@@ -183,12 +176,8 @@ export function AdminUsersTab({
     return (
       <div className="space-y-8">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
-            Users
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">
-            All platform users — roles and activity
-          </p>
+          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Users</h2>
+          <p className="text-sm text-slate-500 mt-0.5">All platform users — roles and activity</p>
         </div>
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
@@ -202,12 +191,8 @@ export function AdminUsersTab({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
-          Users
-        </h2>
-        <p className="text-sm text-slate-500 mt-0.5">
-          All platform users — roles and activity
-        </p>
+        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Users</h2>
+        <p className="text-sm text-slate-500 mt-0.5">All platform users — roles and activity</p>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -264,11 +249,7 @@ export function AdminUsersTab({
                     <UsersTableBodySkeleton />
                   ) : (
                     paginated.map((user) => (
-                      <UserRow
-                        key={user.id}
-                        user={user}
-                        onManage={handleManage}
-                      />
+                      <UserRow key={user.id} user={user} onManage={handleManage} />
                     ))
                   )}
                 </tbody>
@@ -306,9 +287,7 @@ export function AdminUsersTab({
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
             <p className="text-sm font-medium text-slate-500">No users found</p>
-            <p className="mt-1 text-xs text-slate-400">
-              Users will appear here when they exist
-            </p>
+            <p className="mt-1 text-xs text-slate-400">Users will appear here when they exist</p>
           </div>
         )}
       </section>
