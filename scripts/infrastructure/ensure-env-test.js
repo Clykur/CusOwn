@@ -28,8 +28,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
 NEXT_PUBLIC_APP_URL=https://example.com
 NEXT_PUBLIC_MARKETING_URL=https://example.com
-SALON_TOKEN_SECRET=test-secret-for-ci-min-32-characters-long
-CRON_SECRET=test-cron-for-ci-min-16
+SALON_TOKEN_SECRET=test-secret-for-ci-min-32-characters-long # pragma: allowlist secret
+CRON_SECRET=test-cron-for-ci-min-16 # pragma: allowlist secret
 REDIS_ENABLED=false
 UPLOAD_STORAGE_BUCKET=uploads
 `;
