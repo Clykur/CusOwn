@@ -348,7 +348,9 @@ export class DashboardService {
     if (bookingIds.length > 0) {
       const { data, error } = await supabase
         .from('booking_services')
-        .select('booking_id, service_id, price_cents, services(name, price_cents, duration_minutes)')
+        .select(
+          'booking_id, service_id, price_cents, services(name, price_cents, duration_minutes)'
+        )
         .in('booking_id', bookingIds);
 
       if (!error && data) {
@@ -364,11 +366,13 @@ export class DashboardService {
       existing.push({
         id: bs.service_id,
         price_cents: bs.price_cents,
-        service: bs.services ? {
-          name: bs.services.name,
-          price_cents: bs.services.price_cents,
-          duration_minutes: bs.services.duration_minutes
-        } : null
+        service: bs.services
+          ? {
+              name: bs.services.name,
+              price_cents: bs.services.price_cents,
+              duration_minutes: bs.services.duration_minutes,
+            }
+          : null,
       });
       servicesMap.set(bs.booking_id, existing);
     });
