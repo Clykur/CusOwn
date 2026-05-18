@@ -52,6 +52,10 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+!.env.test
+!env.local.example
+!env.production.example
+!env.test.example
 
 # secrets and credentials
 *.key
