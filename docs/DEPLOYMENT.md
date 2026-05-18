@@ -22,11 +22,12 @@ So production always reflects code that passed CI.
 In **Vercel Dashboard** → your project → **Settings** → **Git**:
 
 1. Find **Ignore Build Step**.
-2. Set the command to:
-   ```bash
-   bash scripts/vercel-ignore-build.sh
-   ```
-   (Or use the script path relative to repo root.)
+2. Set the command from the project **Root Directory**:
+   - **Marketing** (`apps/marketing`): `bash vercel-ignore-build.sh`
+   - **App** (`apps/app`): `bash vercel-ignore-build.sh`
+   - Or leave empty and use `ignoreCommand` in each app’s `vercel.json`.
+
+   Do **not** use `bash scripts/vercel-ignore-build.sh` when Root Directory is `apps/marketing` or `apps/app` (that path does not exist there).
 
 That script exits with code `1`, so Vercel **skips** every build triggered by Git (push to `main`, etc.). Builds triggered by the **Vercel API** (our GitHub Actions deploy step) are not affected and still deploy.
 
@@ -71,7 +72,8 @@ That script exits with code `1`, so Vercel **skips** every build triggered by Gi
 2. Configure environment variables in Vercel dashboard.
 3. Set build command: `npm run build`.
 4. Set output directory: `.next`.
-5. Set **Ignore Build Step** to `bash scripts/vercel-ignore-build.sh` so only CI/CD deploys (see above).
+5. Set **Ignore Build Step** to `bash vercel-ignore-build.sh` (see above). Git builds on `main` are skipped; preview branches build normally.
+6. **Two Vercel projects**: Root Directory `apps/marketing` → `cusown.clykur.com`; `apps/app` → `cusownapp.clykur.com`. Set `VERCEL_APP_PROJECT_ID` in GitHub for CI app deploy.
 
 ## Database Migrations
 
