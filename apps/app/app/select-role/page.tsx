@@ -364,8 +364,8 @@ function SelectRoleContent() {
   if (currentStep === 2 && selectedRole === 'owner') {
     return (
       <SelectRolePremiumChrome>
-        <div className="px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] sm:py-16 sm:pb-16">
-          <div className="mx-auto max-w-2xl">
+        <div className="px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] sm:py-16 sm:pb-16 w-full">
+          <div className="mx-auto w-full max-w-[1600px]">
             <div className="mb-10 text-center">
               <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-zinc-600">
                 Owner setup

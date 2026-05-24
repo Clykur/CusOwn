@@ -32,7 +32,10 @@ export async function proxy(request: NextRequest) {
     const token = authHeader.substring(7).trim();
     if (token) {
       try {
-        await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+        await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: '',
+        });
       } catch (err) {
         console.error('[PROXY] Failed to set session from Bearer token:', err);
       }
@@ -63,7 +66,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL(target, env.app.baseUrl));
     } else {
       console.log('[PROXY] Redirecting to marketing (unauthenticated)');
-      return NextResponse.redirect(env.app.marketingUrl);
+      const redirectResponse = NextResponse.redirect(new URL('/', env.app.marketingUrl));
+      redirectResponse.cookies.delete('cusown_user_role');
+      return redirectResponse;
     }
   }
 
@@ -101,9 +106,11 @@ export async function proxy(request: NextRequest) {
 
   if (isPrivate && !user && !isPublicCustomerRoute) {
     console.log('[PROXY] Redirecting to /auth/login (private route + unauthenticated)');
-    const loginUrl = new URL('/auth/login', request.url);
+    const loginUrl = new URL('/auth/login', env.app.baseUrl);
     loginUrl.searchParams.set('redirect_to', url.pathname);
-    return NextResponse.redirect(loginUrl);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    redirectResponse.cookies.delete('cusown_user_role');
+    return redirectResponse;
   }
 
   return response;
