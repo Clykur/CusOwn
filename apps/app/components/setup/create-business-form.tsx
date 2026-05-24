@@ -38,6 +38,7 @@ export type CreateBusinessFormProps = {
 export default function CreateBusinessForm({
   redirectAfterSuccess,
   onSuccess,
+  embedded,
 }: CreateBusinessFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -113,7 +114,7 @@ export default function CreateBusinessForm({
   }, []);
 
   const whatsappReuseHint = useMemo(() => {
-    const digits = formData.whatsapp_number.replace(/\D/g, '');
+    const digits = formData.whatsapp_number.replace(/\\D/g, '');
     if (digits.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH || !ownerBusinesses?.length)
       return null;
     const formatted = formatPhoneNumber(formData.whatsapp_number);
@@ -155,7 +156,7 @@ export default function CreateBusinessForm({
     if (!formData.owner_name.trim() || formData.owner_name.trim().length < 2) {
       return 'Owner name must be at least 2 characters';
     }
-    const whatsappDigits = formData.whatsapp_number.replace(/\D/g, '');
+    const whatsappDigits = formData.whatsapp_number.replace(/\\D/g, '');
     if (whatsappDigits.length !== VALIDATION.WHATSAPP_NUMBER_MIN_LENGTH) {
       return ERROR_MESSAGES.WHATSAPP_NUMBER_INVALID;
     }
@@ -307,22 +308,26 @@ export default function CreateBusinessForm({
     const m = error.match(/\/b\/[A-Za-z0-9_-]{1,128}/);
     return m ? m[0] : null;
   }, [error]);
+
   const formContent = (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
-        <div className="flex justify-center items-center py-6">
-          <h1 className={APP_SCREEN_TITLE_CLASSNAME}>Create Your Business</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8 w-full"
+      >
+        <div className="md:col-span-2 flex justify-center items-center py-6">
+          <h1 className={`${APP_SCREEN_TITLE_CLASSNAME} text-white`}>Create Your Business</h1>
         </div>
-        <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
-          <p className="text-xs md:text-sm text-blue-800">
+        <div className="md:col-span-2 bg-[#22c55e]/10 border-l-4 border-[#22c55e] rounded-lg p-3 md:p-4 mb-2">
+          <p className="text-xs md:text-sm text-emerald-300">
             <strong className="font-semibold">Tip:</strong> You can create multiple businesses
             later. Each business gets its own booking link and QR code.
           </p>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
             htmlFor="salon_name"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-2"
           >
             Business Name <span className="text-red-500">*</span>
           </label>
@@ -335,14 +340,14 @@ export default function CreateBusinessForm({
             required
             minLength={2}
             maxLength={100}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
             placeholder="Elite Salon"
           />
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
             htmlFor="category"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-2"
           >
             Business type <span className="text-red-500">*</span>
           </label>
@@ -356,7 +361,7 @@ export default function CreateBusinessForm({
             }
             onChange={handleChange}
             required
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
           >
             {businessCategories.map((c) => (
               <option key={c.value} value={c.value}>
@@ -365,10 +370,10 @@ export default function CreateBusinessForm({
             ))}
           </select>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
             htmlFor="owner_name"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-2"
           >
             Owner Name <span className="text-red-500">*</span>
           </label>
@@ -381,14 +386,14 @@ export default function CreateBusinessForm({
             required
             minLength={2}
             maxLength={100}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
             placeholder="John Doe"
           />
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
             htmlFor="whatsapp_number"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-2"
           >
             WhatsApp Number <span className="text-red-500">*</span>
           </label>
@@ -401,26 +406,26 @@ export default function CreateBusinessForm({
             required
             pattern="[0-9]{10}"
             maxLength={VALIDATION.WHATSAPP_NUMBER_MAX_LENGTH}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
             placeholder="10 digits"
             inputMode="numeric"
             autoComplete="tel"
           />
           {whatsappReuseHint && (
-            <p className="mt-1.5 text-sm text-gray-600" role="status">
+            <p className="mt-1.5 text-sm text-zinc-400" role="status">
               {UI_CONTEXT.WHATSAPP_ALREADY_USED_FOR(whatsappReuseHint)}
             </p>
           )}
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
-          <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-3">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
+          <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-3">
             Business Hours <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             <div>
               <label
                 htmlFor="opening_time"
-                className="block text-xs font-medium text-gray-700 mb-1.5"
+                className="block text-xs font-medium text-zinc-300 mb-1.5"
               >
                 Opening Time
               </label>
@@ -431,13 +436,13 @@ export default function CreateBusinessForm({
                 value={formData.opening_time.substring(0, 5)}
                 onChange={handleChange}
                 required
-                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
               />
             </div>
             <div>
               <label
                 htmlFor="closing_time"
-                className="block text-xs font-medium text-gray-700 mb-1.5"
+                className="block text-xs font-medium text-zinc-300 mb-1.5"
               >
                 Closing Time
               </label>
@@ -448,15 +453,15 @@ export default function CreateBusinessForm({
                 value={formData.closing_time.substring(0, 5)}
                 onChange={handleChange}
                 required
-                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
               />
             </div>
           </div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
             htmlFor="slot_duration"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-2"
           >
             Appointment Duration <span className="text-red-500">*</span>
           </label>
@@ -466,7 +471,7 @@ export default function CreateBusinessForm({
             value={formData.slot_duration}
             onChange={handleChange}
             required
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
           >
             {SLOT_DURATIONS.map((d) => (
               <option key={d} value={d}>
@@ -475,10 +480,10 @@ export default function CreateBusinessForm({
             ))}
           </select>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
             htmlFor="concurrent_booking_capacity"
-            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900 mb-2"
+            className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100 mb-2"
           >
             Concurrent bookings (chairs / stations)
           </label>
@@ -490,16 +495,16 @@ export default function CreateBusinessForm({
             max={MAX_CONCURRENT_BOOKING_CAPACITY}
             value={formData.concurrent_booking_capacity ?? DEFAULT_CONCURRENT_BOOKING_CAPACITY}
             onChange={handleChange}
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
           />
-          <p className="mt-1.5 text-xs text-gray-600">
+          <p className="mt-1.5 text-xs text-zinc-400">
             How many appointments can run at the same time (default{' '}
             {DEFAULT_CONCURRENT_BOOKING_CAPACITY}).
           </p>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="md:col-span-2 bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <div className="flex items-center justify-between mb-3">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900">
+            <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100">
               Services (optional)
             </label>
             <button
@@ -510,7 +515,7 @@ export default function CreateBusinessForm({
                   { name: '', duration_minutes: 30, price_inr: 0 },
                 ])
               }
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+              className="text-xs font-semibold text-accent hover:text-[#1eb053]"
             >
               + Add service
             </button>
@@ -519,10 +524,10 @@ export default function CreateBusinessForm({
             {serviceRows.map((row, index) => (
               <div
                 key={index}
-                className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-gray-200 pb-3 last:border-0"
+                className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end border-b border-white/10 pb-3 last:border-0"
               >
                 <div className="sm:col-span-5">
-                  <label className="block text-xs text-gray-600 mb-1">Name</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Name</label>
                   <input
                     type="text"
                     value={row.name}
@@ -532,13 +537,13 @@ export default function CreateBusinessForm({
                         prev.map((r, i) => (i === index ? { ...r, name: v } : r))
                       );
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
+                    className="w-full px-3 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                     placeholder="e.g. Haircut"
                     maxLength={200}
                   />
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="block text-xs text-gray-600 mb-1">Duration (min)</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Duration (min)</label>
                   <input
                     type="number"
                     min={1}
@@ -549,11 +554,11 @@ export default function CreateBusinessForm({
                         prev.map((r, i) => (i === index ? { ...r, duration_minutes: v } : r))
                       );
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
+                    className="w-full px-3 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                   />
                 </div>
                 <div className="sm:col-span-3">
-                  <label className="block text-xs text-gray-600 mb-1">Price (₹)</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Price (₹)</label>
                   <input
                     type="number"
                     min={0}
@@ -565,7 +570,7 @@ export default function CreateBusinessForm({
                         prev.map((r, i) => (i === index ? { ...r, price_inr: v } : r))
                       );
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white"
+                    className="w-full px-3 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                   />
                 </div>
                 <div className="sm:col-span-1 flex justify-end">
@@ -583,21 +588,21 @@ export default function CreateBusinessForm({
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-gray-600">
+          <p className="mt-2 text-xs text-zinc-400">
             Leave rows empty to skip; you can add services later. Price is stored in paise (₹ ×
             100).
           </p>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+        <div className="md:col-span-2 bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <div className="flex items-center justify-between mb-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-gray-900">
+            <label className="flex items-center gap-2 text-xs md:text-sm font-semibold text-zinc-100">
               Business Location <span className="text-red-500">*</span>
             </label>
             <button
               type="button"
               onClick={handleUseLocation}
               disabled={loading}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
+              className="text-xs font-semibold text-accent hover:text-[#1eb053] disabled:opacity-50"
             >
               Use My Current Location
             </button>
@@ -612,7 +617,7 @@ export default function CreateBusinessForm({
               required
               minLength={5}
               maxLength={500}
-              className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+              className="w-full px-3 md:px-4 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
               placeholder="Street address and building details"
             />
             <div className="grid grid-cols-2 gap-3">
@@ -622,7 +627,7 @@ export default function CreateBusinessForm({
                 value={formData.city || ''}
                 onChange={handleChange}
                 required
-                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                 placeholder="City"
               />
               <input
@@ -633,7 +638,7 @@ export default function CreateBusinessForm({
                 required
                 minLength={2}
                 maxLength={100}
-                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                 placeholder="Area/Locality"
               />
             </div>
@@ -644,7 +649,7 @@ export default function CreateBusinessForm({
                 value={formData.area || ''}
                 onChange={handleChange}
                 maxLength={100}
-                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                 placeholder="Sub-area (Optional)"
               />
               <input
@@ -653,14 +658,14 @@ export default function CreateBusinessForm({
                 value={formData.pincode || ''}
                 onChange={handleChange}
                 maxLength={10}
-                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                className="w-full px-3 md:px-4 py-2 text-sm border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
                 placeholder="Pincode (Optional)"
               />
             </div>
 
             {formData.latitude !== 0 && formData.longitude !== 0 && (
-              <div className="mt-2 p-3 bg-white border border-gray-200 rounded-lg text-xs text-gray-500">
-                <p className="font-semibold text-gray-700 mb-1">Map Preview (Coordinates)</p>
+              <div className="mt-2 p-3 bg-zinc-900 border border-white/10 rounded-lg text-xs text-zinc-400">
+                <p className="font-semibold text-zinc-300 mb-1">Map Preview (Coordinates)</p>
                 <p>
                   Lat: {formData.latitude!.toFixed(6)}, Lng: {formData.longitude!.toFixed(6)}
                 </p>
@@ -677,7 +682,7 @@ export default function CreateBusinessForm({
           </div>
         </div>
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
+          <div className="md:col-span-2 bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
             <p className="text-red-800 font-medium">{error}</p>
             {existingBusinessPathFromError && (
               <Link
@@ -689,15 +694,15 @@ export default function CreateBusinessForm({
             )}
           </div>
         )}
-        <div className="space-y-3 pt-3">
+        <div className="md:col-span-2 space-y-3 pt-3">
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-semibold py-3 md:py-4 px-6 rounded-xl hover:bg-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-[#22c55e] text-zinc-950 font-semibold py-3 md:py-4 px-6 rounded-xl hover:bg-[#1eb053] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
-                <span className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-2 border-white border-t-transparent" />
+                <span className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-2 border-zinc-950 border-t-transparent" />
                 <span>Creating Your Booking Page...</span>
               </>
             ) : (
@@ -708,7 +713,7 @@ export default function CreateBusinessForm({
             <button
               type="button"
               disabled={loading}
-              className="w-full text-gray-600 hover:text-gray-900 text-xs md:text-sm disabled:opacity-50 font-medium mt-2"
+              className="w-full text-zinc-400 hover:text-zinc-100 text-xs md:text-sm disabled:opacity-50 font-medium mt-2"
             >
               Already have a business? Go to Dashboard →
             </button>
@@ -718,9 +723,19 @@ export default function CreateBusinessForm({
     </>
   );
 
+  if (embedded) {
+    return (
+      <div className="w-full max-w-full bg-zinc-950/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-6 md:p-8 lg:p-10">
+        {formContent}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-8">
-      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">{formContent}</div>
+    <div className="w-full min-h-[100dvh] p-4 sm:p-6 lg:p-8 xl:p-12 flex flex-col justify-center">
+      <div className="w-full max-w-full bg-zinc-950/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-6 md:p-8 lg:p-10">
+        {formContent}
+      </div>
     </div>
   );
 }
