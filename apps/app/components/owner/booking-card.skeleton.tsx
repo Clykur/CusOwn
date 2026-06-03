@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function OwnerBookingCardSkeleton() {
   return (
     <div
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden"
+      className="bg-surface-card border border-border-primary rounded-xl overflow-hidden"
       aria-busy="true"
       aria-hidden="true"
     >

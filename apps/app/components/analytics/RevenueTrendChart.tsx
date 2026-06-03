@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { formatAnalyticsChartDayLabel } from '@cusown/shared';
+import { colors } from '@/lib/theme/colors';
 
 function formatCurrency(v: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -39,9 +40,9 @@ export default function RevenueTrendChart({
   );
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-      <h3 className="mb-1 text-sm font-semibold text-slate-900 md:mb-3">Revenue Over Time</h3>
-      <p className="mb-3 text-xs text-slate-500 md:hidden">
+    <div className="min-w-0 overflow-hidden rounded-xl border border-border-primary bg-surface-card p-4 shadow-sm md:p-6">
+      <h3 className="mb-1 text-sm font-semibold text-text-primary md:mb-3">Revenue Over Time</h3>
+      <p className="mb-3 text-xs text-text-secondary md:hidden">
         Daily revenue in the selected range (INR).
       </p>
       <div className="h-[220px] w-full min-w-0 md:h-[260px]">
@@ -49,22 +50,30 @@ export default function RevenueTrendChart({
           <AreaChart data={chartData} margin={CHART_MARGIN}>
             <defs>
               <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#334155" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#334155" stopOpacity={0.04} />
+                <stop offset="5%" stopColor={colors.brand.primary} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={colors.brand.primary} stopOpacity={0.03} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.border.primary} vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: '#64748b' }}
               tickLine={false}
-              axisLine={{ stroke: '#e2e8f0' }}
+              tick={{
+                fontSize: 10,
+                fill: colors.text.secondary,
+              }}
+              axisLine={{
+                stroke: colors.border.primary,
+              }}
               tickFormatter={formatAnalyticsChartDayLabel}
               interval="preserveStartEnd"
               minTickGap={28}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#64748b' }}
+              tick={{
+                fontSize: 10,
+                fill: colors.text.secondary,
+              }}
               tickLine={false}
               axisLine={false}
               tickFormatter={formatYAxisTick}
@@ -72,8 +81,10 @@ export default function RevenueTrendChart({
             />
             <Tooltip
               contentStyle={{
-                borderRadius: 10,
-                borderColor: '#e2e8f0',
+                borderRadius: 12,
+                borderColor: colors.border.primary,
+                backgroundColor: colors.surface.modal,
+                color: colors.text.primary,
                 fontSize: 12,
               }}
               formatter={(value) => [formatCurrency(value as number), 'Revenue']}
@@ -84,8 +95,8 @@ export default function RevenueTrendChart({
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="#334155"
-              strokeWidth={2}
+              stroke={colors.brand.primary}
+              strokeWidth={3}
               fillOpacity={1}
               fill="url(#revenueGradient)"
             />

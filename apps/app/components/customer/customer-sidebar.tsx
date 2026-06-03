@@ -142,33 +142,33 @@ export default function CustomerSidebar({
     <>
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-brand-primary bg-opacity-50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-background-secondary border-r border-border-primary transition-transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
         <div className="flex h-full flex-col">
-          <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
+          <div className="flex shrink-0 items-start justify-between border-b border-border-primary px-5 py-6">
             <div>
               <button onClick={handleLogoClick}>
-                <h2 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase text-left">
+                <h2 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight text-text-primary hover:opacity-80 transition-opacity uppercase text-left">
                   CusOwn
                 </h2>
               </button>
-              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.VIEWING_AS_CUSTOMER}</p>
+              <p className="mt-0.5 text-xs text-text-tertiary">{UI_CONTEXT.VIEWING_AS_CUSTOMER}</p>
             </div>
             <div className="lg:hidden">
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
+                className="p-2.5 ml-2 bg-surface-card border border-border-primary rounded-lg shadow-sm hover:shadow transition-all"
                 aria-label="Close menu"
               >
-                <CloseIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
+                <CloseIcon className="w-5 h-5 text-text-secondary" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -186,14 +186,14 @@ export default function CustomerSidebar({
                   }}
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150 ${
                     active
-                      ? 'border-l-2 border-gray-900 bg-gray-100 font-medium text-gray-900'
-                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
+                      ? 'border-l-2 border-brand-primary bg-surface-elevated font-medium text-brand-primary'
+                      : 'border-l-2 border-transparent text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
                   }`}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                     <item.icon
                       aria-hidden="true"
-                      className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
+                      className={`h-5 w-5 ${active ? 'text-brand-primary' : 'text-text-tertiary'}`}
                     />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
@@ -202,14 +202,14 @@ export default function CustomerSidebar({
             })}
           </nav>
 
-          <div className="shrink-0 border-t border-slate-200 p-4">
+          <div className="shrink-0 border-t border-border-primary p-4">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href={ROUTES.CUSTOMER_PROFILE}
                 className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-600">
+                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-card text-text-secondary">
                   {profileImageUrl ? (
                     <Image
                       src={profileImageUrl}
@@ -220,24 +220,24 @@ export default function CustomerSidebar({
                       unoptimized
                     />
                   ) : (
-                    <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                    <ProfileIcon className="h-5 w-5 text-text-secondary" aria-hidden="true" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
-                  <span className="truncate text-sm font-medium text-slate-900">
+                  <span className="truncate text-sm font-medium text-text-primary">
                     {userName || 'User'}
                   </span>
-                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
+                  <span className="truncate text-xs text-text-tertiary">{userEmail || ''}</span>
                 </div>
               </Link>
               <button
                 onClick={() => {
                   window.location.href = '/api/auth/signout?redirect_to=%2F';
                 }}
-                className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
+                className="shrink-0 rounded-lg p-2 text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary"
                 title="Sign out"
               >
-                <LogoutIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <LogoutIcon className="h-5 w-5 text-text-secondary" aria-hidden="true" />
               </button>
             </div>
           </div>

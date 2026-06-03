@@ -28,12 +28,12 @@ const StatCard = memo(function StatCard({
   isRefreshing?: boolean;
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm transition-all duration-200">
-      <div className="text-sm text-slate-500">{label}</div>
+    <div className="bg-surface-card border border-border-primary rounded-2xl p-6 shadow-sm transition-all duration-200">
+      <div className="text-sm text-text-secondary">{label}</div>
       <div className="flex items-center gap-2">
-        <div className="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{value}</div>
+        <div className="text-3xl font-bold text-text-primary mt-1 tabular-nums">{value}</div>
         {isRefreshing && (
-          <div className="w-4 h-4 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-border-primary border-t-slate-500 rounded-full animate-spin" />
         )}
       </div>
     </div>
@@ -180,15 +180,15 @@ export default function CustomerDashboardPage() {
           {UI_CUSTOMER.SECTION_APPOINTMENTS}
         </h2>
         {bookings.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="bg-surface-card border border-border-primary rounded-2xl p-6 shadow-sm">
             <div className="text-center py-12">
-              <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <BookingsIcon className="w-8 h-8 text-slate-400" aria-hidden="true" />
+              <div className="mx-auto w-16 h-16 bg-surface-elevated rounded-full flex items-center justify-center mb-4">
+                <BookingsIcon className="w-8 h-8 text-text-secondary" aria-hidden="true" />
               </div>
-              <p className="text-slate-500 mb-4">{UI_CUSTOMER.EMPTY_ACTIVITY}</p>
+              <p className="text-text-secondary mb-4">{UI_CUSTOMER.EMPTY_ACTIVITY}</p>
               <Link
                 href={ROUTES.CUSTOMER_CATEGORIES}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-primary text-text-inverse text-sm font-medium rounded-xl hover:bg-brand-primaryHover active:scale-[0.98] transition-all shadow-sm"
               >
                 {UI_CUSTOMER.CTA_EXPLORE_SERVICES}
               </Link>

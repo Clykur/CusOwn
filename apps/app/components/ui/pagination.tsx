@@ -77,14 +77,14 @@ function PaginationComponent({
   return (
     <div
       className={cn(
-        'mt-4 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-4 sm:flex-row',
+        'mt-4 flex flex-col items-center justify-between gap-3 border-t border-border-primary pt-4 sm:flex-row',
         className
       )}
     >
-      <div className="text-sm text-gray-600">
-        Showing <span className="font-semibold text-gray-900">{startItem}</span> to{' '}
-        <span className="font-semibold text-gray-900">{endItem}</span> of{' '}
-        <span className="font-semibold text-gray-900">{totalItems}</span> {itemsLabel}
+      <div className="text-sm text-text-secondary">
+        Showing <span className="font-semibold text-text-primary">{startItem}</span> to{' '}
+        <span className="font-semibold text-text-primary">{endItem}</span> of{' '}
+        <span className="font-semibold text-text-primary">{totalItems}</span> {itemsLabel}
       </div>
 
       <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ function PaginationComponent({
           {pageNumbers.map((page, index) => {
             if (page === 'ellipsis') {
               return (
-                <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                <span key={`ellipsis-${index}`} className="px-2 text-text-disabled">
                   ...
                 </span>
               );
@@ -156,8 +156,8 @@ const PageButton = memo(function PageButton({
       onClick={handleClick}
       className={`min-w-[2.5rem] h-10 px-3 rounded-lg text-sm font-medium transition-colors ${
         isActive
-          ? 'bg-black text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+          ? 'bg-brand-primary text-text-inverse'
+          : 'bg-surface-elevated text-text-primary hover:bg-surface-card border border-border-primary'
       }`}
       aria-label={`Go to page ${pageNum}`}
       aria-current={isActive ? 'page' : undefined}

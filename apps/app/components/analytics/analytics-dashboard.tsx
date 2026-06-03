@@ -16,7 +16,7 @@ import AnalyticsSkeleton from '@/components/analytics/AnalyticsSkeleton';
 function AnalyticsPanelSkeleton({ height }: { height: 'h-72' | 'h-80' }) {
   return (
     <div
-      className={`${height} animate-pulse rounded-xl border border-gray-200 bg-gray-100`}
+      className={`${height} animate-pulse rounded-xl border border-border-primary bg-surface-elevated`}
       aria-hidden
     />
   );
@@ -26,7 +26,7 @@ function AnalyticsSectionHeading({ id, children }: { id: string; children: React
   return (
     <h2
       id={id}
-      className="px-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500"
+      className="px-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-secondary"
     >
       {children}
     </h2>
@@ -288,8 +288,8 @@ export default function AnalyticsDashboard({
 
   if (!selectedBusinessId) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
-        <p className="text-sm font-medium text-slate-700">No business selected</p>
+      <div className="rounded-2xl border border-dashed border-border-primary bg-surface-card p-10 text-center">
+        <p className="text-sm font-medium text-text-secondary">No business selected</p>
       </div>
     );
   }
@@ -299,14 +299,14 @@ export default function AnalyticsDashboard({
   }
 
   return (
-    <div className="w-full space-y-5 bg-slate-50/60 px-0 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-1 md:space-y-7 md:pb-16">
+    <div className="w-full space-y-5 px-0 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-1 md:space-y-7 md:pb-16">
       <div className="mb-6 md:mb-8 px-0 sm:px-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-1 md:mb-2')}>
               {UI_CONTEXT.OWNER_ANALYTICS_PAGE_TITLE}
             </h1>
-            <p className="hidden text-sm leading-snug text-gray-600 md:block md:text-base">
+            <p className="hidden text-sm leading-snug text-text-secondary md:block md:text-base">
               {UI_CONTEXT.OWNER_ANALYTICS_PAGE_SUBTITLE}
             </p>
           </div>
@@ -319,7 +319,7 @@ export default function AnalyticsDashboard({
             />
           </div>
         </div>
-        <p className="mt-2 text-sm leading-snug text-gray-600 md:hidden">
+        <p className="mt-2 text-sm leading-snug text-text-secondary md:hidden">
           {UI_CONTEXT.OWNER_ANALYTICS_PAGE_SUBTITLE}
         </p>
       </div>
@@ -345,19 +345,19 @@ export default function AnalyticsDashboard({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm"
+          className="rounded-2xl border border-border-primary bg-surface-card p-10 text-center shadow-sm"
         >
-          <p className="text-base font-semibold text-slate-900">
+          <p className="text-base font-semibold text-text-primary">
             No booking activity in selected period
           </p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-text-secondary">
             Try widening the date range, sharing your booking link, or running a promotion.
           </p>
           <div className="mt-4 inline-flex gap-2">
-            <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-slate-700">
+            <span className="rounded-md border border-border-primary bg-surface-elevated px-3 py-1.5 text-sm text-text-secondary">
               Create promotion
             </span>
-            <span className="rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-slate-700">
+            <span className="rounded-md border border-border-primary bg-surface-elevated px-3 py-1.5 text-sm text-text-secondary">
               Share booking link
             </span>
           </div>

@@ -129,21 +129,21 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6">
+    <div className="rounded-2xl border border-border-primary bg-surface-card p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-border-focus/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6">
       <div className={`w-full ${className}`}>
         {toast && (
           <div className="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 w-full flex justify-center pointer-events-none">
             <div
               className={`pointer-events-auto w-full max-w-xs sm:max-w-sm md:max-w-md 
-      px-4 sm:px-5 py-2.5 rounded-lg text-sm md:text-base font-medium shadow-lg 
-      text-center transition-all
-      ${
-        toast.type === 'success'
-          ? 'bg-green-600 text-white'
-          : toast.type === 'error'
-            ? 'bg-red-600 text-white'
-            : 'bg-yellow-400 text-black'
-      }`}
+ px-4 sm:px-5 py-2.5 rounded-lg text-sm md:text-base font-medium shadow-lg 
+ text-center transition-all
+ ${
+   toast.type === 'success'
+     ? 'bg-green-600 text-text-inverse'
+     : toast.type === 'error'
+       ? 'bg-state-error opacity-90 hover:opacity-100 text-text-inverse'
+       : 'bg-yellow-400 text-text-primary'
+ }`}
             >
               {toast.message}
             </div>
@@ -154,14 +154,14 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
           <h2 className={OWNER_SCREEN_TITLE_CLASSNAME}>Services</h2>
           <button
             onClick={openAdd}
-            className="bg-black text-white 
-  px-4 sm:px-5 md:px-6 
-  py-2 sm:py-2 md:py-2.5 
-  text-sm md:text-base 
-  rounded-lg font-medium 
-  hover:bg-gray-800 transition 
-  w-auto 
-  flex items-center gap-2"
+            className="bg-brand-primary text-text-inverse 
+ px-4 sm:px-5 md:px-6 
+ py-2 sm:py-2 md:py-2.5 
+ text-sm md:text-base 
+ rounded-lg font-medium 
+ hover:bg-brand-primaryHover transition 
+ w-auto 
+ flex items-center gap-2"
           >
             <AddIcon className="w-4 h-4 md:w-5 md:h-5" />
             <span>Add Service</span>
@@ -169,26 +169,32 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-text-secondary">Loading...</p>
         ) : services.length === 0 ? (
-          <div className="text-gray-500 text-sm">No services yet. Add your first service.</div>
+          <div className="text-text-secondary text-sm">
+            No services yet. Add your first service.
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
             {services.map((s) => (
               <div
                 key={s.id}
-                className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition"
+                className="bg-surface-card border border-border-primary rounded-xl p-4 hover:shadow-sm transition"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <h3 className="text-base font-semibold text-gray-900">{s.name}</h3>
-                    <span className="text-xs text-gray-500 mt-1">{s.duration_minutes} mins</span>
+                    <h3 className="text-base font-semibold text-text-primary">{s.name}</h3>
+                    <span className="text-xs text-text-secondary mt-1">
+                      {s.duration_minutes} mins
+                    </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-base font-semibold text-gray-900">₹{s.price_cents / 100}</p>
+                    <p className="text-base font-semibold text-text-primary">
+                      ₹{s.price_cents / 100}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-5 mt-3 border-t pt-3">
+                <div className="flex items-center justify-end gap-5 mt-3 border-t border-border-secondary pt-3">
                   <button
                     onClick={() => openEdit(s)}
                     className="text-sm font-medium text-blue-600 hover:text-blue-800 transition"
@@ -197,7 +203,7 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
                   </button>
                   <button
                     onClick={() => handleDelete(s.id)}
-                    className="text-sm font-medium text-red-600 hover:text-red-800 transition"
+                    className="text-sm font-medium text-state-error hover:text-state-error transition"
                   >
                     Delete
                   </button>
@@ -208,53 +214,118 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
-            <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-4">
-              <h3 className="text-lg font-semibold">{editing ? 'Edit Service' : 'Add Service'}</h3>
-              <input
-                placeholder="Service Name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border px-3 py-2 rounded"
-              />
-              <div className="flex gap-3">
-                <input
-                  placeholder="Duration (mins)"
-                  value={form.duration}
-                  onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                  className="w-full min-w-0 border px-3 py-2 rounded"
-                />
-                <input
-                  placeholder="Price ₹"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  className="w-full min-w-0 border px-3 py-2 rounded"
-                />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background-primary/80 backdrop-blur-md px-4">
+            <div className="w-full max-w-md rounded-2xl border border-border-primary bg-surface-modal shadow-xl">
+              <div className="border-b border-border-primary px-6 py-4">
+                <h3 className="text-lg font-semibold text-text-primary">
+                  {editing ? 'Edit Service' : 'Add Service'}
+                </h3>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  onClick={handleSave}
-                  className="w-full sm:flex-1 
-  bg-black text-white 
-  px-4 sm:px-5 md:px-6 
-  py-2 sm:py-2 md:py-2.5 
-  text-sm md:text-base 
-  rounded-lg font-medium 
-  hover:bg-gray-800 transition"
-                >
-                  Save
-                </button>
+
+              <div className="space-y-4 p-6">
+                <input
+                  placeholder="Service Name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="
+                    w-full
+                    rounded-xl
+                    border
+                    border-border-primary
+                    bg-surface-input
+                    px-4
+                    py-3
+                    text-text-primary
+                    placeholder:text-text-tertiary
+                    focus:border-brand-primary
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-brand-primary/20
+                "
+                />
+
+                <div className="flex gap-3">
+                  <input
+                    placeholder="Duration (mins)"
+                    value={form.duration}
+                    onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                    className="
+                        w-full
+                        min-w-0
+                        rounded-xl
+                        border
+                        border-border-primary
+                        bg-surface-input
+                        px-4
+                        py-3
+                        text-text-primary
+                        placeholder:text-text-tertiary
+                        focus:border-brand-primary
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-brand-primary/20
+                    "
+                  />
+
+                  <input
+                    placeholder="Price ₹"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    className="
+                        w-full
+                        min-w-0
+                        rounded-xl
+                        border
+                        border-border-primary
+                        bg-surface-input
+                        px-4
+                        py-3
+                        text-text-primary
+                        placeholder:text-text-tertiary
+                        focus:border-brand-primary
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-brand-primary/20
+                    "
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 border-t border-border-primary p-6">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="w-full sm:flex-1 
-  bg-gray-100 text-gray-700 
-  px-4 sm:px-5 md:px-6 
-  py-2 sm:py-2 md:py-2.5 
-  text-sm md:text-base 
-  rounded-lg font-medium 
-  hover:bg-gray-200 transition"
+                  className="
+                    flex-1
+                    rounded-xl
+                    border
+                    border-border-primary
+                    bg-surface-elevated
+                    px-4
+                    py-3
+                    font-medium
+                    text-text-primary
+                    transition-colors
+                    hover:bg-surface-input
+                "
                 >
                   Cancel
+                </button>
+
+                <button
+                  onClick={handleSave}
+                  className="
+                    flex-1
+                    rounded-xl
+                    bg-brand-primary
+                    px-4
+                    py-3
+                    font-medium
+                    text-text-inverse
+                    transition-colors
+                    hover:bg-brand-primaryHover
+                "
+                >
+                  Save
                 </button>
               </div>
             </div>

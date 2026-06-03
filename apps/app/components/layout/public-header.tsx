@@ -15,14 +15,17 @@ export function PublicHeader() {
       <MobileBrandHeader />
 
       {/* Desktop Header */}
-      <header className="hidden md:block sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <button onClick={handleLogoClick} className="flex items-center group">
-              <span className="text-2xl font-calegar font-bold tracking-wide bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent uppercase group-hover:from-slate-700 group-hover:via-slate-500 group-hover:to-slate-700 transition-all duration-300">
-                CusOwn
-              </span>
+      <header className="sticky top-0 z-50 hidden border-b border-border-secondary bg-background-primary/95 backdrop-blur-xl md:block">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <button onClick={handleLogoClick} className="group flex items-center">
+              <div
+                className={`font-display font-bold tracking-tight text-white transition-[font-size] duration-200`}
+              >
+                CUSOWN
+              </div>
             </button>
+
             <nav className="flex items-center gap-4">
               <AuthButton />
             </nav>

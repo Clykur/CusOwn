@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function SummaryCardSkeleton() {
   return (
     <div
-      className="bg-white border border-slate-200 rounded-lg p-6"
+      className="bg-surface-card border border-border-primary rounded-lg p-6"
       aria-busy="true"
       aria-hidden="true"
     >

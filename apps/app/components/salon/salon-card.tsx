@@ -109,24 +109,26 @@ function SalonCardComponent({ salon }: SalonCardProps) {
   }, [salon.latitude, salon.longitude]);
 
   return (
-    <div className="group relative bg-white rounded-xl border-2 border-gray-200 p-6 hover:border-black hover:shadow-xl transition-all duration-200 h-full flex flex-col">
+    <div className="group relative bg-surface-card rounded-xl border border-border-primary p-6 hover:border-brand-primary hover:shadow-xl transition-all duration-200 h-full flex flex-col">
       <div className="flex-1">
         <div className="flex items-start justify-between mb-3">
           {/* Salon Name + Rating */}
           <div>
-            <h3 className="text-xl font-bold text-gray-900 pr-2">{salon.salon_name}</h3>
+            <h3 className="text-xl font-bold text-text-primary pr-2">{salon.salon_name}</h3>
 
             {ratingAvg != null && ratingAvg > 0 && (
               <div className="flex items-center gap-1 mt-1">
                 <StarRating value={ratingAvg} readonly size="sm" />
-                <span className="text-sm font-semibold text-gray-800">{ratingAvg.toFixed(1)}</span>
+                <span className="text-sm font-semibold text-text-primary">
+                  {ratingAvg.toFixed(1)}
+                </span>
               </div>
             )}
           </div>
 
           {/* Distance */}
           {salon.distance_km !== undefined && (
-            <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+            <span className="bg-surface-elevated text-brand-primary text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
               {salon.distance_km < 1
                 ? `${(salon.distance_km * 1000).toFixed(0)}m`
                 : `${salon.distance_km.toFixed(1)}km`}{' '}
@@ -137,7 +139,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
 
         {/* Location */}
         {salon.location && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+          <div className="flex items-center gap-2 text-sm text-text-secondary mb-3">
             <MapPinIcon className="w-4 h-4 flex-shrink-0" />
             <span className="truncate">{salon.location}</span>
           </div>
@@ -146,7 +148,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
         {/* Address */}
         {salon.address && (
           <div className="mb-4">
-            <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] mb-1">
+            <p className="text-sm text-text-secondary line-clamp-2 min-h-[2.5rem] mb-1">
               {salon.address}
             </p>
 
@@ -155,7 +157,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-blue-600 hover:underline inline-flex items-center gap-1"
+                className="text-[10px] text-brand-primary hover:underline inline-flex items-center gap-1"
               >
                 <MapPinIcon className="w-2.5 h-2.5" />
                 Open in Google Maps
@@ -165,7 +167,7 @@ function SalonCardComponent({ salon }: SalonCardProps) {
         )}
 
         {/* Time + Slot Duration */}
-        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-text-secondary mb-4">
           {salon.opening_time && salon.closing_time && (
             <div className="flex items-center gap-1.5">
               <ClockIcon className="w-4 h-4" />
@@ -185,17 +187,17 @@ function SalonCardComponent({ salon }: SalonCardProps) {
       </div>
 
       {/* Bottom Action Row */}
-      <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+      <div className="pt-4 border-t border-border-primary flex items-center justify-between gap-3">
         <Link
           href={`/customer/${bookingLink}`}
-          className="flex-1 text-center text-sm font-medium border border-gray-300 rounded-lg py-2 hover:bg-gray-100 transition"
+          className="flex-1 text-center text-sm font-medium border border-border-primary text-text-primary rounded-lg py-2 hover:bg-surface-elevated transition"
         >
           View Business
         </Link>
 
         <Link
           href={`/customer/book/${salon.id}`}
-          className="flex-1 text-center text-sm font-medium bg-black text-white rounded-lg py-2 hover:bg-gray-800 transition"
+          className="flex-1 text-center text-sm font-medium bg-brand-primary text-text-inverse rounded-lg py-2 hover:bg-brand-primaryHover transition"
         >
           View Slots
         </Link>

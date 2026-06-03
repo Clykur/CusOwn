@@ -22,16 +22,16 @@ export default function Loading() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface-card">
       <div className="flex flex-col items-center gap-8">
         {/* CusOwn Logo */}
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 font-calegar">
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-text-primary font-calegar">
           CusOwn
         </h1>
 
         {/* Loading Progress */}
         <div className="flex flex-col items-center gap-3">
-          <div className="w-48 h-1 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-48 h-1 bg-surface-elevated rounded-full overflow-hidden">
             <div
               className="h-full bg-slate-900 rounded-full transition-all duration-150 ease-out"
               style={{ width: `${progress}%` }}
@@ -44,7 +44,7 @@ export default function Loading() {
 
         {/* Clykur Branding */}
         <div className="flex items-center gap-2 mt-4">
-          <span className="text-sm text-slate-500">A</span>
+          <span className="text-sm text-text-secondary">A</span>
           <Image
             src="/icons/Clykur Logo.svg"
             alt="Clykur"
@@ -52,7 +52,7 @@ export default function Loading() {
             height={32}
             className="w-8 h-8"
           />
-          <span className="text-sm text-slate-500">Product</span>
+          <span className="text-sm text-text-secondary">Product</span>
         </div>
       </div>
     </div>

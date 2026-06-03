@@ -74,24 +74,24 @@ export default function CustomerBookingsTable({ bookings }: CustomerBookingsTabl
       </div>
 
       <div className="hidden md:block">
-        <div className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="w-full min-w-0 overflow-hidden rounded-xl border border-border-primary bg-surface-card shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full table-auto border-collapse rounded-md border border-slate-200 text-left">
+            <table className="w-full table-auto border-collapse rounded-md border border-border-primary text-left">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80">
-                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-border-primary bg-surface-elevated">
+                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {UI_CUSTOMER.DASHBOARD_TABLE_COL_SALON}
                   </th>
-                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {UI_CUSTOMER.DASHBOARD_TABLE_COL_LOCATION}
                   </th>
-                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {UI_CUSTOMER.DASHBOARD_TABLE_COL_OWNER}
                   </th>
-                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="px-4 py-3.5 text-left align-middle text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {UI_CUSTOMER.DASHBOARD_TABLE_COL_PHONE}
                   </th>
-                  <th className="w-[4rem] px-4 py-3.5 text-right align-middle text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="w-[4rem] px-4 py-3.5 text-right align-middle text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {UI_CUSTOMER.DASHBOARD_TABLE_COL_ACTIONS}
                   </th>
                 </tr>
@@ -117,7 +117,7 @@ export default function CustomerBookingsTable({ bookings }: CustomerBookingsTabl
         totalItems={totalItems}
         itemsPerPage={CUSTOMER_DASHBOARD_SALONS_PER_PAGE}
         itemsLabel={UI_CUSTOMER.DASHBOARD_PAGINATION_ITEMS_NOUN}
-        className="border-slate-200"
+        className="border-border-primary"
       />
     </div>
   );

@@ -1,10 +1,11 @@
 'use client';
 
 import { Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UI_CONTEXT } from '@cusown/config';
 import { ROUTES } from '@cusown/shared';
-import { PublicHeader } from '@/components/layout/public-header';
+import { CusownMarketingNav } from '@/components/marketing/cusown-marketing-nav';
 import BusinessesIcon from '@cusown/shared/icons/businesses.svg';
 import ProfileIcon from '@cusown/shared/icons/profile.svg';
 
@@ -54,14 +55,14 @@ function LoginContent() {
       return {
         title: UI_CONTEXT.AUTH_LOGIN_HEADING_OWNER,
         description: UI_CONTEXT.AUTH_LOGIN_DESC_OWNER,
-        icon: <BusinessesIcon className="h-10 w-10 text-slate-700" aria-hidden="true" />,
+        icon: <BusinessesIcon className="h-10 w-10 text-brand-primary" aria-hidden="true" />,
       };
     }
     if (role === 'customer') {
       return {
         title: UI_CONTEXT.AUTH_LOGIN_HEADING_CUSTOMER,
         description: UI_CONTEXT.AUTH_LOGIN_DESC_CUSTOMER,
-        icon: <ProfileIcon className="h-10 w-10 text-slate-700" aria-hidden="true" />,
+        icon: <ProfileIcon className="h-10 w-10 text-brand-primary" aria-hidden="true" />,
       };
     }
     return {
@@ -74,65 +75,77 @@ function LoginContent() {
   const context = getRoleContext();
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-100/95 via-white to-slate-50/90">
-      <PublicHeader />
-      <main className="flex flex-1 flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 sm:px-6 sm:pb-10 sm:pt-6">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center sm:justify-center sm:py-6">
-          <div className="relative overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white/95 p-6 shadow-[0_24px_64px_-20px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/[0.035] backdrop-blur-sm sm:p-9">
-            <div
-              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-slate-300/70 to-transparent"
-              aria-hidden="true"
-            />
-
-            <div className="text-center">
-              {context.icon && (
-                <div className="mb-6 flex justify-center">
-                  <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/90 p-4 ring-1 ring-slate-200/70 shadow-inner">
-                    {context.icon}
+    <div className="flex min-h-[100dvh] flex-col bg-background-primary">
+      <CusownMarketingNav sectionNavMode="external" />
+      <div className="flex w-full flex-1 flex-col lg:flex-row">
+        {/* Left Side: Form */}
+        <div className="flex flex-1 flex-col relative z-10 lg:max-w-2xl xl:max-w-3xl">
+          <main className="flex flex-1 flex-col px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-8 sm:px-12 lg:px-16 xl:px-24">
+            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12 lg:max-w-md items-center">
+              <div className="text-center">
+                {context.icon && (
+                  <div className="mb-8 flex justify-center">
+                    <div className="rounded-2xl p-4 ring-1 ring-border-primary shadow-sm">
+                      {context.icon}
+                    </div>
                   </div>
+                )}
+                <h1 className="text-balance text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
+                  {context.title}
+                </h1>
+                <p className="mt-3 text-base leading-relaxed text-text-secondary sm:text-lg">
+                  {context.description}
+                </p>
+              </div>
+
+              {error && (
+                <div
+                  className="mt-8 w-full rounded-xl border border-state-error/50 bg-state-error/10 px-4 py-3 text-left text-sm leading-relaxed text-state-error shadow-sm"
+                  role="alert"
+                >
+                  {decodeURIComponent(error)}
                 </div>
               )}
-              <h1 className="text-balance text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.65rem] sm:leading-snug">
-                {context.title}
-              </h1>
-              <p className="mx-auto mt-2 max-w-sm text-pretty text-sm leading-relaxed text-slate-600 sm:text-[15px]">
-                {context.description}
-              </p>
-            </div>
 
-            {error && (
-              <div
-                className="mt-6 rounded-xl border border-rose-200/90 bg-rose-50/95 px-4 py-3 text-left text-sm leading-relaxed text-rose-900 shadow-sm"
-                role="alert"
-              >
-                {decodeURIComponent(error)}
+              <div className="mt-10 w-full">
+                <a
+                  href={loginUrl}
+                  className="group relative flex min-h-[56px] w-full touch-manipulation items-center justify-center gap-3 rounded-xl border border-border-primary bg-surface-input px-5 py-4 text-base font-semibold text-text-primary shadow-sm transition hover:border-brand-primary hover:bg-surface-elevated hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                >
+                  <GoogleMark className="h-5 w-5 shrink-0 text-text-secondary transition group-hover:text-brand-primary" />
+                  {UI_CONTEXT.AUTH_LOGIN_CTA_GOOGLE}
+                </a>
               </div>
-            )}
 
-            <div className="mt-8">
-              <a
-                href={loginUrl}
-                className="group relative flex min-h-[52px] w-full touch-manipulation items-center justify-center gap-3 rounded-xl border border-slate-200/95 bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/90 hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              <p className="mt-8 w-full text-center text-sm leading-relaxed text-text-secondary">
+                {UI_CONTEXT.AUTH_LOGIN_TERMS_NOTICE}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => router.push(ROUTES.HOME)}
+                className="mt-6 w-full touch-manipulation rounded-xl py-3 text-sm font-medium text-text-secondary transition hover:bg-surface-elevated hover:text-text-primary active:bg-surface-input"
               >
-                <GoogleMark className="h-5 w-5 shrink-0 text-slate-700 transition group-hover:text-slate-900" />
-                {UI_CONTEXT.AUTH_LOGIN_CTA_GOOGLE}
-              </a>
+                {UI_CONTEXT.AUTH_LOGIN_BACK_HOME}
+              </button>
             </div>
-
-            <p className="mt-8 text-center text-xs leading-relaxed text-slate-500">
-              {UI_CONTEXT.AUTH_LOGIN_TERMS_NOTICE}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => router.push(ROUTES.HOME)}
-              className="mt-5 w-full touch-manipulation rounded-xl py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100/80 hover:text-slate-900 active:bg-slate-100"
-            >
-              {UI_CONTEXT.AUTH_LOGIN_BACK_HOME}
-            </button>
-          </div>
+          </main>
         </div>
-      </main>
+
+        {/* Right Side: Illustration */}
+        <div className="hidden lg:block relative flex-1 bg-surface-card overflow-hidden">
+          <Image
+            src="/login-illustration.png"
+            alt="Login Background"
+            fill
+            className="object-cover opacity-90"
+            priority
+            unoptimized
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background-primary via-background-primary/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background-primary via-background-primary/5 to-transparent" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -141,10 +154,10 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-100/95 via-white to-slate-50/90">
-          <PublicHeader />
+        <div className="flex min-h-[100dvh] flex-col bg-background-primary">
+          <CusownMarketingNav sectionNavMode="external" />
           <div className="flex flex-1 items-center justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700" />
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-border-primary border-t-brand-primary" />
           </div>
         </div>
       }

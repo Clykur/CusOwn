@@ -50,19 +50,19 @@ function ProfileErrorComponent({
   };
 
   const errorContent = (
-    <div className="max-w-md w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm text-center">
-      <h2 className="text-xl font-semibold text-slate-900 mb-2">Error</h2>
-      <p className="text-sm text-slate-500 mb-6">{error}</p>
+    <div className="max-w-md w-full rounded-lg border border-border-primary bg-surface-card p-6 shadow-sm text-center">
+      <h2 className="text-xl font-semibold text-text-primary mb-2">Error</h2>
+      <p className="text-sm text-text-secondary mb-6">{error}</p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={handleRetry}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
+          className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-text-inverse shadow-sm hover:bg-brand-primaryHover transition-colors"
         >
           Retry
         </button>
         <button
           onClick={() => router.push(ROUTES.HOME)}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+          className="rounded-lg border border-border-primary bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary shadow-sm hover:bg-surface-elevated transition-colors"
         >
           Go to Home
         </button>
@@ -75,7 +75,9 @@ function ProfileErrorComponent({
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">{errorContent}</div>
+    <div className="min-h-screen bg-surface-card flex items-center justify-center p-4">
+      {errorContent}
+    </div>
   );
 }
 

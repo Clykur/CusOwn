@@ -30,7 +30,7 @@ export default function BookingRowRating({
   }
 
   if (!canRate) {
-    return <span className="text-slate-400 text-xs">Not rated</span>;
+    return <span className="text-text-secondary text-xs">Not rated</span>;
   }
 
   return (

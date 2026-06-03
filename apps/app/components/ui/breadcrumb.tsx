@@ -29,13 +29,25 @@ export default function Breadcrumb({ items, className }: BreadcrumbProps) {
 
         return (
           <div key={item.href} className="flex items-center gap-2">
-            {index > 0 && <ChevronRightIcon className="w-4 h-4 text-gray-400" aria-hidden="true" />}
+            {index > 0 && (
+              <ChevronRightIcon className="h-4 w-4 text-text-secondary" aria-hidden="true" />
+            )}
             {isLast || isActive ? (
-              <span className={`font-medium ${isActive ? 'text-black' : 'text-gray-600'}`}>
+              <span
+                className={cn(
+                  'font-medium',
+                  isActive ? 'text-text-primary' : 'text-text-secondary'
+                )}
+              >
+                {' '}
                 {item.label}
               </span>
             ) : (
-              <Link href={item.href} className="text-gray-600 hover:text-black transition-colors">
+              <Link
+                href={item.href}
+                className="text-text-secondary transition-colors hover:text-text-primary"
+              >
+                {' '}
                 {item.label}
               </Link>
             )}

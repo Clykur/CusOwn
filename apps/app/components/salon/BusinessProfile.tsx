@@ -304,37 +304,41 @@ export const BusinessProfile = () => {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="flex flex-col gap-2">
-            <div className="h-8 w-64 rounded-lg image-skeleton-shine" />
-            <div className="h-5 w-32 rounded-full image-skeleton-shine" />
+            <div className="h-8 w-64 rounded-lg bg-surface-elevated skeleton-shimmer" />
+            <div className="h-5 w-32 rounded-full bg-surface-elevated skeleton-shimmer" />
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full image-skeleton-shine" />
+            <div className="h-12 w-12 rounded-full bg-surface-elevated skeleton-shimmer" />
             <div className="flex flex-col gap-1">
-              <div className="h-4 w-24 rounded image-skeleton-shine" />
-              <div className="h-3 w-20 rounded image-skeleton-shine" />
+              <div className="h-4 w-24 rounded bg-surface-elevated skeleton-shimmer" />
+              <div className="h-3 w-20 rounded bg-surface-elevated skeleton-shimmer" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
-          <div className="h-6 w-28 mb-4 rounded image-skeleton-shine" />
+        <div className="bg-surface-card border border-border-primary rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
+          <div className="h-6 w-28 mb-4 rounded bg-surface-elevated skeleton-shimmer" />
           <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="aspect-[3/2] w-full rounded-xl image-skeleton-shine break-inside-avoid mb-4"
+                className="aspect-[3/2] w-full rounded-xl bg-surface-elevated skeleton-shimmer break-inside-avoid mb-4"
                 aria-hidden
               />
             ))}
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
-          <div className="h-6 w-24 mb-4 rounded image-skeleton-shine" />
+        <div className="bg-surface-card border border-border-primary rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
+          <div className="h-6 w-24 mb-4 rounded bg-surface-elevated skeleton-shimmer" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 w-full rounded-lg image-skeleton-shine" aria-hidden />
+              <div
+                key={i}
+                className="h-24 w-full rounded-lg bg-surface-elevated skeleton-shimmer"
+                aria-hidden
+              />
             ))}
           </div>
         </div>
@@ -372,27 +376,27 @@ export const BusinessProfile = () => {
 
       <SalonShopPhotos photos={photos} />
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Services</h2>
+      <div className="bg-surface-card border border-border-primary rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-text-primary mb-4">Services</h2>
 
         {services && services.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {services.map((service) => (
               <div
                 key={service.id}
-                className="border rounded-lg p-4 bg-white hover:border-gray-400 transition-colors"
+                className="border border-border-primary rounded-lg p-4 bg-surface-elevated hover:border-brand-primary transition-colors"
               >
-                <div className="font-bold text-lg mb-1">{service.name}</div>
+                <div className="font-bold text-lg mb-1 text-white">{service.name}</div>
 
-                <div className="flex items-center justify-between text-gray-600 text-sm">
+                <div className="flex items-center justify-between text-text-secondary text-sm">
                   <span>Duration: {service.duration}</span>
-                  <span className="font-semibold text-black">₹{service.price}</span>
+                  <span className="font-semibold text-text-primary">₹{service.price}</span>
                 </div>
 
                 <div className="flex items-center justify-between mt-3">
                   <button
                     onClick={() => handleBook(service.id)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-800 hover:text-white transition-colors duration-200"
+                    className="px-4 py-2 border border-border-primary rounded-md text-sm font-medium text-text-primary bg-surface-elevated hover:bg-brand-primary hover:text-text-inverse hover:border-brand-primary transition-colors duration-200"
                   >
                     Book
                   </button>
@@ -402,9 +406,9 @@ export const BusinessProfile = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+            <div className="w-16 h-16 bg-surface-elevated rounded-full flex items-center justify-center mb-3">
               <svg
-                className="w-8 h-8 text-slate-400"
+                className="w-8 h-8 text-text-tertiary"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -418,7 +422,7 @@ export const BusinessProfile = () => {
               </svg>
             </div>
 
-            <p className="text-lg text-gray-500">No services available</p>
+            <p className="text-lg text-text-secondary">No services available</p>
           </div>
         )}
       </div>
@@ -431,15 +435,15 @@ export const BusinessProfile = () => {
 function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
   if (!reviewData || reviewData.review_count === 0) {
     return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
+      <div className="bg-surface-card border border-border-primary rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-text-primary mb-4">Customer Reviews</h2>
 
         <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
           <div className="flex items-center gap-1 mb-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <svg
                 key={i}
-                className="w-5 h-5 text-slate-300"
+                className="w-5 h-5 text-text-disabled"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -448,7 +452,7 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
             ))}
           </div>
 
-          <p className="text-sm text-slate-500">No reviews yet.</p>
+          <p className="text-sm text-text-secondary">No reviews yet.</p>
         </div>
       </div>
     );
@@ -457,16 +461,18 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
   const { rating_avg, review_count, rating_counts } = reviewData;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm ring-1 ring-slate-100/80">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Customer Reviews</h2>
+    <div className="bg-surface-card border border-border-primary rounded-xl p-4 sm:p-5 lg:p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-text-primary mb-4">Customer Reviews</h2>
 
       <div className="flex flex-col sm:flex-row gap-6">
         <div className="flex flex-col items-center sm:items-start">
-          <div className="text-4xl font-bold text-slate-900">{rating_avg?.toFixed(1) ?? ' '}</div>
+          <div className="text-4xl font-bold text-text-primary">
+            {rating_avg?.toFixed(1) ?? ' '}
+          </div>
 
           <StarRating value={rating_avg ?? 0} readonly size="md" />
 
-          <p className="text-sm text-slate-500 mt-1">{review_count ?? 0} reviews</p>
+          <p className="text-sm text-text-secondary mt-1">{review_count ?? 0} reviews</p>
         </div>
 
         <div className="flex-1 space-y-2">
@@ -477,18 +483,18 @@ function ReviewSummary({ reviewData }: { reviewData: ReviewData | null }) {
 
             return (
               <div key={star} className="flex items-center gap-3">
-                <span className="flex items-center gap-1 w-8 text-sm text-slate-600">
+                <span className="flex items-center gap-1 w-8 text-sm text-text-secondary">
                   {star}
                   <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.963a1 1 0 00.95.69h4.167c.969 0 1.371 1.24.588 1.81l-3.373 2.451a1 1 0 00-.364 1.118l1.287 3.963c.3.921-.755 1.688-1.54 1.118l-3.373-2.452a1 1 0 00-1.175 0l-3.373 2.452c-.784.57-1.838-.197-1.539-1.118l1.286-3.963a1 1 0 00-.364-1.118L2.09 9.39c-.783-.57-.38-1.81.588-1.81h4.167a1 1 0 00.95-.69l1.254-3.963z" />
                   </svg>
                 </span>
 
-                <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-surface-elevated rounded-full overflow-hidden">
                   <div className="h-full bg-amber-400" style={{ width: `${percent}%` }} />
                 </div>
 
-                <span className="text-xs text-slate-500 w-8">{count}</span>
+                <span className="text-xs text-text-secondary w-8">{count}</span>
               </div>
             );
           })}

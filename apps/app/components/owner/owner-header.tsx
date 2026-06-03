@@ -21,7 +21,7 @@ export default function OwnerHeader({
   const showBackButton = title === 'Create Business';
 
   const hasTrailing = Boolean(trailing);
-  const subtitleClass = 'text-sm leading-snug text-gray-600 md:text-base';
+  const subtitleClass = 'text-sm leading-snug text-text-secondary md:text-base';
 
   return (
     <div className="mb-6 md:mb-8">
@@ -30,7 +30,7 @@ export default function OwnerHeader({
           {showBackButton && (
             <button
               onClick={() => router.push('/owner/businesses')}
-              className="mt-0.5 shrink-0 text-gray-700 hover:text-black lg:hidden"
+              className="mt-0.5 shrink-0 text-text-secondary hover:text-text-primary lg:hidden"
               aria-label="Back"
             >
               <ChevronLeftIcon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
@@ -52,7 +52,7 @@ export default function OwnerHeader({
               type="button"
               onClick={() => router.push('/owner/setup')}
               className={cn(
-                'shrink-0 rounded-xl bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 active:bg-slate-950',
+                'shrink-0 rounded-xl bg-brand-primary font-semibold text-text-inverse shadow-sm transition hover:bg-brand-primaryHover active:bg-brand-primaryPressed',
                 hasTrailing
                   ? 'hidden px-4 py-2 text-sm md:flex md:rounded-lg'
                   : 'px-3 py-1.5 text-xs md:rounded-lg md:px-4 md:py-2 md:text-sm'

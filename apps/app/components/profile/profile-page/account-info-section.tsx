@@ -38,7 +38,22 @@ interface AccountInfoSectionProps {
   profileImageUrl: string | null;
   setProfileImageUrl: (url: string | null) => void;
 }
-
+const inputStyles = `
+w-full
+rounded-xl
+border
+border-border-primary
+bg-surface-input
+px-4
+py-2.5
+text-text-primary
+placeholder:text-text-tertiary
+transition-all
+focus:outline-none
+focus:border-brand-primary
+focus:ring-2
+focus:ring-brand-primary/20
+`;
 function AccountInfoSectionComponent({
   profileData,
   formData,
@@ -224,12 +239,12 @@ function AccountInfoSectionComponent({
                 src={profileImageUrl || '/avatar-placeholder.svg'}
                 alt="Profile Picture"
                 fill
-                className="rounded-full border border-slate-200 object-cover shadow-sm"
+                className="rounded-full border border-border-primary object-cover shadow-sm"
                 sizes="(max-width: 640px) 80px, 112px"
                 unoptimized
               />
               {editMode && (
-                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-sm font-medium text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-brand-primary/40 text-sm font-medium text-text-inverse opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   {uploadingImage ? 'Uploading...' : 'Change'}
                   <input
                     type="file"
@@ -245,7 +260,7 @@ function AccountInfoSectionComponent({
             </div>
           ) : (
             <div
-              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-600 to-slate-900 text-[1.125rem] font-semibold leading-none tracking-tight text-white shadow-md ring-1 ring-slate-900/10 sm:h-28 sm:w-28 sm:text-2xl"
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-background-secondary to-background-primary text-[1.125rem] font-semibold leading-none tracking-tight text-text-inverse shadow-md ring-1 ring-border-focus sm:h-28 sm:w-28 sm:text-2xl"
               role="img"
               aria-label={identityLabelForInitials}
             >
@@ -253,14 +268,14 @@ function AccountInfoSectionComponent({
             </div>
           )}
           <div className="min-w-0 flex-1 pt-0.5 text-left">
-            <h3 className="text-lg font-semibold leading-snug text-slate-900">
+            <h3 className="text-lg font-semibold leading-snug text-text-primary">
               Account information
             </h3>
-            <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            <p className="mt-1 text-sm leading-relaxed text-text-secondary">
               Your profile and sign-in details
             </p>
             {!canShowProfileImage && (
-              <p className="mt-2 truncate text-base font-medium text-slate-800 sm:text-[1.0625rem]">
+              <p className="mt-2 truncate text-base font-medium text-text-primary sm:text-[1.0625rem]">
                 {profileData.profile?.full_name?.trim() || profileData.email || 'Not set'}
               </p>
             )}
@@ -270,7 +285,7 @@ function AccountInfoSectionComponent({
           <button
             type="button"
             onClick={() => setEditMode(true)}
-            className="w-full shrink-0 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto md:self-start"
+            className="w-full shrink-0 rounded-lg border border-border-primary bg-surface-card px-4 py-2.5 text-sm font-medium text-text-secondary shadow-sm transition-colors hover:bg-surface-elevated sm:w-auto md:self-start"
           >
             Edit profile
           </button>
@@ -284,15 +299,15 @@ function AccountInfoSectionComponent({
       )}
 
       <div className="space-y-6">
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
-          <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="overflow-hidden rounded-lg border border-border-primary bg-surface-elevated">
+          <div className="border-b border-border-primary bg-surface-card/90 px-4 py-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
               {UI_CONTEXT.PROFILE_SECTION_CONTACT}
             </h4>
           </div>
-          <dl className="divide-y divide-slate-100">
+          <dl className="divide-y divide-border-primary">
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4 sm:gap-y-0">
-              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-text-secondary">
                 Full name
               </dt>
               <dd className="min-w-0">
@@ -301,23 +316,23 @@ function AccountInfoSectionComponent({
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 focus:border-transparent focus:ring-2 focus:ring-slate-900"
+                    className={inputStyles}
                     placeholder="Enter your full name"
                   />
                 ) : (
-                  <p className="text-base leading-relaxed text-slate-900">
+                  <p className="text-base leading-relaxed text-text-primary">
                     {profileData.profile?.full_name || 'Not set'}
                   </p>
                 )}
               </dd>
             </div>
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
-              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-text-secondary">
                 Email
               </dt>
               <dd className="min-w-0">
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
-                  <span className="break-all text-base leading-relaxed text-slate-900">
+                  <span className="break-all text-base leading-relaxed text-text-primary">
                     {profileData.email || 'N/A'}
                   </span>
                   {profileData.email && profileData.email_confirmed ? (
@@ -333,7 +348,7 @@ function AccountInfoSectionComponent({
               </dd>
             </div>
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
-              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-text-secondary">
                 Phone
               </dt>
               <dd className="min-w-0">
@@ -349,11 +364,11 @@ function AccountInfoSectionComponent({
                     pattern="[0-9]{10}"
                     inputMode="numeric"
                     autoComplete="tel"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-900 focus:border-transparent focus:ring-2 focus:ring-slate-900"
+                    className={inputStyles}
                     placeholder="10 digits"
                   />
                 ) : (
-                  <p className="text-base leading-relaxed text-slate-900">
+                  <p className="text-base leading-relaxed text-text-primary">
                     {profileData.profile?.phone_number
                       ? formatPhoneNumber(profileData.profile.phone_number)
                       : 'Not set'}
@@ -364,15 +379,15 @@ function AccountInfoSectionComponent({
           </dl>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
-          <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="overflow-hidden rounded-lg border border-border-primary bg-surface-elevated">
+          <div className="border-b border-border-primary bg-surface-card/90 px-4 py-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
               {UI_CONTEXT.PROFILE_SECTION_ACCOUNT}
             </h4>
           </div>
-          <dl className="divide-y divide-slate-100">
+          <dl className="divide-y divide-border-primary">
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-center sm:gap-x-4">
-              <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              <dt className="text-xs font-medium uppercase tracking-wider text-text-secondary">
                 Account type
               </dt>
               <dd className="min-w-0">
@@ -383,27 +398,27 @@ function AccountInfoSectionComponent({
                     {getUserTypeLabel(profileData.profile.user_type)}
                   </span>
                 ) : (
-                  <p className="text-slate-500">No profile created yet</p>
+                  <p className="text-text-secondary">No profile created yet</p>
                 )}
               </dd>
             </div>
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
-              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-text-secondary">
                 Account created
               </dt>
               <dd
-                className="min-w-0 text-base leading-relaxed text-slate-900"
+                className="min-w-0 text-base leading-relaxed text-text-primary"
                 suppressHydrationWarning
               >
                 {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
               </dd>
             </div>
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
-              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <dt className="pt-0.5 text-xs font-medium uppercase tracking-wider text-text-secondary">
                 Last sign-in
               </dt>
               <dd
-                className="min-w-0 text-base leading-relaxed text-slate-900"
+                className="min-w-0 text-base leading-relaxed text-text-primary"
                 suppressHydrationWarning
               >
                 {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
@@ -419,7 +434,7 @@ function AccountInfoSectionComponent({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="w-full rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-medium text-text-inverse shadow-sm transition-colors hover:bg-brand-primaryHover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {saving ? 'Saving...' : 'Save changes'}
           </button>
@@ -427,7 +442,7 @@ function AccountInfoSectionComponent({
             type="button"
             onClick={handleCancel}
             disabled={saving}
-            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="w-full rounded-lg border border-border-primary bg-surface-card px-4 py-2.5 text-sm font-medium text-text-secondary shadow-sm transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             Cancel
           </button>

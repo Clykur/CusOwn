@@ -67,47 +67,47 @@ function AppointmentDetailsCardComponent({
   };
 
   return (
-    <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-        <BookingsIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
+    <div className="bg-surface-elevated rounded-xl p-6 border border-border-primary">
+      <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+        <BookingsIcon className="w-5 h-5 text-text-secondary" aria-hidden="true" />
         Appointment Details
       </h2>
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Date</p>
-          <p className="font-semibold text-slate-900">{formatDate(slot.date)}</p>
+          <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">Date</p>
+          <p className="font-semibold text-text-primary">{formatDate(slot.date)}</p>
         </div>
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Service</p>
-          <div className="font-semibold text-slate-900">
+          <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">Service</p>
+          <div className="font-semibold text-text-primary">
             {services && services.length > 0
               ? services.map((service, index) => <p key={index}>{service.name}</p>)
               : '—'}
           </div>{' '}
         </div>
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Time</p>
-          <p className="font-semibold text-slate-900">
+          <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">Time</p>
+          <p className="font-semibold text-text-primary">
             {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+          <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">
             {UI_CUSTOMER.LABEL_YOUR_RATING}
           </p>
           {review ? (
             <div className="space-y-2">
               <StarRating value={review.rating} readonly size="md" />
-              <p className="text-sm font-semibold text-slate-900">{review.rating} out of 5</p>
+              <p className="text-sm font-semibold text-text-primary">{review.rating} out of 5</p>
               {review.comment && (
-                <p className="text-sm text-slate-600 mt-2 p-3 bg-slate-100 rounded-lg">
+                <p className="text-sm text-text-secondary mt-2 p-3 bg-surface-elevated rounded-lg">
                   {review.comment}
                 </p>
               )}
             </div>
           ) : status === 'confirmed' ? (
             <form onSubmit={handleSubmitReview} className="space-y-3">
-              <p className="text-sm text-slate-600 mb-2">{UI_CUSTOMER.RATE_YOUR_VISIT}</p>
+              <p className="text-sm text-text-secondary mb-2">{UI_CUSTOMER.RATE_YOUR_VISIT}</p>
               <StarRating
                 value={reviewRating}
                 readonly={false}
@@ -116,7 +116,7 @@ function AppointmentDetailsCardComponent({
                 disabled={submittingReview}
               />
               <label className="block">
-                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                <span className="text-xs text-text-secondary uppercase tracking-wide">
                   {UI_CUSTOMER.ADD_COMMENT_OPTIONAL}
                 </span>
                 <textarea
@@ -124,21 +124,21 @@ function AppointmentDetailsCardComponent({
                   onChange={(e) => setReviewComment(e.target.value)}
                   disabled={submittingReview}
                   rows={3}
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:opacity-50"
+                  className="mt-1 block w-full rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary placeholder-slate-400 focus:border-border-primary focus:outline-none focus:ring-1 focus:ring-border-focus disabled:opacity-50"
                   placeholder="Share your experience..."
                 />
               </label>
-              {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
+              {reviewError && <p className="text-sm text-state-error">{reviewError}</p>}
               <button
                 type="submit"
                 disabled={submittingReview || reviewRating < 1}
-                className="px-4 py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="px-4 py-2.5 bg-brand-primary text-text-inverse font-semibold rounded-xl hover:bg-brand-primaryHover disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {submittingReview ? UI_CUSTOMER.SUBMITTING_RATING : UI_CUSTOMER.SUBMIT_RATING}
               </button>
             </form>
           ) : (
-            <p className="text-sm text-slate-500">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
+            <p className="text-sm text-text-secondary">{UI_CUSTOMER.LABEL_NOT_RATED}</p>
           )}
         </div>
       </div>

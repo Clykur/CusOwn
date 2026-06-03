@@ -5,7 +5,7 @@ import { skeletonBase } from '../base-skeleton';
 export function DashboardStatSkeleton() {
   return (
     <div
-      className="bg-white rounded-xl border border-gray-200 p-4 skeleton-shimmer"
+      className="bg-surface-card rounded-xl border border-border-primary p-4 skeleton-shimmer"
       aria-busy="true"
     >
       <div className={`h-4 ${skeletonBase} w-16 mb-2`} />
@@ -17,7 +17,7 @@ export function DashboardStatSkeleton() {
 export function SalonCardSkeleton() {
   return (
     <div
-      className="bg-white rounded-xl border-2 border-gray-200 p-6 skeleton-shimmer h-full flex flex-col"
+      className="bg-surface-card rounded-xl border-2 border-border-primary p-6 skeleton-shimmer h-full flex flex-col"
       aria-busy="true"
     >
       <div className="flex justify-between mb-3">

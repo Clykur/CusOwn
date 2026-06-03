@@ -29,14 +29,17 @@ import { cn } from '@cusown/shared';
 const DateFilter = dynamic(() => import('@/components/owner/date-filter'), {
   ssr: false,
   loading: () => (
-    <div className="h-11 w-full rounded-xl bg-slate-100 animate-pulse md:h-9 md:w-32 md:rounded-lg" />
+    <div className="h-11 w-full rounded-xl bg-surface-elevated animate-pulse md:h-9 md:w-32 md:rounded-lg" />
   ),
 });
 
 const NoShowButton = dynamic(() => import('@/components/booking/no-show-button'), {
   ssr: false,
   loading: () => (
-    <button disabled className="px-3 py-1.5 text-xs bg-slate-100 text-slate-400 rounded-lg">
+    <button
+      disabled
+      className="px-3 py-1.5 text-xs bg-surface-elevated text-text-secondary rounded-lg"
+    >
       Loading...
     </button>
   ),
@@ -46,9 +49,9 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 const Stat = memo(function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="overflow-visible rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] md:rounded-lg md:p-6 md:shadow-none">
-      <div className="text-sm text-slate-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 md:mt-0 md:text-3xl">
+    <div className="overflow-visible rounded-xl border border-border-primary bg-surface-card p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] md:rounded-lg md:p-6 md:shadow-none">
+      <div className="text-sm text-text-secondary">{label}</div>
+      <div className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-text-primary md:mt-0 md:text-3xl">
         {value}
       </div>
     </div>
@@ -112,7 +115,7 @@ function SearchInput() {
       placeholder={UI_CONTEXT.OWNER_DASHBOARD_SEARCH_PLACEHOLDER}
       value={localValue}
       onChange={handleChange}
-      className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 md:h-9 md:rounded-lg md:shadow-none"
+      className="w-full h-11 rounded-xl border border-border-primary bg-surface-card px-4 text-sm shadow-sm placeholder:text-text-secondary focus:border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/10 md:h-9 md:rounded-lg md:shadow-none"
     />
   );
 }
@@ -635,26 +638,26 @@ export default function OwnerDashboardPage() {
 
       <div>
         <h2 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-3 md:mb-4')}>Your Customers</h2>
-        <div className="overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none md:rounded-lg md:border md:border-slate-200/90 md:bg-white md:p-6 md:shadow-none">
-          <p className="mb-4 hidden text-sm leading-relaxed text-slate-500 md:block">
+        <div className="overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none md:rounded-lg md:border md:border-border-primary md:bg-surface-card md:p-6 md:shadow-none">
+          <p className="mb-4 hidden text-sm leading-relaxed text-text-secondary md:block">
             {UI_CONTEXT.OWNER_DASHBOARD_FILTERS_HINT}
           </p>
 
           <div className="mb-4 hidden md:block">
             <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end md:gap-x-4 md:gap-y-3">
-              <h3 className="w-full border-b border-slate-100 pb-3 text-base font-semibold tracking-tight text-slate-900 md:mr-auto md:w-auto md:border-0 md:pb-0 md:text-lg">
+              <h3 className="w-full border-b border-border-primary pb-3 text-base font-semibold tracking-tight text-text-primary md:mr-auto md:w-auto md:border-0 md:pb-0 md:text-lg">
                 Bookings
               </h3>
 
               <div className="flex w-full min-w-0 flex-col gap-3 md:w-auto md:flex-1 md:flex-row md:flex-wrap md:items-end md:justify-end md:gap-x-4 md:gap-y-3">
                 <div className="hidden w-full min-w-0 flex-col gap-1 md:flex md:w-auto md:min-w-[9.5rem] md:shrink-0">
-                  <span className="text-xs font-medium text-slate-500">
+                  <span className="text-xs font-medium text-text-secondary">
                     {UI_CONTEXT.OWNER_DASHBOARD_STATUS}
                   </span>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as OwnerDashboardStatusFilter)}
-                    className="h-10 w-full min-w-[9.5rem] rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    className="h-11 w-full min-w-[9.5rem] rounded-xl border border-border-primary bg-surface-input px-3 text-sm text-text-secondary focus:border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/10"
                     aria-label={UI_CONTEXT.OWNER_DASHBOARD_STATUS}
                   >
                     <option value="all">{UI_CONTEXT.OWNER_DASHBOARD_STATUS_ALL}</option>
@@ -675,13 +678,13 @@ export default function OwnerDashboardPage() {
 
                 {businessOptions.length > 1 && (
                   <div className="hidden w-full min-w-0 flex-col gap-1 md:flex md:max-w-[14rem] md:shrink-0">
-                    <span className="text-xs font-medium text-slate-500">
+                    <span className="text-xs font-medium text-text-secondary">
                       {UI_CONTEXT.OWNER_DASHBOARD_BUSINESS}
                     </span>
                     <select
                       value={businessIdFilter}
                       onChange={(e) => setBusinessIdFilter(e.target.value)}
-                      className="h-10 w-full min-w-[10rem] rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      className="h-11 w-full min-w-[10rem] rounded-xl border border-border-primary bg-surface-input px-3 text-sm focus:border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/10"
                       aria-label={UI_CONTEXT.OWNER_DASHBOARD_BUSINESS}
                     >
                       <option value="">{UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL}</option>
@@ -697,7 +700,7 @@ export default function OwnerDashboardPage() {
                 <div className="grid w-full grid-cols-2 gap-3 md:contents">
                   <div className="flex min-w-0 flex-col gap-1 md:shrink-0">
                     <span
-                      className="text-xs font-medium text-slate-500"
+                      className="text-xs font-medium text-text-secondary"
                       title={UI_CONTEXT.OWNER_DASHBOARD_APPOINTMENT_FROM}
                     >
                       {UI_CONTEXT.OWNER_DASHBOARD_APPOINTMENT_FROM}
@@ -713,7 +716,7 @@ export default function OwnerDashboardPage() {
 
                   <div className="flex min-w-0 flex-col gap-1 md:shrink-0">
                     <span
-                      className="text-xs font-medium text-slate-500"
+                      className="text-xs font-medium text-text-secondary"
                       title={UI_CONTEXT.OWNER_DASHBOARD_APPOINTMENT_TO}
                     >
                       {UI_CONTEXT.OWNER_DASHBOARD_APPOINTMENT_TO}
@@ -731,7 +734,7 @@ export default function OwnerDashboardPage() {
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="flex h-10 w-auto shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 transition hover:bg-gray-50"
+                  className="flex h-11 w-auto shrink-0 items-center justify-center rounded-xl border border-border-primary bg-surface-input px-3 text-sm font-medium text-text-primary transition hover:bg-surface-elevated"
                 >
                   {UI_CONTEXT.OWNER_DASHBOARD_CLEAR_FILTERS}
                 </button>
@@ -745,7 +748,7 @@ export default function OwnerDashboardPage() {
 
           <div className="mb-4 md:hidden">
             <div className="flex w-full min-w-0 items-center justify-between gap-3">
-              <h3 className="min-w-0 truncate text-base font-semibold tracking-tight text-slate-900">
+              <h3 className="min-w-0 truncate text-base font-semibold tracking-tight text-text-primary">
                 Bookings
               </h3>
               <div className="flex shrink-0 items-center gap-2">
@@ -753,8 +756,8 @@ export default function OwnerDashboardPage() {
                   type="button"
                   onClick={() => setMobileSearchExpanded((open) => !open)}
                   className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50',
-                    mobileSearchExpanded && 'border-slate-900 ring-2 ring-slate-900/10'
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-primary bg-surface-card text-text-primary shadow-sm transition hover:bg-surface-elevated',
+                    mobileSearchExpanded && 'border-border-primary ring-2 ring-border-focus'
                   )}
                   aria-expanded={mobileSearchExpanded}
                   aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_OPEN_SEARCH}
@@ -765,8 +768,8 @@ export default function OwnerDashboardPage() {
                   type="button"
                   onClick={() => setMobileFilterSheetOpen(true)}
                   className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50',
-                    hasActiveFilters && 'border-slate-900/40 bg-slate-50'
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-primary bg-surface-card text-text-primary shadow-sm transition hover:bg-surface-elevated',
+                    hasActiveFilters && 'border-border-primary bg-surface-elevated'
                   )}
                   aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_OPEN_FILTERS}
                 >
@@ -792,11 +795,11 @@ export default function OwnerDashboardPage() {
               >
                 <button
                   type="button"
-                  className="absolute inset-0 bg-black/40"
+                  className="absolute inset-0 bg-brand-primary/40"
                   aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
                   onClick={() => setMobileFilterSheetOpen(false)}
                 />
-                <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-6 pt-4 shadow-xl">
+                <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-surface-card px-4 pb-6 pt-4 shadow-xl">
                   <div className="mb-4 flex items-center justify-between gap-2">
                     <h2
                       id="owner-dashboard-mobile-filters-title"
@@ -807,13 +810,13 @@ export default function OwnerDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setMobileFilterSheetOpen(false)}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-elevated"
                       aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
                     >
                       <X className="h-5 w-5" aria-hidden="true" />
                     </button>
                   </div>
-                  <p className="mb-4 text-sm leading-relaxed text-slate-500">
+                  <p className="mb-4 text-sm leading-relaxed text-text-secondary">
                     {UI_CONTEXT.OWNER_DASHBOARD_FILTERS_HINT}
                   </p>
                   <div className="flex flex-col gap-4">
@@ -831,7 +834,7 @@ export default function OwnerDashboardPage() {
                     ) : null}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex min-w-0 flex-col gap-1">
-                        <span className="text-xs font-medium text-slate-500">
+                        <span className="text-xs font-medium text-text-secondary">
                           {UI_CONTEXT.OWNER_DASHBOARD_APPOINTMENT_FROM}
                         </span>
                         <div className="w-full">
@@ -843,7 +846,7 @@ export default function OwnerDashboardPage() {
                         </div>
                       </div>
                       <div className="flex min-w-0 flex-col gap-1">
-                        <span className="text-xs font-medium text-slate-500">
+                        <span className="text-xs font-medium text-text-secondary">
                           {UI_CONTEXT.OWNER_DASHBOARD_APPOINTMENT_TO}
                         </span>
                         <div className="w-full">
@@ -858,14 +861,14 @@ export default function OwnerDashboardPage() {
                     <button
                       type="button"
                       onClick={handleClearFilters}
-                      className="flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
+                      className="flex h-11 w-full items-center justify-center rounded-xl border border-border-primary bg-surface-elevated px-4 text-sm font-medium text-text-primary transition hover:bg-surface-elevated"
                     >
                       {UI_CONTEXT.OWNER_DASHBOARD_CLEAR_FILTERS}
                     </button>
                     <button
                       type="button"
                       onClick={() => setMobileFilterSheetOpen(false)}
-                      className="flex h-11 w-full items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                      className="flex h-11 w-full items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-medium text-text-inverse transition hover:bg-brand-primaryHover"
                     >
                       {UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_DONE}
                     </button>
@@ -876,10 +879,10 @@ export default function OwnerDashboardPage() {
             )}
 
           {bookings.length > 0 && (
-            <p className="mb-3 text-center text-sm text-slate-600 md:text-left">
+            <p className="mb-3 text-center text-sm text-text-secondary md:text-left">
               {UI_CONTEXT.OWNER_DASHBOARD_SHOWING_COUNT(filteredBookings.length, bookings.length)}
               {hasActiveFilters ? (
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   {' '}
                   · {UI_CONTEXT.OWNER_DASHBOARD_FILTERS_ACTIVE}
                 </span>
@@ -889,13 +892,13 @@ export default function OwnerDashboardPage() {
 
           {bookings.length === 0 ? (
             <div className="py-10 text-center md:py-12">
-              <p className="text-sm text-slate-500 md:text-base">
+              <p className="text-sm text-text-secondary md:text-base">
                 {UI_CONTEXT.OWNER_DASHBOARD_NO_BOOKINGS}
               </p>
             </div>
           ) : filteredBookings.length === 0 ? (
             <div className="py-10 text-center md:py-12">
-              <p className="text-sm text-slate-500 md:text-base">
+              <p className="text-sm text-text-secondary md:text-base">
                 {UI_CONTEXT.OWNER_DASHBOARD_NO_MATCH_FILTERS}
               </p>
             </div>
@@ -903,30 +906,30 @@ export default function OwnerDashboardPage() {
             <>
               <div className="hidden md:-mx-6 md:block md:overflow-x-auto">
                 <div className="inline-block min-w-full align-middle px-4 sm:px-6">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-border-primary">
+                    <thead className="bg-surface-elevated">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
                           Customer
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
                           Date & Time
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
                           Booking ID
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
                           Business
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
                           Rating
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 sm:px-6">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
                           Status & Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-border-primary bg-surface-card">
                       {filteredBookings.map((booking) => (
                         <BookingTableRow
                           key={booking.id}
@@ -1037,7 +1040,7 @@ function BookingStatusActions({
           return (
             <>
               {!hidePills ? (
-                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                <span className="rounded-full bg-surface-elevated px-2.5 py-1 text-xs font-semibold text-text-secondary">
                   Pending
                 </span>
               ) : null}
@@ -1047,7 +1050,7 @@ function BookingStatusActions({
                 disabled={processingBookingId === booking.id}
                 className={cn(
                   iconBtn,
-                  'text-green-600 transition hover:text-green-700 disabled:opacity-50'
+                  'text-state-success transition hover:text-state-success/80 disabled:opacity-50'
                 )}
                 title="Accept"
                 aria-label="Accept booking"
@@ -1060,7 +1063,7 @@ function BookingStatusActions({
                 disabled={processingBookingId === booking.id}
                 className={cn(
                   iconBtn,
-                  'text-red-600 transition hover:text-red-700 disabled:opacity-50'
+                  'text-state-error transition hover:text-state-error/80 disabled:opacity-50'
                 )}
                 title="Reject"
                 aria-label="Reject booking"
@@ -1072,7 +1075,7 @@ function BookingStatusActions({
         }
         if (booking.status === 'pending' && isSlotExpired) {
           return hidePills ? null : (
-            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+            <span className="rounded-full bg-surface-elevated px-2.5 py-1 text-xs font-semibold text-text-secondary">
               Expired
             </span>
           );
@@ -1144,7 +1147,7 @@ function BookingStatusActions({
               'rounded-full px-2.5 py-1 text-xs font-semibold',
               booking.status === 'rejected'
                 ? 'bg-rose-100 text-rose-900'
-                : 'bg-gray-100 text-gray-700'
+                : 'bg-surface-elevated text-text-secondary'
             )}
           >
             {booking.status === 'rejected'
@@ -1174,10 +1177,10 @@ function formatAppointmentDate(dateStr: string) {
 
 function getMobileCardStatusBadge(booking: BookingWithDetails, isSlotExpired: boolean) {
   if (booking.status === 'pending' && !isSlotExpired) {
-    return { label: 'Pending', className: 'bg-gray-100 text-gray-700' };
+    return { label: 'Pending', className: 'bg-surface-elevated text-text-secondary' };
   }
   if (booking.status === 'pending' && isSlotExpired) {
-    return { label: 'Expired', className: 'bg-gray-100 text-gray-700' };
+    return { label: 'Expired', className: 'bg-surface-elevated text-text-secondary' };
   }
   if (booking.status === 'confirmed') {
     return { label: 'Accepted', className: 'bg-emerald-100 text-emerald-800' };
@@ -1188,11 +1191,11 @@ function getMobileCardStatusBadge(booking: BookingWithDetails, isSlotExpired: bo
   if (booking.status === 'cancelled') {
     return {
       label: booking.cancelled_by === 'customer' ? UI_CONTEXT.CANCELLED_BY_CUSTOMER : 'Cancelled',
-      className: 'bg-gray-100 text-gray-700',
+      className: 'bg-surface-elevated text-text-secondary',
     };
   }
   if (String(booking.status) === 'expired') {
-    return { label: 'Expired', className: 'bg-gray-100 text-gray-700' };
+    return { label: 'Expired', className: 'bg-surface-elevated text-text-secondary' };
   }
   return null;
 }
@@ -1215,28 +1218,28 @@ const BookingMobileCard = memo(function BookingMobileCard({
 
   return (
     <article
-      className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm ring-1 ring-slate-900/[0.03]"
+      className="rounded-xl border border-border-primary bg-surface-card p-3 shadow-sm ring-1 ring-border-focus/[0.03]"
       aria-label={booking.booking_id}
     >
-      <div className="flex items-start justify-between gap-3 border-b border-slate-100/90 pb-2.5">
+      <div className="flex items-start justify-between gap-3 border-b border-border-primary pb-2.5">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold leading-tight text-slate-900">
+          <div className="truncate text-sm font-semibold leading-tight text-text-primary">
             {booking.customer_name}
           </div>
-          <div className="mt-0.5 text-xs text-slate-500">{booking.customer_phone}</div>
+          <div className="mt-0.5 text-xs text-text-secondary">{booking.customer_phone}</div>
         </div>
         <div className="shrink-0 text-right text-xs leading-tight">
           {booking.slot ? (
             <>
-              <div className="font-medium text-slate-800">
+              <div className="font-medium text-text-primary">
                 {formatAppointmentDate(booking.slot.date)}
               </div>
-              <div className="text-slate-500">
+              <div className="text-text-secondary">
                 {booking.slot.start_time}–{booking.slot.end_time}
               </div>
             </>
           ) : (
-            <span className="text-slate-400">N/A</span>
+            <span className="text-text-secondary">N/A</span>
           )}
         </div>
       </div>
@@ -1244,11 +1247,11 @@ const BookingMobileCard = memo(function BookingMobileCard({
       <div className="mt-2 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {booking.salon?.salon_name ? (
-            <p className="truncate text-xs font-medium text-slate-800">
+            <p className="truncate text-xs font-medium text-text-primary">
               {booking.salon.salon_name}
             </p>
           ) : (
-            <span className="text-xs text-slate-400">—</span>
+            <span className="text-xs text-text-secondary">—</span>
           )}
         </div>
         {statusBadge ? (
@@ -1269,10 +1272,10 @@ const BookingMobileCard = memo(function BookingMobileCard({
           {booking.review?.rating != null && booking.review.rating > 0 ? (
             <StarRating value={booking.review.rating} readonly size="sm" />
           ) : (
-            <span className="text-xs text-slate-400">—</span>
+            <span className="text-xs text-text-secondary">—</span>
           )}
         </div>
-        <p className="max-w-[50%] shrink-0 text-right font-mono text-[10px] leading-snug text-slate-500">
+        <p className="max-w-[50%] shrink-0 text-right font-mono text-[10px] leading-snug text-text-secondary">
           {booking.booking_id}
         </p>
       </div>
@@ -1310,32 +1313,32 @@ const BookingTableRow = memo(function BookingTableRow({
   const canUndoBooking = canUndo(booking);
 
   return (
-    <tr className="transition-colors hover:bg-gray-50">
+    <tr className="transition-colors hover:bg-surface-elevated">
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
-        <div className="text-sm font-medium text-gray-900">{booking.customer_name}</div>
-        <div className="text-sm text-gray-500">{booking.customer_phone}</div>
+        <div className="text-sm font-medium text-text-primary">{booking.customer_name}</div>
+        <div className="text-sm text-text-secondary">{booking.customer_phone}</div>
       </td>
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
         {booking.slot ? (
           <div>
-            <div className="text-sm text-gray-900">
+            <div className="text-sm text-text-primary">
               {new Date(booking.slot.date).toLocaleDateString()}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-text-secondary">
               {booking.slot.start_time} - {booking.slot.end_time}
             </div>
           </div>
         ) : (
-          <span className="text-sm text-gray-500">N/A</span>
+          <span className="text-sm text-text-secondary">N/A</span>
         )}
       </td>
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
-        <span className="font-mono text-sm text-gray-500">{booking.booking_id}</span>
+        <span className="font-mono text-sm text-text-secondary">{booking.booking_id}</span>
       </td>
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
-        <div className="text-sm text-gray-900">{booking.salon?.salon_name}</div>
+        <div className="text-sm text-text-primary">{booking.salon?.salon_name}</div>
       </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-600 sm:px-6">
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-text-secondary sm:px-6">
         {booking.review?.rating ? (
           <StarRating value={booking.review.rating} readonly size="sm" />
         ) : (

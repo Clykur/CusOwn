@@ -39,9 +39,9 @@ function BookingStatusBannerComponent({ status, isNoShow, cancelledBy }: Booking
       case 'pending':
         return 'bg-amber-50 border-amber-200 text-amber-800';
       case 'rejected':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-state-error/10 border-state-error/50 text-state-error';
       default:
-        return 'bg-slate-50 border-slate-200 text-slate-800';
+        return 'bg-surface-elevated border-border-primary text-text-primary';
     }
   };
 

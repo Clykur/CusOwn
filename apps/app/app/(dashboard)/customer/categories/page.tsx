@@ -32,13 +32,13 @@ function ServiceCategoryCard({
 }) {
   return (
     <Link href={href}>
-      <div className="group relative overflow-hidden rounded-2xl bg-white p-8 shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 group-hover:bg-slate-200 transition-colors">
-          <BusinessesIcon className="h-10 w-10 text-slate-600" aria-hidden="true" />
+      <div className="group relative overflow-hidden rounded-2xl bg-surface-card p-8 shadow-sm border border-border-primary hover:shadow-md hover:border-border-primary transition-all duration-200 cursor-pointer">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-elevated group-hover:bg-surface-elevated transition-colors">
+          <BusinessesIcon className="h-10 w-10 text-text-secondary" aria-hidden="true" />
         </div>
-        <h3 className="text-xl font-semibold text-slate-900 mb-2">{title}</h3>
-        <p className="text-slate-600 leading-relaxed text-sm mb-6">{description}</p>
-        <span className="inline-flex items-center gap-2 text-slate-900 font-medium text-sm group-hover:gap-3 transition-all">
+        <h3 className="text-xl font-semibold text-text-primary mb-2">{title}</h3>
+        <p className="text-text-secondary leading-relaxed text-sm mb-6">{description}</p>
+        <span className="inline-flex items-center gap-2 text-text-primary font-medium text-sm group-hover:gap-3 transition-all">
           {UI_CUSTOMER.CATEGORY_CTA}
           <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
         </span>

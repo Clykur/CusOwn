@@ -61,14 +61,14 @@ export function getUserTypeLabel(type: string): string {
 export function getUserTypeColor(type: string): string {
   switch (type) {
     case 'owner':
-      return 'bg-slate-100 text-slate-800';
+      return 'bg-surface-elevated text-text-primary';
     case 'customer':
-      return 'bg-slate-100 text-slate-800';
+      return 'bg-surface-elevated text-text-primary';
     case 'both':
-      return 'bg-slate-200 text-slate-900';
+      return 'bg-surface-elevated text-text-primary';
     case 'admin':
-      return 'bg-slate-900 text-white';
+      return 'bg-brand-primary text-text-inverse';
     default:
-      return 'bg-slate-100 text-slate-800';
+      return 'bg-surface-elevated text-text-primary';
   }
 }

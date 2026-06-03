@@ -69,18 +69,18 @@ export default function ServicePerformanceTable({ services }: { services: Servic
   ] as const;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 p-4 md:p-6 md:pb-3">
+    <div className="rounded-xl border border-border-primary bg-surface-card shadow-sm">
+      <div className="border-b border-border-primary p-4 md:p-6 md:pb-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-sm font-semibold text-slate-900">
+          <h3 className="text-sm font-semibold text-text-primary">
             {UI_CONTEXT.OWNER_ANALYTICS_SERVICE_PERFORMANCE_TITLE}
           </h3>
-          <span className="text-xs text-slate-500">Top 5 highlighted</span>
+          <span className="text-xs text-text-secondary">Top 5 highlighted</span>
         </div>
       </div>
 
       <div className="md:hidden">
-        <div className="divide-y divide-slate-100 px-3 pb-3">
+        <div className="divide-y divide-border-primary px-3 pb-3">
           {rows.map((row, index) => (
             <div
               key={row.id}
@@ -89,25 +89,29 @@ export default function ServicePerformanceTable({ services }: { services: Servic
                 index < 5 ? 'rounded-lg bg-indigo-50/40 px-2 -mx-1' : ''
               )}
             >
-              <p className="text-sm font-semibold text-slate-900">{row.name}</p>
+              <p className="text-sm font-semibold text-text-primary">{row.name}</p>
               <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                 <div>
-                  <dt className="text-slate-500">{UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_BOOKINGS}</dt>
-                  <dd className="font-medium text-slate-800">{row.count}</dd>
+                  <dt className="text-text-secondary">
+                    {UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_BOOKINGS}
+                  </dt>
+                  <dd className="font-medium text-text-primary">{row.count}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">{UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_REVENUE}</dt>
-                  <dd className="font-medium text-slate-800">{formatCurrency(row.revenue)}</dd>
+                  <dt className="text-text-secondary">
+                    {UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_REVENUE}
+                  </dt>
+                  <dd className="font-medium text-text-primary">{formatCurrency(row.revenue)}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">{UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_AVG}</dt>
-                  <dd className="font-medium text-slate-800">
+                  <dt className="text-text-secondary">{UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_AVG}</dt>
+                  <dd className="font-medium text-text-primary">
                     {formatCurrency(Math.round(row.avgRevenue))}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">{UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_CONV}</dt>
-                  <dd className="font-medium text-slate-800">{row.conversion}%</dd>
+                  <dt className="text-text-secondary">{UI_CONTEXT.OWNER_ANALYTICS_SVC_COL_CONV}</dt>
+                  <dd className="font-medium text-text-primary">{row.conversion}%</dd>
                 </div>
               </dl>
             </div>
@@ -116,18 +120,18 @@ export default function ServicePerformanceTable({ services }: { services: Servic
       </div>
 
       <div className="hidden overflow-x-auto md:block md:px-6 md:pb-6">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-border-primary">
           <thead>
-            <tr className="bg-gray-50/80">
+            <tr className="bg-surface-elevated">
               {columns.map(([key, label]) => (
                 <th
                   key={key}
-                  className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 lg:px-4"
+                  className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary lg:px-4"
                 >
                   <button
                     type="button"
                     onClick={() => onSort(key)}
-                    className="inline-flex items-center gap-1 hover:text-slate-800"
+                    className="inline-flex items-center gap-1 hover:text-text-primary"
                   >
                     {label}
                     {sortKey === key ? (desc ? '↓' : '↑') : ''}
@@ -136,18 +140,20 @@ export default function ServicePerformanceTable({ services }: { services: Servic
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className="divide-y divide-border-primary bg-surface-card">
             {rows.map((row, index) => (
               <tr key={row.id} className={index < 5 ? 'bg-indigo-50/30' : ''}>
-                <td className="px-3 py-3 text-sm font-medium text-slate-800 lg:px-4">{row.name}</td>
-                <td className="px-3 py-3 text-sm text-slate-700 lg:px-4">{row.count}</td>
-                <td className="px-3 py-3 text-sm text-slate-700 lg:px-4">
+                <td className="px-3 py-3 text-sm font-medium text-text-primary lg:px-4">
+                  {row.name}
+                </td>
+                <td className="px-3 py-3 text-sm text-text-secondary lg:px-4">{row.count}</td>
+                <td className="px-3 py-3 text-sm text-text-secondary lg:px-4">
                   {formatCurrency(row.revenue)}
                 </td>
-                <td className="px-3 py-3 text-sm text-slate-700 lg:px-4">
+                <td className="px-3 py-3 text-sm text-text-secondary lg:px-4">
                   {formatCurrency(Math.round(row.avgRevenue))}
                 </td>
-                <td className="px-3 py-3 text-sm text-slate-700 lg:px-4">{row.conversion}%</td>
+                <td className="px-3 py-3 text-sm text-text-secondary lg:px-4">{row.conversion}%</td>
               </tr>
             ))}
           </tbody>

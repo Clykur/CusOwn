@@ -8,15 +8,18 @@ export function OwnerDashboardSkeleton() {
     <div className="w-full pb-24 flex flex-col gap-6" aria-busy="true">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white border border-slate-200 rounded-lg p-6 skeleton-shimmer">
-            <div className={`text-sm text-slate-500 h-4 ${skeletonBase} w-24 mb-2 rounded`} />
+          <div
+            key={i}
+            className="bg-surface-card border border-border-primary rounded-lg p-6 skeleton-shimmer"
+          >
+            <div className={`text-sm text-text-secondary h-4 ${skeletonBase} w-24 mb-2 rounded`} />
             <div className={`h-8 ${skeletonBase} w-12 rounded`} />
           </div>
         ))}
       </div>
       <div>
         <div className={`h-6 ${skeletonBase} w-40 mb-4 rounded`} />
-        <div className="bg-white border border-slate-200 rounded-lg p-6 skeleton-shimmer">
+        <div className="bg-surface-card border border-border-primary rounded-lg p-6 skeleton-shimmer">
           <div className="flex items-center justify-between mb-4">
             <div className={`h-5 ${skeletonBase} w-20 rounded`} />
             <div className="flex gap-3">
@@ -24,9 +27,9 @@ export function OwnerDashboardSkeleton() {
               <div className={`h-9 ${skeletonBase} w-32 rounded-lg`} />
             </div>
           </div>
-          <div className="border-t border-slate-200 pt-4">
+          <div className="border-t border-border-primary pt-4">
             <div className="hidden lg:block">
-              <div className="bg-slate-50 px-6 py-3 flex gap-4 border-b border-slate-200">
+              <div className="bg-surface-elevated px-6 py-3 flex gap-4 border-b border-border-primary">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className={`h-4 ${skeletonBase} w-16 rounded`} />
                 ))}
@@ -47,7 +50,7 @@ export function OwnerDashboardSkeleton() {
             </div>
             <div className="lg:hidden space-y-4 pt-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="border border-slate-200 rounded-lg p-4">
+                <div key={i} className="border border-border-primary rounded-lg p-4">
                   <div className={`h-4 ${skeletonBase} w-32 mb-2 rounded`} />
                   <div className={`h-4 ${skeletonBase} w-24 mb-2 rounded`} />
                   <div className={`h-8 ${skeletonBase} w-full rounded`} />
@@ -68,7 +71,7 @@ export function OwnerBusinessesSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="rounded-xl border border-slate-200/90 bg-white p-4 skeleton-shimmer md:rounded-lg md:p-6"
+            className="rounded-xl border border-border-primary/90 bg-surface-card p-4 skeleton-shimmer md:rounded-lg md:p-6"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -93,7 +96,7 @@ export function OwnerBusinessesSkeleton() {
 export function OwnerSetupSkeleton() {
   return (
     <div className="w-full pb-24" aria-busy="true">
-      <div className="bg-white border border-slate-200 rounded-lg p-6 md:p-8 skeleton-shimmer">
+      <div className="bg-surface-card border border-border-primary rounded-lg p-6 md:p-8 skeleton-shimmer">
         <div className="mb-6 text-center">
           <div className={`h-14 w-14 ${skeletonBase} rounded-full mx-auto mb-3`} />
           <div className={`h-6 ${skeletonBase} w-56 mx-auto mb-2 rounded`} />
@@ -146,14 +149,14 @@ export function OwnerProfileSkeleton() {
         </div>
 
         <div className="space-y-6">
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
-            <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
+          <div className="overflow-hidden rounded-lg border border-border-primary bg-surface-elevated/50">
+            <div className="border-b border-border-primary bg-surface-card/90 px-4 py-3">
               <div className={`h-3 w-16 rounded ${skeletonBase}`} />
             </div>
             <div className="divide-y divide-slate-100">{[1, 2, 3].map(fieldRow)}</div>
           </div>
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/50">
-            <div className="border-b border-slate-200 bg-white/90 px-4 py-3">
+          <div className="overflow-hidden rounded-lg border border-border-primary bg-surface-elevated/50">
+            <div className="border-b border-border-primary bg-surface-card/90 px-4 py-3">
               <div className={`h-3 w-20 rounded ${skeletonBase}`} />
             </div>
             <div className="divide-y divide-slate-100">{[4, 5, 6].map(fieldRow)}</div>
@@ -203,13 +206,13 @@ export function OwnerAnalyticsSkeleton() {
 
 export function BusinessCreateSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50 py-12" aria-busy="true">
+    <div className="min-h-screen bg-surface-elevated py-12" aria-busy="true">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className={`h-9 ${skeletonBase} w-64 rounded`} />
           <div className={`mt-2 h-5 ${skeletonBase} w-96 max-w-full rounded`} />
         </div>
-        <div className="bg-white border border-slate-200 rounded-lg p-6 md:p-8 skeleton-shimmer">
+        <div className="bg-surface-card border border-border-primary rounded-lg p-6 md:p-8 skeleton-shimmer">
           <div className="space-y-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div key={i}>
@@ -228,7 +231,7 @@ export function BusinessCreateSkeleton() {
 }
 
 const cardShell =
-  'rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6';
+  'rounded-2xl border border-border-primary/90 bg-surface-card p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-border-focus/5 sm:p-5 md:rounded-lg md:shadow-none md:ring-0 lg:p-6';
 
 /**
  * `/owner/[bookingLink]` — mirrors loaded page: title, business card, services, QR, photos, slots tabs, reviews.
@@ -303,7 +306,7 @@ export function OwnerSalonDetailLoadingBody() {
       <div className={`${cardShell} skeleton-shimmer`}>
         <div className={`mb-1 h-5 ${skeletonBase} w-28 rounded md:h-6`} />
         <div className={`mb-4 h-4 ${skeletonBase} w-full max-w-sm rounded`} />
-        <div className="mb-5 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-4 md:rounded-xl">
+        <div className="mb-5 rounded-2xl border-2 border-dashed border-border-primary bg-surface-elevated/50 p-4 md:rounded-xl">
           <div className={`h-20 ${skeletonBase} rounded-xl`} />
         </div>
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 lg:grid-cols-4">
@@ -314,8 +317,8 @@ export function OwnerSalonDetailLoadingBody() {
       </div>
 
       {/* Slots / Downtime card */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] md:rounded-lg md:shadow-none md:ring-0 skeleton-shimmer">
-        <div className="flex gap-1 border-b border-slate-200 bg-slate-100 p-1.5">
+      <div className="overflow-hidden rounded-2xl border border-border-primary/90 bg-surface-card shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-border-focus/5 md:rounded-lg md:shadow-none md:ring-0 skeleton-shimmer">
+        <div className="flex gap-1 border-b border-border-primary bg-surface-elevated p-1.5">
           <div className={`h-10 flex-1 ${skeletonBase} rounded-lg`} />
           <div className={`h-10 flex-1 ${skeletonBase} rounded-lg`} />
         </div>
@@ -331,7 +334,10 @@ export function OwnerSalonDetailLoadingBody() {
           {/* Desktop: kanban columns */}
           <div className="hidden gap-4 md:grid md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-lg border border-slate-200 bg-gray-50 p-4">
+              <div
+                key={i}
+                className="rounded-lg border border-border-primary bg-surface-elevated p-4"
+              >
                 <div className="mb-3 flex items-center justify-between">
                   <div className={`h-4 ${skeletonBase} w-20 rounded`} />
                   <div className={`h-5 w-8 ${skeletonBase} rounded-full`} />
@@ -354,7 +360,7 @@ export function OwnerSalonDetailLoadingBody() {
         <div className={`mb-1 h-5 ${skeletonBase} w-40 rounded`} />
         <div className={`mb-4 h-4 ${skeletonBase} w-64 max-w-full rounded`} />
         <div
-          className={`min-h-[100px] rounded-xl border border-dashed border-slate-200 bg-slate-50/60 ${skeletonBase}`}
+          className={`min-h-[100px] rounded-xl border border-dashed border-border-primary bg-surface-elevated/60 ${skeletonBase}`}
         />
       </div>
     </div>

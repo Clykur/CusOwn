@@ -133,11 +133,11 @@ export default function UniversalSidebar() {
   return (
     <>
       {(sidebarType === 'owner' || sidebarType === 'customer') && (
-        <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b">
+        <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-background-secondary border-b border-border-primary">
           {/* Centered app title for mobile (no hamburger, no per-role title) */}
           <div className="h-14 flex items-center justify-center px-4">
             <button onClick={handleLogoClick}>
-              <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight hover:opacity-80 transition-opacity uppercase">
+              <h1 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight text-text-primary hover:opacity-80 transition-opacity uppercase">
                 CUSOWN
               </h1>
             </button>
@@ -147,14 +147,14 @@ export default function UniversalSidebar() {
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/80 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       <aside
         className={`
-    fixed top-0 left-0 z-50 h-screen w-64 bg-white
+    fixed top-0 left-0 z-50 h-screen w-64 bg-background-secondary border-r border-border-primary
     transition-transform duration-300
     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
     lg:translate-x-0
@@ -170,13 +170,13 @@ export default function UniversalSidebar() {
       </aside>
 
       {!mobileOpen && sidebarType === 'owner' && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background-secondary border-t border-border-primary">
           <MobileBottomNav />
         </div>
       )}
 
       {!mobileOpen && sidebarType === 'customer' && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background-secondary border-t border-border-primary">
           <CustomerMobileBottomNav />
         </div>
       )}

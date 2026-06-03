@@ -16,34 +16,34 @@ interface BusinessDetailsCardProps {
 
 function BusinessDetailsCardComponent({ salon }: BusinessDetailsCardProps) {
   return (
-    <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-        <BusinessesIcon className="w-5 h-5 text-slate-600" aria-hidden="true" />
+    <div className="bg-surface-elevated rounded-xl p-6 border border-border-primary">
+      <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+        <BusinessesIcon className="w-5 h-5 text-text-secondary" aria-hidden="true" />
         Business Details
       </h2>
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Business Name</p>
-          <p className="font-semibold text-slate-900">{salon.salon_name}</p>
+          <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">Business Name</p>
+          <p className="font-semibold text-text-primary">{salon.salon_name}</p>
         </div>
         {salon.location && (
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Location</p>
-            <p className="text-slate-700">{salon.location}</p>
+            <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">Location</p>
+            <p className="text-text-secondary">{salon.location}</p>
           </div>
         )}
         {salon.address && (
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Address</p>
-            <p className="text-sm text-slate-600">{salon.address}</p>
+            <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">Address</p>
+            <p className="text-sm text-text-secondary">{salon.address}</p>
           </div>
         )}
         {((salon.review_count ?? 0) > 0 || salon.rating_avg != null) && (
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+            <p className="text-xs text-text-secondary uppercase tracking-wide mb-1">
               {UI_CUSTOMER.LABEL_BUSINESS_RATING}
             </p>
-            <p className="font-semibold text-slate-900">
+            <p className="font-semibold text-text-primary">
               {UI_CONTEXT.BUSINESS_RATING_REVIEWS(
                 (salon.rating_avg ?? 0).toFixed(1),
                 salon.review_count ?? 0

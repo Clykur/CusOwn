@@ -33,9 +33,8 @@ export default function AuthButton({
         : null;
 
   const primary = marketingDark
-    ? 'rounded-full bg-accent px-5 py-2 text-sm font-semibold text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.08)] transition-shadow hover:shadow-[0_0_24px_rgba(34,197,94,0.35)]'
-    : 'rounded-lg bg-black px-6 py-2 font-semibold text-white transition-colors hover:bg-gray-900';
-
+    ? 'rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-text-inverse transition-all hover:bg-brand-primaryHover'
+    : 'rounded-xl bg-surface-elevated px-6 py-2 font-semibold text-text-primary border border-border-secondary transition-all hover:bg-brand-primary hover:text-text-inverse hover:border-brand-primary';
   const secondary = marketingDark
     ? 'rounded-full border border-white/18 bg-white/[0.06] px-5 py-2 text-sm font-semibold text-white transition-colors hover:border-white/28 hover:bg-white/[0.1]'
     : 'rounded-lg border-2 border-gray-300 bg-white px-6 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-50';

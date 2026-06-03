@@ -71,7 +71,7 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
   };
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-surface-card border-t border-border-primary z-50 safe-area-bottom">
       <div className="flex items-center justify-around h-16 px-2">
         {navigation.map((item) => {
           const active = isActive(item.href);
@@ -80,18 +80,18 @@ export default function MobileBottomNav({ sidebarOpen }: { sidebarOpen?: boolean
               key={item.name}
               href={item.href}
               className={`flex flex-1 min-w-0 flex-col items-center justify-center gap-1 px-2 py-2 transition-colors ${
-                active ? 'text-gray-900' : 'text-gray-500'
+                active ? 'text-text-primary' : 'text-text-secondary'
               }`}
             >
               <span className="flex items-center justify-center">
                 <item.icon
                   aria-hidden="true"
-                  className={`h-5 w-5 ${active ? 'text-gray-900' : 'text-gray-500'}`}
+                  className={`h-5 w-5 ${active ? 'text-text-primary' : 'text-text-secondary'}`}
                 />
               </span>
               <span
                 className={`text-xs font-medium leading-none ${
-                  active ? 'text-gray-900' : 'text-gray-500'
+                  active ? 'text-text-primary' : 'text-text-secondary'
                 }`}
               >
                 {item.name}

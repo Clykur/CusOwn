@@ -422,7 +422,7 @@ export const CUSTOMER_EXPLORE_SALONS_PER_PAGE = 10;
  * Tailwind classes for primary screen titles (customer & owner shells and page headers).
  */
 export const APP_SCREEN_TITLE_CLASSNAME =
-  'text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl';
+  'text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl';
 
 /** Customer-area imports (alias of APP_SCREEN_TITLE_CLASSNAME). */
 export const CUSTOMER_SCREEN_TITLE_CLASSNAME = APP_SCREEN_TITLE_CLASSNAME;

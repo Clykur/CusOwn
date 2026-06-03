@@ -16,17 +16,19 @@ interface ReviewSummaryProps {
 function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
   if (!reviewData || (reviewData.rating_avg === 0 && reviewData.review_count === 0)) {
     return (
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-slate-100/80 lg:p-6">
-        <h2 className="mb-1 text-base font-semibold text-slate-900 md:text-lg">Customer Reviews</h2>
-        <p className="mb-4 text-xs text-slate-500 md:text-sm">
+      <div className="rounded-2xl border border-border-primary bg-surface-card p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-border-focus/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-border-focus lg:p-6">
+        <h2 className="mb-1 text-base font-semibold text-text-primary md:text-lg">
+          Customer Reviews
+        </h2>
+        <p className="mb-4 text-xs text-text-secondary md:text-sm">
           Ratings from customers who booked with you
         </p>
-        <div className="flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center">
+        <div className="flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-dashed border-border-primary bg-surface-elevated px-4 py-8 text-center">
           <div className="mb-2 flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((i) => (
               <svg
                 key={i}
-                className="h-5 w-5 text-slate-300"
+                className="h-5 w-5 text-text-tertiary"
                 fill="currentColor"
                 viewBox="0 0 20 20"
                 aria-hidden="true"
@@ -35,8 +37,8 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
               </svg>
             ))}
           </div>
-          <p className="text-sm font-medium text-slate-600">No reviews yet</p>
-          <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-slate-500">
+          <p className="text-sm font-medium text-text-secondary">No reviews yet</p>
+          <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-text-secondary">
             When customers leave feedback, it will show up here.
           </p>
         </div>
@@ -47,12 +49,14 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
   const { rating_avg, review_count, rating_counts } = reviewData;
 
   return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] sm:p-5 md:rounded-xl md:shadow-sm md:ring-1 md:ring-slate-100/80 lg:p-6">
-      <h2 className="mb-4 text-base font-semibold text-slate-900 md:text-lg">Customer Reviews</h2>
+    <div className="rounded-2xl border border-border-secondary bg-surface-card p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] sm:p-5 md:rounded-xl md:shadow-sm lg:p-6">
+      <h2 className="mb-4 text-base font-semibold text-text-primary md:text-lg">
+        Customer Reviews
+      </h2>
 
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex flex-col items-center sm:items-start sm:min-w-[120px]">
-          <div className="text-4xl font-bold leading-none text-slate-900">
+          <div className="text-4xl font-bold leading-none text-text-primary">
             {rating_avg.toFixed(1)}
           </div>
 
@@ -61,7 +65,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
             <StarRating value={rating_avg} readonly size="md" />
           </div>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-text-secondary">
             {review_count} review{review_count === 1 ? '' : 's'}
           </p>
         </div>
@@ -73,7 +77,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
 
             return (
               <div key={star} className="flex items-center gap-3">
-                <span className="flex w-8 items-center gap-1 text-sm text-slate-600">
+                <span className="flex w-8 items-center gap-1 text-sm text-text-secondary">
                   {star}
                   <svg
                     className="w-4 h-4 text-amber-400"
@@ -85,7 +89,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
                   </svg>
                 </span>
 
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-elevated">
                   <div
                     className="h-full rounded-full bg-amber-400 transition-all"
                     style={{ width: `${percent}%` }}
@@ -93,7 +97,7 @@ function ReviewSummaryComponent({ reviewData }: ReviewSummaryProps) {
                   />
                 </div>
 
-                <span className="w-8 text-right text-xs text-slate-500">{count}</span>
+                <span className="w-8 text-right text-xs text-text-secondary">{count}</span>
               </div>
             );
           })}

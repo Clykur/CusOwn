@@ -87,13 +87,13 @@ export default function OperationalHealthPanel({
   ];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 p-4 md:p-6 md:pb-4">
+    <div className="overflow-hidden rounded-xl border border-border-primary bg-surface-card shadow-sm">
+      <div className="border-b border-border-primary p-4 md:p-6 md:pb-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <h3 className="text-sm font-semibold text-slate-900">
+          <h3 className="text-sm font-semibold text-text-primary">
             {UI_CONTEXT.OWNER_ANALYTICS_OPERATIONAL_INTEL_TITLE}
           </h3>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-text-secondary">
             Last updated {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '—'}
           </span>
         </div>
@@ -102,14 +102,14 @@ export default function OperationalHealthPanel({
         {cards.map((c) => (
           <div
             key={c.title}
-            className="rounded-xl border border-gray-200 bg-gray-50/80 p-3.5 md:rounded-lg md:p-4"
+            className="rounded-xl border border-border-primary bg-surface-elevated p-3.5 md:rounded-lg md:p-4"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-500">
+                <p className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-text-secondary">
                   {c.title}
                 </p>
-                <p className="mt-1.5 break-words text-lg font-semibold tabular-nums text-slate-900 md:text-xl">
+                <p className="mt-1.5 break-words text-lg font-semibold tabular-nums text-text-primary md:text-xl">
                   {c.value}
                 </p>
               </div>

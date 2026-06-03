@@ -161,8 +161,8 @@ export default function RescheduleButton({
   return (
     <>
       {optimisticSlot && isLoading ? (
-        <div className="w-full h-11 bg-slate-100 text-slate-600 font-semibold rounded-lg flex items-center justify-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-600 border-t-transparent" />
+        <div className="w-full h-11 bg-surface-elevated text-text-secondary font-semibold rounded-lg flex items-center justify-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-border-primary border-t-transparent" />
           <span>Rescheduling to {formatTime(optimisticSlot.start_time)}...</span>
         </div>
       ) : (
@@ -172,7 +172,7 @@ export default function RescheduleButton({
           title={
             isWithinCutoffRef.current ? 'Cannot reschedule within 30 minutes of appointment' : ''
           }
-          className="w-full h-11 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-11 bg-surface-elevated text-text-primary font-semibold rounded-lg hover:bg-surface-elevated transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <BookingsIcon className="w-5 h-5" aria-hidden="true" />
           <span>{isWithinCutoffRef.current ? 'Reschedule unavailable' : 'Reschedule'}</span>
@@ -180,10 +180,10 @@ export default function RescheduleButton({
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-brand-primary bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-surface-card rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Reschedule Booking</h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-text-secondary mb-4">
               Current: {formatDate(currentSlotData.date)} at{' '}
               {formatTime(currentSlotData.start_time)}
             </p>
@@ -191,12 +191,12 @@ export default function RescheduleButton({
               <label className="block text-sm font-medium mb-2">Select New Time</label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {filteredSlots.length === 0 ? (
-                  <p className="text-sm text-gray-500">No available slots</p>
+                  <p className="text-sm text-text-secondary">No available slots</p>
                 ) : (
                   filteredSlots.map((slot) => (
                     <label
                       key={slot.id}
-                      className="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer"
+                      className="flex items-center p-2 border rounded hover:bg-surface-elevated cursor-pointer"
                     >
                       <input
                         type="radio"
@@ -226,12 +226,12 @@ export default function RescheduleButton({
               />
             </div>
             {rescheduleMutation.isError && (
-              <p className="text-sm text-red-600 mb-4">{rescheduleMutation.error?.message}</p>
+              <p className="text-sm text-state-error mb-4">{rescheduleMutation.error?.message}</p>
             )}
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowModal(false)}
-                className="h-11 px-6 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                className="h-11 px-6 bg-surface-elevated text-text-primary font-semibold rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50"
                 disabled={isLoading}
               >
                 Cancel
@@ -239,16 +239,16 @@ export default function RescheduleButton({
               <button
                 onClick={handleReschedule}
                 disabled={isLoading || !selectedSlotId || validatingSlot}
-                className="h-11 px-6 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="h-11 px-6 bg-brand-primary text-text-inverse font-semibold rounded-lg hover:bg-brand-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {validatingSlot ? (
                   <>
-                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-border-primary" />
                     Verifying...
                   </>
                 ) : isLoading ? (
                   <>
-                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                    <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-border-primary" />
                     Rescheduling...
                   </>
                 ) : (

@@ -432,10 +432,10 @@ export default function SalonDetailPage() {
 
   if (error && !salon) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Salon Not Found</h2>
-          <p className="text-gray-600 mb-8">{error}</p>
+      <div className="min-h-screen bg-surface-card flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-surface-card rounded-lg shadow-lg p-8 text-center">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Salon Not Found</h2>
+          <p className="text-text-secondary mb-8">{error}</p>
           <Link href={ROUTES.SALON_LIST}>
             <Button>Back to Salons</Button>
           </Link>
@@ -459,19 +459,19 @@ export default function SalonDetailPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex">
+      <div className="min-h-screen bg-surface-card flex">
         <div className="flex-1 lg:ml-64 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center border-2 border-gray-200">
+          <div className="max-w-md w-full bg-surface-card rounded-2xl shadow-2xl p-8 text-center border-2 border-border-primary">
             <div className="mb-6">
               <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-4 animate-pulse">
                 <CheckIcon className="h-10 w-10 text-green-600" aria-hidden="true" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Booking Request Sent!</h2>
-              <p className="text-gray-600 mb-1">
+              <h2 className="text-3xl font-bold text-text-primary mb-3">Booking Request Sent!</h2>
+              <p className="text-text-secondary mb-1">
                 Your booking request has been sent to{' '}
                 <span className="font-semibold">{salon.salon_name}</span>.
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-text-secondary">
                 Check WhatsApp for confirmation from the salon owner.
               </p>
             </div>
@@ -480,7 +480,7 @@ export default function SalonDetailPage() {
                 <Button
                   onClick={() => window.open(success.whatsappUrl, '_blank')}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-6 shadow-lg hover:shadow-xl"
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-text-inverse font-bold py-6 shadow-lg hover:shadow-xl"
                 >
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -510,34 +510,34 @@ export default function SalonDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-surface-card flex">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
             <Link
               href={ROUTES.SALON_LIST}
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-black transition-colors font-medium"
+              className="inline-flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors font-medium"
             >
               <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
               Back to Salons
             </Link>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-6 border border-gray-200">
+          <div className="bg-surface-card rounded-2xl shadow-md p-6 md:p-8 mb-6 border border-border-primary">
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div className="flex-1">
-                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                  <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-3">
                     {salon.salon_name}
                   </h1>
                   {salon.location && (
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
+                    <div className="flex items-center gap-2 text-text-secondary mb-2">
                       <MapPinIcon className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm font-medium">{salon.location}</span>
                     </div>
                   )}
                   {salon.owner_name && (
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-text-secondary">
                       <ProfileIcon className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">Owner: {salon.owner_name}</span>
                     </div>
@@ -546,25 +546,28 @@ export default function SalonDetailPage() {
               </div>
 
               {salon.address && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="bg-surface-elevated rounded-lg p-4 mb-4">
                   <div className="flex items-start gap-3">
                     <MapPinIcon
-                      className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0"
+                      className="w-5 h-5 text-text-secondary mt-0.5 flex-shrink-0"
                       aria-hidden="true"
                     />
                     <div>
-                      <p className="text-gray-900 font-semibold text-sm mb-1">Address</p>
-                      <p className="text-sm text-gray-600">{salon.address}</p>
+                      <p className="text-text-primary font-semibold text-sm mb-1">Address</p>
+                      <p className="text-sm text-text-secondary">{salon.address}</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200">
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-border-primary">
                 {salon.opening_time && salon.closing_time && (
                   <div className="flex items-center gap-2 text-sm">
-                    <ClockIcon className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
-                    <span className="text-gray-700">
+                    <ClockIcon
+                      className="w-4 h-4 text-text-secondary flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="text-text-secondary">
                       <span className="font-medium">Hours:</span>{' '}
                       {salon.opening_time.substring(0, 5)} - {salon.closing_time.substring(0, 5)}
                     </span>
@@ -572,8 +575,11 @@ export default function SalonDetailPage() {
                 )}
                 {salon.slot_duration && (
                   <div className="flex items-center gap-2 text-sm">
-                    <ClockIcon className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
-                    <span className="text-gray-700">
+                    <ClockIcon
+                      className="w-4 h-4 text-text-secondary flex-shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="text-text-secondary">
                       <span className="font-medium">Duration:</span> {salon.slot_duration} min
                     </span>
                   </div>
@@ -582,19 +588,19 @@ export default function SalonDetailPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 border border-gray-200">
+          <div className="bg-surface-card rounded-2xl shadow-md p-6 md:p-8 border border-border-primary">
             <div className="mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-2">
                 Book Your Appointment
               </h2>
-              <p className="text-gray-600 text-sm">
+              <p className="text-text-secondary text-sm">
                 Select a date and time slot to book your appointment
               </p>
             </div>
 
-            <div className="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-4">
-                <BookingsIcon className="w-4 h-4 text-gray-600" aria-hidden="true" />
+            <div className="mb-6 bg-surface-elevated rounded-xl p-5 border border-border-primary">
+              <label className="flex items-center gap-2 text-sm font-semibold text-text-primary mb-4">
+                <BookingsIcon className="w-4 h-4 text-text-secondary" aria-hidden="true" />
                 Select Date
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -618,17 +624,17 @@ export default function SalonDetailPage() {
                       disabled={isClosed}
                       className={`px-3 py-2.5 rounded-lg border-2 transition-all text-center ${
                         isSelected
-                          ? 'border-black bg-black text-white shadow-md'
+                          ? 'border-border-primary bg-brand-primary text-text-inverse shadow-md'
                           : isClosed
                             ? 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed'
                             : isToday
-                              ? 'border-gray-400 bg-white text-gray-900 hover:border-gray-500 ring-2 ring-slate-400 ring-offset-1'
-                              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                              ? 'border-border-primary bg-surface-card text-text-primary hover:border-border-primary ring-2 ring-border-focus ring-offset-1'
+                              : 'border-border-primary bg-surface-card text-text-secondary hover:border-border-primary hover:bg-surface-elevated'
                       }`}
                     >
                       <div className="text-xs font-medium mb-1">{dayName}</div>
                       <div
-                        className={`text-base font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}
+                        className={`text-base font-bold ${isSelected ? 'text-text-inverse' : 'text-text-primary'}`}
                       >
                         {dayNum}
                       </div>
@@ -637,7 +643,7 @@ export default function SalonDetailPage() {
                         <div className="text-xs mt-1 font-medium text-amber-600">Closed</div>
                       )}
                       {isToday && !isClosed && !isSelected && (
-                        <div className="text-xs mt-1 font-medium text-gray-500">Today</div>
+                        <div className="text-xs mt-1 font-medium text-text-secondary">Today</div>
                       )}
                     </button>
                   );
@@ -646,17 +652,17 @@ export default function SalonDetailPage() {
             </div>
 
             {selectedDate && selectedSlot && (
-              <div className="mb-6 p-4 bg-black rounded-lg border border-gray-200 shadow-md">
+              <div className="mb-6 p-4 bg-brand-primary rounded-lg border border-border-primary shadow-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-white/10 rounded-lg p-2">
-                      <CheckIcon className="w-5 h-5 text-white" aria-hidden="true" />
+                    <div className="bg-surface-card/10 rounded-lg p-2">
+                      <CheckIcon className="w-5 h-5 text-text-inverse" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-300 mb-1 uppercase tracking-wide">
+                      <p className="text-xs text-text-tertiary mb-1 uppercase tracking-wide">
                         Selected Appointment
                       </p>
-                      <p className="text-base font-bold text-white">
+                      <p className="text-base font-bold text-text-inverse">
                         {formatDate(selectedDate)} • {formatTime(selectedSlot.start_time)} -{' '}
                         {formatTime(selectedSlot.end_time)}
                       </p>
@@ -664,7 +670,7 @@ export default function SalonDetailPage() {
                   </div>
                   <button
                     onClick={() => setSelectedSlot(null)}
-                    className="text-white/80 hover:text-white transition-colors p-1.5 hover:bg-white/10 rounded"
+                    className="text-text-inverse/80 hover:text-text-inverse transition-colors p-1.5 hover:bg-surface-card/10 rounded"
                     aria-label="Clear selection"
                   >
                     <CloseIcon className="w-4 h-4" aria-hidden="true" />
@@ -674,22 +680,22 @@ export default function SalonDetailPage() {
             )}
 
             {selectedDate && (
-              <div className="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
+              <div className="mb-6 bg-surface-elevated rounded-xl p-5 border border-border-primary">
                 <div className="flex items-center justify-between mb-4">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                    <ClockIcon className="w-4 h-4 text-gray-600" aria-hidden="true" />
+                  <label className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                    <ClockIcon className="w-4 h-4 text-text-secondary" aria-hidden="true" />
                     Select Time
                   </label>
                   {loadingSlots ? (
                     <span
-                      className="text-xs text-gray-500 flex items-center gap-2"
+                      className="text-xs text-text-secondary flex items-center gap-2"
                       aria-busy="true"
                     >
-                      <div className="animate-pulse h-3 w-3 rounded bg-gray-200"></div>
+                      <div className="animate-pulse h-3 w-3 rounded bg-surface-elevated"></div>
                       Updating slots…
                     </span>
                   ) : (
-                    <span className="text-xs font-medium text-gray-600 bg-white px-2.5 py-1 rounded-full border border-gray-300">
+                    <span className="text-xs font-medium text-text-secondary bg-surface-card px-2.5 py-1 rounded-full border border-border-primary">
                       {availableSlots.length} available{' '}
                       {bookedSlots.length > 0 && `• ${bookedSlots.length} booked`}
                     </span>
@@ -702,7 +708,7 @@ export default function SalonDetailPage() {
                     aria-busy="true"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-                      <div key={i} className="h-10 bg-gray-200 rounded-lg animate-pulse" />
+                      <div key={i} className="h-10 bg-surface-elevated rounded-lg animate-pulse" />
                     ))}
                   </div>
                 ) : (
@@ -728,13 +734,15 @@ export default function SalonDetailPage() {
                     ) : slots.length === 0 ? (
                       <div className="col-span-full text-center py-6">
                         <ClockIcon
-                          className="mx-auto h-10 w-10 text-gray-400 mb-2"
+                          className="mx-auto h-10 w-10 text-text-secondary mb-2"
                           aria-hidden="true"
                         />
-                        <p className="text-gray-500 font-medium text-sm">
+                        <p className="text-text-secondary font-medium text-sm">
                           No slots available for this date
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">Try selecting another date</p>
+                        <p className="text-xs text-text-secondary mt-1">
+                          Try selecting another date
+                        </p>
                       </div>
                     ) : (
                       slots
@@ -757,10 +765,10 @@ export default function SalonDetailPage() {
                               disabled={isBooked}
                               className={`px-3 py-2.5 rounded-lg border-2 transition-all text-sm font-medium ${
                                 isBooked
-                                  ? 'border-gray-200 bg-white text-gray-400 cursor-not-allowed'
+                                  ? 'border-border-primary bg-surface-card text-text-secondary cursor-not-allowed'
                                   : isSelected
-                                    ? 'border-black bg-black text-white shadow-md'
-                                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500 hover:bg-gray-50'
+                                    ? 'border-border-primary bg-brand-primary text-text-inverse shadow-md'
+                                    : 'border-border-primary bg-surface-card text-text-secondary hover:border-border-primary hover:bg-surface-elevated'
                               }`}
                             >
                               {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
@@ -774,16 +782,16 @@ export default function SalonDetailPage() {
             )}
 
             {selectedSlot && (
-              <div className="space-y-4 pt-6 border-t border-gray-200">
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Your Details</h3>
+              <div className="space-y-4 pt-6 border-t border-border-primary">
+                <div className="bg-surface-elevated rounded-xl p-5 border border-border-primary">
+                  <h3 className="text-base font-semibold text-text-primary mb-4">Your Details</h3>
 
                   <div>
                     <label
                       htmlFor="customer_name"
-                      className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2"
+                      className="flex items-center gap-2 text-sm font-semibold text-text-primary mb-2"
                     >
-                      <ProfileIcon className="w-4 h-4 text-gray-600" aria-hidden="true" />
+                      <ProfileIcon className="w-4 h-4 text-text-secondary" aria-hidden="true" />
                       Your Name <span className="text-red-500">*</span>
                     </label>
                     <Input
@@ -796,10 +804,10 @@ export default function SalonDetailPage() {
                         setNameError(validateName(customerName));
                       }}
                       placeholder="Enter your full name"
-                      className={`w-full ${nameError && touchedName ? 'border-red-300 focus:ring-red-500' : ''}`}
+                      className={`w-full ${nameError && touchedName ? 'border-state-error/50 focus:ring-red-500' : ''}`}
                     />
                     {nameError && touchedName && (
-                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-state-error mt-1 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             fillRule="evenodd"
@@ -815,10 +823,10 @@ export default function SalonDetailPage() {
                   <div className="mt-4">
                     <label
                       htmlFor="customer_phone"
-                      className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2"
+                      className="flex items-center gap-2 text-sm font-semibold text-text-primary mb-2"
                     >
                       <svg
-                        className="w-4 h-4 text-gray-600"
+                        className="w-4 h-4 text-text-secondary"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -840,7 +848,7 @@ export default function SalonDetailPage() {
                         maxLength={10}
                         inputMode="numeric"
                         pattern="[0-9]{10}"
-                        className={`w-full ${phoneError && touchedPhone ? 'border-red-300 focus:ring-red-500' : ''}`}
+                        className={`w-full ${phoneError && touchedPhone ? 'border-state-error/50 focus:ring-red-500' : ''}`}
                       />
                       {customerPhone && !phoneError && touchedPhone && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -849,7 +857,7 @@ export default function SalonDetailPage() {
                       )}
                     </div>
                     {phoneError && touchedPhone && (
-                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-state-error mt-1 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path
                             fillRule="evenodd"
@@ -860,13 +868,13 @@ export default function SalonDetailPage() {
                         {phoneError}
                       </p>
                     )}
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-text-secondary mt-1">
                       We&apos;ll send booking confirmation via WhatsApp
                     </p>
                   </div>
 
                   {error && (
-                    <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start gap-2">
+                    <div className="mt-4 bg-state-error/10 border-2 border-state-error/50 text-state-error px-4 py-3 rounded-lg flex items-start gap-2">
                       <InfoIcon className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{error}</span>
                     </div>
@@ -883,11 +891,11 @@ export default function SalonDetailPage() {
                       !customerPhone.trim()
                     }
                     size="lg"
-                    className="w-full mt-4 bg-gradient-to-r from-black to-gray-800 hover:from-gray-900 hover:to-black text-white font-bold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="w-full mt-4 bg-gradient-to-r from-black to-gray-800 hover:from-background-secondary hover:to-black text-text-inverse font-bold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     {submitting ? (
                       <span className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-border-primary"></div>
                         Processing...
                       </span>
                     ) : (
@@ -900,7 +908,7 @@ export default function SalonDetailPage() {
                     )}
                   </Button>
 
-                  <p className="text-xs text-center text-gray-500 mt-4">
+                  <p className="text-xs text-center text-text-secondary mt-4">
                     By booking, you agree to receive confirmation messages via WhatsApp
                   </p>
                 </div>

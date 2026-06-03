@@ -22,8 +22,8 @@ function DetailField({
 }) {
   return (
     <div className={cn('min-w-0', className)}>
-      <dt className="text-xs font-medium text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm font-semibold leading-snug text-slate-900 md:font-medium">
+      <dt className="text-xs font-medium text-text-secondary">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-semibold leading-snug text-text-primary md:font-medium">
         {children}
       </dd>
     </div>
@@ -39,20 +39,20 @@ function BusinessDetailsCardComponent({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200/90 bg-white p-4',
-        'shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]',
+        'rounded-2xl border border-border-primary bg-surface-card p-4',
+        'shadow-sm ring-1 ring-white/5',
         'md:rounded-lg md:p-5 md:shadow-none md:ring-0 lg:p-6'
       )}
     >
-      <div className="mb-4 flex flex-row items-center justify-between gap-3 border-b border-slate-100 pb-3 md:mb-5 md:pb-4">
-        <h2 className="text-sm font-semibold tracking-tight text-slate-900 md:text-lg">
+      <div className="mb-4 flex flex-row items-center justify-between gap-3 border-b border-border-primary pb-3 md:mb-5 md:pb-4">
+        <h2 className="text-sm font-semibold tracking-tight text-text-primary md:text-lg">
           Business details
         </h2>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={onEdit}
-            className="rounded-lg border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/50 active:bg-slate-50 md:px-4 md:py-2 md:text-sm"
+            className="rounded-lg border border-border-primary bg-surface-card px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm transition hover:border-border-focus hover:bg-surface-elevated active:bg-surface-elevated md:px-4 md:py-2 md:text-sm"
           >
             Edit
           </button>
@@ -60,7 +60,7 @@ function BusinessDetailsCardComponent({
             type="button"
             onClick={onDelete}
             disabled={deleteSaving}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 md:px-4 md:py-2 md:text-sm"
+            className="rounded-lg bg-state-error px-3 py-1.5 text-xs font-semibold text-text-inverse transition opacity-90 hover:opacity-100 disabled:opacity-50 md:px-4 md:py-2 md:text-sm"
           >
             {deleteSaving ? 'Deleting...' : 'Delete'}
           </button>

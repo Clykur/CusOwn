@@ -5,7 +5,7 @@ import { skeletonBase } from '../base-skeleton';
 export function BookingPageSkeleton() {
   return (
     <div className="w-full" aria-busy="true">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm skeleton-shimmer">
+      <div className="bg-surface-card border border-border-primary rounded-2xl p-6 sm:p-8 shadow-sm">
         <div className={`h-7 ${skeletonBase} w-3/4 mb-2`} />
         <div className={`h-5 ${skeletonBase} w-48 mb-8`} />
         <div className={`h-4 ${skeletonBase} w-24 mb-2`} />
@@ -32,7 +32,7 @@ export function BookingPageSkeleton() {
 export function BookingStatusSkeleton() {
   return (
     <div className="w-full" aria-busy="true">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm skeleton-shimmer">
+      <div className="bg-surface-card border border-border-primary rounded-2xl p-6 sm:p-8 shadow-sm">
         <div className={`h-4 ${skeletonBase} w-28 mb-6`} />
         <div className={`h-7 ${skeletonBase} w-2/3 mb-4`} />
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -47,10 +47,13 @@ export function BookingStatusSkeleton() {
 
 export function AcceptRejectSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
+    <div
+      className="min-h-screen bg-surface-card flex items-center justify-center p-4"
+      aria-busy="true"
+    >
       <div className="max-w-md w-full">
         <div className={`h-4 ${skeletonBase} w-full mb-6`} />
-        <div className="bg-white rounded-lg shadow-lg p-8 skeleton-shimmer">
+        <div className="bg-surface-card rounded-lg shadow-lg p-8">
           <div className={`h-16 w-16 ${skeletonBase} rounded-full mx-auto mb-4`} />
           <div className={`h-7 ${skeletonBase} w-3/4 mx-auto mb-4`} />
           <div className={`h-4 ${skeletonBase} w-full mb-6`} />
@@ -63,7 +66,7 @@ export function AcceptRejectSkeleton() {
 
 export function SetupSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex" aria-busy="true">
+    <div className="min-h-screen bg-surface-card flex" aria-busy="true">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className={`h-4 ${skeletonBase} w-24 mb-6`} />
@@ -89,7 +92,7 @@ export function CalendarGridLoadingSkeleton({ cells = 14 }: { cells?: number }) 
   return (
     <div className="grid grid-cols-7 gap-1 mb-4" aria-busy="true">
       {Array.from({ length: cells }).map((_, i) => (
-        <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
+        <div key={i} className="h-10 bg-surface-elevated rounded animate-pulse" />
       ))}
     </div>
   );
