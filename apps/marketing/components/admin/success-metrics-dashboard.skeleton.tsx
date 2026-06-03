@@ -25,7 +25,7 @@ export default function SuccessMetricsDashboardSkeleton() {
         </div>
 
         {/* Technical metrics section */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-border-primary bg-surface-card p-6 shadow-sm">
           <div className="mb-6 space-y-1">
             <Skeleton className="h-5 w-40" />
             <Skeleton className="h-4 w-56" />
@@ -38,7 +38,7 @@ export default function SuccessMetricsDashboardSkeleton() {
         </section>
 
         {/* Business metrics section */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-border-primary bg-surface-card p-6 shadow-sm">
           <div className="mb-6 space-y-1">
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-4 w-48" />
@@ -51,7 +51,7 @@ export default function SuccessMetricsDashboardSkeleton() {
         </section>
 
         {/* Threshold status section */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-border-primary bg-surface-card p-6 shadow-sm">
           <div className="mb-6 space-y-1">
             <Skeleton className="h-5 w-32" />
             <Skeleton className="h-4 w-40" />

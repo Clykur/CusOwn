@@ -33,7 +33,7 @@ function VirtualizedBookingListInner({
   if (bookings.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">{emptyMessage}</p>
+        <p className="text-text-secondary">{emptyMessage}</p>
       </div>
     );
   }
@@ -100,15 +100,15 @@ function VirtualizedBookingTableInner({
   if (bookings.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">{emptyMessage}</p>
+        <p className="text-text-secondary">{emptyMessage}</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50 sticky top-0 z-10">{headers}</thead>
+      <table className="min-w-full divide-y divide-border-primary">
+        <thead className="bg-surface-elevated sticky top-0 z-10">{headers}</thead>
       </table>
       <div ref={parentRef} className="overflow-auto" style={{ maxHeight }}>
         <div
@@ -119,13 +119,13 @@ function VirtualizedBookingTableInner({
           }}
         >
           <table className="min-w-full">
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-surface-card divide-y divide-border-primary">
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const booking = bookings[virtualRow.index];
                 return (
                   <tr
                     key={booking.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-surface-elevated transition-colors"
                     style={{
                       position: 'absolute',
                       top: 0,

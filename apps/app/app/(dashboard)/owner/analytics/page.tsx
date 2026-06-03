@@ -77,9 +77,9 @@ export default function OwnerAnalyticsPage() {
       <div>
         {loading ? <AnalyticsSkeleton /> : null}
         {clientReady && !loading && !effectiveBusinessId ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-slate-50 p-8 text-center">
-            <p className="text-sm font-medium text-slate-700">No businesses found</p>
-            <p className="mt-1 text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-border-primary bg-surface-elevated p-8 text-center">
+            <p className="text-sm font-medium text-text-secondary">No businesses found</p>
+            <p className="mt-1 text-sm text-text-secondary">
               Create a business to start seeing analytics.
             </p>
           </div>

@@ -317,11 +317,11 @@ export default function CustomerSalonListPage() {
 
       {/* Desktop: search + FilterDropdown + actions (unchanged pattern, native select replaced) */}
       <div className="hidden md:block">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-border-primary bg-surface-card p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
             <div className="relative min-w-0 flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <ExploreIcon className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                <ExploreIcon className="h-5 w-5 text-text-tertiary" aria-hidden="true" />
               </div>
               <Input
                 type="text"
@@ -347,7 +347,7 @@ export default function CustomerSalonListPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mr-auto text-sm font-medium text-slate-900 underline hover:text-slate-700"
+                className="mr-auto text-sm font-medium text-text-primary underline hover:text-text-secondary"
               >
                 {UI_CUSTOMER.CTA_ADJUST_FILTERS}
               </button>
@@ -378,8 +378,8 @@ export default function CustomerSalonListPage() {
               type="button"
               onClick={() => setMobileSearchExpanded((o) => !o)}
               className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-800 transition-colors hover:bg-slate-100',
-                mobileSearchExpanded && 'bg-slate-100 text-slate-900'
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary',
+                mobileSearchExpanded && 'bg-surface-elevated text-text-primary'
               )}
               aria-expanded={mobileSearchExpanded}
               aria-label={UI_CUSTOMER.EXPLORE_MOBILE_OPEN_SEARCH}
@@ -390,8 +390,8 @@ export default function CustomerSalonListPage() {
               type="button"
               onClick={() => setMobileFilterSheetOpen(true)}
               className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-800 transition-colors hover:bg-slate-100',
-                hasActiveFilters && 'bg-slate-100'
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary',
+                hasActiveFilters && 'bg-surface-elevated text-text-primary'
               )}
               aria-label={UI_CUSTOMER.EXPLORE_MOBILE_OPEN_FILTERS}
             >
@@ -403,7 +403,7 @@ export default function CustomerSalonListPage() {
         {mobileSearchExpanded ? (
           <div className="relative mt-3">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <ExploreIcon className="h-5 w-5 text-slate-400" aria-hidden="true" />
+              <ExploreIcon className="h-5 w-5 text-text-tertiary" aria-hidden="true" />
             </div>
             <Input
               type="search"
@@ -421,7 +421,7 @@ export default function CustomerSalonListPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="text-sm font-medium text-slate-900 underline"
+              className="text-sm font-medium text-text-primary underline"
             >
               {UI_CUSTOMER.CTA_ADJUST_FILTERS}
             </button>
@@ -444,7 +444,7 @@ export default function CustomerSalonListPage() {
               aria-label={UI_CUSTOMER.EXPLORE_MOBILE_CLOSE_SHEET}
               onClick={() => setMobileFilterSheetOpen(false)}
             />
-            <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[88vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-xl">
+            <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[88vh] overflow-y-auto rounded-t-2xl bg-surface-modal border-t border-border-primary px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 shadow-xl">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h2 id="customer-explore-filters-title" className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
                   {UI_CUSTOMER.EXPLORE_FILTERS_SHEET_TITLE}
@@ -452,13 +452,13 @@ export default function CustomerSalonListPage() {
                 <button
                   type="button"
                   onClick={() => setMobileFilterSheetOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-elevated"
                   aria-label={UI_CUSTOMER.EXPLORE_MOBILE_CLOSE_SHEET}
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
-              <p className="mb-4 text-sm leading-relaxed text-slate-500">
+              <p className="mb-4 text-sm leading-relaxed text-text-secondary">
                 {UI_CUSTOMER.EXPLORE_FILTERS_SHEET_HINT}
               </p>
 
@@ -476,7 +476,7 @@ export default function CustomerSalonListPage() {
               <Button
                 variant="outline"
                 type="button"
-                className="mb-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-slate-200 font-medium"
+                className="mb-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-primary bg-surface-elevated text-text-primary hover:bg-surface-card font-medium"
                 onClick={() => {
                   handleUseMyLocation();
                 }}
@@ -492,7 +492,7 @@ export default function CustomerSalonListPage() {
                   onClick={() => {
                     clearFilters();
                   }}
-                  className="mb-4 flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 transition hover:bg-slate-100"
+                  className="mb-4 flex h-11 w-full items-center justify-center rounded-xl border border-border-primary bg-surface-elevated text-sm font-medium text-text-primary transition hover:bg-surface-card"
                 >
                   {UI_CUSTOMER.CTA_ADJUST_FILTERS}
                 </button>
@@ -501,7 +501,7 @@ export default function CustomerSalonListPage() {
               <button
                 type="button"
                 onClick={() => setMobileFilterSheetOpen(false)}
-                className="flex h-11 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="flex h-11 w-full items-center justify-center rounded-xl bg-brand-primary text-sm font-semibold text-text-inverse transition hover:bg-brand-primaryHover"
               >
                 {UI_CUSTOMER.EXPLORE_FILTERS_DONE}
               </button>
@@ -517,14 +517,14 @@ export default function CustomerSalonListPage() {
           ))}
         </div>
       ) : filteredSalons.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm sm:p-16">
-          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-slate-100">
-            <ExploreIcon className="h-12 w-12 text-slate-400" aria-hidden="true" />
+        <div className="rounded-2xl border border-border-primary bg-surface-card p-10 text-center shadow-sm sm:p-16">
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-surface-elevated">
+            <ExploreIcon className="h-12 w-12 text-text-tertiary" aria-hidden="true" />
           </div>
-          <h3 className="mb-2 text-xl font-semibold text-slate-900">
+          <h3 className="mb-2 text-xl font-semibold text-text-primary">
             {UI_CUSTOMER.EMPTY_NO_MATCH}
           </h3>
-          <p className="mx-auto mb-8 max-w-md text-sm text-slate-600">
+          <p className="mx-auto mb-8 max-w-md text-sm text-text-secondary">
             {UI_CUSTOMER.EMPTY_TRY_FILTERS}
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
@@ -535,14 +535,14 @@ export default function CustomerSalonListPage() {
                   setSearchTerm('');
                   setSelectedLocation('');
                 }}
-                className="rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+                className="rounded-xl bg-brand-primary text-text-inverse hover:bg-brand-primaryHover"
               >
                 {UI_CUSTOMER.CTA_ADJUST_FILTERS}
               </Button>
             )}
             <Link
               href={ROUTES.CUSTOMER_CATEGORIES}
-              className="inline-flex items-center justify-center rounded-xl bg-slate-100 px-6 py-3 font-medium text-slate-800 transition hover:bg-slate-200"
+              className="inline-flex items-center justify-center rounded-xl bg-surface-elevated px-6 py-3 font-medium text-text-primary transition hover:bg-surface-card"
             >
               {UI_CUSTOMER.CTA_EXPLORE_SERVICES}
             </Link>
@@ -562,7 +562,7 @@ export default function CustomerSalonListPage() {
             onPageChange={setCurrentPage}
             totalItems={filteredSalons.length}
             itemsPerPage={CUSTOMER_EXPLORE_SALONS_PER_PAGE}
-            className="border-slate-200"
+            className="border-border-primary"
           />
         </>
       )}

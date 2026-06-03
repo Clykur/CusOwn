@@ -58,14 +58,14 @@ function Header() {
 
   const logoTitle = (
     <button type="button" onClick={handleLogoClick}>
-      <h1 className="text-xl font-calegar font-semibold uppercase">CUSOWN</h1>
+      <h1 className="text-xl font-calegar font-semibold text-text-primary uppercase">CUSOWN</h1>
     </button>
   );
 
   // OWNER ROUTES
   if (onOwnerRoute) {
     return (
-      <header className="h-14 flex items-center justify-center px-4 border-b bg-white lg:hidden">
+      <header className="h-14 flex items-center justify-center px-4 border-b border-border-primary bg-background-secondary lg:hidden">
         {logoTitle}
       </header>
     );
@@ -74,7 +74,7 @@ function Header() {
   // CUSTOMER ROUTES
   if (onCustomerRoute) {
     return (
-      <header className="h-14 flex items-center justify-center px-4 border-b bg-white lg:hidden">
+      <header className="h-14 flex items-center justify-center px-4 border-b border-border-primary bg-background-secondary lg:hidden">
         {logoTitle}
       </header>
     );
@@ -82,7 +82,7 @@ function Header() {
 
   // PUBLIC ROUTES — Mobile Only
   return (
-    <header className="h-14 flex items-center justify-center px-4 border-b bg-white lg:hidden">
+    <header className="h-14 flex items-center justify-center px-4 border-b border-border-primary bg-background-secondary lg:hidden">
       {logoTitle}
     </header>
   );

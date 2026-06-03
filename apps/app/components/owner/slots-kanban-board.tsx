@@ -24,8 +24,8 @@ const SlotItem = memo(function SlotItem({
   borderClass: string;
 }) {
   return (
-    <div className={`bg-white border-2 ${borderClass} rounded-lg p-3`}>
-      <div className="text-sm font-medium text-gray-900">
+    <div className={`bg-surface-card border-2 ${borderClass} rounded-lg p-3`}>
+      <div className="text-sm font-medium text-text-primary">
         {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
       </div>
     </div>
@@ -34,17 +34,19 @@ const SlotItem = memo(function SlotItem({
 
 const SlotColumn = memo(function SlotColumn({ title, slots, borderClass }: SlotColumnProps) {
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+    <div className="bg-surface-elevated border border-border-primary rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{title}</h3>
-        <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
+        <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+          {title}
+        </h3>
+        <span className="text-xs text-text-secondary bg-surface-card px-2 py-1 rounded-full">
           {slots.length}
         </span>
       </div>
       <div className="space-y-2 max-h-[400px] lg:max-h-[600px] overflow-y-auto">
         {slots.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-500">No {title.toLowerCase()} slots</p>
+            <p className="text-sm text-text-secondary">No {title.toLowerCase()} slots</p>
           </div>
         ) : (
           slots.map((slot) => <SlotItem key={slot.id} slot={slot} borderClass={borderClass} />)
@@ -61,9 +63,9 @@ function slotStatusClasses(status: Slot['status']) {
     case SLOT_STATUS.RESERVED:
       return 'border-amber-300/80 bg-amber-50 text-amber-950';
     case SLOT_STATUS.BOOKED:
-      return 'border-slate-400/80 bg-slate-200/90 text-slate-900';
+      return 'border-border-primary bg-surface-elevated text-text-primary';
     default:
-      return 'border-slate-200 bg-white text-slate-800';
+      return 'border-border-primary bg-surface-card text-text-primary';
   }
 }
 
@@ -93,7 +95,7 @@ function SlotsKanbanBoardComponent({ slots }: SlotsKanbanBoardProps) {
     <>
       {/* Mobile: chessboard-style time grid (single day, chronological) */}
       <div className="md:hidden">
-        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2 border-b border-slate-100 pb-3 text-[11px] text-slate-600">
+        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2 border-b border-border-primary pb-3 text-[11px] text-text-secondary">
           <span className="inline-flex items-center gap-1.5">
             <span
               className="h-2.5 w-2.5 rounded-sm bg-emerald-400 ring-1 ring-emerald-600/20"
@@ -110,14 +112,14 @@ function SlotsKanbanBoardComponent({ slots }: SlotsKanbanBoardProps) {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span
-              className="h-2.5 w-2.5 rounded-sm bg-slate-500 ring-1 ring-slate-700/30"
+              className="h-2.5 w-2.5 rounded-sm bg-surface-elevated0 ring-1 ring-border-focus"
               aria-hidden
             />
             Booked
           </span>
         </div>
         {sortedByTime.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 py-10 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-border-primary bg-surface-elevated py-10 text-center text-sm text-text-secondary">
             No slots for this date.
           </div>
         ) : (
@@ -133,7 +135,7 @@ function SlotsKanbanBoardComponent({ slots }: SlotsKanbanBoardProps) {
                   className={cn(
                     'rounded-lg border px-1 py-2 text-center shadow-sm',
                     slotStatusClasses(slot.status),
-                    checkerDark && 'ring-1 ring-inset ring-black/10'
+                    checkerDark && 'ring-1 ring-inset ring-border-focus'
                   )}
                 >
                   <div className="text-[10px] font-semibold leading-tight sm:text-[11px]">
@@ -154,14 +156,14 @@ function SlotsKanbanBoardComponent({ slots }: SlotsKanbanBoardProps) {
         <SlotColumn
           title="Available"
           slots={availableSlots}
-          borderClass="border-gray-200 hover:border-gray-300 transition-colors"
+          borderClass="border-border-primary hover:border-border-primary transition-colors"
         />
         <SlotColumn
           title="Reserved"
           slots={reservedSlots}
-          borderClass="border-gray-400 hover:border-gray-500 transition-colors"
+          borderClass="border-border-primary hover:border-border-primary transition-colors"
         />
-        <SlotColumn title="Booked" slots={bookedSlots} borderClass="border-black" />
+        <SlotColumn title="Booked" slots={bookedSlots} borderClass="border-border-primary" />
       </div>
     </>
   );

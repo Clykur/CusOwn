@@ -35,16 +35,16 @@ function BookingCardComponent({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'bg-black text-white';
+        return 'bg-brand-primary text-text-inverse';
       case 'pending':
-        return 'bg-gray-200 text-gray-800';
+        return 'bg-surface-elevated text-text-primary';
       case 'rejected':
-        return 'bg-gray-300 text-gray-800';
+        return 'bg-surface-elevated text-text-primary';
       case 'cancelled':
       case 'expired':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-elevated text-text-primary';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-elevated text-text-primary';
     }
   };
 
@@ -70,14 +70,14 @@ function BookingCardComponent({
 
   return (
     <div className="w-full">
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-surface-card border border-border-primary rounded-lg p-4">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 truncate">
+            <h3 className="text-base font-semibold text-text-primary truncate">
               {booking.customer_name || 'Unknown Customer'}
             </h3>
-            <p className="text-sm text-gray-500">{booking.customer_phone || 'No phone'}</p>
+            <p className="text-sm text-text-secondary">{booking.customer_phone || 'No phone'}</p>
           </div>
 
           <span
@@ -85,9 +85,9 @@ function BookingCardComponent({
               booking.status
             )}`}
           >
-            {booking.status === 'confirmed' && <IconCheck className="h-4 w-4 text-green-600" />}
+            {booking.status === 'confirmed' && <IconCheck className="h-4 w-4 text-state-success" />}
 
-            {booking.status === 'rejected' && <IconCross className="h-4 w-4 text-red-600" />}
+            {booking.status === 'rejected' && <IconCross className="h-4 w-4 text-state-error" />}
 
             {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
           </span>
@@ -95,7 +95,7 @@ function BookingCardComponent({
 
         {/* Date & Time */}
         {booking.slot && (
-          <div className="mb-3 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+          <div className="mb-3 p-3 bg-surface-elevated rounded-lg text-sm text-text-secondary">
             <div>{formatDate(booking.slot.date)}</div>
             <div>
               {formatTime(booking.slot.start_time)} - {formatTime(booking.slot.end_time)}
@@ -105,23 +105,26 @@ function BookingCardComponent({
 
         {/* Review */}
         {booking.review && (
-          <p className="mb-3 text-sm text-gray-600" aria-label={UI_CONTEXT.LABEL_CUSTOMER_RATING}>
+          <p
+            className="mb-3 text-sm text-text-secondary"
+            aria-label={UI_CONTEXT.LABEL_CUSTOMER_RATING}
+          >
             {UI_CONTEXT.LABEL_CUSTOMER_RATING}: {booking.review.rating} ★
           </p>
         )}
 
         {/* Booking ID */}
-        <div className="mb-3 text-xs text-gray-600 font-mono">{booking.booking_id}</div>
+        <div className="mb-3 text-xs text-text-secondary font-mono">{booking.booking_id}</div>
 
         {/* Bottom Actions */}
-        <div className="flex gap-6 pt-3 border-t border-gray-100">
+        <div className="flex gap-6 pt-3 border-t border-border-primary">
           {/* Pending + future */}
           {booking.status === 'pending' && !isSlotExpired && (
             <>
               <button
                 onClick={() => onAccept(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center text-green-600 hover:text-green-700 disabled:opacity-50"
+                className="h-9 w-9 flex items-center justify-center text-state-success hover:text-state-success/80 disabled:opacity-50"
               >
                 <IconCheck className="h-6 w-6" />
               </button>
@@ -129,7 +132,7 @@ function BookingCardComponent({
               <button
                 onClick={() => onReject(booking.id)}
                 disabled={isProcessing}
-                className="h-9 w-9 flex items-center justify-center text-red-600 hover:text-red-700 disabled:opacity-50"
+                className="h-9 w-9 flex items-center justify-center text-state-error hover:text-state-error/80 disabled:opacity-50"
               >
                 <IconCross className="h-6 w-6" />
               </button>
@@ -138,7 +141,7 @@ function BookingCardComponent({
 
           {/* Pending + expired */}
           {booking.status === 'pending' && isSlotExpired && (
-            <span className="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-800 rounded-lg flex items-center justify-center h-9">
+            <span className="px-3 py-2 text-xs font-semibold bg-surface-elevated text-text-primary rounded-lg flex items-center justify-center h-9">
               Expired
             </span>
           )}

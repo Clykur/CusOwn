@@ -30,8 +30,11 @@ function CustomerBookingFormComponent({
   return (
     <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
       <div>
-        <label htmlFor="customer_name" className="block text-sm font-medium text-slate-700 mb-2">
-          {UI_CUSTOMER.LABEL_YOUR_NAME} <span className="text-slate-900">*</span>
+        <label
+          htmlFor="customer_name"
+          className="block text-sm font-medium text-text-secondary mb-2"
+        >
+          {UI_CUSTOMER.LABEL_YOUR_NAME} <span className="text-text-primary">*</span>
         </label>
         <input
           type="text"
@@ -39,14 +42,17 @@ function CustomerBookingFormComponent({
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           required
-          className="w-full min-h-11 px-4 py-2.5 text-base text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
+          className="w-full min-h-11 px-4 py-2.5 bg-surface-input text-base text-text-primary placeholder:text-text-secondary border border-border-primary rounded-xl focus:ring-2 focus:ring-border-focus focus:border-border-primary transition-shadow duration-150"
           placeholder={UI_CUSTOMER.PLACEHOLDER_NAME}
         />
       </div>
 
       <div>
-        <label htmlFor="customer_phone" className="block text-sm font-medium text-slate-700 mb-2">
-          {UI_CUSTOMER.LABEL_PHONE_NUMBER} <span className="text-slate-900">*</span>
+        <label
+          htmlFor="customer_phone"
+          className="block text-sm font-medium text-text-secondary mb-2"
+        >
+          {UI_CUSTOMER.LABEL_PHONE_NUMBER} <span className="text-text-primary">*</span>
         </label>
         <input
           type="tel"
@@ -58,13 +64,13 @@ function CustomerBookingFormComponent({
           pattern="[0-9]{10}"
           inputMode="numeric"
           autoComplete="tel"
-          className="w-full min-h-11 px-4 py-2.5 text-base text-slate-900 placeholder:text-slate-400 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-shadow duration-150"
+          className="w-full min-h-11 px-4 py-2.5 bg-surface-input text-base text-text-primary placeholder:text-text-secondary border border-border-primary rounded-xl focus:ring-2 focus:ring-border-focus focus:border-border-primary transition-shadow duration-150"
           placeholder={UI_CUSTOMER.PLACEHOLDER_PHONE}
         />
       </div>
 
       {displayError && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
+        <div className="bg-state-error/10 border border-state-error/50 text-state-error px-4 py-3 rounded-xl">
           {displayError}
         </div>
       )}
@@ -72,11 +78,11 @@ function CustomerBookingFormComponent({
       <button
         type="submit"
         disabled={submitting || !selectedSlot || validatingSlot || shopClosed}
-        className="w-full min-h-12 bg-slate-900 text-base font-semibold text-white py-3 px-6 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full min-h-12 bg-brand-primary text-base font-semibold text-text-inverse py-3 px-6 rounded-xl hover:bg-brand-primaryHover active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {submitting ? (
           <>
-            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-border-primary" />
             {UI_CUSTOMER.SUBMIT_BOOKING_LOADING}
           </>
         ) : (

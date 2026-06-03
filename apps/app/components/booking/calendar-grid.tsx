@@ -126,7 +126,7 @@ function CalendarGridComponent({
   if (!anchorYmd || days.length === 0) {
     return (
       <div className="w-full" aria-busy="true">
-        <div className="mb-3 h-5 w-48 animate-pulse rounded bg-slate-100" />
+        <div className="mb-3 h-5 w-48 animate-pulse rounded bg-surface-elevated" />
         <CalendarGridLoadingSkeleton cells={14} />
       </div>
     );
@@ -134,20 +134,20 @@ function CalendarGridComponent({
 
   return (
     <div className="w-full">
-      <div className="mb-3 text-left text-sm font-semibold text-slate-700 sm:mb-4 sm:text-base">
+      <div className="mb-3 text-left text-sm font-semibold text-text-secondary sm:mb-4 sm:text-base">
         {monthYearLabel}
       </div>
 
       <div
         className="
-          -mx-4 flex gap-2 px-4 sm:gap-3
-          overflow-x-auto overflow-y-visible pb-2 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none]
-          snap-x snap-mandatory
-          md:mx-0 md:grid md:px-0 md:pb-0 md:snap-none
-          md:grid-cols-[repeat(auto-fit,minmax(96px,1fr))]
-          lg:grid-cols-[repeat(auto-fit,minmax(104px,1fr))]
-          [&::-webkit-scrollbar]:hidden
-        "
+ -mx-4 flex gap-2 px-4 sm:gap-3
+ overflow-x-auto overflow-y-visible pb-2 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none]
+ snap-x snap-mandatory
+ md:mx-0 md:grid md:px-0 md:pb-0 md:snap-none
+ md:grid-cols-[repeat(auto-fit,minmax(96px,1fr))]
+ lg:grid-cols-[repeat(auto-fit,minmax(104px,1fr))]
+ [&::-webkit-scrollbar]:hidden
+ "
       >
         {days.map(({ dateStr, isToday, isPast }) => {
           const slots = datesWithSlots.get(dateStr);
@@ -214,22 +214,22 @@ const DayCard = memo(function DayCard({
       onClick={handleClick}
       disabled={isDisabled}
       className={`
-        h-20 w-[5.25rem] shrink-0 snap-center sm:h-[5.5rem] sm:w-[5.5rem] md:h-24 md:w-auto md:min-w-0 md:snap-none
-        rounded-lg sm:rounded-xl border px-2 py-2 sm:px-3 sm:py-2.5
-        flex flex-col items-center justify-center text-center transition-all
-        ${
-          isSelected
-            ? 'border-slate-900 bg-slate-100 text-slate-900 shadow-sm border-2'
-            : isPast
-              ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
-              : isClosed
-                ? 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed'
-                : !hasSlots
-                  ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
-        }
-        ${isToday && !isSelected ? 'ring-2 ring-slate-400 ring-offset-1' : ''}
-      `}
+ h-20 w-[5.25rem] shrink-0 snap-center sm:h-[5.5rem] sm:w-[5.5rem] md:h-24 md:w-auto md:min-w-0 md:snap-none
+ rounded-lg sm:rounded-xl border px-2 py-2 sm:px-3 sm:py-2.5
+ flex flex-col items-center justify-center text-center transition-all
+     ${
+       isSelected
+         ? 'border-brand-primary ring-1 ring-brand-primary bg-surface-elevated text-text-primary shadow-sm'
+         : isPast
+           ? 'bg-surface-elevated border-border-primary text-text-secondary opacity-50 cursor-not-allowed'
+           : isClosed
+             ? 'bg-surface-elevated border-border-primary text-text-secondary opacity-50 cursor-not-allowed'
+             : !hasSlots
+               ? 'bg-surface-elevated border-border-primary text-text-secondary opacity-50 cursor-not-allowed'
+               : 'border-border-primary text-text-secondary hover:border-border-primary hover:bg-surface-elevated'
+     }
+     ${isToday && !isSelected ? 'ring-1 ring-border-focus' : ''}
+ `}
       title={
         isPast
           ? 'Past date'
@@ -240,7 +240,7 @@ const DayCard = memo(function DayCard({
               : ''
       }
     >
-      <span className="text-[10px] sm:text-xs font-medium text-slate-500 leading-none">
+      <span className="text-[10px] sm:text-xs font-medium text-text-secondary leading-none">
         {weekdayShort}
       </span>
 
@@ -249,15 +249,21 @@ const DayCard = memo(function DayCard({
       <span className="mt-1 text-[11px] sm:text-xs leading-none">{monthShort}</span>
 
       {isToday && !isPast && !isClosed && hasSlots && (
-        <span className="mt-1 text-[9px] sm:text-[10px] text-slate-500 leading-none">Today</span>
+        <span className="mt-1 text-[9px] sm:text-[10px] text-text-secondary leading-none">
+          Today
+        </span>
       )}
 
       {isClosed && (
-        <span className="mt-1 text-[9px] sm:text-[10px] text-amber-600 leading-none">Closed</span>
+        <span className="mt-1 text-[9px] sm:text-[10px] text-text-secondary leading-none">
+          Closed
+        </span>
       )}
 
       {!hasSlots && !isClosed && (
-        <span className="mt-1 text-[9px] sm:text-[10px] text-slate-400 leading-none">Full</span>
+        <span className="mt-1 text-[9px] sm:text-[10px] text-text-secondary leading-none">
+          Full
+        </span>
       )}
     </button>
   );

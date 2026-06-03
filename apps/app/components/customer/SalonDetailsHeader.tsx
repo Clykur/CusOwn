@@ -95,14 +95,14 @@ export default function SalonDetailsHeader({
             {statusText}
           </span>
 
-          <span className="text-gray-500 text-xs">{subText}</span>
+          <span className="text-text-secondary text-xs">{subText}</span>
         </div>
       </div>
 
       <div className="flex max-w-[min(100%,18rem)] shrink-0 items-center gap-3 sm:max-w-none">
         <div className="flex min-w-0 flex-col text-right">
           {ownerName && ownerName.trim() !== '' && (
-            <span className="font-medium leading-snug text-slate-900">{ownerName}</span>
+            <span className="font-medium leading-snug text-text-primary">{ownerName}</span>
           )}
 
           {ownerPhone && (
@@ -110,7 +110,7 @@ export default function SalonDetailsHeader({
               href={`https://wa.me/${ownerPhone}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-0.5 text-sm font-medium text-slate-600 hover:text-green-600"
+              className="mt-0.5 text-sm font-medium text-text-secondary hover:text-green-600"
               title="Chat on WhatsApp"
             >
               {ownerPhone}
@@ -119,7 +119,7 @@ export default function SalonDetailsHeader({
         </div>
 
         {ownerImage && ownerImage !== '' ? (
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-md ring-1 ring-slate-200/50">
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-border-primary shadow-md ring-1 ring-border-focus">
             <Image
               src={ownerImage}
               alt={ownerName || 'Owner'}
@@ -131,7 +131,7 @@ export default function SalonDetailsHeader({
             />
           </div>
         ) : (
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 shadow-md">
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-border-primary shadow-md">
             <Image
               src={UI_CUSTOMER.DEFAULT_AVATAR_DATA_URI}
               alt={ownerName || 'Owner'}

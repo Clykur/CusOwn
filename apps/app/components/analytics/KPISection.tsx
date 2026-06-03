@@ -28,11 +28,11 @@ const KPICompactCard = memo(function KPICompactCard({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm sm:p-3.5">
-      <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-slate-500 sm:text-[11px]">
+    <div className="rounded-xl border border-border-primary bg-surface-card p-3 shadow-sm sm:p-3.5">
+      <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-text-secondary sm:text-[11px]">
         {title}
       </p>
-      <p className="mt-1 break-words text-base font-semibold text-slate-900 sm:mt-1.5 sm:text-xl">
+      <p className="mt-1 break-words text-base font-semibold text-text-primary sm:mt-1.5 sm:text-xl">
         {value}
       </p>
     </div>

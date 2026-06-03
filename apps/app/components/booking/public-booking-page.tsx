@@ -904,22 +904,22 @@ export default function PublicBookingPage({
             },
           ]}
         />
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 text-center shadow-sm sm:p-8">
+        <div className="rounded-2xl border border-border-primary bg-surface-card p-6 text-center shadow-sm sm:p-8">
           <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-3')}>
             {ERROR_MESSAGES.SALON_NOT_FOUND}
           </h2>
-          <p className="text-sm leading-relaxed text-slate-600 sm:text-base">{error}</p>
+          <p className="text-sm leading-relaxed text-text-secondary sm:text-base">{error}</p>
         </div>
       </div>
     );
   }
 
   // if (success) {
-  //   return <BookingSuccessView success={success} />;
+  // return <BookingSuccessView success={success} />;
   // }
 
   const sectionLabelClass =
-    'mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500';
+    'mb-2 block text-xs font-semibold uppercase tracking-wider text-text-secondary';
 
   return (
     <div className="flex w-full flex-col gap-4 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:gap-6 md:pb-8">
@@ -928,16 +928,16 @@ export default function PublicBookingPage({
       <div className="w-full">
         <div
           className={cn(
-            'rounded-2xl bg-white',
+            'rounded-2xl bg-surface-card',
             'max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none',
-            'md:border md:border-slate-200/90 md:p-6 md:shadow-sm lg:p-8'
+            'md:border md:border-border-primary md:p-6 md:shadow-sm lg:p-8'
           )}
         >
-          <header className="mb-6 border-b border-slate-100 pb-5 max-md:mb-5 max-md:pb-4">
+          <header className="mb-6 border-b border-border-primary pb-5 max-md:mb-5 max-md:pb-4">
             <h1 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'break-words')}>
               {displayBusiness?.salon_name}
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+            <p className="mt-2 text-sm leading-relaxed text-text-secondary sm:text-base">
               {UI_CUSTOMER.BOOK_PAGE_SUB}
             </p>
           </header>
@@ -946,7 +946,7 @@ export default function PublicBookingPage({
             <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_SERVICE}</p>
 
             {services.length === 0 ? (
-              <p className="text-sm text-slate-400">Loading services…</p>
+              <p className="text-sm text-text-secondary">Loading services…</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {services.map((service) => {
@@ -957,8 +957,8 @@ export default function PublicBookingPage({
                       className={cn(
                         'flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 transition-colors sm:gap-4 sm:px-5 sm:py-4',
                         checked
-                          ? 'border-slate-900 bg-slate-50 shadow-sm'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70'
+                          ? 'border-border-primary bg-surface-elevated shadow-sm'
+                          : 'border-border-primary bg-surface-card hover:border-border-primary hover:bg-surface-elevated'
                       )}
                     >
                       <div className="flex shrink-0 items-center self-stretch">
@@ -966,22 +966,22 @@ export default function PublicBookingPage({
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleService(service.id)}
-                          className="h-5 w-5 cursor-pointer rounded border-slate-300 text-slate-900 accent-slate-900 focus:ring-2 focus:ring-slate-400 focus:ring-offset-0"
+                          className="h-5 w-5 cursor-pointer rounded border-border-primary text-text-primary accent-brand-primary focus:ring-2 focus:ring-border-focus focus:ring-offset-0"
                           aria-describedby={`service-meta-${service.id}`}
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate text-base font-medium text-slate-900">
+                        <span className="block truncate text-base font-medium text-text-primary">
                           {service.name}
                         </span>
                         <span
                           id={`service-meta-${service.id}`}
-                          className="mt-0.5 block text-xs text-slate-500"
+                          className="mt-0.5 block text-xs text-text-secondary"
                         >
                           {service.duration_minutes} min
                         </span>
                       </div>
-                      <span className="shrink-0 text-base font-semibold tabular-nums tracking-tight text-slate-900">
+                      <span className="shrink-0 text-base font-semibold tabular-nums tracking-tight text-text-primary">
                         ₹{(service.price_cents / 100).toFixed(0)}
                       </span>
                     </label>
@@ -1007,7 +1007,7 @@ export default function PublicBookingPage({
           {selectedDate ? (
             <div className="mb-6 md:mb-8">
               <p className={sectionLabelClass}>{UI_CUSTOMER.LABEL_SELECT_TIME}</p>
-              <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 sm:p-4">
+              <div className="rounded-xl border border-border-primary bg-surface-elevated p-3 sm:p-4">
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:grid-cols-4 lg:grid-cols-5">
                   <SlotSelectionGrid
                     displaySlots={filteredSlots}
@@ -1020,7 +1020,7 @@ export default function PublicBookingPage({
             </div>
           ) : null}
 
-          <div className="max-md:rounded-2xl max-md:border max-md:border-slate-200/90 max-md:bg-slate-50/40 max-md:p-4">
+          <div className="max-md:rounded-2xl max-md:border max-md:border-border-primary max-md:bg-surface-elevated max-md:p-4">
             <CustomerBookingForm onSubmit={handleSubmit} />
           </div>
         </div>

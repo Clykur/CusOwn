@@ -862,9 +862,9 @@ export default function OwnerBusinessPage() {
             { label: 'Business Details', href: `/owner/${routeId}` },
           ]}
         />
-        <div className="rounded-xl border border-slate-200/90 bg-white p-6 text-center shadow-sm max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none md:rounded-lg md:p-8 md:shadow-none">
+        <div className="rounded-xl border border-border-primary bg-surface-card p-6 text-center shadow-sm max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none md:rounded-lg md:p-8 md:shadow-none">
           <h2 className={cn(OWNER_SCREEN_TITLE_CLASSNAME, 'mb-3 md:mb-4')}>Access Denied</h2>
-          <p className="mb-6 text-sm text-slate-600 max-md:text-xs md:mb-8 md:text-base">
+          <p className="mb-6 text-sm text-text-secondary max-md:text-xs md:mb-8 md:text-base">
             Invalid booking link or salon not found.
           </p>
         </div>
@@ -929,18 +929,18 @@ export default function OwnerBusinessPage() {
 
       <div
         className={cn(
-          'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]',
+          'overflow-hidden rounded-2xl border border-border-primary bg-surface-card shadow-[0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-border-focus/[0.04]',
           'md:rounded-lg md:shadow-none md:ring-0'
         )}
       >
-        <div className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-slate-100 p-1.5 max-md:rounded-t-2xl md:rounded-none">
+        <div className="flex gap-1 overflow-x-auto border-b border-border-primary bg-surface-elevated p-1.5 max-md:rounded-t-2xl md:rounded-none">
           <button
             type="button"
             onClick={() => setActiveTab('slots')}
             className={`flex-shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 max-md:text-xs md:px-4 md:py-3 md:text-base ${
               activeTab === 'slots'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-surface-card text-text-primary shadow-sm'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Slots
@@ -950,8 +950,8 @@ export default function OwnerBusinessPage() {
             onClick={() => setActiveTab('downtime')}
             className={`flex-shrink-0 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 max-md:text-xs md:px-4 md:py-3 md:text-base ${
               activeTab === 'downtime'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-surface-card text-text-primary shadow-sm'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Downtime
@@ -960,7 +960,7 @@ export default function OwnerBusinessPage() {
 
         <div className="p-4 md:p-4 lg:p-6">
           <div className="mb-4 md:mb-6">
-            <label className="mb-2 block text-xs font-medium text-gray-700 md:text-sm">
+            <label className="mb-2 block text-xs font-medium text-text-secondary md:text-sm">
               Select Date
             </label>
             <div className="w-full sm:w-64 lg:w-72">
@@ -991,7 +991,7 @@ export default function OwnerBusinessPage() {
             />
           ) : (
             <div className="w-full">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-secondary">
                 Analytics has moved to the Owner Dashboard (Analytics tab).
               </p>
             </div>

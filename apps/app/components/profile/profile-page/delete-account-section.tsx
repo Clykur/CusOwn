@@ -79,18 +79,20 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
 
   return (
     <>
-      <section className="rounded-xl border border-red-200 bg-red-50/50 p-4 shadow-sm sm:rounded-lg sm:p-6">
+      <section className="rounded-xl border border-state-error/50 bg-state-error/10/50 p-4 shadow-sm sm:rounded-lg sm:p-6">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-red-800">Delete Account</h3>
-          <p className="mt-0.5 text-sm text-red-600">Permanently remove your account and data</p>
+          <h3 className="text-lg font-semibold text-state-error">Delete Account</h3>
+          <p className="mt-0.5 text-sm text-state-error">
+            Permanently remove your account and data
+          </p>
         </div>
-        <p className="text-sm text-slate-600 mb-4">
+        <p className="text-sm text-text-secondary mb-4">
           Once you delete your account, all your profile information and associated business data
           will be removed from the public platform. Your data will be retained for 30 days for
           administrative purposes before being permanently deleted.
         </p>
         {profileData.statistics.businessCount > 0 && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="w-full rounded-xl border border-border-primary bg-surface-input px-4 py-2.5 text-yellow-600 placeholder:text-text-tertiary transition-all focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20">
             <strong>Warning:</strong> You have {profileData.statistics.businessCount} business
             {profileData.statistics.businessCount > 1 ? 'es' : ''} associated with your account.
             Deleting your account will also remove{' '}
@@ -102,23 +104,25 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
           type="button"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting || profileData.profile?.user_type === 'admin'}
-          className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="w-full rounded-lg bg-state-error opacity-90 hover:opacity-100 px-4 py-2.5 text-sm font-medium text-text-inverse shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto mt-4"
         >
           Delete my account
         </button>
         {profileData.profile?.user_type === 'admin' && (
-          <p className="text-xs text-slate-500 mt-2">Admin accounts cannot be self-deleted.</p>
+          <p className="text-xs text-text-secondary mt-2">Admin accounts cannot be self-deleted.</p>
         )}
       </section>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-lg sm:p-6">
-            <h3 className="mb-4 text-xl font-semibold text-slate-900">Confirm Account Deletion</h3>
-            <p className="text-sm text-slate-600 mb-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-primary/50 p-4 sm:items-center">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-surface-card p-5 shadow-xl sm:rounded-lg sm:p-6">
+            <h3 className="mb-4 text-xl font-semibold text-text-primary">
+              Confirm Account Deletion
+            </h3>
+            <p className="text-sm text-text-secondary mb-4">
               Are you sure you want to delete your account? This action will:
             </p>
-            <ul className="text-sm text-slate-600 mb-4 list-disc list-inside space-y-1">
+            <ul className="text-sm text-text-secondary mb-4 list-disc list-inside space-y-1">
               <li>Remove your profile from the platform</li>
               {profileData.statistics.businessCount > 0 && (
                 <li>
@@ -134,7 +138,7 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
-                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:order-2 sm:flex-1"
+                className="w-full rounded-lg border border-border-primary bg-surface-card px-4 py-2.5 text-sm font-medium text-text-secondary shadow-sm transition-colors hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50 sm:order-2 sm:flex-1"
               >
                 Cancel
               </button>
@@ -142,7 +146,7 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={deleting}
-                className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:order-1 sm:flex-1"
+                className="w-full rounded-lg bg-state-error opacity-90 hover:opacity-100 px-4 py-2.5 text-sm font-medium text-text-inverse shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:order-1 sm:flex-1"
               >
                 {deleting ? 'Deleting...' : 'Yes, delete my account'}
               </button>

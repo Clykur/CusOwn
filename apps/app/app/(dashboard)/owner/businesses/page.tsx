@@ -59,16 +59,16 @@ export default function OwnerBusinessesPage() {
           <Link
             key={b.id}
             href={`/owner/${b.booking_link}`}
-            className="rounded-xl border border-slate-200/90 bg-white p-4 transition hover:border-slate-300 hover:bg-slate-50/50 active:bg-slate-50 md:rounded-lg md:p-6"
+            className="rounded-xl border border-border-primary bg-surface-card p-4 transition hover:border-border-primary hover:bg-surface-elevated active:bg-surface-elevated md:rounded-lg md:p-6"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold leading-snug text-gray-900 md:text-lg">
+                <h2 className="text-base font-semibold leading-snug text-text-primary md:text-lg">
                   {b.salon_name}
                 </h2>
 
                 {b.location && (
-                  <p className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 md:mt-2 md:text-sm">
+                  <p className="mt-1.5 flex items-center gap-1 text-xs text-text-secondary md:mt-2 md:text-sm">
                     <MapPinIcon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" aria-hidden="true" />
                     <span className="min-w-0 truncate">{b.location}</span>
                   </p>
@@ -76,18 +76,18 @@ export default function OwnerBusinessesPage() {
               </div>
 
               <span
-                className="shrink-0 text-lg leading-none text-slate-400 md:text-xl"
+                className="shrink-0 text-lg leading-none text-text-secondary md:text-xl"
                 aria-hidden="true"
               >
                 ›
               </span>
             </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 md:mt-6 md:pt-4">
-              <span className="text-xs text-gray-500 md:text-sm">
+            <div className="mt-4 flex items-center justify-between border-t border-border-primary pt-3 md:mt-6 md:pt-4">
+              <span className="text-xs text-text-secondary md:text-sm">
                 Created {formatDate(b.created_at)}
               </span>
-              <span className="text-xs font-semibold text-slate-900 md:text-sm">Manage</span>
+              <span className="text-xs font-semibold text-text-primary md:text-sm">Manage</span>
             </div>
           </Link>
         ))}

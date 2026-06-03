@@ -215,7 +215,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+      <div className="rounded-xl border border-border-primary bg-surface-card p-8 text-center text-text-secondary">
         Loading…
       </div>
     );
@@ -223,7 +223,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
 
   if (error && !salonName) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-800">
+      <div className="rounded-xl border border-state-error/50 bg-state-error/10 p-6 text-state-error">
         {error}
         <div className="mt-4">
           <Link href="/owner/businesses" className="font-medium underline">
@@ -238,7 +238,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
     <div className="space-y-8">
       <div>
         <h1 className={OWNER_SCREEN_TITLE_CLASSNAME}>{salonName}</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-text-secondary">
           Set weekly hours, an optional daily break, and holidays. You can change these anytime from
           your business page.
         </p>
@@ -250,15 +250,15 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
         </div>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Weekly hours</h2>
+      <section className="rounded-xl border border-border-primary bg-surface-card p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-text-primary">Weekly hours</h2>
         <div className="mt-4 space-y-3">
           {dayRows.map((row, idx) => (
             <div
               key={row.day_of_week}
-              className="flex flex-wrap items-center gap-3 border-b border-slate-100 pb-3 last:border-0"
+              className="flex flex-wrap items-center gap-3 border-b border-border-primary pb-3 last:border-0"
             >
-              <span className="w-10 text-sm font-medium text-slate-700">{DAY_NAMES[idx]}</span>
+              <span className="w-10 text-sm font-medium text-text-secondary">{DAY_NAMES[idx]}</span>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -287,9 +287,9 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
                         )
                       );
                     }}
-                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    className="rounded border border-border-primary px-2 py-1 text-sm"
                   />
-                  <span className="text-slate-500">–</span>
+                  <span className="text-text-secondary">–</span>
                   <input
                     type="time"
                     value={row.closing_time}
@@ -301,7 +301,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
                         )
                       );
                     }}
-                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    className="rounded border border-border-primary px-2 py-1 text-sm"
                   />
                 </>
               )}
@@ -312,15 +312,15 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
           type="button"
           disabled={saving}
           onClick={saveHours}
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+          className="mt-4 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-text-inverse hover:bg-brand-primaryHover disabled:opacity-50"
         >
           Save hours
         </button>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Break (optional)</h2>
-        <p className="mt-1 text-sm text-slate-600">
+      <section className="rounded-xl border border-border-primary bg-surface-card p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-text-primary">Break (optional)</h2>
+        <p className="mt-1 text-sm text-text-secondary">
           One break window for a chosen weekday (e.g. lunch).
         </p>
         <label className="mt-3 flex items-center gap-2 text-sm">
@@ -336,7 +336,7 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
             <select
               value={breakDay}
               onChange={(e) => setBreakDay(Number(e.target.value))}
-              className="rounded border border-slate-300 px-2 py-1 text-sm"
+              className="rounded border border-border-primary px-2 py-1 text-sm"
             >
               {DAY_NAMES.map((n, i) => (
                 <option key={n} value={i}>
@@ -348,14 +348,14 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
               type="time"
               value={breakStart}
               onChange={(e) => setBreakStart(e.target.value)}
-              className="rounded border border-slate-300 px-2 py-1 text-sm"
+              className="rounded border border-border-primary px-2 py-1 text-sm"
             />
-            <span className="text-slate-500">–</span>
+            <span className="text-text-secondary">–</span>
             <input
               type="time"
               value={breakEnd}
               onChange={(e) => setBreakEnd(e.target.value)}
-              className="rounded border border-slate-300 px-2 py-1 text-sm"
+              className="rounded border border-border-primary px-2 py-1 text-sm"
             />
           </div>
         )}
@@ -363,33 +363,33 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
           type="button"
           disabled={saving}
           onClick={saveBreak}
-          className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+          className="mt-4 rounded-lg border border-border-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-surface-elevated disabled:opacity-50"
         >
           {includeBreak ? 'Save break' : 'Clear breaks'}
         </button>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Holiday</h2>
+      <section className="rounded-xl border border-border-primary bg-surface-card p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-text-primary">Holiday</h2>
         <div className="mt-3 flex flex-wrap gap-3">
           <input
             type="date"
             value={holidayDate}
             onChange={(e) => setHolidayDate(e.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
+            className="rounded border border-border-primary px-2 py-1 text-sm"
           />
           <input
             type="text"
             placeholder="Name (optional)"
             value={holidayName}
             onChange={(e) => setHolidayName(e.target.value)}
-            className="min-w-[200px] flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+            className="min-w-[200px] flex-1 rounded border border-border-primary px-2 py-1 text-sm"
           />
           <button
             type="button"
             disabled={saving || !holidayDate}
             onClick={addHoliday}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-text-inverse hover:bg-brand-primaryHover disabled:opacity-50"
           >
             Add holiday
           </button>
@@ -400,13 +400,13 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
         <button
           type="button"
           onClick={finish}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+          className="rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-text-inverse hover:bg-brand-primaryHover"
         >
           Go to business dashboard
         </button>
         <Link
           href="/owner/businesses"
-          className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+          className="rounded-lg border border-border-primary px-5 py-2.5 text-sm font-medium text-text-primary hover:bg-surface-elevated"
         >
           My businesses
         </Link>

@@ -24,14 +24,14 @@ export function LoadingOverlay({
       {loading && (
         <div
           className={cn(
-            'absolute inset-0 flex items-center justify-center bg-white/80 z-10',
+            'absolute inset-0 flex items-center justify-center bg-surface-card/80 z-10',
             blur && 'backdrop-blur-sm'
           )}
           aria-busy="true"
         >
           <div className="flex flex-col items-center gap-2">
-            <Spinner className="h-6 w-6 text-slate-600" />
-            {message && <span className="text-sm text-slate-600">{message}</span>}
+            <Spinner className="h-6 w-6 text-text-secondary" />
+            {message && <span className="text-sm text-text-secondary">{message}</span>}
           </div>
         </div>
       )}
@@ -54,7 +54,7 @@ export function InlineLoading({ className, size = 'md', text }: InlineLoadingPro
 
   return (
     <span
-      className={cn('inline-flex items-center gap-2 text-slate-500', className)}
+      className={cn('inline-flex items-center gap-2 text-text-secondary', className)}
       aria-busy="true"
     >
       <Spinner className={sizeClasses[size]} />
@@ -75,8 +75,8 @@ export function PageLoading({ message = 'Loading...' }: PageLoadingProps) {
       aria-label={message}
     >
       <div className="flex flex-col items-center gap-3">
-        <Spinner className="h-8 w-8 text-slate-400" />
-        <p className="text-sm text-slate-500">{message}</p>
+        <Spinner className="h-8 w-8 text-text-secondary" />
+        <p className="text-sm text-text-secondary">{message}</p>
       </div>
     </div>
   );

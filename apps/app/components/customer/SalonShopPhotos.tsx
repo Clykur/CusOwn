@@ -12,9 +12,9 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className="relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-slate-100 sm:rounded-xl">
+    <div className="relative aspect-[3/2] w-full overflow-hidden rounded-lg bg-surface-elevated sm:rounded-xl">
       <div
-        className={`absolute inset-0 image-skeleton-shine transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-surface-elevated skeleton-shimmer transition-opacity duration-300 ${
           loaded ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
         aria-hidden
@@ -43,8 +43,8 @@ export interface SalonShopPhotosProps {
 
 export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
   return (
-    <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-5 lg:p-6">
-      <h2 className="mb-4 text-lg font-semibold tracking-tight text-slate-900">
+    <section className="rounded-2xl border border-border-secondary bg-surface-card p-4 shadow-sm sm:p-5 lg:p-6">
+      <h2 className="mb-4 text-lg font-semibold tracking-tight text-text-primary">
         {UI_CUSTOMER.SALON_DETAILS_SHOP_PHOTOS}
       </h2>
 
@@ -53,7 +53,7 @@ export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
           {photos.map((url, idx) => (
             <div
               key={idx}
-              className="group relative overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50 shadow-sm ring-1 ring-slate-200/40 transition hover:shadow-md sm:rounded-xl"
+              className="group relative overflow-hidden rounded-lg border border-border-secondary bg-surface-elevated shadow-sm transition hover:border-border-primary hover:shadow-md sm:rounded-xl"
             >
               <GalleryImage src={url} alt={`${UI_CUSTOMER.SALON_DETAILS_SHOP_PHOTOS} ${idx + 1}`} />
             </div>
@@ -61,9 +61,9 @@ export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+          <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated">
             <svg
-              className="h-8 w-8 text-slate-400"
+              className="h-8 w-8 text-text-secondary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -78,7 +78,7 @@ export default function SalonShopPhotos({ photos }: SalonShopPhotosProps) {
             </svg>
           </div>
 
-          <p className="text-sm text-slate-500">{UI_CUSTOMER.SALON_DETAILS_NO_PHOTOS}</p>
+          <p className="text-sm text-text-secondary">{UI_CUSTOMER.SALON_DETAILS_NO_PHOTOS}</p>
         </div>
       )}
     </section>

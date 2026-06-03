@@ -17,7 +17,7 @@ export default function CustomerHeader({
     <div className={cn('mb-8 flex flex-wrap items-start justify-between gap-4', className)}>
       <div>
         {title && <h1 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{title}</h1>}
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>}
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ function toDateInputValue(date: Date): string {
 }
 
 const FILTER_TOKENS = {
-  label: 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500',
+  label: 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary',
 };
 
 /** Mobile: small, borderless ghost controls; md+: slightly larger with borders where needed. */
@@ -21,14 +21,14 @@ const ANALYTICS_TOOLBAR_ICON = 'h-[18px] w-[18px] shrink-0 md:h-5 md:w-5';
 
 const analyticsToolbarBtnFilter = cn(
   'inline-flex shrink-0 items-center justify-center rounded-lg transition disabled:cursor-not-allowed',
-  'h-8 w-8 border-0 bg-transparent text-slate-700 shadow-none hover:bg-slate-100/90 active:bg-slate-200/80',
-  'md:h-9 md:w-9 md:border md:border-slate-200 md:bg-white md:text-slate-800 md:shadow-sm md:hover:bg-slate-50'
+  'h-8 w-8 border-0 bg-transparent text-text-secondary shadow-none hover:bg-surface-elevated active:bg-surface-elevated',
+  'md:h-9 md:w-9 md:border md:border-border-primary md:bg-surface-card md:text-text-primary md:shadow-sm md:hover:bg-surface-elevated'
 );
 
 const analyticsToolbarBtnDownload = cn(
   'inline-flex shrink-0 items-center justify-center rounded-lg transition disabled:cursor-not-allowed',
-  'h-8 w-8 border-0 bg-transparent text-slate-900 shadow-none hover:bg-slate-100/90 active:bg-slate-200/80',
-  'md:h-9 md:w-9 md:bg-slate-900 md:text-white md:shadow-sm md:hover:bg-slate-800'
+  'h-8 w-8 border-0 bg-transparent text-text-primary shadow-none hover:bg-surface-elevated active:bg-surface-elevated',
+  'md:h-11 md:w-11 md:rounded-xl md:bg-brand-primary md:text-text-inverse md:shadow-sm md:hover:bg-brand-primaryHover'
 );
 
 export function AnalyticsMobileToolbar({
@@ -66,7 +66,7 @@ export function AnalyticsMobileToolbar({
         onClick={onOpenFilters}
         className={cn(
           analyticsToolbarBtnFilter,
-          hasActiveFilters && 'bg-slate-200/60 md:border-slate-900/40 md:bg-slate-50'
+          hasActiveFilters && 'bg-surface-elevated md:border-border-primary md:bg-surface-elevated'
         )}
         aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_OPEN_FILTERS}
       >
@@ -186,7 +186,7 @@ function AnalyticsFiltersFields({
 
   const outerClass =
     variant === 'desktop'
-      ? 'flex flex-col gap-4 rounded-xl bg-slate-100/60 p-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6'
+      ? 'flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-end xl:gap-6'
       : 'flex flex-col gap-4';
 
   return (
@@ -371,35 +371,35 @@ function AnalyticsFiltersComponent({
           >
             <button
               type="button"
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 bg-brand-primary/40"
               aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
               onClick={() => onFilterSheetOpenChange(false)}
             />
-            <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl bg-white px-4 pb-6 pt-4 shadow-xl">
+            <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl px-4 pb-6 pt-4 shadow-xl">
               <div className="mb-4 flex items-center justify-between gap-2">
                 <h2
                   id="owner-analytics-mobile-filters-title"
-                  className="text-lg font-semibold text-slate-900"
+                  className="text-lg font-semibold text-text-primary"
                 >
                   {UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_SHEET_TITLE}
                 </h2>
                 <button
                   type="button"
                   onClick={() => onFilterSheetOpenChange(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary"
                   aria-label={UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_CLOSE_OVERLAY}
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
-              <p className="mb-4 text-sm leading-relaxed text-slate-500">
+              <p className="mb-4 text-sm leading-relaxed text-text-secondary">
                 {UI_CONTEXT.OWNER_ANALYTICS_FILTERS_HINT}
               </p>
               <AnalyticsFiltersFields variant="sheet" {...sheetFieldProps} />
               <button
                 type="button"
                 onClick={() => onFilterSheetOpenChange(false)}
-                className="mt-6 flex h-11 w-full items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="mt-6 flex h-11 w-full items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-medium text-text-inverse transition hover:bg-brand-primaryHover"
               >
                 {UI_CONTEXT.OWNER_DASHBOARD_MOBILE_FILTERS_DONE}
               </button>

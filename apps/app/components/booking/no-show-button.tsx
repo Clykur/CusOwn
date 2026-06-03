@@ -81,11 +81,11 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
       <button
         onClick={handleMarkNoShow}
         disabled={noShowMutation.isPending}
-        className="w-full min-h-[44px] px-3 py-2.5 sm:px-4 sm:py-2 bg-gray-200 text-gray-800 text-sm sm:text-base font-semibold rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 max-w-full box-border"
+        className="w-full min-h-[44px] px-3 py-2.5 sm:px-4 sm:py-2 bg-surface-elevated text-text-primary text-sm sm:text-base font-semibold rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 max-w-full box-border"
       >
         {noShowMutation.isPending ? (
           <>
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-800 border-t-transparent" />
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-border-primary border-t-transparent" />
             <span>Marking...</span>
           </>
         ) : (
@@ -96,7 +96,7 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
         )}
       </button>
       {noShowMutation.isError && (
-        <p className="text-sm text-red-600 mt-2 p-2 bg-red-50 rounded">
+        <p className="text-sm text-state-error mt-2 p-2 bg-state-error/10 rounded">
           {noShowMutation.error?.message}
         </p>
       )}

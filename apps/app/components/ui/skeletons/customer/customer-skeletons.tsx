@@ -4,7 +4,7 @@ import { skeletonBase } from '../base-skeleton';
 
 export function CustomerDashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex" aria-busy="true">
+    <div className="min-h-screen bg-surface-card flex" aria-busy="true">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className={`h-4 ${skeletonBase} w-40 mb-6`} />
@@ -16,7 +16,7 @@ export function CustomerDashboardSkeleton() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl shadow-md p-6 border border-gray-200 skeleton-shimmer"
+                className="bg-surface-card rounded-xl shadow-md p-6 border border-border-primary"
               >
                 <div className="flex items-center gap-3">
                   <div className={`h-12 w-12 ${skeletonBase} rounded-lg`} />
@@ -33,7 +33,7 @@ export function CustomerDashboardSkeleton() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 sm:p-6 skeleton-shimmer"
+                className="bg-surface-elevated border-2 border-border-primary rounded-2xl p-4 sm:p-6"
               >
                 <div className="flex justify-between mb-4">
                   <div className={`h-6 ${skeletonBase} w-2/3`} />
@@ -58,7 +58,7 @@ export function CustomerDashboardSkeleton() {
 
 export function CategoryGridSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex" aria-busy="true">
+    <div className="min-h-screen bg-surface-card flex" aria-busy="true">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className={`h-4 ${skeletonBase} w-24 mb-6`} />
@@ -68,7 +68,7 @@ export function CategoryGridSkeleton() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl border-2 border-gray-200 p-8 skeleton-shimmer">
+              <div key={i} className="rounded-2xl border-2 border-border-primary p-8">
                 <div className={`h-20 w-20 ${skeletonBase} rounded-2xl mx-auto mb-6`} />
                 <div className={`h-8 ${skeletonBase} w-1/2 mx-auto mb-3`} />
                 <div className={`h-4 ${skeletonBase} w-full mb-6`} />
@@ -84,7 +84,7 @@ export function CategoryGridSkeleton() {
 
 export function SalonListSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex" aria-busy="true">
+    <div className="min-h-screen bg-surface-card flex" aria-busy="true">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className={`h-4 ${skeletonBase} w-32 mb-6`} />
@@ -96,7 +96,7 @@ export function SalonListSkeleton() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl border-2 border-gray-200 p-6 skeleton-shimmer"
+                className="bg-surface-card rounded-xl border-2 border-border-primary p-6"
               >
                 <div className="flex justify-between mb-3">
                   <div className={`h-6 ${skeletonBase} w-2/3`} />
@@ -120,11 +120,11 @@ export function SalonListSkeleton() {
 
 export function BusinessProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50" aria-busy="true">
+    <div className="min-h-screen bg-surface-elevated" aria-busy="true">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className={`h-4 ${skeletonBase} w-24 mb-6 rounded`} />
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden skeleton-shimmer">
-          <div className="aspect-[3/1] w-full bg-slate-200" />
+        <div className="bg-surface-card rounded-2xl shadow-sm border border-border-primary overflow-hidden">
+          <div className="aspect-[3/1] w-full bg-surface-elevated" />
           <div className="p-6 md:p-8">
             <div className="flex items-start gap-4 mb-6">
               <div className={`h-16 w-16 ${skeletonBase} rounded-full flex-shrink-0`} />
@@ -135,7 +135,7 @@ export function BusinessProfileSkeleton() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="rounded-xl border border-slate-200 p-4">
+                <div key={i} className="rounded-xl border border-border-primary p-4">
                   <div className={`h-3 ${skeletonBase} w-16 mb-2 rounded`} />
                   <div className={`h-5 ${skeletonBase} w-12 rounded`} />
                 </div>
@@ -147,7 +147,7 @@ export function BusinessProfileSkeleton() {
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between py-3 border-b border-slate-100"
+                    className="flex items-center justify-between py-3 border-b border-border-primary"
                   >
                     <div className="flex-1">
                       <div className={`h-4 ${skeletonBase} w-32 mb-1 rounded`} />

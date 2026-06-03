@@ -4,7 +4,7 @@ import { skeletonBase } from '../base-skeleton';
 
 export function HomeSkeleton() {
   return (
-    <div className="min-h-screen bg-white" aria-busy="true">
+    <div className="min-h-screen bg-surface-card" aria-busy="true">
       <section className="pt-20 pb-20 sm:pt-28 sm:pb-28 px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <div className={`h-8 ${skeletonBase} w-32 mx-auto mb-8`} />
@@ -22,7 +22,7 @@ export function HomeSkeleton() {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border border-gray-200 p-8 skeleton-shimmer"
+              className="bg-surface-card rounded-2xl border border-border-primary p-8 skeleton-shimmer"
             >
               <div className={`h-12 w-12 ${skeletonBase} rounded-lg mb-6`} />
               <div className={`h-7 ${skeletonBase} w-2/3 mb-4`} />
@@ -38,11 +38,14 @@ export function HomeSkeleton() {
 
 export function LoginSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
+    <div
+      className="min-h-screen bg-surface-card flex items-center justify-center p-4"
+      aria-busy="true"
+    >
       <div className="max-w-md w-full">
         <div className={`h-9 ${skeletonBase} w-32 mx-auto mb-2`} />
         <div className={`h-5 ${skeletonBase} w-48 mx-auto mb-8`} />
-        <div className="bg-white rounded-lg border border-gray-200 p-6 skeleton-shimmer">
+        <div className="bg-surface-card rounded-lg border border-border-primary p-6 skeleton-shimmer">
           <div className={`h-12 ${skeletonBase} w-full rounded-lg mb-4`} />
           <div className={`h-12 ${skeletonBase} w-full rounded-lg mb-6`} />
           <div className={`h-12 ${skeletonBase} w-full rounded-lg`} />
@@ -86,7 +89,10 @@ export function SelectRoleSkeleton() {
 
 export function RedirectSkeleton() {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4" aria-busy="true">
+    <div
+      className="min-h-screen bg-surface-card flex items-center justify-center p-4"
+      aria-busy="true"
+    >
       <div className="text-center">
         <div className={`h-5 ${skeletonBase} w-48 mx-auto mb-4`} />
         <div className={`h-4 w-4 ${skeletonBase} rounded-full mx-auto`} />

@@ -43,11 +43,13 @@ function MetricCard({
 }) {
   const positive = typeof change === 'number' ? change >= 0 : null;
   return (
-    <div className="h-32 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between">
+    <div className="h-32 rounded-xl border border-border-primary bg-surface-card p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col justify-between">
       <div className="flex justify-between items-start">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</div>
-          <div className="mt-1 text-2xl font-bold text-slate-900">{value}</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-text-secondary">
+            {title}
+          </div>
+          <div className="mt-1 text-2xl font-bold text-text-primary">{value}</div>
         </div>
         <div className="text-right">
           {typeof change === 'number' ? (
@@ -57,7 +59,7 @@ function MetricCard({
               {positive ? '▲' : '▼'} {Math.abs(change)}%
             </div>
           ) : (
-            <div className="text-xs text-slate-400">—</div>
+            <div className="text-xs text-text-secondary">—</div>
           )}
         </div>
       </div>

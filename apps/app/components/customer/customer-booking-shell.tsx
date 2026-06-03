@@ -32,7 +32,7 @@ export default function CustomerBookingShell({ children, initialUser }: Customer
 
   return (
     <CustomerSessionProvider initialUser={initialUser ?? undefined}>
-      <div className="min-h-screen bg-white flex overflow-x-hidden">
+      <div className="min-h-screen bg-surface-card flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className="flex-1 lg:ml-64 w-full min-w-0" suppressHydrationWarning>
           <div className="w-full py-8 px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
@@ -40,7 +40,7 @@ export default function CustomerBookingShell({ children, initialUser }: Customer
               <nav aria-label="Breadcrumb">
                 <Link
                   href={breadcrumbHref}
-                  className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1"
+                  className="text-sm text-text-secondary hover:text-text-primary flex items-center gap-1"
                 >
                   <span aria-hidden>←</span>
                   {breadcrumbLabel}

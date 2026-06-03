@@ -161,22 +161,22 @@ export default function CustomerSalonDetailsPage() {
             { label: '…', href: `/customer/salon/${salonId}` },
           ]}
         />
-        <div className="h-10 w-64 rounded-lg image-skeleton-shine" />
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 h-6 w-32 rounded image-skeleton-shine" />
+        <div className="h-10 w-64 rounded-lg bg-surface-elevated skeleton-shimmer" />
+        <div className="rounded-2xl border border-border-primary bg-surface-card p-5 shadow-sm">
+          <div className="mb-4 h-6 w-32 rounded bg-surface-elevated skeleton-shimmer" />
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="aspect-[3/2] w-full rounded-lg image-skeleton-shine sm:rounded-xl"
+                className="aspect-[3/2] w-full rounded-lg bg-surface-elevated skeleton-shimmer sm:rounded-xl"
                 aria-hidden
               />
             ))}
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 h-5 w-40 rounded image-skeleton-shine" />
-          <div className="h-32 rounded-xl image-skeleton-shine" />
+        <div className="rounded-2xl border border-border-primary bg-surface-card p-4 shadow-sm">
+          <div className="mb-3 h-5 w-40 rounded bg-surface-elevated skeleton-shimmer" />
+          <div className="h-32 rounded-xl bg-surface-elevated skeleton-shimmer" />
         </div>
       </div>
     );
@@ -192,9 +192,9 @@ export default function CustomerSalonDetailsPage() {
           ]}
         />
         <div className="py-16 flex flex-col items-center justify-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-surface-elevated flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-slate-400"
+              className="w-8 h-8 text-text-tertiary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -208,13 +208,13 @@ export default function CustomerSalonDetailsPage() {
             </svg>
           </div>
           <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>Salon No Longer Available</h2>
-          <p className="text-slate-500 text-center max-w-sm">
+          <p className="text-text-secondary text-center max-w-sm">
             This salon has been removed from our platform. Your booking history with this salon is
             still saved in your activity.
           </p>
           <Link
             href="/customer/dashboard"
-            className="mt-2 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
+            className="mt-2 inline-flex items-center justify-center rounded-xl bg-brand-primary px-6 py-2.5 text-sm font-semibold text-text-inverse hover:bg-brand-primaryHover transition-colors"
           >
             Back to My Activity
           </Link>
@@ -238,16 +238,16 @@ export default function CustomerSalonDetailsPage() {
 
       <SalonShopPhotos photos={photos} />
 
-      <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-6">
+      <section className="rounded-2xl border border-border-secondary bg-surface-card p-4 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+          <h2 className="text-lg font-semibold tracking-tight text-text-primary">
             {UI_CUSTOMER.SALON_DETAILS_BOOKING_HISTORY}
           </h2>
           <button
             type="button"
             onClick={handleRebook}
             disabled={!salon}
-            className="inline-flex min-h-[44px] w-full touch-manipulation items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-[8.5rem]"
+            className="inline-flex min-h-[44px] w-full touch-manipulation items-center justify-center rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-text-inverse transition-colors hover:bg-brand-primaryHover sm:w-auto sm:min-w-[8.5rem]"
           >
             {UI_CUSTOMER.REBOOK}
           </button>

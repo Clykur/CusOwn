@@ -21,10 +21,10 @@ const MobileBottomNav = dynamic(() => import('@/components/owner/mobile-bottom-n
 });
 
 const AuthLoadingSkeleton = () => (
-  <div className="min-h-screen bg-white flex items-center justify-center">
+  <div className="min-h-screen bg-background-primary flex items-center justify-center">
     <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
-      <p className="text-gray-500 text-sm">Loading...</p>
+      <div className="w-8 h-8 border-2 border-border-primary border-t-brand-primary rounded-full animate-spin" />
+      <p className="text-text-secondary text-sm">Loading...</p>
     </div>
   </div>
 );
@@ -106,14 +106,14 @@ export default function OwnerLayoutShell({
 
   if (requireClientAuthCheck && sessionMissing) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-background-primary flex items-center justify-center">
         <div className="text-center max-w-sm px-4">
-          <p className="text-gray-600 mb-4">
+          <p className="text-text-secondary mb-4">
             Your session may have expired. Sign in again to continue.
           </p>
           <a
             href={loginUrl}
-            className="inline-block text-brand-600 hover:text-brand-700 font-medium"
+            className="inline-block text-brand-primary hover:text-brand-primaryHover font-medium"
           >
             Sign in again
           </a>
@@ -146,7 +146,7 @@ export default function OwnerLayoutShell({
 
   return (
     <OwnerSessionProvider initialUser={user ?? undefined}>
-      <div className="min-h-screen bg-white flex overflow-x-hidden">
+      <div className="min-h-screen bg-background-primary flex overflow-x-hidden">
         <OwnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
           <MobileBrandHeader />

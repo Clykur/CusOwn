@@ -55,8 +55,8 @@ function getCustomerHeader(pathname: string): {
 const AuthLoadingContent = () => (
   <div className="flex-1 flex items-center justify-center py-24">
     <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
-      <p className="text-gray-500 text-sm">Loading...</p>
+      <div className="w-8 h-8 border-2 border-border-primary border-t-brand-primary rounded-full animate-spin" />
+      <p className="text-text-secondary text-sm">Loading...</p>
     </div>
   </div>
 );
@@ -166,7 +166,7 @@ export default function CustomerLayoutShell({
     content = (
       <div className="flex-1 flex items-center justify-center py-24">
         <div className="text-center max-w-sm px-4">
-          <p className="text-gray-600 mb-4">
+          <p className="text-text-secondary mb-4">
             Your session may have expired. Sign in again to continue.
           </p>
           <a
@@ -196,7 +196,7 @@ export default function CustomerLayoutShell({
   return (
     <CustomerSessionProvider initialUser={user ?? undefined}>
       <RatingPromptProvider />
-      <div className="min-h-screen bg-white flex overflow-x-hidden">
+      <div className="min-h-screen bg-surface-card flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
           <MobileBrandHeader />

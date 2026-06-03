@@ -29,15 +29,15 @@ function getStatusLabel(booking: BookingWithDetails) {
 function getStatusBadgeClass(booking: BookingWithDetails) {
   switch (booking.status) {
     case 'confirmed':
-      return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      return 'bg-emerald-900/20 text-emerald-400 border-emerald-800/50';
     case 'pending':
-      return 'bg-amber-100 text-amber-800 border-amber-200';
+      return 'bg-amber-900/20 text-amber-400 border-amber-800/50';
     case 'rejected':
-      return 'bg-rose-100 text-rose-900 border-rose-200';
+      return 'bg-rose-900/20 text-rose-400 border-rose-800/50';
     case 'cancelled':
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+      return 'bg-surface-elevated text-text-secondary border-border-primary';
     default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+      return 'bg-surface-elevated text-text-secondary border-border-primary';
   }
 }
 
@@ -113,7 +113,7 @@ function BookingDetailModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-primary bg-surface-card p-6 shadow-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -121,12 +121,12 @@ function BookingDetailModal({
             <h2 id="booking-detail-title" className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>
               {UI_CUSTOMER.VIEW_DETAILS}
             </h2>
-            <p className="mt-0.5 text-sm text-slate-500">Booking details</p>
+            <p className="mt-0.5 text-sm text-text-secondary">Booking details</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            className="rounded p-2 text-text-secondary hover:bg-surface-elevated hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-border-focus"
             aria-label="Close"
           >
             <span className="text-xl leading-none">&times;</span>
@@ -136,12 +136,12 @@ function BookingDetailModal({
         <div
           className={`mb-5 rounded-xl border-2 px-5 py-4 ${
             booking.status === 'confirmed'
-              ? 'bg-green-50 border-green-200 text-green-800'
+              ? 'bg-emerald-900/20 border-emerald-800/50 text-emerald-400'
               : booking.status === 'pending'
-                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                ? 'bg-amber-900/20 border-amber-800/50 text-amber-400'
                 : booking.status === 'rejected'
-                  ? 'bg-red-50 border-red-200 text-red-800'
-                  : 'bg-slate-50 border-slate-200 text-slate-800'
+                  ? 'bg-rose-900/20 border-rose-800/50 text-rose-400'
+                  : 'bg-surface-elevated border-border-primary text-text-primary'
           }`}
         >
           <p className="font-bold text-base">{getStatusLabel(booking)}</p>
@@ -153,38 +153,38 @@ function BookingDetailModal({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+          <div className="rounded-xl border border-border-primary bg-surface-elevated p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">
               Business details
             </p>
             <div className="space-y-1 text-sm">
-              <p className="font-semibold text-slate-900">
+              <p className="font-semibold text-text-primary">
                 {booking.salon?.salon_name ?? UI_CUSTOMER.PROVIDER_FALLBACK}
               </p>
               {booking.salon?.owner_name && (
-                <p className="text-slate-700">{booking.salon.owner_name}</p>
+                <p className="text-text-secondary">{booking.salon.owner_name}</p>
               )}
               {booking.salon?.whatsapp_number && (
-                <p className="text-slate-700">{booking.salon.whatsapp_number}</p>
+                <p className="text-text-secondary">{booking.salon.whatsapp_number}</p>
               )}
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+          <div className="rounded-xl border border-border-primary bg-surface-elevated p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-2">
               Appointment details
             </p>
             <div className="space-y-1 text-sm">
-              <p className="text-slate-700">
-                <span className="font-medium text-slate-500">Booking ID:</span>{' '}
-                <span className="font-mono text-slate-900 break-all">{booking.booking_id}</span>
+              <p className="text-text-primary">
+                <span className="font-medium text-text-secondary">Booking ID:</span>{' '}
+                <span className="font-mono text-text-primary break-all">{booking.booking_id}</span>
               </p>
-              <p className="text-slate-700">
-                <span className="font-medium text-slate-500">Time:</span>{' '}
+              <p className="text-text-primary">
+                <span className="font-medium text-text-secondary">Time:</span>{' '}
                 {slotDate && slotTime ? `${slotDate} · ${slotTime}` : ' '}
               </p>
-              <p className="text-slate-700">
-                <span className="font-medium text-slate-500">Service:</span>{' '}
+              <p className="text-text-primary">
+                <span className="font-medium text-text-secondary">Service:</span>{' '}
                 {booking.service_name || '—'}
               </p>
             </div>
@@ -199,13 +199,13 @@ function BookingDetailModal({
               window.open(whatsappUrl, '_blank');
             }}
             disabled={!canOpenWhatsApp || whatsappLoading || !whatsappUrl}
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-text-inverse hover:bg-brand-primaryHover disabled:cursor-not-allowed disabled:opacity-50"
             aria-busy={whatsappLoading}
           >
             Open WhatsApp
           </button>
           {!canOpenWhatsApp && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-text-secondary">
               WhatsApp is disabled after the slot time passes or once the booking is no longer
               pending.
             </p>
@@ -299,7 +299,7 @@ export default function CustomerSalonBookingsPage() {
     <div className="w-full pb-24 flex flex-col gap-6">
       <Breadcrumb items={breadcrumbItems} />
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+      <div className="bg-surface-card border border-border-primary rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{heading}</h2>
@@ -314,61 +314,63 @@ export default function CustomerSalonBookingsPage() {
                   }
                   router.push(`/customer/book/${encodeURIComponent(businessId)}?rebook=true`);
                 }}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1"
+                className="inline-flex items-center justify-center rounded-lg border border-border-primary bg-surface-elevated px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-surface-card focus:outline-none focus:ring-2 focus:ring-border-focus focus:ring-offset-1"
               >
                 {UI_CUSTOMER.REBOOK}
               </button>
             )}
           </div>
           {hasHistory && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-text-secondary">
               {history.length} past booking{history.length === 1 ? '' : 's'}
             </span>
           )}
         </div>
 
         {loading ? (
-          <div className="py-10 text-center text-sm text-slate-500">Loading booking history…</div>
+          <div className="py-10 text-center text-sm text-text-secondary">
+            Loading booking history…
+          </div>
         ) : error ? (
-          <div className="py-10 text-center text-sm text-red-600">{error}</div>
+          <div className="py-10 text-center text-sm text-state-error">{error}</div>
         ) : !hasHistory ? (
-          <div className="py-10 text-center text-sm text-slate-500">
+          <div className="py-10 text-center text-sm text-text-secondary">
             You don&apos;t have any bookings at this salon yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50">
+            <table className="min-w-full divide-y divide-border-primary text-sm">
+              <thead className="bg-surface-elevated">
                 <tr>
-                  <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[10rem]">
+                  <th className="px-4 py-2.5 text-left font-medium text-text-secondary w-[10rem]">
                     Booking date
                   </th>
-                  <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[12rem]">
+                  <th className="px-4 py-2.5 text-left font-medium text-text-secondary w-[12rem]">
                     Booking ID
                   </th>
-                  <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[9rem]">
+                  <th className="px-4 py-2.5 text-left font-medium text-text-secondary w-[9rem]">
                     Slot time
                   </th>
-                  <th className="px-4 py-2.5 text-left font-medium text-slate-700 w-[8rem]">
+                  <th className="px-4 py-2.5 text-left font-medium text-text-secondary w-[8rem]">
                     Status
                   </th>
-                  <th className="px-4 py-2.5 text-right font-medium text-slate-700 w-[9rem]">
+                  <th className="px-4 py-2.5 text-right font-medium text-text-secondary w-[9rem]">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
+              <tbody className="divide-y divide-border-primary bg-surface-card">
                 {history.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-4 py-2.5 text-slate-800">
+                  <tr key={booking.id} className="hover:bg-surface-elevated/70 transition-colors">
+                    <td className="px-4 py-2.5 text-text-primary">
                       {booking.slot?.date
                         ? formatDate(booking.slot.date)
                         : new Date(booking.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-700 font-mono break-all">
+                    <td className="px-4 py-2.5 text-text-secondary font-mono break-all">
                       {booking.booking_id}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-700">
+                    <td className="px-4 py-2.5 text-text-secondary">
                       {booking.slot
                         ? `${formatTime(booking.slot.start_time)} – ${formatTime(booking.slot.end_time)}`
                         : ' '}
@@ -384,7 +386,7 @@ export default function CustomerSalonBookingsPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedBooking(booking)}
-                        className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1"
+                        className="inline-flex items-center justify-center rounded-lg border border-border-primary bg-surface-elevated px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-surface-card focus:outline-none focus:ring-2 focus:ring-border-focus focus:ring-offset-1"
                       >
                         {UI_CUSTOMER.VIEW_DETAILS}
                       </button>

@@ -12,7 +12,7 @@ const RescheduleButton = dynamic(() => import('@/components/booking/reschedule-b
   loading: () => (
     <button
       disabled
-      className="flex-1 py-3 px-4 rounded-xl font-medium bg-slate-100 text-slate-400 cursor-not-allowed"
+      className="flex-1 py-3 px-4 rounded-xl font-medium bg-surface-elevated text-text-secondary cursor-not-allowed"
     >
       Loading...
     </button>
@@ -128,8 +128,8 @@ function BookingActionsComponent({
   return (
     <>
       {showCancelled ? (
-        <div className="mb-6 p-4 bg-slate-100 rounded-xl text-center">
-          <p className="text-slate-600 font-medium">
+        <div className="mb-6 p-4 bg-surface-elevated rounded-xl text-center">
+          <p className="text-text-secondary font-medium">
             {cancelMutation.isPending ? 'Cancelling your booking...' : 'Booking cancelled'}
           </p>
         </div>
@@ -141,15 +141,15 @@ function BookingActionsComponent({
               onClick={handleCancel}
               disabled={cancelMutation.isPending || isCancellationTooLate}
               title={isCancellationTooLate ? ERROR_MESSAGES.CANCELLATION_TOO_LATE : undefined}
-              className="w-full bg-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-state-error opacity-90 hover:opacity-100 text-text-inverse font-semibold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Booking'}
             </button>
             {cancelMutation.isError && (
-              <p className="text-sm text-red-600">{cancelMutation.error?.message}</p>
+              <p className="text-sm text-state-error">{cancelMutation.error?.message}</p>
             )}
             {isCancellationTooLate && (
-              <p className="text-sm text-slate-500">{ERROR_MESSAGES.CANCELLATION_TOO_LATE}</p>
+              <p className="text-sm text-text-secondary">{ERROR_MESSAGES.CANCELLATION_TOO_LATE}</p>
             )}
             {booking.slot && !booking.no_show && booking.status !== 'cancelled' && (
               <div className="flex justify-center">

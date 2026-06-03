@@ -55,7 +55,7 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
           <select
             value={currentMonthIndex}
             onChange={(e) => onMonthChange(new Date(currentYear, Number(e.target.value), 1))}
-            className="appearance-none bg-white border border-gray-200 rounded-md pl-2 pr-6 py-1 text-sm font-medium text-gray-800 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-black"
+            className="appearance-none bg-surface-card border border-border-primary rounded-md pl-2 pr-6 py-1 text-sm font-medium text-text-primary cursor-pointer hover:bg-surface-elevated focus:outline-none focus:ring-1 focus:ring-border-focus"
           >
             {MONTHS.map((name, i) => (
               <option key={name} value={i}>
@@ -63,7 +63,7 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs">
             ▼
           </span>
         </div>
@@ -72,7 +72,7 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
           <select
             value={currentYear}
             onChange={(e) => onMonthChange(new Date(Number(e.target.value), currentMonthIndex, 1))}
-            className="appearance-none bg-white border border-gray-200 rounded-md pl-2 pr-6 py-1 text-sm font-medium text-gray-800 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-black"
+            className="appearance-none bg-surface-card border border-border-primary rounded-md pl-2 pr-6 py-1 text-sm font-medium text-text-primary cursor-pointer hover:bg-surface-elevated focus:outline-none focus:ring-1 focus:ring-border-focus"
           >
             {years.map((year) => (
               <option key={year} value={year}>
@@ -80,7 +80,7 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 text-xs">
+          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs">
             ▼
           </span>
         </div>
@@ -90,14 +90,14 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
         <button
           type="button"
           onClick={() => onMonthChange(new Date(currentYear, currentMonthIndex - 1, 1))}
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-700 text-base font-semibold transition"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-surface-elevated text-text-secondary text-base font-semibold transition"
         >
           ‹
         </button>
         <button
           type="button"
           onClick={() => onMonthChange(new Date(currentYear, currentMonthIndex + 1, 1))}
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-700 text-base font-semibold transition"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-surface-elevated text-text-secondary text-base font-semibold transition"
         >
           ›
         </button>
@@ -166,13 +166,12 @@ export default function DateFilter({ value, onChange, emptyLabel }: Props) {
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className={`h-11 w-full flex items-center justify-between rounded-xl px-4 text-sm shadow-sm transition md:h-10 md:rounded-lg md:shadow-none
-            ${value ? 'border border-black bg-gray-50' : 'border border-slate-200 bg-white hover:bg-slate-50'}`}
+          className="flex h-11 w-full items-center justify-between rounded-xl border border-border-primary bg-surface-input px-3.5 text-sm text-text-primary transition-all hover:bg-surface-elevated focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
         >
-          <span className={!value && emptyLabel ? 'text-gray-500' : undefined}>
+          <span className="text-text-secondary">
             {value || emptyLabel || formatToYYYYMMDD(today)}
           </span>
-          <Calendar className="h-4 w-4 text-gray-600" />
+          <Calendar className="h-4 w-4 text-text-secondary" />
         </button>
       </div>
 
@@ -186,7 +185,7 @@ export default function DateFilter({ value, onChange, emptyLabel }: Props) {
               left: position.left,
               zIndex: 9999,
             }}
-            className="bg-white border border-gray-200 rounded-xl shadow-lg p-4"
+            className="bg-surface-card border border-border-primary rounded-xl shadow-lg p-4"
           >
             <CalendarCaption month={month} onMonthChange={setMonth} />
 
@@ -203,23 +202,28 @@ export default function DateFilter({ value, onChange, emptyLabel }: Props) {
               }}
               showOutsideDays
               hideNavigation
-              style={{ margin: 0 }}
               classNames={{
                 months: 'w-full',
                 month: 'w-full',
                 month_caption: 'hidden',
-                weekdays: 'grid grid-cols-7 mb-1',
+                weekdays: 'grid grid-cols-7 mb-2',
                 weekday:
-                  'w-9 h-8 flex items-center justify-center text-xs text-gray-400 font-medium',
+                  'h-9 flex items-center justify-center text-xs font-medium text-text-secondary',
                 weeks: 'w-full',
                 week: 'grid grid-cols-7',
+
                 day: 'flex items-center justify-center p-0',
+
                 day_button:
-                  'w-9 h-9 flex items-center justify-center text-sm rounded-md hover:bg-gray-100 transition cursor-pointer',
-                selected: '!bg-black !text-white rounded-md',
-                today: 'border border-black font-semibold rounded-md',
-                outside: 'text-gray-300',
-                disabled: 'text-gray-200 cursor-not-allowed',
+                  'h-10 w-10 rounded-lg text-white hover:bg-surface-elevated transition-all',
+
+                outside: '[&>button]:text-text-secondary',
+
+                selected: '!bg-brand-primary !text-white font-semibold',
+
+                today: 'border border-brand-primary text-white font-semibold',
+
+                disabled: 'text-text-disabled opacity-50 cursor-not-allowed',
               }}
             />
           </div>,

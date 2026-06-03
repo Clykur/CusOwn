@@ -38,7 +38,7 @@ function LineChart({
         />
       </svg>
       {(!data || data.length === 0) && (
-        <div className="text-xs text-gray-500 mt-2">Bookings (0)</div>
+        <div className="text-xs text-text-secondary mt-2">Bookings (0)</div>
       )}
     </div>
   );
@@ -76,7 +76,7 @@ function AreaChart({ data }: { data: { x: string; y: number }[] }) {
         />
       </svg>
       {(!data || data.length === 0) && (
-        <div className="text-xs text-gray-500 mt-2">Revenue (0)</div>
+        <div className="text-xs text-text-secondary mt-2">Revenue (0)</div>
       )}
     </div>
   );
@@ -167,20 +167,20 @@ export default function TrendCharts({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-        <h3 className="text-sm font-semibold mb-2 text-slate-900">Bookings Over Time</h3>
+      <div className="col-span-2 bg-surface-card p-5 rounded-xl border border-border-primary shadow-sm min-w-0">
+        <h3 className="text-sm font-semibold mb-2 text-text-primary">Bookings Over Time</h3>
         <div className="min-h-[250px] w-full min-w-0">
-          <LineChart data={bookingsSeries} color="#111827" />
+          <LineChart data={bookingsSeries} color="#00E676" />
         </div>
 
-        <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">Revenue Over Time</h3>
+        <h3 className="text-sm font-semibold mt-5 mb-2 text-text-primary">Revenue Over Time</h3>
         <div className="min-h-[250px] w-full min-w-0">
           <AreaChart data={revenueSeries} />
         </div>
       </div>
 
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-        <h3 className="text-sm font-semibold mb-3 text-slate-900">Booking Status</h3>
+      <div className="bg-surface-card p-5 rounded-xl border border-border-primary shadow-sm min-w-0">
+        <h3 className="text-sm font-semibold mb-3 text-text-primary">Booking Status</h3>
         <div className="flex items-center justify-center">
           <Donut parts={statusParts} />
         </div>
@@ -188,7 +188,7 @@ export default function TrendCharts({
           {statusParts.map((p, idx) => (
             <div
               key={`${p.label}-${idx}`}
-              className="flex items-center justify-between text-xs text-slate-600"
+              className="flex items-center justify-between text-xs text-text-secondary"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -197,19 +197,19 @@ export default function TrendCharts({
                 />
                 <span>{p.label}</span>
               </div>
-              <span className="font-medium text-slate-800">{p.value}</span>
+              <span className="font-medium text-text-primary">{p.value}</span>
             </div>
           ))}
         </div>
 
-        <h3 className="text-sm font-semibold mt-5 mb-2 text-slate-900">Peak Hours</h3>
+        <h3 className="text-sm font-semibold mt-5 mb-2 text-text-primary">Peak Hours</h3>
         <div className="space-y-2">
           {(peak.length ? peak : peakPlaceholder()).map((p, i) => (
             <div key={i} className="flex items-center gap-2 min-w-0">
-              <div className="w-12 text-sm text-gray-700">{p.label}</div>
-              <div className="flex-1 bg-gray-100 rounded h-3 min-w-0">
+              <div className="w-12 text-sm text-text-secondary">{p.label}</div>
+              <div className="flex-1 bg-surface-elevated rounded h-3 min-w-0">
                 <div
-                  className="bg-black h-3 rounded"
+                  className="bg-brand-primary h-3 rounded"
                   style={{
                     width: `${(p.value / Math.max(...peak.map((x: any) => x.value), 1)) * 100}%`,
                   }}
@@ -222,16 +222,16 @@ export default function TrendCharts({
       </div>
 
       <div className="col-span-1 lg:col-span-3">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-          <h3 className="text-sm font-semibold mb-3 text-slate-900">Service Popularity</h3>
+        <div className="bg-surface-card p-5 rounded-xl border border-border-primary shadow-sm min-w-0">
+          <h3 className="text-sm font-semibold mb-3 text-text-primary">Service Popularity</h3>
           <div className="space-y-2">
             {(servicesSorted.length ? servicesSorted : servicesPlaceholder()).map(
               (s: any, i: number) => (
                 <div key={i} className="flex items-center gap-3 min-w-0">
-                  <div className="w-48 text-sm text-gray-700">{s.name}</div>
-                  <div className="flex-1 bg-gray-100 rounded h-3 min-w-0">
+                  <div className="w-48 text-sm text-text-secondary">{s.name}</div>
+                  <div className="flex-1 bg-surface-elevated rounded h-3 min-w-0">
                     <div
-                      className="bg-black h-3 rounded"
+                      className="bg-brand-primary h-3 rounded"
                       style={{
                         width: `${
                           (s.count /

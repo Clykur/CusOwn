@@ -173,28 +173,28 @@ export default function BookingDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background-primary/80 backdrop-blur-md p-4"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-white px-5 pt-6 pb-10 sm:px-6 shadow-sm"
+        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-border-secondary bg-surface-modal px-6 pt-6 pb-8 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
 
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between border-b border-border-secondary pb-4">
           <div>
             <h2 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>{UI_CUSTOMER.VIEW_DETAILS}</h2>
 
-            <p className="mt-0.5 text-sm text-slate-500">Booking details</p>
+            <p className="mt-0.5 text-sm text-text-secondary">Booking details</p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-xl p-2 text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary"
           >
             <span className="text-xl leading-none">&times;</span>
           </button>
@@ -202,11 +202,19 @@ export default function BookingDetailsModal({
 
         {/* Status */}
 
-        <div className="mb-5 rounded-xl border-2 px-5 py-4">
-          <p className="font-bold text-base">{getStatusLabel(booking)}</p>
+        <div
+          className={`mb-5 rounded-2xl border p-5 ${
+            booking.status === 'cancelled'
+              ? 'border-state-error/20 bg-state-error/10'
+              : booking.status === 'confirmed'
+                ? 'border-state-success/20 bg-state-success/10'
+                : 'border-border-secondary bg-surface-elevated'
+          }`}
+        >
+          <p className="font-bold text-base text-text-primary">{getStatusLabel(booking)}</p>
 
           {slotDate && slotTime && (
-            <p className="mt-1 text-sm opacity-90">
+            <p className="mt-1 text-sm text-text-primary opacity-90">
               {slotDate} · {slotTime}
             </p>
           )}
@@ -215,31 +223,31 @@ export default function BookingDetailsModal({
         {/* Customer */}
 
         <div className="grid gap-4 sm:grid-cols-2 mb-4">
-          <div className="rounded-xl border bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase text-slate-500 mb-2">Customer</p>
+          <div className="rounded-2xl border border-border-secondary bg-surface-elevated p-5">
+            <p className="text-xs font-semibold uppercase text-text-primary mb-2">Customer</p>
 
-            <p className="text-sm text-slate-700">{booking.customer_name}</p>
+            <p className="text-sm text-text-secondary">{booking.customer_name}</p>
 
             <a
               href={`tel:${booking.customer_phone}`}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-brand-primary hover:underline"
             >
               {booking.customer_phone}
             </a>
           </div>
 
-          <div className="rounded-xl border bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase text-slate-500 mb-2">
+          <div className="rounded-2xl border border-border-secondary bg-surface-elevated p-5">
+            <p className="text-xs font-semibold uppercase text-text-primary mb-2">
               Appointment details
             </p>
 
-            <p className="text-sm">Booking ID: {booking.booking_id}</p>
+            <p className="text-sm text-text-secondary">Booking ID: {booking.booking_id}</p>
 
-            <p className="text-sm">Date: {slotDate ?? '—'}</p>
+            <p className="text-sm text-text-secondary">Date: {slotDate ?? '—'}</p>
 
-            <p className="text-sm">Slot: {slotTime ?? '—'}</p>
+            <p className="text-sm text-text-secondary">Slot: {slotTime ?? '—'}</p>
 
-            <p className="text-sm">
+            <p className="text-sm text-text-secondary">
               Service:{' '}
               {booking.services && booking.services.length > 0
                 ? booking.services.map((s) => s.name).join(', ')
@@ -273,7 +281,7 @@ export default function BookingDetailsModal({
               window.open(whatsappUrl, '_blank');
             }}
             disabled={disableWhatsApp || whatsappLoading || !whatsappUrl}
-            className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-xl bg-brand-primary px-4 py-3 font-medium text-text-inverse transition-colors hover:bg-brand-primaryHover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {UI_CUSTOMER.CTA_OPEN_WHATSAPP}
           </button>

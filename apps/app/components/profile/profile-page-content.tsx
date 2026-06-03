@@ -65,7 +65,7 @@ export function ProfilePageContent({ embedded = false }: ProfilePageContentProps
   const profileSections = (
     <div className="space-y-5 md:space-y-8">
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-state-error/50 bg-state-error/10 px-4 py-3 text-sm text-state-error">
           {error}
         </div>
       )}
@@ -86,7 +86,7 @@ export function ProfilePageContent({ embedded = false }: ProfilePageContentProps
         <button
           type="button"
           onClick={handleMobileSignOut}
-          className="w-full max-w-lg rounded-xl bg-red-600 px-4 py-3.5 text-sm font-semibold text-white shadow-md transition active:scale-[0.98] sm:mx-auto"
+          className="w-full max-w-lg rounded-xl bg-state-error opacity-90 hover:opacity-100 px-4 py-3.5 text-sm font-semibold text-text-inverse shadow-md transition active:scale-[0.98] sm:mx-auto"
         >
           Sign Out
         </button>
@@ -103,13 +103,13 @@ export function ProfilePageContent({ embedded = false }: ProfilePageContentProps
   }
 
   return (
-    <div className="min-h-screen bg-white flex overflow-x-hidden">
+    <div className="min-h-screen bg-surface-card flex overflow-x-hidden">
       <div className="flex-1 w-full">
         <div className="w-full py-8 px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6">
             <div className="mb-2">
               <h1 className={CUSTOMER_SCREEN_TITLE_CLASSNAME}>My Profile</h1>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-text-secondary">
                 Manage your account information and preferences
               </p>
             </div>
