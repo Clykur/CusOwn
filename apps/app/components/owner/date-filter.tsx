@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import Calendar from '@cusown/shared/icons/calendar.svg';
+import Dropdown from '@/components/ui/dropdown';
 
 type Props = {
   value: string;
@@ -50,40 +51,20 @@ function CalendarCaption({ month, onMonthChange }: CaptionProps) {
 
   return (
     <div className="flex items-center justify-between mb-3 gap-2">
-      <div className="flex items-center gap-1">
-        <div className="relative">
-          <select
-            value={currentMonthIndex}
-            onChange={(e) => onMonthChange(new Date(currentYear, Number(e.target.value), 1))}
-            className="appearance-none bg-surface-card border border-border-primary rounded-md pl-2 pr-6 py-1 text-sm font-medium text-text-primary cursor-pointer hover:bg-surface-elevated focus:outline-none focus:ring-1 focus:ring-border-focus"
-          >
-            {MONTHS.map((name, i) => (
-              <option key={name} value={i}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs">
-            ▼
-          </span>
-        </div>
+      <div className="flex items-center gap-1.5">
+        <Dropdown
+          value={currentMonthIndex}
+          onChange={(val) => onMonthChange(new Date(currentYear, Number(val), 1))}
+          options={MONTHS.map((name, i) => ({ value: i, label: name }))}
+          triggerClassName="h-8 py-1 px-2.5 rounded-md text-xs font-semibold w-[6.5rem] bg-surface-card"
+        />
 
-        <div className="relative">
-          <select
-            value={currentYear}
-            onChange={(e) => onMonthChange(new Date(Number(e.target.value), currentMonthIndex, 1))}
-            className="appearance-none bg-surface-card border border-border-primary rounded-md pl-2 pr-6 py-1 text-sm font-medium text-text-primary cursor-pointer hover:bg-surface-elevated focus:outline-none focus:ring-1 focus:ring-border-focus"
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-text-secondary text-xs">
-            ▼
-          </span>
-        </div>
+        <Dropdown
+          value={currentYear}
+          onChange={(val) => onMonthChange(new Date(Number(val), currentMonthIndex, 1))}
+          options={years.map((year) => ({ value: year, label: String(year) }))}
+          triggerClassName="h-8 py-1 px-2.5 rounded-md text-xs font-semibold w-[5.5rem] bg-surface-card"
+        />
       </div>
 
       <div className="flex items-center gap-1">

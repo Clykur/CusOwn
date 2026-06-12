@@ -18,6 +18,7 @@ import { CreateSalonInput } from '@cusown/shared';
 import { logError } from '@cusown/shared';
 import { getServerSessionClient } from '@cusown/shared';
 import { ROUTES } from '@cusown/shared';
+import Dropdown from '@/components/ui/dropdown';
 
 type ServiceDraftRow = {
   name: string;
@@ -318,10 +319,10 @@ export default function CreateBusinessForm({
         <div className="md:col-span-2 flex justify-center items-center py-6">
           <h1 className={`${APP_SCREEN_TITLE_CLASSNAME} text-white`}>Create Your Business</h1>
         </div>
-        <div className="md:col-span-2 bg-[#22c55e]/10 border-l-4 border-[#22c55e] rounded-lg p-3 md:p-4 mb-2">
-          <p className="text-xs md:text-sm text-emerald-300">
-            <strong className="font-semibold">Tip:</strong> You can create multiple businesses
-            later. Each business gets its own booking link and QR code.
+        <div className="md:col-span-2 bg-blue-500/10 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-2">
+          <p className="text-xs md:text-sm text-zinc-400">
+            <strong className="font-semibold text-blue-400">Tip:</strong> You can create multiple
+            businesses later. Each business gets its own booking link and QR code.
           </p>
         </div>
         <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
@@ -351,24 +352,19 @@ export default function CreateBusinessForm({
           >
             Business type <span className="text-red-500">*</span>
           </label>
-          <select
-            id="category"
-            name="category"
+          <Dropdown
             value={
               businessCategories.some((c) => c.value === (formData.category ?? 'salon'))
                 ? (formData.category ?? 'salon')
                 : (businessCategories[0]?.value ?? 'salon')
             }
-            onChange={handleChange}
-            required
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-          >
-            {businessCategories.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setFormData((prev) => ({ ...prev, category: val }));
+              setError(null);
+            }}
+            options={businessCategories.map((c) => ({ value: c.value, label: c.label }))}
+            triggerClassName="border-2 border-white/10 bg-zinc-900/80 text-white placeholder-zinc-500 focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e]/20"
+          />
         </div>
         <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
@@ -465,20 +461,15 @@ export default function CreateBusinessForm({
           >
             Appointment Duration <span className="text-red-500">*</span>
           </label>
-          <select
-            id="slot_duration"
-            name="slot_duration"
+          <Dropdown
             value={formData.slot_duration}
-            onChange={handleChange}
-            required
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border-2 border-white/10 rounded-lg bg-zinc-900/80 text-white placeholder-zinc-500 focus:ring-2 focus:ring-[#22c55e] focus:border-[#22c55e]"
-          >
-            {SLOT_DURATIONS.map((d) => (
-              <option key={d} value={d}>
-                {d} minutes
-              </option>
-            ))}
-          </select>
+            onChange={(val) => {
+              setFormData((prev) => ({ ...prev, slot_duration: String(val) }));
+              setError(null);
+            }}
+            options={SLOT_DURATIONS.map((d) => ({ value: String(d), label: `${d} minutes` }))}
+            triggerClassName="border-2 border-white/10 bg-zinc-900/80 text-white placeholder-zinc-500 focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e]/20"
+          />
         </div>
         <div className="bg-zinc-900/60 rounded-xl p-5 lg:p-6 border border-white/5">
           <label
@@ -578,7 +569,7 @@ export default function CreateBusinessForm({
                     <button
                       type="button"
                       onClick={() => setServiceRows((prev) => prev.filter((_, i) => i !== index))}
-                      className="text-xs font-medium text-red-600 hover:text-red-800"
+                      className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors"
                       aria-label="Remove service row"
                     >
                       Remove
@@ -682,12 +673,12 @@ export default function CreateBusinessForm({
           </div>
         </div>
         {error && (
-          <div className="md:col-span-2 bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
-            <p className="text-red-800 font-medium">{error}</p>
+          <div className="md:col-span-2 bg-state-error/10 border-l-4 border-state-error rounded-lg p-4">
+            <p className="text-state-error font-medium">{error}</p>
             {existingBusinessPathFromError && (
               <Link
                 href={existingBusinessPathFromError}
-                className="text-red-700 underline font-semibold mt-2 inline-block"
+                className="text-red-400 hover:text-red-300 transition-colors underline font-semibold mt-2 inline-block"
               >
                 Go to Your Existing Business →
               </Link>

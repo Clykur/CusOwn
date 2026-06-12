@@ -65,15 +65,15 @@ export default function NotFound() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-        <p className="text-gray-600 mb-8">Page not found</p>
+    <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+        <h1 className="text-4xl font-bold text-white mb-4">404</h1>
+        <p className="text-zinc-400 mb-8">Page not found</p>
 
         <button
           onClick={handleGoHome}
           disabled={loading}
-          className="inline-block bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-60"
+          className="inline-block bg-brand-primary text-black font-semibold py-3 px-6 rounded-lg hover:bg-brand-primaryHover transition-colors disabled:opacity-60"
         >
           {loading ? 'Redirecting...' : 'Go Home'}
         </button>

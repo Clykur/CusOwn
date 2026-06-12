@@ -50,6 +50,10 @@ function LoginContent() {
   const role = (searchParams?.get('role') as 'owner' | 'customer' | null) ?? null;
   const loginUrl = buildLoginUrl(redirectTo, role);
 
+  // Detect the platform-switch conflict message injected by /api/auth/login.
+  const decodedError = error ? decodeURIComponent(error) : null;
+  const isPlatformSwitchError = !!(decodedError && decodedError.includes('signed in to the'));
+
   const getRoleContext = () => {
     if (role === 'owner') {
       return {
@@ -75,24 +79,25 @@ function LoginContent() {
   const context = getRoleContext();
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background-primary">
-      <CusownMarketingNav sectionNavMode="external" />
-      <div className="flex w-full flex-1 flex-col lg:flex-row">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background-primary">
+      <div className="flex h-full w-full flex-1 flex-col overflow-hidden lg:flex-row">
         {/* Left Side: Form */}
-        <div className="flex flex-1 flex-col relative z-10 lg:max-w-2xl xl:max-w-3xl">
-          <main className="flex flex-1 flex-col px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-8 sm:px-12 lg:px-16 xl:px-24">
-            <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12 lg:max-w-md items-center">
-              <div className="text-center">
+        <div className="relative z-10 flex flex-1 flex-col overflow-hidden lg:max-w-2xl xl:max-w-3xl">
+          <main className="flex flex-1 flex-col overflow-hidden px-6 pt-8 sm:px-12 lg:px-16 xl:px-24">
+            <div className="mx-auto flex h-full w-full max-w-sm flex-1 flex-col items-center justify-center lg:max-w-md">
+              <div className="w-full text-center">
                 {context.icon && (
                   <div className="mb-8 flex justify-center">
-                    <div className="rounded-2xl p-4 ring-1 ring-border-primary shadow-sm">
+                    <div className="rounded-2xl p-4 shadow-sm ring-1 ring-border-primary">
                       {context.icon}
                     </div>
                   </div>
                 )}
+
                 <h1 className="text-balance text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
                   {context.title}
                 </h1>
+
                 <p className="mt-3 text-base leading-relaxed text-text-secondary sm:text-lg">
                   {context.description}
                 </p>
@@ -103,19 +108,38 @@ function LoginContent() {
                   className="mt-8 w-full rounded-xl border border-state-error/50 bg-state-error/10 px-4 py-3 text-left text-sm leading-relaxed text-state-error shadow-sm"
                   role="alert"
                 >
-                  {decodeURIComponent(error)}
+                  {decodedError}
                 </div>
               )}
 
-              <div className="mt-10 w-full">
-                <a
-                  href={loginUrl}
-                  className="group relative flex min-h-[56px] w-full touch-manipulation items-center justify-center gap-3 rounded-xl border border-border-primary bg-surface-input px-5 py-4 text-base font-semibold text-text-primary shadow-sm transition hover:border-brand-primary hover:bg-surface-elevated hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                >
-                  <GoogleMark className="h-5 w-5 shrink-0 text-text-secondary transition group-hover:text-brand-primary" />
-                  {UI_CONTEXT.AUTH_LOGIN_CTA_GOOGLE}
-                </a>
-              </div>
+              {isPlatformSwitchError ? (
+                /* Platform-switch conflict — show sign-out + stay actions */
+                <div className="mt-10 w-full flex flex-col gap-3">
+                  <a
+                    href="/api/auth/signout"
+                    className="group relative flex min-h-[56px] w-full touch-manipulation items-center justify-center gap-3 rounded-xl border border-state-error/40 bg-state-error/10 px-5 py-4 text-base font-semibold text-state-error shadow-sm transition hover:bg-state-error/20 hover:border-state-error active:scale-[0.99]"
+                  >
+                    Sign out &amp; switch platform
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="w-full touch-manipulation rounded-xl py-3 text-sm font-medium text-text-secondary transition hover:bg-surface-elevated hover:text-text-primary active:bg-surface-input"
+                  >
+                    Stay on my current platform
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-10 w-full">
+                  <a
+                    href={loginUrl}
+                    className="group relative flex min-h-[56px] w-full touch-manipulation items-center justify-center gap-3 rounded-xl border border-border-primary bg-surface-input px-5 py-4 text-base font-semibold text-text-primary shadow-sm transition hover:border-brand-primary hover:bg-surface-elevated hover:shadow-md active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  >
+                    <GoogleMark className="h-5 w-5 shrink-0 text-text-secondary transition group-hover:text-brand-primary" />
+                    {UI_CONTEXT.AUTH_LOGIN_CTA_GOOGLE}
+                  </a>
+                </div>
+              )}
 
               <p className="mt-8 w-full text-center text-sm leading-relaxed text-text-secondary">
                 {UI_CONTEXT.AUTH_LOGIN_TERMS_NOTICE}
@@ -133,15 +157,15 @@ function LoginContent() {
         </div>
 
         {/* Right Side: Illustration */}
-        <div className="hidden lg:block relative flex-1 bg-surface-card overflow-hidden">
+        <div className="relative hidden flex-1 overflow-hidden bg-surface-card lg:block">
           <Image
             src="/login-illustration.png"
             alt="Login Background"
             fill
-            className="object-cover opacity-90"
-            priority
             unoptimized
+            className="object-cover opacity-90"
           />
+
           <div className="absolute inset-0 bg-gradient-to-t from-background-primary via-background-primary/20 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background-primary via-background-primary/5 to-transparent" />
         </div>

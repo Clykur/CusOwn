@@ -31,15 +31,15 @@ function BookingStatusBannerComponent({ status, isNoShow, cancelledBy }: Booking
 
   const getStatusStyles = () => {
     if (isNoShow) {
-      return 'bg-amber-50 border-amber-200 text-amber-800';
+      return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
     }
     switch (status) {
       case 'confirmed':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
       case 'pending':
-        return 'bg-amber-50 border-amber-200 text-amber-800';
+        return 'bg-amber-500/10 border-amber-500/20 text-amber-400';
       case 'rejected':
-        return 'bg-state-error/10 border-state-error/50 text-state-error';
+        return 'bg-state-error/10 border-state-error/20 text-state-error';
       default:
         return 'bg-surface-elevated border-border-primary text-text-primary';
     }

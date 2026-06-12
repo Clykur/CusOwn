@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { formatDate, formatPhoneNumber } from '@cusown/shared';
+import { formatProfileDate, formatPhoneNumber } from '@cusown/shared';
 import { ERROR_MESSAGES, PHONE_DIGITS, UI_CONTEXT } from '@cusown/config';
 import { getServerSessionClient } from '@cusown/shared';
 import { getCSRFToken } from '@cusown/shared';
@@ -395,7 +395,7 @@ function AccountInfoSectionComponent({
                 className="min-w-0 text-base leading-relaxed text-slate-900"
                 suppressHydrationWarning
               >
-                {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
+                {profileData.created_at ? formatProfileDate(profileData.created_at) : 'N/A'}
               </dd>
             </div>
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
@@ -406,7 +406,7 @@ function AccountInfoSectionComponent({
                 className="min-w-0 text-base leading-relaxed text-slate-900"
                 suppressHydrationWarning
               >
-                {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
+                {profileData.last_sign_in ? formatProfileDate(profileData.last_sign_in) : 'Never'}
               </dd>
             </div>
           </dl>

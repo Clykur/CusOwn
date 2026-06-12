@@ -3,6 +3,7 @@
 import { memo, type ReactNode } from 'react';
 import type { Salon } from '@cusown/shared';
 import { cn } from '@cusown/shared';
+import ActionButton from '@/components/ui/action-button';
 
 interface BusinessDetailsCardProps {
   salon: Salon;
@@ -49,21 +50,13 @@ function BusinessDetailsCardComponent({
           Business details
         </h2>
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="rounded-lg border border-border-primary bg-surface-card px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm transition hover:border-border-focus hover:bg-surface-elevated active:bg-surface-elevated md:px-4 md:py-2 md:text-sm"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
+          <ActionButton
+            action="delete"
             onClick={onDelete}
-            disabled={deleteSaving}
-            className="rounded-lg bg-state-error px-3 py-1.5 text-xs font-semibold text-text-inverse transition opacity-90 hover:opacity-100 disabled:opacity-50 md:px-4 md:py-2 md:text-sm"
-          >
-            {deleteSaving ? 'Deleting...' : 'Delete'}
-          </button>
+            loading={deleteSaving}
+            tooltip="Delete Business"
+          />
+          <ActionButton action="edit" onClick={onEdit} tooltip="Edit Business" />
         </div>
       </div>
 

@@ -378,7 +378,7 @@ function SelectRoleContent() {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white text-slate-900 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.65)] sm:rounded-none sm:border-x-0 sm:border-b-0 sm:border-t sm:shadow-none">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40 text-white shadow-[0_24px_80px_-32px_rgba(0,0,0,0.65)] sm:rounded-none sm:border-x-0 sm:border-b-0 sm:border-t sm:shadow-none">
               <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
                 <CreateBusinessForm
                   embedded

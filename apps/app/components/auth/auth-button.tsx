@@ -37,11 +37,11 @@ export default function AuthButton({
     : 'rounded-xl bg-surface-elevated px-6 py-2 font-semibold text-text-primary border border-border-secondary transition-all hover:bg-brand-primary hover:text-text-inverse hover:border-brand-primary';
   const secondary = marketingDark
     ? 'rounded-full border border-white/18 bg-white/[0.06] px-5 py-2 text-sm font-semibold text-white transition-colors hover:border-white/28 hover:bg-white/[0.1]'
-    : 'rounded-lg border-2 border-gray-300 bg-white px-6 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-50';
+    : 'rounded-lg border-2 border-border-secondary bg-surface-elevated px-6 py-2 font-semibold text-text-primary transition-colors hover:bg-surface-card';
 
   const ghost = marketingDark
     ? 'px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white'
-    : 'px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900';
+    : 'px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary';
 
   if (!user?.id) {
     return (

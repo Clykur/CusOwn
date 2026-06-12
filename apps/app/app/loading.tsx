@@ -33,11 +33,11 @@ export default function Loading() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-48 h-1 bg-surface-elevated rounded-full overflow-hidden">
             <div
-              className="h-full bg-slate-900 rounded-full transition-all duration-150 ease-out"
+              className="h-full bg-brand-primary rounded-full transition-all duration-150 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-sm font-medium text-slate-400 tabular-nums">
+          <span className="text-sm font-semibold text-brand-primary tabular-nums">
             {Math.round(progress)}%
           </span>
         </div>

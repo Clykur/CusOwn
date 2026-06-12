@@ -135,13 +135,13 @@ export default function AcceptPage() {
 
   if (error && !booking) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Unable to load</h2>
-          <p className="text-gray-600 mb-8">{UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}</p>
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Unable to load</h2>
+          <p className="text-zinc-400 mb-8">{UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}</p>
           <a
             href={ROUTES.HOME}
-            className="inline-block bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900"
+            className="inline-block bg-brand-primary text-black font-semibold py-3 px-6 rounded-lg hover:bg-brand-primaryHover transition-colors"
           >
             Go home
           </a>
@@ -152,13 +152,13 @@ export default function AcceptPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckIcon className="w-8 h-8 text-white" aria-hidden="true" />
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <CheckIcon className="w-8 h-8 text-emerald-400" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Accepted!</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-2">Booking Accepted!</h2>
+          <p className="text-zinc-400 mb-6">
             The confirmation message has been opened in WhatsApp. The customer will be notified
             automatically.
           </p>
@@ -167,20 +167,20 @@ export default function AcceptPage() {
               href={success.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors mb-4"
+              className="inline-block w-full bg-brand-primary text-black font-semibold py-3 px-6 rounded-lg hover:bg-brand-primaryHover transition-colors mb-4"
             >
               Open WhatsApp Again
             </a>
           )}
           <a
             href={ROUTES.OWNER_DASHBOARD_BASE}
-            className="block w-full bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors mb-3"
+            className="block w-full bg-zinc-800 text-zinc-200 border border-white/10 font-semibold py-3 px-6 rounded-lg hover:bg-zinc-700 transition-colors mb-3"
           >
             {UI_CONTEXT.GO_TO_OWNER_DASHBOARD}
           </a>
           <button
             onClick={() => router.push(ROUTES.HOME)}
-            className="w-full bg-gray-100 text-gray-700 font-medium py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors"
+            className="w-full bg-zinc-900 text-zinc-400 border border-white/5 font-medium py-3 px-6 rounded-lg hover:bg-zinc-800 transition-colors"
           >
             Done
           </button>
@@ -191,10 +191,10 @@ export default function AcceptPage() {
 
   if (!booking) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Not Found</h2>
-          <p className="text-gray-600 mb-8">Unable to load booking details.</p>
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Booking Not Found</h2>
+          <p className="text-zinc-400 mb-8">Unable to load booking details.</p>
         </div>
       </div>
     );
@@ -203,12 +203,12 @@ export default function AcceptPage() {
   if (booking.status === 'cancelled') {
     const isExpired = booking.cancelled_by === 'system';
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">
             {isExpired ? UI_BOOKING_STATE.EXPIRED : UI_BOOKING_STATE.CANCELLED}
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-zinc-400 mb-8">
             {isExpired
               ? 'This request is no longer valid. The customer can book a new slot.'
               : 'This booking was cancelled and can no longer be confirmed.'}
@@ -220,13 +220,13 @@ export default function AcceptPage() {
 
   if (booking.status === 'confirmed') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Already confirmed</h2>
-          <p className="text-gray-600 mb-6">{UI_IDEMPOTENT.ALREADY_CONFIRMED}</p>
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">Already confirmed</h2>
+          <p className="text-zinc-400 mb-6">{UI_IDEMPOTENT.ALREADY_CONFIRMED}</p>
           <button
             onClick={() => router.push(ROUTES.HOME)}
-            className="w-full bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900"
+            className="w-full bg-brand-primary text-black font-semibold py-3 px-6 rounded-lg hover:bg-brand-primaryHover transition-colors"
           >
             Done
           </button>
@@ -237,10 +237,10 @@ export default function AcceptPage() {
 
   if (booking.status === 'rejected') {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{UI_BOOKING_STATE.REJECTED}</h2>
-          <p className="text-gray-600 mb-8">This booking was already declined.</p>
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">{UI_BOOKING_STATE.REJECTED}</h2>
+          <p className="text-zinc-400 mb-8">This booking was already declined.</p>
         </div>
       </div>
     );
@@ -248,10 +248,10 @@ export default function AcceptPage() {
 
   if (!booking.slot || !booking.salon) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Incomplete Booking Data</h2>
-          <p className="text-gray-600 mb-8">
+      <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Incomplete Booking Data</h2>
+          <p className="text-zinc-400 mb-8">
             Booking found but missing slot or salon information. Please contact support.
           </p>
         </div>
@@ -263,47 +263,47 @@ export default function AcceptPage() {
   const time = `${formatTime(booking.slot.start_time)} - ${formatTime(booking.slot.end_time)}`;
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <p className="text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">
+    <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8">
+        <p className="text-sm text-zinc-400 mb-4 pb-4 border-b border-white/10">
           {UI_CONTEXT.SECURE_ACTION_LINK}
         </p>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm Booking</h2>
+        <h2 className="text-2xl font-bold text-white mb-6">Confirm Booking</h2>
 
         <div className="space-y-4 mb-6">
           <div>
-            <p className="text-sm text-gray-500">Customer</p>
-            <p className="text-lg font-semibold text-gray-900">{booking.customer_name}</p>
+            <p className="text-sm text-zinc-500">Customer</p>
+            <p className="text-lg font-semibold text-white">{booking.customer_name}</p>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Phone</p>
-            <p className="text-lg font-semibold text-gray-900">{booking.customer_phone}</p>
+            <p className="text-sm text-zinc-500">Phone</p>
+            <p className="text-lg font-semibold text-white">{booking.customer_phone}</p>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Salon</p>
-            <p className="text-lg font-semibold text-gray-900">{booking.salon.salon_name}</p>
+            <p className="text-sm text-zinc-500">Salon</p>
+            <p className="text-lg font-semibold text-white">{booking.salon.salon_name}</p>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Date</p>
-            <p className="text-lg font-semibold text-gray-900">{date}</p>
+            <p className="text-sm text-zinc-500">Date</p>
+            <p className="text-lg font-semibold text-white">{date}</p>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Time</p>
-            <p className="text-lg font-semibold text-gray-900">{time}</p>
+            <p className="text-sm text-zinc-500">Time</p>
+            <p className="text-lg font-semibold text-white">{time}</p>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Booking ID</p>
-            <p className="text-lg font-semibold text-gray-900">{booking.booking_id}</p>
+            <p className="text-sm text-zinc-500">Booking ID</p>
+            <p className="text-lg font-semibold text-white">{booking.booking_id}</p>
           </div>
         </div>
 
         {error && (
-          <div className="bg-gray-100 border border-gray-300 text-black px-4 py-3 rounded-lg mb-4">
+          <div className="bg-state-error/10 border border-state-error/20 text-state-error px-4 py-3 rounded-lg mb-4">
             {error}
           </div>
         )}
@@ -313,21 +313,21 @@ export default function AcceptPage() {
             onClick={handleAccept}
             disabled={processing || booking.status !== 'pending'}
             aria-busy={processing}
-            className="flex-1 bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-brand-primary text-black font-semibold py-3 px-6 rounded-lg hover:bg-brand-primaryHover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {processing ? 'Accepting...' : 'Accept'}
           </button>
           <button
             onClick={() => router.push(ROUTES.REJECT(id))}
             disabled={processing || booking.status !== 'pending'}
-            className="flex-1 bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-zinc-800 text-zinc-200 border border-white/10 font-semibold py-3 px-6 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Not Available
           </button>
         </div>
 
         {booking.status !== 'pending' && (
-          <p className="mt-4 text-sm text-gray-500 text-center">
+          <p className="mt-4 text-sm text-zinc-500 text-center">
             This booking is already {booking.status}
           </p>
         )}

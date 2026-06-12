@@ -17,15 +17,19 @@ function AdminMetricCardComponent({
 }: AdminMetricCardProps) {
   const secondaryClass =
     secondaryVariant === 'positive'
-      ? 'text-emerald-600'
+      ? 'text-state-success font-semibold'
       : secondaryVariant === 'negative'
-        ? 'text-red-600'
-        : 'text-slate-500';
+        ? 'text-state-error font-semibold'
+        : 'text-text-tertiary';
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+    <div className="flex h-full flex-col rounded-xl border border-border-primary bg-surface-card p-5 hover:border-[#00E676]/40 hover:shadow-[0_0_12px_rgba(0,230,118,0.06)] hover:-translate-y-0.5 transition-all duration-200 ease-out select-none">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-bold tracking-tight text-text-primary font-display">
+        {value}
+      </p>
       {secondary != null && <p className={`mt-1 text-xs ${secondaryClass}`}>{secondary}</p>}
     </div>
   );

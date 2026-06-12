@@ -114,40 +114,43 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-background-primary flex">
       <div className="flex-1">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+          <div className="bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-6 md:p-8">
             {/* Header */}
             <div className="flex justify-center items-center py-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Set Up Your Services</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">Set Up Your Services</h1>
             </div>
-            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
-              <p className="text-xs md:text-sm text-blue-800">
-                <strong className="font-semibold">Tip:</strong> Start with your most popular
-                services. You can always add or edit services later.
+            <div className="bg-blue-500/10 border-l-4 border-blue-500 rounded-lg p-3 md:p-4 mb-4">
+              <p className="text-xs md:text-sm text-zinc-400">
+                <strong className="font-semibold text-blue-400">Tip:</strong> Start with your most
+                popular services. You can always add or edit services later.
               </p>
             </div>
 
             {/* Services */}
             <div className="space-y-4">
               {services.map((s, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-200">
+                <div
+                  key={i}
+                  className="bg-zinc-900/60 rounded-xl p-4 md:p-5 border border-white/10"
+                >
                   {/* Name */}
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold text-white mb-2">
                     Service Name
                   </label>
                   <input
                     value={s.name}
                     onChange={(e) => updateService(i, 'name', e.target.value)}
-                    className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                    className="w-full px-4 py-3 text-sm border border-white/10 rounded-lg bg-zinc-900/80 text-white focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:outline-none"
                     placeholder="e.g. Haircut"
                   />
 
                   {/* Duration + Price */}
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="block text-xs font-medium text-zinc-400 mb-1">
                         Duration (mins)
                       </label>
                       <input
@@ -158,12 +161,12 @@ export default function ServicesPage() {
                           const val = e.target.value.replace(/\D/g, '');
                           updateService(i, 'duration_minutes', val);
                         }}
-                        className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                        className="w-full px-3 py-2 text-sm border border-white/10 rounded-lg bg-zinc-900/80 text-white focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="block text-xs font-medium text-zinc-400 mb-1">
                         Price (₹)
                       </label>
                       <input
@@ -174,7 +177,7 @@ export default function ServicesPage() {
                           const val = e.target.value.replace(/\D/g, '');
                           updateService(i, 'price_rupees', val);
                         }}
-                        className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-black focus:border-black"
+                        className="w-full px-3 py-2 text-sm border border-white/10 rounded-lg bg-zinc-900/80 text-white focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:outline-none"
                       />
                     </div>
                   </div>
@@ -182,7 +185,7 @@ export default function ServicesPage() {
                   {/* Remove */}
                   <button
                     onClick={() => removeService(i)}
-                    className="mt-3 text-sm text-gray-600 font-medium hover:text-red-500"
+                    className="mt-3 text-sm text-zinc-400 font-medium hover:text-red-500 transition-colors"
                   >
                     - Remove
                   </button>
@@ -194,8 +197,8 @@ export default function ServicesPage() {
             <button
               onClick={addService}
               className="mt-4 flex items-center gap-2 
-  text-sm font-semibold text-gray-600 
-  hover:text-green-800 transition 
+  text-sm font-semibold text-brand-primary 
+  hover:text-brand-primaryHover transition 
   whitespace-nowrap"
             >
               <AddIcon className="w-4 h-4 md:w-5 md:h-5" />
@@ -204,8 +207,8 @@ export default function ServicesPage() {
 
             {/* Error */}
             {error && (
-              <div className="mt-4 bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
-                <p className="text-red-800 text-sm">{error}</p>
+              <div className="mt-4 bg-state-error/10 border-l-4 border-state-error rounded-lg p-3">
+                <p className="text-state-error text-sm">{error}</p>
               </div>
             )}
 
@@ -214,11 +217,11 @@ export default function ServicesPage() {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full bg-black text-white font-semibold py-3 md:py-4 px-6 rounded-xl hover:bg-gray-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-brand-primary text-black font-semibold py-3 md:py-4 px-6 rounded-xl hover:bg-brand-primaryHover transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    <span className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full" />
                     Saving...
                   </>
                 ) : (

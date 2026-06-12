@@ -95,7 +95,7 @@ function buildLoadingAnimation(strokeRgb: readonly [number, number, number, numb
 const loadingAnimationDefault = buildLoadingAnimation(LOTTIE_STROKE_DEFAULT);
 const loadingAnimationLanding = buildLoadingAnimation(LOTTIE_STROKE_LANDING);
 
-const SPLASH_MAIN_MS = 3500;
+const SPLASH_MAIN_MS = 800;
 const SPLASH_FADE_MS = 500;
 
 export function SplashScreen() {

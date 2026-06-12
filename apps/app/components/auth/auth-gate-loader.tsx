@@ -5,16 +5,16 @@
 export default function AuthGateLoader() {
   return (
     <div
-      className="min-h-screen bg-gray-50 flex items-center justify-center"
+      className="min-h-screen bg-background-primary flex items-center justify-center"
       aria-live="polite"
       aria-busy="true"
     >
       <div className="flex flex-col items-center gap-4">
         <div
-          className="h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-700 animate-spin"
+          className="h-8 w-8 rounded-full border-2 border-border-primary border-t-brand-primary animate-spin"
           aria-hidden
         />
-        <p className="text-sm text-gray-500">Checking access…</p>
+        <p className="text-sm text-text-secondary">Checking access…</p>
       </div>
     </div>
   );

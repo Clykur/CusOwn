@@ -125,13 +125,13 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4 backdrop-blur-[4px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={() => {
         if (!isLoading) onClose();
       }}
     >
       <div
-        className="w-full max-w-[390px] rounded-[20px] border border-gray-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.16)]"
+        className="w-full max-w-[390px] rounded-[20px] border border-border-primary bg-surface-card p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -141,11 +141,11 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
           <div className="pr-3">
             <h2
               id="rating-modal-title"
-              className="text-[22px] font-semibold tracking-tight text-gray-900"
+              className="text-[22px] font-semibold tracking-tight text-text-primary"
             >
               Rate your experience
             </h2>
-            <p className="mt-1 text-sm font-medium text-gray-500">{booking.salon_name}</p>
+            <p className="mt-1 text-sm font-medium text-text-secondary">{booking.salon_name}</p>
           </div>
 
           <button
@@ -153,48 +153,49 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
             onClick={onClose}
             disabled={isLoading}
             aria-label="Close"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition hover:bg-surface-elevated hover:text-text-primary disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+        <div className="mt-4 rounded-2xl border border-border-primary bg-surface-input px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
-              <CalendarDays className="h-4 w-4 text-gray-500" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-elevated shadow-sm ring-1 ring-border-primary">
+              <CalendarDays className="h-4 w-4 text-text-secondary" />
             </div>
 
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary">
                 Service date
               </p>
-              <p className="mt-1 text-sm font-medium text-gray-800">{formattedServiceDate}</p>
+              <p className="mt-1 text-sm font-medium text-text-primary">{formattedServiceDate}</p>
             </div>
           </div>
         </div>
 
         <div className="pt-5">
-          <p className="text-center text-[15px] font-medium text-gray-800">
+          <p className="text-center text-[15px] font-medium text-text-primary">
             How would you rate your experience?
           </p>
 
           <div className="mt-4 flex items-center justify-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => {
-              const active = star <= (displayRating || 0);
+              const starVal = star;
+              const active = starVal <= (displayRating || 0);
 
               return (
                 <button
-                  key={star}
+                  key={starVal}
                   type="button"
                   onClick={() => {
-                    setRating(star);
+                    setRating(starVal);
                     setError(null);
                   }}
-                  onMouseEnter={() => setHoveredRating(star)}
+                  onMouseEnter={() => setHoveredRating(starVal)}
                   onMouseLeave={() => setHoveredRating(null)}
                   disabled={isLoading}
-                  aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                  aria-label={`Rate ${starVal} star${starVal > 1 ? 's' : ''}`}
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 disabled:opacity-50 ${
                     active ? 'scale-105' : 'hover:scale-105'
                   }`}
@@ -203,7 +204,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
                     className={`h-8 w-8 transition-all duration-200 ${
                       active
                         ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_2px_8px_rgba(250,204,21,0.28)]'
-                        : 'text-gray-300 hover:text-yellow-300'
+                        : 'text-text-disabled hover:text-yellow-300'
                     }`}
                   />
                 </button>
@@ -213,7 +214,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
 
           <p
             className={`mt-3 min-h-[20px] text-center text-sm font-medium ${
-              displayRating ? 'text-gray-700' : 'text-gray-400'
+              displayRating ? 'text-text-primary' : 'text-text-secondary'
             }`}
           >
             {helperText}
@@ -221,7 +222,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
+          <div className="mt-4 rounded-xl border border-state-error/20 bg-state-error/10 px-3 py-2 text-sm text-state-error">
             {error}
           </div>
         )}
@@ -231,7 +232,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
             type="button"
             onClick={handleSubmitRating}
             disabled={isLoading || !rating}
-            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse transition hover:bg-brand-primaryHover disabled:cursor-not-allowed disabled:bg-brand-primary/40"
           >
             {isLoading && actionType === 'submit' ? (
               <>
@@ -247,7 +248,7 @@ export function RatingModal({ booking, onClose, onSuccess }: RatingModalProps) {
             type="button"
             onClick={handleIgnore}
             disabled={isLoading}
-            className="inline-flex h-11 w-full items-center justify-center rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 w-full items-center justify-center rounded-full border border-border-primary bg-surface-card px-4 text-sm font-semibold text-text-secondary transition hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading && actionType === 'ignore' ? (
               <>

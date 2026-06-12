@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { formatDate } from '@cusown/shared';
 import CreateBusinessIcon from '@cusown/shared/icons/create-business.svg';
 import DateFilter from '@/components/owner/date-filter';
+import ActionButton from '@/components/ui/action-button';
 
 interface Holiday {
   id: string;
@@ -124,13 +125,11 @@ function DowntimeManagementComponent({
                   )}
                 </div>
                 {onRemoveHoliday && (
-                  <button
-                    type="button"
+                  <ActionButton
+                    action="delete"
                     onClick={() => onRemoveHoliday(holiday.id)}
-                    className="text-sm font-medium text-state-error hover:text-state-error"
-                  >
-                    Remove
-                  </button>
+                    tooltip="Remove Holiday"
+                  />
                 )}
               </div>
             ))}
@@ -208,13 +207,11 @@ function DowntimeManagementComponent({
                   )}
                 </div>
                 {onRemoveClosure && (
-                  <button
-                    type="button"
+                  <ActionButton
+                    action="delete"
                     onClick={() => onRemoveClosure(closure.id)}
-                    className="text-sm font-medium text-state-error hover:text-state-error"
-                  >
-                    Remove
-                  </button>
+                    tooltip="Remove Closure"
+                  />
                 )}
               </div>
             ))}

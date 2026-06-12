@@ -7,7 +7,6 @@ import { AdminDashboardSkeleton } from '@/components/ui/skeleton';
 import { AdminSectionWrapper } from '@/components/admin/admin-section-wrapper';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@cusown/config';
 import { getCSRFToken } from '@cusown/shared';
-import ChevronLeftIcon from '@cusown/shared/icons/chevron-left.svg';
 
 /** Admin user detail page: view user, edit admin note (description for future reference), optional user_type. */
 export default function AdminUserDetailPage() {
@@ -207,7 +206,7 @@ export default function AdminUserDetailPage() {
         <div className="flex justify-center py-8">
           <button
             onClick={() => router.push(ROUTES.ADMIN_DASHBOARD)}
-            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            className="rounded-lg border border-border-primary bg-background-tertiary px-5 py-2.5 text-sm font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all cursor-pointer"
           >
             Back to Dashboard
           </button>
@@ -221,52 +220,63 @@ export default function AdminUserDetailPage() {
   const validUserTypes = ['customer', 'owner', 'both', 'admin'];
   const roleVariant =
     user.user_type === 'admin'
-      ? 'bg-slate-800 text-white'
+      ? 'bg-[#1C1C1C] border border-[#00E676]/30 text-[#00E676]'
       : user.user_type === 'owner' || user.user_type === 'both'
-        ? 'bg-slate-100 text-slate-800'
-        : 'bg-slate-50 text-slate-600';
+        ? 'bg-[#1C1C1C] border border-border-primary text-text-primary'
+        : 'bg-[#1C1C1C] border border-border-primary text-text-secondary';
 
   return (
     <>
-      <div className="mb-8">
+      <div className="mb-6">
         <button
           onClick={() => router.push(usersUrl)}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors mb-5"
+          className="text-text-secondary hover:text-[#00E676] mb-4 text-xs font-mono font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
         >
-          <ChevronLeftIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-          Back to Users
+          &larr; Back to Users
         </button>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">User Details</h2>
+          <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+            User Details
+          </h2>
           {user.is_banned && (
-            <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
+            <span className="inline-flex rounded-md bg-amber-950/20 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold font-mono tracking-wide text-amber-400">
               Blocked
             </span>
           )}
         </div>
-        <p className="mt-1 text-sm text-slate-500">View and manage this user</p>
+        <p className="text-xs text-text-secondary mt-1">View and manage this user</p>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         <AdminSectionWrapper title="Profile" subtitle="Identity and role">
           <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
             <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Name</p>
-              <p className="text-base font-medium text-slate-900">{user.full_name || '—'}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+                Name
+              </p>
+              <p className="text-sm font-semibold text-text-primary">{user.full_name || '—'}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Email</p>
-              <p className="text-base font-medium text-slate-900 break-all">{user.email || '—'}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+                Email
+              </p>
+              <p className="text-sm font-medium text-text-primary break-all font-mono">
+                {user.email || '—'}
+              </p>
             </div>
             <div className="space-y-1 sm:col-span-2">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">User ID</p>
-              <p className="text-sm font-mono text-slate-600 break-all">{user.id}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+                User ID
+              </p>
+              <p className="text-sm font-mono text-text-secondary break-all">{user.id}</p>
             </div>
             <div className="space-y-3 sm:col-span-2">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Role</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+                Role
+              </p>
               <div className="flex flex-wrap items-center gap-3">
                 <span
-                  className={`inline-flex rounded-full px-3 py-1.5 text-sm font-semibold ${roleVariant}`}
+                  className={`inline-flex rounded-md px-2.5 py-1 text-xs font-bold font-mono tracking-wide ${roleVariant}`}
                 >
                   {user.user_type}
                 </span>
@@ -274,7 +284,7 @@ export default function AdminUserDetailPage() {
                   <select
                     value={userType}
                     onChange={(e) => setUserType(e.target.value)}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                    className="rounded-xl border border-border-primary bg-surface-input px-3.5 py-2 text-sm text-text-primary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all h-11"
                   >
                     {validUserTypes.map((t) => (
                       <option key={t} value={t}>
@@ -286,7 +296,7 @@ export default function AdminUserDetailPage() {
                     type="button"
                     onClick={handleSaveUserType}
                     disabled={saving || userType === (user.user_type ?? '')}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-11 rounded-xl border border-border-primary bg-background-tertiary px-4 py-2 text-sm font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary cursor-pointer"
                   >
                     {saving ? 'Saving…' : 'Update role'}
                   </button>
@@ -297,7 +307,7 @@ export default function AdminUserDetailPage() {
         </AdminSectionWrapper>
 
         {actionMessage && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/10 px-4 py-3 text-sm text-emerald-400 font-mono">
             {actionMessage}
           </div>
         )}
@@ -309,7 +319,7 @@ export default function AdminUserDetailPage() {
                 type="button"
                 onClick={handleUnblock}
                 disabled={!!actionLoading}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl border border-border-primary bg-background-tertiary px-4 py-2.5 text-sm font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary cursor-pointer"
               >
                 {actionLoading === 'unblock' ? 'Unblocking…' : 'Unblock user'}
               </button>
@@ -318,7 +328,7 @@ export default function AdminUserDetailPage() {
                 type="button"
                 onClick={() => setConfirmAction('block')}
                 disabled={!!actionLoading}
-                className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-2.5 text-sm font-bold text-amber-400 hover:border-amber-500/50 hover:bg-amber-950/40 transition-all disabled:opacity-30 disabled:hover:border-amber-500/30 disabled:hover:bg-amber-950/20 cursor-pointer"
               >
                 {actionLoading === 'block' ? 'Blocking…' : 'Block user'}
               </button>
@@ -327,14 +337,14 @@ export default function AdminUserDetailPage() {
               type="button"
               onClick={() => setConfirmAction('delete')}
               disabled={!!actionLoading}
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-800 shadow-sm hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-2.5 text-sm font-bold text-red-400 hover:border-red-500/50 hover:bg-red-950/40 transition-all disabled:opacity-30 disabled:hover:border-red-500/30 disabled:hover:bg-red-500/20 cursor-pointer"
             >
               {actionLoading === 'delete' ? 'Deleting…' : 'Delete user'}
             </button>
           </div>
           {confirmAction === 'block' && (
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-700">
+            <div className="mt-4 rounded-xl border border-border-primary bg-background-secondary/40 p-4">
+              <p className="text-sm text-text-primary font-mono">
                 Block this user? They will not be able to sign in until you unblock them.
               </p>
               <div className="mt-3 flex gap-2">
@@ -342,14 +352,14 @@ export default function AdminUserDetailPage() {
                   type="button"
                   onClick={handleBlock}
                   disabled={actionLoading === 'block'}
-                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                  className="rounded-xl bg-amber-500 hover:bg-amber-600 text-background-primary px-4 py-2 text-sm font-bold disabled:opacity-50 cursor-pointer"
                 >
                   Block user
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmAction(null)}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-xl border border-border-primary bg-background-tertiary px-4 py-2 text-sm font-bold text-text-primary hover:bg-background-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -357,8 +367,8 @@ export default function AdminUserDetailPage() {
             </div>
           )}
           {confirmAction === 'delete' && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
-              <p className="text-sm text-slate-700">
+            <div className="mt-4 rounded-xl border border-red-500/20 bg-red-950/10 p-4">
+              <p className="text-sm text-text-primary font-mono">
                 Permanently delete this user? This will remove their auth account and cannot be
                 undone. You cannot delete your own account.
               </p>
@@ -367,14 +377,14 @@ export default function AdminUserDetailPage() {
                   type="button"
                   onClick={handleDelete}
                   disabled={actionLoading === 'delete'}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  className="rounded-xl bg-red-500 hover:bg-red-600 text-text-primary px-4 py-2 text-sm font-bold disabled:opacity-50 cursor-pointer"
                 >
                   Delete user
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmAction(null)}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-xl border border-border-primary bg-background-tertiary px-4 py-2 text-sm font-bold text-text-primary hover:bg-background-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -385,27 +395,27 @@ export default function AdminUserDetailPage() {
 
         <AdminSectionWrapper title="Activity" subtitle="Usage summary">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl border border-border-primary bg-background-secondary/20 p-4 hover:border-[#00E676]/20 transition-all">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
                 Businesses owned
               </p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+              <p className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">
                 {user.businesses?.length ?? 0}
               </p>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl border border-border-primary bg-background-secondary/20 p-4 hover:border-[#00E676]/20 transition-all">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
                 Bookings (as customer)
               </p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+              <p className="mt-1 text-2xl font-bold font-mono tracking-tight text-text-primary">
                 {user.bookingCount ?? 0}
               </p>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+            <div className="rounded-xl border border-border-primary bg-background-secondary/20 p-4 hover:border-[#00E676]/20 transition-all">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
                 Profile created
               </p>
-              <p className="mt-1 text-sm font-medium text-slate-900">
+              <p className="mt-2 text-sm font-bold font-mono text-text-primary">
                 {user.created_at
                   ? new Date(user.created_at).toLocaleDateString(undefined, {
                       day: 'numeric',
@@ -422,15 +432,15 @@ export default function AdminUserDetailPage() {
           title="Note for future reference"
           subtitle="Admin-only. Not visible to the user. Use for internal notes."
         >
-          <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4">
+          <div className="rounded-xl border border-border-primary bg-[#0A0A0A]/40 p-4">
             <textarea
               value={adminNote}
               onChange={(e) => setAdminNote(e.target.value)}
               placeholder="Add a note or description for future reference…"
               rows={4}
-              className="w-full resize-y min-h-[100px] rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
+              className="w-full resize-y min-h-[100px] rounded-xl border border-border-primary bg-surface-input px-4 py-3 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all"
             />
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-text-tertiary font-mono">
               Saved notes are stored on the user profile and can be updated anytime.
             </p>
             <div className="mt-4">
@@ -438,7 +448,7 @@ export default function AdminUserDetailPage() {
                 type="button"
                 onClick={handleSaveNote}
                 disabled={saving}
-                className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-xl bg-brand-primary text-background-primary px-5 py-2.5 text-sm font-bold hover:bg-brand-primaryHover active:bg-brand-primaryPressed transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               >
                 {saving ? 'Saving…' : 'Save note'}
               </button>

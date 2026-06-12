@@ -11,11 +11,11 @@ export const colors = {
     modal: '#161616',
   },
   brand: {
-    primary: '#00E676',
-    primaryHover: '#00D96D',
-    primaryPressed: '#00C853',
-    secondary: '#0F3D2E',
-    secondaryLight: '#145541',
+    primary: '#22C55E',
+    primaryHover: '#16A34A',
+    primaryPressed: '#15803D',
+    secondary: '#064E3B',
+    secondaryLight: '#065F46',
   },
   text: {
     primary: '#F5F5F5',
@@ -27,7 +27,7 @@ export const colors = {
   border: {
     primary: '#2A2A2A',
     secondary: '#1F1F1F',
-    focus: '#00E676',
+    focus: '#22C55E',
   },
   state: {
     success: '#22C55E',
@@ -38,6 +38,6 @@ export const colors = {
 };
 
 export const gradients = {
-  primary: 'linear-gradient(to right, #00E676, #0F3D2E)',
-  hero: 'linear-gradient(to right, rgba(0,230,118,0.15), rgba(15,61,46,0.05))',
+  primary: 'linear-gradient(to right, #22C55E, #064E3B)',
+  hero: 'linear-gradient(to right, rgba(34,197,94,0.15), rgba(6,78,59,0.05))',
 };

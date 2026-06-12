@@ -459,12 +459,12 @@ export default function SalonDetailPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-surface-card flex">
+      <div className="min-h-screen bg-background-primary flex">
         <div className="flex-1 lg:ml-64 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-surface-card rounded-2xl shadow-2xl p-8 text-center border-2 border-border-primary">
+          <div className="max-w-md w-full bg-zinc-900/40 rounded-2xl shadow-2xl p-8 text-center border border-white/10">
             <div className="mb-6">
-              <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-4 animate-pulse">
-                <CheckIcon className="h-10 w-10 text-green-600" aria-hidden="true" />
+              <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-emerald-500/10 mb-4 animate-pulse">
+                <CheckIcon className="h-10 w-10 text-emerald-400" aria-hidden="true" />
               </div>
               <h2 className="text-3xl font-bold text-text-primary mb-3">Booking Request Sent!</h2>
               <p className="text-text-secondary mb-1">
@@ -480,7 +480,7 @@ export default function SalonDetailPage() {
                 <Button
                   onClick={() => window.open(success.whatsappUrl, '_blank')}
                   size="lg"
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-text-inverse font-bold py-6 shadow-lg hover:shadow-xl"
+                  className="w-full bg-brand-primary text-black hover:bg-brand-primaryHover font-bold py-6 shadow-lg hover:shadow-xl"
                 >
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -510,7 +510,7 @@ export default function SalonDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-card flex">
+    <div className="min-h-screen bg-background-primary flex">
       <div className="flex-1 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
@@ -624,9 +624,9 @@ export default function SalonDetailPage() {
                       disabled={isClosed}
                       className={`px-3 py-2.5 rounded-lg border-2 transition-all text-center ${
                         isSelected
-                          ? 'border-border-primary bg-brand-primary text-text-inverse shadow-md'
+                          ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-md'
                           : isClosed
-                            ? 'bg-amber-50 border-amber-200 text-amber-700 cursor-not-allowed'
+                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 cursor-not-allowed'
                             : isToday
                               ? 'border-border-primary bg-surface-card text-text-primary hover:border-border-primary ring-2 ring-border-focus ring-offset-1'
                               : 'border-border-primary bg-surface-card text-text-secondary hover:border-border-primary hover:bg-surface-elevated'
@@ -640,7 +640,7 @@ export default function SalonDetailPage() {
                       </div>
                       <div className="text-xs">{month}</div>
                       {isClosed && (
-                        <div className="text-xs mt-1 font-medium text-amber-600">Closed</div>
+                        <div className="text-xs mt-1 font-medium text-amber-400">Closed</div>
                       )}
                       {isToday && !isClosed && !isSelected && (
                         <div className="text-xs mt-1 font-medium text-text-secondary">Today</div>
@@ -715,7 +715,7 @@ export default function SalonDetailPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                     {closedMessage ? (
                       <div className="col-span-full text-center py-6">
-                        <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm font-medium">
+                        <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl px-4 py-3 text-sm font-medium">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="h-5 w-5 flex-shrink-0"
@@ -891,7 +891,7 @@ export default function SalonDetailPage() {
                       !customerPhone.trim()
                     }
                     size="lg"
-                    className="w-full mt-4 bg-gradient-to-r from-black to-gray-800 hover:from-background-secondary hover:to-black text-text-inverse font-bold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="w-full mt-4 bg-brand-primary text-black hover:bg-brand-primaryHover font-bold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     {submitting ? (
                       <span className="flex items-center gap-2">

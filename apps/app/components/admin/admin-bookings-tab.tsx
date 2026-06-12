@@ -29,22 +29,22 @@ const BookingRow = memo(function BookingRow({
   onManage: (id: string) => void;
 }) {
   return (
-    <tr className="hover:bg-slate-50/80 transition-colors">
-      <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+    <tr className="hover:bg-[#181818]/60 transition-colors border-b border-border-primary/45 bg-transparent">
+      <td className="px-5 py-4 whitespace-nowrap text-sm font-semibold text-text-primary">
         {booking.customer_name || '—'}
       </td>
-      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-900">
+      <td className="px-5 py-4 whitespace-nowrap text-sm text-text-primary">
         {booking.business?.salon_name || booking.business?.name || 'N/A'}
       </td>
-      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
+      <td className="px-5 py-4 whitespace-nowrap text-sm text-text-secondary font-mono">
         {booking.customer_phone || '—'}
       </td>
-      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600">
+      <td className="px-5 py-4 whitespace-nowrap text-sm text-text-secondary font-mono">
         {booking.slot ? (
           <>
-            {new Date(booking.slot.date).toLocaleDateString()}
+            <span>{new Date(booking.slot.date).toLocaleDateString()}</span>
             <br />
-            <span className="text-slate-500">
+            <span className="text-[#737373] text-xs">
               {booking.slot.start_time} – {booking.slot.end_time}
             </span>
           </>
@@ -54,14 +54,14 @@ const BookingRow = memo(function BookingRow({
       </td>
       <td className="px-5 py-4 whitespace-nowrap">
         <span
-          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+          className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide border ${
             booking.status === 'confirmed'
-              ? 'bg-emerald-100 text-emerald-800'
+              ? 'bg-[#0F3D2E]/20 border-[#00E676]/30 text-[#00E676]'
               : booking.status === 'rejected'
-                ? 'bg-red-100 text-red-800'
+                ? 'bg-red-950/20 border-red-500/30 text-state-error'
                 : booking.status === 'pending'
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-slate-100 text-slate-800'
+                  ? 'bg-amber-950/20 border-amber-500/30 text-state-warning'
+                  : 'bg-[#1C1C1C] border-border-primary text-[#A1A1A1]'
           }`}
         >
           {booking.status}
@@ -70,7 +70,7 @@ const BookingRow = memo(function BookingRow({
       <td className="px-5 py-4 whitespace-nowrap text-right">
         <button
           onClick={() => onManage(booking.id)}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+          className="rounded-lg border border-border-primary bg-background-tertiary px-3 py-1 text-xs font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all cursor-pointer"
         >
           Manage
         </button>
@@ -201,14 +201,18 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
 
   if (error) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Bookings</h2>
-          <p className="mt-0.5 text-sm text-slate-500">All platform bookings — view and manage</p>
+          <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+            Bookings
+          </h2>
+          <p className="text-xs text-text-secondary mt-1">
+            All platform bookings — view and manage
+          </p>
         </div>
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="rounded-xl border border-red-200 bg-red-50/50 py-12 text-center">
-            <p className="text-sm font-medium text-red-800">{error}</p>
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6 shadow-sm">
+          <div className="rounded-xl border border-red-500/20 bg-red-950/10 py-12 text-center">
+            <p className="text-sm font-medium text-state-error">{error}</p>
           </div>
         </section>
       </div>
@@ -216,61 +220,66 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Bookings</h2>
-        <p className="mt-0.5 text-sm text-slate-500">All platform bookings — view and manage</p>
+        <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+          Bookings
+        </h2>
+        <p className="text-xs text-text-secondary mt-1">All platform bookings — view and manage</p>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 bg-slate-50/60">
-          <h3 className="text-base font-semibold text-slate-800">Booking list</h3>
+      <section className="rounded-xl border border-border-primary bg-surface-card shadow-sm overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-border-primary bg-[#111111]/80 backdrop-blur-md">
+          <h3 className="text-base font-bold text-text-primary font-display">Booking list</h3>
           <div className="relative">
             <input
               type="search"
               placeholder="Search bookings..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 rounded-lg border border-slate-200 bg-white py-2.5 pl-3 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-64 rounded-lg border border-border-primary bg-[#1C1C1C] py-1.5 pl-3 pr-10 text-xs text-text-primary placeholder-[#737373] focus:border-[#00E676]/50 focus:outline-none focus:ring-1 focus:ring-[#00E676]/50 transition-all animate-none"
               aria-label="Search bookings"
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-border-primary border-t-[#00E676] rounded-full animate-spin" />
               </div>
             )}
           </div>
         </div>
         {bookings.length > 0 || loading ? (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto divide-y divide-slate-200">
-                <thead className="bg-slate-100 border-b-2 border-slate-200">
+            <div className="overflow-x-auto bg-background-secondary/20">
+              <table className="w-full table-auto divide-y divide-border-primary">
+                <thead className="bg-[#0F3D2E]/20">
                   <tr>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
                       Customer name
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
                       Business
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
                       Phone
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
                       Date & time
                     </th>
-                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
                       Status
                     </th>
-                    <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <th className="px-5 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody className="divide-y divide-border-primary/45 bg-transparent">
                   {loading && bookings.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">
+                      <td
+                        colSpan={6}
+                        className="px-5 py-12 text-center text-xs text-text-secondary font-mono"
+                      >
                         Loading bookings...
                       </td>
                     </tr>
@@ -283,8 +292,8 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
               </table>
             </div>
             {!loading && totalItems > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/50 px-5 py-3">
-                <p className="text-sm text-slate-600">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-primary bg-[#0A0A0A]/40 px-5 py-3">
+                <p className="text-xs text-text-secondary">
                   Showing {start + 1}–{end} of {totalItems}
                 </p>
                 <div className="flex items-center gap-2">
@@ -292,18 +301,18 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg border border-border-primary bg-background-tertiary px-3 py-1 text-xs font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary transition-all cursor-pointer"
                   >
                     Previous
                   </button>
-                  <span className="text-sm text-slate-600">
+                  <span className="text-xs text-text-secondary font-mono">
                     Page {page} of {totalPages}
                   </span>
                   <button
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg border border-border-primary bg-background-tertiary px-3 py-1 text-xs font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary transition-all cursor-pointer"
                   >
                     Next
                   </button>
@@ -312,9 +321,11 @@ export function AdminBookingsTab({ page: controlledPage, onPageChange }: ListTab
             )}
           </>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center mx-6 mb-6">
-            <p className="text-sm font-medium text-slate-500">No bookings found</p>
-            <p className="mt-1 text-xs text-slate-400">Bookings will appear here when they exist</p>
+          <div className="rounded-xl border border-dashed border-border-primary bg-background-secondary/30 py-12 text-center mx-6 mb-6 mt-6">
+            <p className="text-sm font-semibold text-text-secondary">No bookings found</p>
+            <p className="mt-1 text-xs text-text-tertiary font-mono">
+              Bookings will appear here when they exist
+            </p>
           </div>
         )}
       </section>

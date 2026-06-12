@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { formatDate, formatPhoneNumber } from '@cusown/shared';
+import { formatProfileDate, formatPhoneNumber } from '@cusown/shared';
 import { ERROR_MESSAGES, PHONE_DIGITS, UI_CONTEXT } from '@cusown/config';
 import { getServerSessionClient } from '@cusown/shared';
 import { getCSRFToken } from '@cusown/shared';
@@ -293,7 +293,7 @@ function AccountInfoSectionComponent({
       </div>
 
       {saveMessage && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
           {saveMessage}
         </div>
       )}
@@ -336,11 +336,11 @@ function AccountInfoSectionComponent({
                     {profileData.email || 'N/A'}
                   </span>
                   {profileData.email && profileData.email_confirmed ? (
-                    <span className="inline-flex w-fit shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200/80">
+                    <span className="inline-flex w-fit shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400 ring-1 ring-emerald-500/20">
                       Verified
                     </span>
                   ) : profileData.email ? (
-                    <span className="inline-flex w-fit shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200/80">
+                    <span className="inline-flex w-fit shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400 ring-1 ring-amber-500/20">
                       Not verified
                     </span>
                   ) : null}
@@ -410,7 +410,7 @@ function AccountInfoSectionComponent({
                 className="min-w-0 text-base leading-relaxed text-text-primary"
                 suppressHydrationWarning
               >
-                {profileData.created_at ? formatDate(profileData.created_at) : 'N/A'}
+                {profileData.created_at ? formatProfileDate(profileData.created_at) : 'N/A'}
               </dd>
             </div>
             <div className="grid grid-cols-1 gap-1.5 px-4 py-3 sm:grid-cols-[minmax(0,7.5rem)_1fr] sm:items-start sm:gap-x-4">
@@ -421,7 +421,7 @@ function AccountInfoSectionComponent({
                 className="min-w-0 text-base leading-relaxed text-text-primary"
                 suppressHydrationWarning
               >
-                {profileData.last_sign_in ? formatDate(profileData.last_sign_in) : 'Never'}
+                {profileData.last_sign_in ? formatProfileDate(profileData.last_sign_in) : 'Never'}
               </dd>
             </div>
           </dl>

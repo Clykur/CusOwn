@@ -59,13 +59,23 @@ export default function CustomerSalonListPage() {
   const handleLocationToggle = useCallback((value: string, checked: boolean) => {
     if (checked) setSelectedLocation(value);
   }, []);
+  const [isNearbyFilterActive, setIsNearbyFilterActive] = useState(false);
+  const handleNearbyToggle = () => {
+    if (isNearbyFilterActive) {
+      clearFilters();
+      return;
+    }
 
-  const hasActiveFilters = Boolean(searchTerm.trim() || selectedLocation || userLocation !== null);
-
+    handleUseMyLocation();
+    setIsNearbyFilterActive(true);
+  };
+  const hasActiveFilters = Boolean(searchTerm.trim() || selectedLocation || isNearbyFilterActive);
   const clearFilters = useCallback(() => {
     setSearchTerm('');
     setSelectedLocation('');
     setUserLocation(null);
+    setIsNearbyFilterActive(false);
+    setCurrentPage(1);
   }, []);
 
   useEffect(() => {
@@ -198,6 +208,9 @@ export default function CustomerSalonListPage() {
     let isMounted = true;
 
     const loadData = async () => {
+      if (userLocation) {
+        return;
+      }
       try {
         const [locationsRes, salonsRes] = await Promise.all([
           fetch('/api/salons/locations'),
@@ -257,7 +270,7 @@ export default function CustomerSalonListPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedLocation]);
+  }, [selectedLocation, userLocation]);
 
   useEffect(() => {
     if (!userLocation) return;
@@ -318,7 +331,8 @@ export default function CustomerSalonListPage() {
       {/* Desktop: search + FilterDropdown + actions (unchanged pattern, native select replaced) */}
       <div className="hidden md:block">
         <div className="rounded-2xl border border-border-primary bg-surface-card p-6 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="flex items-end gap-4">
+            {/* Search */}
             <div className="relative min-w-0 flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <ExploreIcon className="h-5 w-5 text-text-tertiary" aria-hidden="true" />
@@ -331,7 +345,9 @@ export default function CustomerSalonListPage() {
                 className="pl-10"
               />
             </div>
-            <div className="w-full shrink-0 lg:max-w-xs">
+
+            {/* Location Filter */}
+            <div className="w-64 shrink-0">
               <FilterDropdown
                 label={UI_CUSTOMER.EXPLORE_FILTER_LOCATION_LABEL}
                 options={locationFilterOptions}
@@ -340,28 +356,26 @@ export default function CustomerSalonListPage() {
                 className={locationsLoading ? 'pointer-events-none opacity-60' : ''}
               />
             </div>
-          </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="mr-auto text-sm font-medium text-text-primary underline hover:text-text-secondary"
-              >
-                {UI_CUSTOMER.CTA_ADJUST_FILTERS}
-              </button>
-            )}
+            {/* Use My Location / Nearby Toggle */}
             <Button
               variant="ghost"
-              size="sm"
               type="button"
-              onClick={handleUseMyLocation}
+              onClick={handleNearbyToggle}
               disabled={loading}
-              className="flex shrink-0 items-center gap-1.5 px-2 text-blue-600 hover:text-blue-800"
+              title={
+                isNearbyFilterActive ? 'Reset Nearby Filter' : UI_CUSTOMER.EXPLORE_USE_MY_LOCATION
+              }
+              className={`flex h-11 shrink-0 items-center gap-2 rounded-xl border px-4 transition-colors ${
+                isNearbyFilterActive
+                  ? 'border-brand-primary bg-brand-primary/10 text-brand-primary'
+                  : 'border-border-primary text-blue-600 hover:bg-surface-elevated hover:text-blue-800'
+              }`}
             >
-              <MapPinIcon className="h-4 w-4" aria-hidden="true" />
-              {UI_CUSTOMER.EXPLORE_USE_MY_LOCATION}
+              <MapPinIcon className="h-5 w-5" aria-hidden="true" />
+              <span className="whitespace-nowrap text-sm font-medium">
+                {isNearbyFilterActive ? 'Nearby' : 'Use My Location'}
+              </span>
             </Button>
           </div>
         </div>

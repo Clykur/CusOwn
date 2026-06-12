@@ -30,14 +30,14 @@ export default function AppError({
   const message = getContextMessage();
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
-        <p className="text-gray-600 mb-8">{message}</p>
+    <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
+        <h2 className="text-2xl font-bold text-white mb-4">Something went wrong</h2>
+        <p className="text-zinc-400 mb-8">{message}</p>
         <div className="flex flex-col gap-3">
           <button
             onClick={reset}
-            className="bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors"
+            className="bg-brand-primary text-black font-semibold py-3 px-6 rounded-lg hover:bg-brand-primaryHover transition-colors"
           >
             Try again
           </button>

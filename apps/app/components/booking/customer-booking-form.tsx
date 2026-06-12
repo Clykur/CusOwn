@@ -42,7 +42,7 @@ function CustomerBookingFormComponent({
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           required
-          className="w-full min-h-11 px-4 py-2.5 bg-surface-input text-base text-text-primary placeholder:text-text-secondary border border-border-primary rounded-xl focus:ring-2 focus:ring-border-focus focus:border-border-primary transition-shadow duration-150"
+          className="w-full min-h-11 appearance-none rounded-xl border border-border-primary bg-surface-input px-4 py-2.5 text-base text-text-primary placeholder:text-text-secondary transition-shadow duration-150 focus:border-border-primary focus:ring-2 focus:ring-border-focus"
           placeholder={UI_CUSTOMER.PLACEHOLDER_NAME}
         />
       </div>
@@ -64,7 +64,7 @@ function CustomerBookingFormComponent({
           pattern="[0-9]{10}"
           inputMode="numeric"
           autoComplete="tel"
-          className="w-full min-h-11 px-4 py-2.5 bg-surface-input text-base text-text-primary placeholder:text-text-secondary border border-border-primary rounded-xl focus:ring-2 focus:ring-border-focus focus:border-border-primary transition-shadow duration-150"
+          className="w-full min-h-11 appearance-none rounded-xl border border-border-primary bg-surface-input px-4 py-2.5 text-base text-text-primary placeholder:text-text-secondary transition-shadow duration-150 focus:border-border-primary focus:ring-2 focus:ring-border-focus"
           placeholder={UI_CUSTOMER.PLACEHOLDER_PHONE}
         />
       </div>

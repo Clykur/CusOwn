@@ -405,23 +405,26 @@ function AdminDashboardContentInner() {
         {
           label: 'Total Bookings',
           data: trends.map((t) => t.total),
-          backgroundColor: 'rgb(0, 0, 0)',
-          borderColor: 'rgb(0, 0, 0)',
+          backgroundColor: '#00E676',
+          borderColor: '#00E676',
           borderWidth: 2,
+          borderRadius: 4,
         },
         {
           label: 'Confirmed',
           data: trends.map((t) => t.confirmed),
-          backgroundColor: 'rgb(64, 64, 64)',
-          borderColor: 'rgb(64, 64, 64)',
+          backgroundColor: '#22C55E',
+          borderColor: '#22C55E',
           borderWidth: 2,
+          borderRadius: 4,
         },
         {
           label: 'Rejected',
           data: trends.map((t) => t.rejected),
-          backgroundColor: 'rgb(128, 128, 128)',
-          borderColor: 'rgb(128, 128, 128)',
+          backgroundColor: '#FF5C5C',
+          borderColor: '#FF5C5C',
           borderWidth: 2,
+          borderRadius: 4,
         },
       ],
     }),
@@ -443,12 +446,12 @@ function AdminDashboardContentInner() {
                   metrics.cancelledBookings,
                 ],
                 backgroundColor: [
-                  'rgb(0, 0, 0)',
-                  'rgb(64, 64, 64)',
-                  'rgb(128, 128, 128)',
-                  'rgb(192, 192, 192)',
+                  '#22C55E', // Confirmed
+                  '#F59E0B', // Pending
+                  '#FF5C5C', // Rejected
+                  '#737373', // Cancelled
                 ],
-                borderColor: 'rgb(0, 0, 0)',
+                borderColor: '#141414',
                 borderWidth: 2,
               },
             ],
@@ -470,14 +473,14 @@ function AdminDashboardContentInner() {
                   metrics.growthRate.bookings,
                   metrics.growthRate.owners,
                 ],
-                borderColor: 'rgb(0, 0, 0)',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                borderColor: '#00E676',
+                backgroundColor: 'rgba(0, 230, 118, 0.08)',
                 borderWidth: 3,
                 tension: 0.4,
                 fill: true,
-                pointRadius: 8,
-                pointBackgroundColor: ['rgb(0, 0, 0)', 'rgb(64, 64, 64)', 'rgb(128, 128, 128)'],
-                pointBorderColor: 'rgb(0, 0, 0)',
+                pointRadius: 6,
+                pointBackgroundColor: ['#00E676', '#0F3D2E', '#22C55E'],
+                pointBorderColor: '#141414',
                 pointBorderWidth: 2,
               },
             ],
@@ -489,7 +492,7 @@ function AdminDashboardContentInner() {
   if (!ready) {
     const isAnalyticsTab = activeTab === 'analytics';
     return (
-      <div className="min-h-screen bg-white flex">
+      <div className="min-h-screen bg-background-primary flex">
         <div className="flex-1 w-full flex flex-col min-h-0">
           <div className="w-full max-w-full px-0 py-8 flex-1 flex flex-col min-h-0">
             {isAnalyticsTab ? <AdminAnalyticsSkeleton /> : <OverviewSkeleton />}
@@ -505,7 +508,7 @@ function AdminDashboardContentInner() {
       router.replace(ROUTES.AUTH_LOGIN(ROUTES.ADMIN_DASHBOARD));
     }
     return (
-      <div className="min-h-screen bg-white flex">
+      <div className="min-h-screen bg-background-primary flex">
         <div className="flex-1 w-full flex items-center justify-center">
           <OverviewSkeleton />
         </div>
@@ -515,22 +518,22 @@ function AdminDashboardContentInner() {
 
   if (authError) {
     return (
-      <div className="min-h-screen bg-white flex">
+      <div className="min-h-screen bg-background-primary flex">
         <div className="flex-1 w-full flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-            <p className="text-gray-600 mb-4">{authError}</p>
+          <div className="max-w-md w-full bg-surface-card border border-border-primary rounded-xl p-8 shadow-xl">
+            <h2 className="text-xl font-bold text-text-primary mb-4 font-display">Access Denied</h2>
+            <p className="text-sm text-text-secondary mb-4">{authError}</p>
 
             {authError.includes('migration') && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-left">
-                <p className="text-sm text-yellow-800 mb-2">
-                  <strong>To fix this:</strong>
+              <div className="bg-yellow-950/20 border border-yellow-500/35 rounded-lg p-4 mb-4 text-left">
+                <p className="text-xs font-semibold text-yellow-500 mb-2 font-mono">
+                  Migration requirement:
                 </p>
-                <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
+                <ol className="text-xs text-yellow-600 list-decimal list-inside space-y-1 font-mono">
                   <li>Go to Supabase Dashboard → SQL Editor</li>
                   <li>
-                    Run the migration query from{' '}
-                    <code className="bg-yellow-100 px-1 rounded">
+                    Run query from{' '}
+                    <code className="bg-yellow-950/40 px-1 rounded border border-yellow-500/20">
                       database/migration_set_admin_quick.sql
                     </code>
                   </li>
@@ -539,10 +542,10 @@ function AdminDashboardContentInner() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => router.push(ROUTES.HOME)}
-                className="flex-1 px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-brand-primary to-brand-secondary text-text-inverse font-bold rounded-lg hover:opacity-90 transition-all text-xs cursor-pointer"
               >
                 Go to Home
               </button>
@@ -575,7 +578,7 @@ function AdminDashboardContentInner() {
                       alert('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
                     }
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+                  className="flex-1 px-4 py-2.5 bg-surface-elevated text-text-primary border border-border-primary font-bold rounded-lg hover:bg-background-tertiary transition-all text-xs cursor-pointer"
                 >
                   Try Set Admin
                 </button>
@@ -589,7 +592,7 @@ function AdminDashboardContentInner() {
 
   if (ready && session && !adminConfirmed && !authError) {
     return (
-      <div className="min-h-screen bg-white flex">
+      <div className="min-h-screen bg-background-primary flex">
         <div className="flex-1 w-full flex items-center justify-center">
           <OverviewSkeleton />
         </div>
@@ -600,7 +603,7 @@ function AdminDashboardContentInner() {
   return (
     <AdminPrefetchProvider sessionReady={!!(ready && session)}>
       <PrefetchAnalyticsWhenReady adminConfirmed={adminConfirmed} />
-      <div className="min-h-screen bg-white flex">
+      <div className="min-h-screen bg-background-primary flex text-text-primary">
         <div className="flex-1 w-full">
           <DashboardErrorBoundary>
             <div className="w-full max-w-full">
@@ -611,8 +614,8 @@ function AdminDashboardContentInner() {
                     title="Overview"
                     subtitle="Platform-wide metrics at a glance"
                   >
-                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 py-12 text-center">
-                      <p className="text-sm font-medium text-amber-800">
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-950/10 py-12 text-center">
+                      <p className="text-sm font-medium text-amber-500">
                         Could not load metrics. The request may have failed or timed out.
                       </p>
                       <button
@@ -622,7 +625,7 @@ function AdminDashboardContentInner() {
                           setOverviewLoadSettled(false);
                           setOverviewRetryKey((k) => k + 1);
                         }}
-                        className="mt-4 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-800 shadow-sm hover:bg-amber-50"
+                        className="mt-4 rounded-lg border border-border-primary bg-surface-elevated px-4 py-2 text-sm font-medium text-text-primary shadow-sm hover:bg-background-tertiary"
                       >
                         Retry
                       </button>
@@ -633,10 +636,10 @@ function AdminDashboardContentInner() {
               {activeTab === 'overview' && metrics && (
                 <div className="flex flex-col gap-8">
                   <div>
-                    <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+                    <h1 className="text-xl font-bold text-text-primary tracking-tight font-display">
                       Overview
                     </h1>
-                    <p className="mt-0.5 text-sm text-slate-500">
+                    <p className="mt-1 text-xs text-[#737373] font-mono">
                       Platform-wide metrics at a glance
                     </p>
                   </div>
@@ -725,7 +728,7 @@ function AdminDashboardContentInner() {
                         />
                       </div>
                       {overviewExtras.systemHealth.cronExpireBookingsLastRun && (
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="mt-2 text-xs text-[#737373] font-mono">
                           Last cron run:{' '}
                           {new Date(
                             overviewExtras.systemHealth.cronExpireBookingsLastRun
@@ -780,15 +783,33 @@ function AdminDashboardContentInner() {
                           options={{
                             responsive: true,
                             plugins: {
-                              legend: { position: 'top' as const },
+                              legend: {
+                                position: 'top' as const,
+                                labels: {
+                                  color: '#F5F5F5',
+                                  font: { family: 'var(--font-sans)', size: 11 },
+                                },
+                              },
                               title: { display: false },
                             },
-                            scales: { y: { beginAtZero: true } },
+                            scales: {
+                              x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#A1A1A1', font: { size: 10 } },
+                              },
+                              y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#A1A1A1', font: { size: 10 } },
+                              },
+                            },
                           }}
                         />
                       ) : (
-                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                          <p className="text-sm font-medium text-slate-500">No data available</p>
+                        <div className="rounded-xl border border-dashed border-border-primary bg-background-secondary/30 py-12 text-center">
+                          <p className="text-sm font-medium text-text-secondary">
+                            No data available
+                          </p>
                         </div>
                       )}
                     </AdminSectionWrapper>
@@ -802,13 +823,33 @@ function AdminDashboardContentInner() {
                           data={bookingStatusChart}
                           options={{
                             responsive: true,
-                            plugins: { legend: { position: 'top' as const } },
-                            scales: { y: { beginAtZero: true } },
+                            plugins: {
+                              legend: {
+                                position: 'top' as const,
+                                labels: {
+                                  color: '#F5F5F5',
+                                  font: { family: 'var(--font-sans)', size: 11 },
+                                },
+                              },
+                            },
+                            scales: {
+                              x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#A1A1A1', font: { size: 10 } },
+                              },
+                              y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#A1A1A1', font: { size: 10 } },
+                              },
+                            },
                           }}
                         />
                       ) : (
-                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                          <p className="text-sm font-medium text-slate-500">No data available</p>
+                        <div className="rounded-xl border border-dashed border-border-primary bg-background-secondary/30 py-12 text-center">
+                          <p className="text-sm font-medium text-text-secondary">
+                            No data available
+                          </p>
                         </div>
                       )}
                     </AdminSectionWrapper>
@@ -821,15 +862,31 @@ function AdminDashboardContentInner() {
                         options={{
                           responsive: true,
                           plugins: {
-                            legend: { position: 'top' as const },
+                            legend: {
+                              position: 'top' as const,
+                              labels: {
+                                color: '#F5F5F5',
+                                font: { family: 'var(--font-sans)', size: 11 },
+                              },
+                            },
                             title: { display: false },
                           },
-                          scales: { y: { beginAtZero: true } },
+                          scales: {
+                            x: {
+                              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                              ticks: { color: '#A1A1A1', font: { size: 10 } },
+                            },
+                            y: {
+                              beginAtZero: true,
+                              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                              ticks: { color: '#A1A1A1', font: { size: 10 } },
+                            },
+                          },
                         }}
                       />
                     ) : (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-                        <p className="text-sm font-medium text-slate-500">No data available</p>
+                      <div className="rounded-xl border border-dashed border-border-primary bg-background-secondary/30 py-12 text-center">
+                        <p className="text-sm font-medium text-text-secondary">No data available</p>
                       </div>
                     )}
                   </AdminSectionWrapper>

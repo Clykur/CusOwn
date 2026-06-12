@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { OWNER_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
 import AddIcon from '@cusown/shared/icons/create-business.svg';
+import ActionButton from '@/components/ui/action-button';
 
 export type Service = {
   id: string;
@@ -194,19 +195,13 @@ const ServicesSection = ({ businessId, className = '' }: ServicesProps) => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-5 mt-3 border-t border-border-secondary pt-3">
-                  <button
-                    onClick={() => openEdit(s)}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 transition"
-                  >
-                    Edit
-                  </button>
-                  <button
+                <div className="flex items-center justify-end gap-2 mt-3 border-t border-border-secondary pt-3">
+                  <ActionButton
+                    action="delete"
                     onClick={() => handleDelete(s.id)}
-                    className="text-sm font-medium text-state-error hover:text-state-error transition"
-                  >
-                    Delete
-                  </button>
+                    tooltip="Delete Service"
+                  />
+                  <ActionButton action="edit" onClick={() => openEdit(s)} tooltip="Edit Service" />
                 </div>
               </div>
             ))}

@@ -83,7 +83,7 @@ export default function PullToRefresh({ onRefresh, children, threshold = 80 }: P
       {/* Pull Indicator */}
       {(isPulling || isRefreshing) && (
         <div
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-white border-b border-gray-200 transition-all duration-200"
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-background-secondary border-b border-border-primary transition-all duration-200"
           style={{
             height: `${Math.min(pullDistance, threshold)}px`,
             opacity: pullProgress,
@@ -91,12 +91,12 @@ export default function PullToRefresh({ onRefresh, children, threshold = 80 }: P
           }}
         >
           {isRefreshing ? (
-            <div className="flex items-center gap-2 text-gray-600">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-600 border-t-transparent"></div>
+            <div className="flex items-center gap-2 text-text-secondary">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-border-primary border-t-brand-primary"></div>
               <span className="text-sm font-medium">Refreshing...</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-gray-600">
+            <div className="flex items-center gap-2 text-text-secondary">
               <svg
                 className="w-5 h-5 transition-transform"
                 style={{ transform: `rotate(${pullProgress * 180}deg)` }}

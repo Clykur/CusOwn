@@ -64,40 +64,48 @@ function formatPercent(n: number): string {
 }
 
 const CHART_COLORS = {
-  primary: 'rgb(16, 185, 129)',
-  primaryLight: 'rgba(16, 185, 129, 0.12)',
-  secondary: 'rgb(15, 23, 42)',
-  secondaryLight: 'rgba(15, 23, 42, 0.08)',
-  success: 'rgb(34, 197, 94)',
-  warning: 'rgb(234, 179, 8)',
-  danger: 'rgb(239, 68, 68)',
-  neutral: ['rgb(15, 23, 42)', 'rgb(71, 85, 105)', 'rgb(148, 163, 184)', 'rgb(203, 213, 225)'],
+  primary: '#00E676',
+  primaryLight: 'rgba(0, 230, 118, 0.12)',
+  secondary: '#0F3D2E',
+  secondaryLight: 'rgba(15, 61, 46, 0.08)',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#FF5C5C',
+  neutral: ['#00E676', '#145541', '#A1A1A1', '#737373'],
 };
 
 const chartDefaults = {
   responsive: true,
-  maintainAspectRatio: true,
+  maintainAspectRatio: false,
   plugins: {
     legend: {
       position: 'top' as const,
-      labels: { usePointStyle: true, padding: 16 },
+      labels: { usePointStyle: true, padding: 16, color: '#A1A1A1' },
     },
     tooltip: {
-      backgroundColor: 'rgb(15, 23, 42)',
+      backgroundColor: '#161616',
+      borderColor: '#2A2A2A',
+      borderWidth: 1,
       padding: 12,
-      titleFont: { size: 13 },
+      titleFont: { size: 13, family: 'var(--font-space-grotesk)' },
       bodyFont: { size: 12 },
+      titleColor: '#F5F5F5',
+      bodyColor: '#A1A1A1',
     },
   },
   scales: {
     x: {
       grid: { display: false },
-      ticks: { maxRotation: 45, font: { size: 11 } },
+      ticks: {
+        maxRotation: 45,
+        font: { size: 11, family: 'var(--font-space-grotesk)' },
+        color: '#A1A1A1',
+      },
     },
     y: {
       beginAtZero: true,
-      grid: { color: 'rgba(0,0,0,0.06)' },
-      ticks: { font: { size: 11 } },
+      grid: { color: 'rgba(42, 42, 42, 0.4)' },
+      ticks: { font: { size: 11, family: 'var(--font-space-grotesk)' }, color: '#A1A1A1' },
     },
   },
 };
@@ -235,24 +243,26 @@ export default function AdminAnalyticsTab() {
   const dateRangeLabel = `${startDate} → ${endDate}`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header: Title + Date range + Export */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Analytics</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+            Analytics
+          </h2>
+          <p className="text-xs text-text-secondary mt-1">
             Performance and revenue metrics for the selected period
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="w-[180px]">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
               From
             </label>
             <DateFilter value={startDate} onChange={setStartDate} />
           </div>
           <div className="w-[180px]">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
               To
             </label>
             <DateFilter value={endDate} onChange={setEndDate} />
@@ -260,14 +270,14 @@ export default function AdminAnalyticsTab() {
           <button
             type="button"
             onClick={fetchAll}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
+            className="h-11 rounded-xl bg-brand-primary px-5 text-sm font-bold text-background-primary shadow-sm hover:bg-brand-primaryHover active:bg-brand-primaryPressed transition-all duration-150 cursor-pointer"
           >
             Apply
           </button>
           <button
             type="button"
             onClick={handleExport}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            className="h-11 rounded-xl border border-border-primary bg-background-tertiary px-5 text-sm font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all duration-150 cursor-pointer"
           >
             Export CSV
           </button>
@@ -275,15 +285,15 @@ export default function AdminAnalyticsTab() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-red-500/20 bg-red-950/10 px-4 py-3 text-sm text-state-error font-mono">
           {error}
         </div>
       )}
 
       {/* Executive summary: 4 key KPIs */}
       {revenue && funnel && (
-        <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-6 shadow-sm">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-text-secondary font-mono mb-4">
             Key metrics · {dateRangeLabel}
           </h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -312,11 +322,15 @@ export default function AdminAnalyticsTab() {
       )}
 
       {/* Revenue & payments */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-border-primary bg-surface-card p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Revenue & payments</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Revenue over time and payment outcomes</p>
+            <h3 className="text-base font-bold text-text-primary font-display">
+              Revenue & payments
+            </h3>
+            <p className="text-xs text-text-secondary mt-1">
+              Revenue over time and payment outcomes
+            </p>
           </div>
         </div>
         {revenue ? (
@@ -341,8 +355,10 @@ export default function AdminAnalyticsTab() {
               />
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-                <h4 className="text-sm font-semibold text-slate-700 mb-4">Revenue trend</h4>
+              <div className="rounded-xl border border-border-primary bg-[#0A0A0A]/40 p-5">
+                <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider font-mono mb-4">
+                  Revenue trend
+                </h4>
                 {revenue.revenueTrend.length > 0 ? (
                   <div className="h-64">
                     <Line
@@ -368,6 +384,7 @@ export default function AdminAnalyticsTab() {
                           y: {
                             ...chartDefaults.scales.y,
                             ticks: {
+                              color: '#A1A1A1',
                               callback: (v) => (typeof v === 'number' ? `₹${v}` : v),
                             },
                           },
@@ -379,8 +396,10 @@ export default function AdminAnalyticsTab() {
                   <EmptyState message="No revenue data in this period" />
                 )}
               </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-                <h4 className="text-sm font-semibold text-slate-700 mb-4">Payment status</h4>
+              <div className="rounded-xl border border-border-primary bg-[#0A0A0A]/40 p-5">
+                <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider font-mono mb-4">
+                  Payment status
+                </h4>
                 {revenue.paymentStatusDistribution.length > 0 ? (
                   <div className="h-64">
                     <Bar
@@ -403,8 +422,8 @@ export default function AdminAnalyticsTab() {
                 )}
               </div>
             </div>
-            <div className="mt-6 rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-              <h4 className="text-sm font-semibold text-slate-700 mb-4">
+            <div className="mt-6 rounded-xl border border-border-primary bg-[#0A0A0A]/40 p-5">
+              <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider font-mono mb-4">
                 Top businesses by revenue
               </h4>
               {revenue.revenueByBusiness.length > 0 ? (
@@ -444,10 +463,10 @@ export default function AdminAnalyticsTab() {
       </section>
 
       {/* Booking funnel */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-border-primary bg-surface-card p-6">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">Booking funnel</h3>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h3 className="text-base font-bold text-text-primary font-display">Booking funnel</h3>
+          <p className="text-xs text-text-secondary mt-1">
             From request to confirmation — conversion and response metrics
           </p>
         </div>
@@ -471,69 +490,74 @@ export default function AdminAnalyticsTab() {
       </section>
 
       {/* Business health */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-border-primary bg-surface-card p-6">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">Business health</h3>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h3 className="text-base font-bold text-text-primary font-display">Business health</h3>
+          <p className="text-xs text-text-secondary mt-1">
             Performance score by business (lowest first — focus on improvement)
           </p>
         </div>
         {health && health.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Business
-                  </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Health score
-                  </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Acceptance
-                  </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Cancellation
-                  </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Payment success
-                  </th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Avg. response
-                  </th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Revenue
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {health.map((row) => (
-                  <tr key={row.business_id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-5 py-4 text-sm font-medium text-slate-900">
-                      {row.name || row.business_id.slice(0, 8)}
-                    </td>
-                    <td className="px-5 py-4">
-                      <HealthScoreBar score={row.healthScore} />
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {formatPercent(row.acceptanceRate)}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {formatPercent(row.cancellationRate)}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {formatPercent(row.paymentSuccessRate)}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {row.avgResponseTimeMinutes.toFixed(1)} min
-                    </td>
-                    <td className="px-5 py-4 text-sm font-medium text-slate-900 text-right">
-                      {formatCurrency(row.revenue)}
-                    </td>
+          <div className="overflow-hidden rounded-xl border border-border-primary bg-background-secondary/20">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border-primary">
+                <thead className="bg-[#0F3D2E]/20">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Business
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Health score
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Acceptance
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Cancellation
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Payment success
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Avg. response
+                    </th>
+                    <th className="px-5 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Revenue
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border-primary/45 bg-transparent">
+                  {health.map((row) => (
+                    <tr
+                      key={row.business_id}
+                      className="hover:bg-[#181818]/60 transition-colors border-b border-border-primary/45 bg-transparent"
+                    >
+                      <td className="px-5 py-4 text-sm font-semibold text-text-primary">
+                        {row.name || row.business_id.slice(0, 8)}
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        <HealthScoreBar score={row.healthScore} />
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary font-mono">
+                        {formatPercent(row.acceptanceRate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary font-mono">
+                        {formatPercent(row.cancellationRate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary font-mono">
+                        {formatPercent(row.paymentSuccessRate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary font-mono">
+                        {row.avgResponseTimeMinutes.toFixed(1)} min
+                      </td>
+                      <td className="px-5 py-4 text-sm font-semibold text-[#00E676] text-right font-mono">
+                        {formatCurrency(row.revenue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <EmptyState message="No business health data in this period" />
@@ -541,10 +565,12 @@ export default function AdminAnalyticsTab() {
       </section>
 
       {/* System / technical */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">System & reliability</h3>
-          <p className="text-sm text-slate-500 mt-0.5">API and background job health</p>
+      <section className="rounded-xl border border-border-primary bg-surface-card p-6">
+        <div className="mb-6">
+          <h3 className="text-base font-bold text-text-primary font-display">
+            System & reliability
+          </h3>
+          <p className="text-xs text-text-secondary mt-1">API and background job health</p>
         </div>
         {system ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -579,10 +605,14 @@ export default function AdminAnalyticsTab() {
 
 function KpiCard({ label, value, subtext }: { label: string; value: string; subtext: string }) {
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
-      <p className="mt-1 text-xs text-slate-400">{subtext}</p>
+    <div className="rounded-xl border border-border-primary bg-surface-card p-5 hover:border-[#00E676]/40 hover:shadow-[0_0_12px_rgba(0,230,118,0.06)] hover:-translate-y-0.5 transition-all duration-200 ease-out select-none">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-bold tracking-tight text-text-primary font-display">
+        {value}
+      </p>
+      <p className="mt-1 text-xs text-text-tertiary font-mono">{subtext}</p>
     </div>
   );
 }
@@ -598,13 +628,17 @@ function MetricCard({
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 ${
-        highlight ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50/50'
+      className={`rounded-xl border p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 select-none ${
+        highlight
+          ? 'border-emerald-500/30 bg-emerald-950/20 hover:border-emerald-500/50 hover:shadow-[0_0_12px_rgba(34,197,94,0.06)]'
+          : 'border-border-primary bg-surface-card hover:border-[#00E676]/40 hover:shadow-[0_0_12px_rgba(0,230,118,0.06)]'
       }`}
     >
-      <p className="text-xs font-medium text-slate-500 truncate">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono truncate">
+        {label}
+      </p>
       <p
-        className={`mt-1 text-lg font-semibold truncate ${highlight ? 'text-emerald-800' : 'text-slate-900'}`}
+        className={`mt-1.5 text-base font-bold font-mono tracking-tight truncate ${highlight ? 'text-emerald-400' : 'text-text-primary'}`}
         title={value}
       >
         {value}
@@ -618,22 +652,24 @@ function HealthScoreBar({ score }: { score: number }) {
   const color = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500';
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
-      <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden">
+      <div className="flex-1 h-2 rounded-full bg-border-primary overflow-hidden">
         <div
           className={`h-full rounded-full ${color} transition-all`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs font-medium text-slate-700 w-8">{pct.toFixed(0)}</span>
+      <span className="text-xs font-semibold text-text-primary font-mono w-8">
+        {pct.toFixed(0)}
+      </span>
     </div>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 py-12 px-4 text-center">
-      <p className="text-sm font-medium text-slate-500">{message}</p>
-      <p className="mt-1 text-xs text-slate-400">Try a different date range</p>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-primary bg-background-secondary/10 py-12 px-4 text-center">
+      <p className="text-sm font-semibold text-text-secondary">{message}</p>
+      <p className="mt-1 text-xs text-text-tertiary font-mono">Try a different date range</p>
     </div>
   );
 }

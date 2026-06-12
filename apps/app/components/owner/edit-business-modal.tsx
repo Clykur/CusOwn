@@ -7,6 +7,7 @@ import {
   DEFAULT_CONCURRENT_BOOKING_CAPACITY,
   MAX_CONCURRENT_BOOKING_CAPACITY,
 } from '@cusown/config';
+import Dropdown from '@/components/ui/dropdown';
 
 export interface EditBusinessFormData {
   salon_name: string;
@@ -134,22 +135,17 @@ function EditBusinessModalComponent({
             <label className="block text-sm font-medium text-text-secondary mb-1">
               Slot duration (min)
             </label>
-            <select
+            <Dropdown
               value={editForm.slot_duration}
-              onChange={(e) =>
+              onChange={(val) =>
                 onFormChange((f) => ({
                   ...f,
-                  slot_duration: Number(e.target.value),
+                  slot_duration: Number(val),
                 }))
               }
-              className={inputStyles}
-            >
-              {SLOT_DURATIONS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+              options={SLOT_DURATIONS.map((d) => ({ value: d, label: String(d) }))}
+              triggerClassName="h-10 border border-border-primary bg-surface-input text-text-primary px-3 py-2"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">

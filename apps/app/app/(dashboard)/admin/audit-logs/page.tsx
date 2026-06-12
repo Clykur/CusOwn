@@ -7,17 +7,10 @@ import { SkeletonTable } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import FilterDropdown from '@/components/analytics/FilterDropdown';
 import DateFilter from '@/components/owner/date-filter';
-import {
-  AUDIT_ENTITY_TYPES,
-  AUDIT_SEVERITY,
-  AUDIT_SEVERITY_STYLE,
-  AUDIT_STATUS_STYLE,
-  AUDIT_STYLE_NEUTRAL,
-  UI_CONTEXT,
-} from '@cusown/config';
+import { AUDIT_ENTITY_TYPES, AUDIT_SEVERITY, UI_CONTEXT } from '@cusown/config';
 
 const FILTER_LABEL_CLASS =
-  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono';
 
 type AuditLogItem = {
   id: string;
@@ -32,11 +25,16 @@ type AuditLogItem = {
 };
 
 function severityStyle(severity: string): string {
-  return (AUDIT_SEVERITY_STYLE as Record<string, string>)[severity] ?? AUDIT_STYLE_NEUTRAL;
+  if (severity === 'info') return 'bg-sky-950/20 border-sky-500/30 text-sky-400';
+  if (severity === 'warning') return 'bg-amber-950/20 border-amber-500/30 text-amber-400';
+  if (severity === 'critical') return 'bg-rose-950/20 border-rose-500/30 text-rose-400';
+  return 'bg-[#1C1C1C] border-border-primary text-text-secondary';
 }
 
 function statusStyle(status: string): string {
-  return (AUDIT_STATUS_STYLE as Record<string, string>)[status] ?? AUDIT_STYLE_NEUTRAL;
+  if (status === 'success') return 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400';
+  if (status === 'failed') return 'bg-rose-950/20 border-rose-500/30 text-rose-400';
+  return 'bg-[#1C1C1C] border-border-primary text-text-secondary';
 }
 
 function formatAuditLogTimestamp(ts: string): string {
@@ -51,60 +49,85 @@ function formatAuditLogTimestamp(ts: string): string {
 function LogDetailModal({ log, onClose }: { log: AuditLogItem; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="log-detail-title"
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-primary bg-[#161616] p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 id="log-detail-title" className="text-lg font-semibold text-slate-900">
+            <h2
+              id="log-detail-title"
+              className="text-base font-bold text-text-primary font-display"
+            >
               Log details
             </h2>
-            <p className="mt-0.5 text-sm text-slate-500">Full log information</p>
+            <p className="text-xs text-text-secondary mt-1 font-mono">Full log information</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            className="rounded-lg p-2 text-text-secondary hover:bg-[#1C1C1C] hover:text-text-primary transition-colors focus:outline-none"
             aria-label="Close"
           >
             <span className="text-xl leading-none">&times;</span>
           </button>
         </div>
-        <div className="space-y-3 text-sm">
-          <div className="grid grid-cols-[8rem_1fr] gap-2">
-            <span className="font-medium text-slate-500">ID</span>
-            <span className="break-all font-mono text-slate-800">{log.id}</span>
-            <span className="font-medium text-slate-500">Timestamp</span>
-            <span className="text-slate-800">{formatAuditLogTimestamp(log.timestamp)}</span>
-            <span className="font-medium text-slate-500">Actor</span>
-            <span className="break-all font-mono text-slate-800">{log.actor ?? '—'}</span>
-            <span className="font-medium text-slate-500">Action</span>
-            <span className="text-slate-800">{log.action_type}</span>
-            <span className="font-medium text-slate-500">Entity type</span>
-            <span className="text-slate-800">{log.entity_type ?? '—'}</span>
-            <span className="font-medium text-slate-500">Entity ID</span>
-            <span className="break-all font-mono text-slate-800">{log.entity_id ?? '—'}</span>
-            <span className="font-medium text-slate-500">Severity</span>
+        <div className="space-y-4 text-sm">
+          <div className="grid grid-cols-[8rem_1fr] gap-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              ID
+            </span>
+            <span className="break-all font-mono text-text-primary text-sm">{log.id}</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Timestamp
+            </span>
+            <span className="text-text-primary font-mono text-sm">
+              {formatAuditLogTimestamp(log.timestamp)}
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Actor
+            </span>
+            <span className="break-all font-mono text-text-secondary text-sm">
+              {log.actor ?? '—'}
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Action
+            </span>
+            <span className="text-text-primary text-sm">{log.action_type}</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Entity type
+            </span>
+            <span className="text-text-primary text-sm">{log.entity_type ?? '—'}</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Entity ID
+            </span>
+            <span className="break-all font-mono text-text-secondary text-sm">
+              {log.entity_id ?? '—'}
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Severity
+            </span>
             <span>
               <span
-                className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${severityStyle(log.severity)}`}
+                className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide ${severityStyle(log.severity)}`}
               >
                 {log.severity}
               </span>
             </span>
             {log.status != null && (
               <>
-                <span className="font-medium text-slate-500">Status</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+                  Status
+                </span>
                 <span>
                   <span
-                    className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${statusStyle(log.status)}`}
+                    className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide ${statusStyle(log.status)}`}
                   >
                     {log.status}
                   </span>
@@ -113,8 +136,10 @@ function LogDetailModal({ log, onClose }: { log: AuditLogItem; onClose: () => vo
             )}
           </div>
           <div>
-            <span className="mb-1 block font-medium text-slate-500">Metadata</span>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono">
+              Metadata
+            </span>
+            <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl border border-border-primary bg-[#0B0B0C] p-4 text-xs text-text-primary font-mono">
               {log.metadata ? JSON.stringify(log.metadata, null, 2) : '—'}
             </pre>
           </div>
@@ -290,9 +315,9 @@ export default function AdminAuditLogsPage() {
   };
 
   return (
-    <div className="bg-slate-50/80 p-4 md:p-6">
+    <div className="space-y-6">
       <AdminSectionWrapper title="Audit Logs" subtitle={UI_CONTEXT.ADMIN_CONSOLE}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="w-full">
               <FilterDropdown
@@ -314,6 +339,7 @@ export default function AdminAuditLogsPage() {
                 onChange={(e) => setActorId(e.target.value)}
                 onKeyDown={(e) => handleFilterKeyDown(e, actor_id)}
                 placeholder="UUID"
+                className="h-11 rounded-xl border border-border-primary bg-surface-input px-3.5 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all"
                 aria-label="Filter by actor ID"
               />
             </div>
@@ -339,11 +365,11 @@ export default function AdminAuditLogsPage() {
           {notes.length > 0 && (
             <div
               role="status"
-              className="rounded border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800"
+              className="rounded-xl border border-sky-500/20 bg-sky-950/10 p-4 text-sm text-sky-400 font-mono"
               aria-live="polite"
             >
-              <p className="font-medium text-sky-900">Note</p>
-              <ul className="mt-1 list-inside list-disc space-y-0.5">
+              <p className="font-semibold text-sky-300">Note</p>
+              <ul className="mt-1.5 list-inside list-disc space-y-0.5">
                 {notes.map((note, i) => (
                   <li key={i}>{note}</li>
                 ))}
@@ -354,7 +380,7 @@ export default function AdminAuditLogsPage() {
           {error && (
             <div
               role="alert"
-              className="rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+              className="rounded-xl border border-red-500/20 bg-red-950/10 p-4 text-sm text-state-error font-mono"
             >
               {error}
             </div>
@@ -363,100 +389,117 @@ export default function AdminAuditLogsPage() {
           {loading && <SkeletonTable />}
 
           {!loading && !error && items.length === 0 && (
-            <div className="rounded border border-slate-200 bg-slate-50 p-8 text-center text-slate-600">
+            <div className="rounded-xl border border-dashed border-border-primary bg-background-secondary/10 p-8 text-center text-text-secondary font-mono text-sm">
               No audit logs found.
             </div>
           )}
 
           {!loading && !error && items.length > 0 && (
             <>
-              <div className="rounded border border-slate-200 bg-white">
-                <table
-                  className="w-full table-fixed border-collapse text-left text-sm"
-                  role="table"
-                >
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th scope="col" className="w-[11rem] px-3 py-2.5 font-medium text-slate-700">
-                        Timestamp
-                      </th>
-                      <th scope="col" className="w-[8rem] px-3 py-2.5 font-medium text-slate-700">
-                        Actor
-                      </th>
-                      <th scope="col" className="w-[7rem] px-3 py-2.5 font-medium text-slate-700">
-                        Action
-                      </th>
-                      <th scope="col" className="w-[6rem] px-3 py-2.5 font-medium text-slate-700">
-                        Entity
-                      </th>
-                      <th scope="col" className="w-[5rem] px-3 py-2.5 font-medium text-slate-700">
-                        Severity
-                      </th>
-                      <th
-                        scope="col"
-                        className="w-[5rem] px-3 py-2.5 font-medium text-slate-700 text-right"
-                      >
-                        Details
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {items.map((row) => (
-                      <tr
-                        key={row.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setSelectedLog(row)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setSelectedLog(row);
-                          }
-                        }}
-                        className="cursor-pointer hover:bg-slate-50/80"
-                      >
-                        <td
-                          className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700"
-                          title={formatAuditLogTimestamp(row.timestamp)}
+              <div className="overflow-hidden rounded-xl border border-border-primary bg-background-secondary/20">
+                <div className="overflow-x-auto">
+                  <table
+                    className="w-full table-fixed border-collapse text-left text-sm"
+                    role="table"
+                  >
+                    <thead className="bg-[#0F3D2E]/20">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="w-[11rem] px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono"
                         >
-                          {formatAuditLogTimestamp(row.timestamp)}
-                        </td>
-                        <td
-                          className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 font-mono text-slate-700"
-                          title={row.actor ?? undefined}
+                          Timestamp
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-[8rem] px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono"
                         >
-                          {row.actor ?? '—'}
-                        </td>
-                        <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700">
-                          {row.action_type}
-                        </td>
-                        <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700">
-                          {row.entity_type ?? '—'}
-                        </td>
-                        <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-slate-700">
-                          <span
-                            className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${severityStyle(row.severity)}`}
-                          >
-                            {row.severity}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedLog(row)}
-                            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1"
-                            aria-label={`View full details for log ${row.id}`}
-                          >
-                            View
-                          </button>
-                        </td>
+                          Actor
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-[7rem] px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono"
+                        >
+                          Action
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-[6rem] px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono"
+                        >
+                          Entity
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-[5rem] px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono"
+                        >
+                          Severity
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-[5rem] px-5 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono"
+                        >
+                          Details
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-border-primary/45 bg-transparent">
+                      {items.map((row) => (
+                        <tr
+                          key={row.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setSelectedLog(row)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setSelectedLog(row);
+                            }
+                          }}
+                          className="cursor-pointer hover:bg-[#181818]/60 transition-colors border-b border-border-primary/45 bg-transparent"
+                        >
+                          <td
+                            className="overflow-hidden text-ellipsis whitespace-nowrap px-5 py-4 text-text-primary font-mono text-xs"
+                            title={formatAuditLogTimestamp(row.timestamp)}
+                          >
+                            {formatAuditLogTimestamp(row.timestamp)}
+                          </td>
+                          <td
+                            className="overflow-hidden text-ellipsis whitespace-nowrap px-5 py-4 font-mono text-text-secondary text-xs"
+                            title={row.actor ?? undefined}
+                          >
+                            {row.actor ?? '—'}
+                          </td>
+                          <td className="overflow-hidden text-ellipsis whitespace-nowrap px-5 py-4 text-text-primary text-xs">
+                            {row.action_type}
+                          </td>
+                          <td className="overflow-hidden text-ellipsis whitespace-nowrap px-5 py-4 text-text-secondary text-xs">
+                            {row.entity_type ?? '—'}
+                          </td>
+                          <td className="overflow-hidden text-ellipsis whitespace-nowrap px-5 py-4">
+                            <span
+                              className={`inline-block rounded-md border px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide ${severityStyle(row.severity)}`}
+                            >
+                              {row.severity}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLog(row)}
+                              className="rounded-lg border border-border-primary bg-background-tertiary px-3 py-1 text-xs font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all cursor-pointer"
+                              aria-label={`View full details for log ${row.id}`}
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-                <span className="text-sm text-slate-600">
+              <div className="flex items-center justify-between border-t border-border-primary/40 pt-4">
+                <span className="text-xs text-text-secondary font-mono">
                   Page {page} · {items.length} of {total} shown
                 </span>
                 <div className="flex gap-2">
@@ -464,7 +507,7 @@ export default function AdminAuditLogsPage() {
                     type="button"
                     onClick={handlePrev}
                     disabled={page <= 1}
-                    className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg border border-border-primary bg-background-tertiary px-3 py-1.5 text-xs font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary transition-all cursor-pointer"
                     aria-label="Previous page"
                   >
                     Previous
@@ -473,7 +516,7 @@ export default function AdminAuditLogsPage() {
                     type="button"
                     onClick={handleNext}
                     disabled={!hasMore}
-                    className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-lg border border-border-primary bg-background-tertiary px-3 py-1.5 text-xs font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary transition-all cursor-pointer"
                     aria-label="Next page"
                   >
                     Next
