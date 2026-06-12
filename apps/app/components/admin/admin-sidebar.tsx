@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAdminDashboardUrl } from '@cusown/shared';
-import { UI_CONTEXT } from '@cusown/config';
 import { useAdminPrefetch } from '@/components/admin/admin-prefetch-context';
 import { useAdminSession } from '@/components/admin/admin-session-context';
 import DashboardIcon from '@cusown/shared/icons/dashboard.svg';
@@ -28,44 +27,44 @@ interface NavItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
-const navigation: NavItem[] = [
-  { name: 'Overview', href: getAdminDashboardUrl(), icon: DashboardIcon },
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
   {
-    name: 'Businesses',
-    href: getAdminDashboardUrl('businesses'),
-    icon: BusinessesIcon,
-  },
-  { name: 'Users', href: getAdminDashboardUrl('users'), icon: UsersIcon },
-  {
-    name: 'Bookings',
-    href: getAdminDashboardUrl('bookings'),
-    icon: BookingsIcon,
-  },
-  {
-    name: 'Audit Logs',
-    href: '/admin/audit-logs',
-    icon: AuditLogsIcon,
+    title: 'Core Operations',
+    items: [
+      { name: 'Overview', href: getAdminDashboardUrl(), icon: DashboardIcon },
+      { name: 'Businesses', href: getAdminDashboardUrl('businesses'), icon: BusinessesIcon },
+      { name: 'Users', href: getAdminDashboardUrl('users'), icon: UsersIcon },
+      { name: 'Bookings', href: getAdminDashboardUrl('bookings'), icon: BookingsIcon },
+      { name: 'Audit Logs', href: '/admin/audit-logs', icon: AuditLogsIcon },
+    ],
   },
   {
-    name: 'Cron Monitor',
-    href: getAdminDashboardUrl('cron-monitor'),
-    icon: CronMonitorIcon,
+    title: 'System',
+    items: [
+      { name: 'Cron Monitor', href: getAdminDashboardUrl('cron-monitor'), icon: CronMonitorIcon },
+      {
+        name: 'Auth Management',
+        href: getAdminDashboardUrl('auth-management'),
+        icon: AuthManagementIcon,
+      },
+      { name: 'Storage', href: getAdminDashboardUrl('storage'), icon: StorageIcon },
+    ],
   },
   {
-    name: 'Auth Management',
-    href: getAdminDashboardUrl('auth-management'),
-    icon: AuthManagementIcon,
-  },
-  { name: 'Storage', href: getAdminDashboardUrl('storage'), icon: StorageIcon },
-  {
-    name: 'Success Metrics',
-    href: getAdminDashboardUrl('success-metrics'),
-    icon: SuccessMetricsIcon,
-  },
-  {
-    name: 'Analytics',
-    href: getAdminDashboardUrl('analytics'),
-    icon: AnalyticsIcon,
+    title: 'Intelligence',
+    items: [
+      {
+        name: 'Success Metrics',
+        href: getAdminDashboardUrl('success-metrics'),
+        icon: SuccessMetricsIcon,
+      },
+      { name: 'Analytics', href: getAdminDashboardUrl('analytics'), icon: AnalyticsIcon },
+    ],
   },
 ];
 
@@ -131,98 +130,107 @@ function AdminSidebarContent() {
 
   return (
     <>
-      {/* Mobile menu button (non-floating) - shown only when sidebar is closed */}
+      {/* Mobile menu button absolute overlay (top left in header) */}
       <div className="lg:hidden block">
         {!sidebarOpen && (
-          <div className="px-4 pt-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2.5 bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow transition-all"
-              aria-label="Open menu"
-            >
-              <MenuIcon className="w-6 h-6 text-gray-700" aria-hidden="true" />
-            </button>
-          </div>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="fixed top-2.5 left-4 z-40 p-1.5 rounded-md border border-border-primary bg-background-secondary text-text-primary hover:bg-background-tertiary transition-all"
+            aria-label="Open menu"
+          >
+            <MenuIcon className="w-5 h-5" aria-hidden="true" />
+          </button>
         )}
       </div>
 
       {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/65 backdrop-blur-xs z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar container */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 bg-slate-50 border-r border-slate-200 transition-transform ${
+        className={`fixed top-0 left-0 z-50 h-screen w-64 border-r border-border-primary bg-[#111111] transition-transform duration-250 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
+        } lg:relative lg:translate-x-0 lg:z-0 lg:flex lg:h-full lg:flex-col lg:shrink-0`}
       >
         <div className="flex h-full flex-col">
-          {/* Logo/Header - section grouping */}
-          <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-5 py-6">
+          {/* Logo/Header */}
+          <div className="flex shrink-0 items-start justify-between border-b border-border-primary px-5 py-6">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                {UI_CONTEXT.ADMIN_CONSOLE}
+              <h2 className="text-base font-bold tracking-tight text-[#00E676] font-display">
+                Cusown Admin
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">{UI_CONTEXT.YOU_ARE_IN_ADMIN_MODE}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-widest text-[#737373] font-mono">
+                Console mode
+              </p>
             </div>
-            {/* Close button shown inside sidebar on mobile to avoid overlap */}
+            {/* Close button inside sidebar on mobile */}
             <div className="lg:hidden">
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="p-2.5 ml-2 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition-all"
+                className="p-1.5 rounded-md border border-border-primary bg-background-tertiary text-text-primary hover:bg-background-secondary transition-all"
                 aria-label="Close menu"
               >
-                <CloseIcon className="w-5 h-5 text-gray-700" aria-hidden="true" />
+                <CloseIcon className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
 
-          {/* Navigation - increased spacing, subtle active state */}
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
-            {navigation.map((item) => {
-              const active = isActive(item.href);
-              const tab = getTabFromHref(item.href);
-              const isDashboardTab = item.href.startsWith('/admin/dashboard');
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  prefetch={false}
-                  onClick={(e) => {
-                    setSidebarOpen(false);
-                    if (isDashboardTab) {
-                      e.preventDefault();
-                      router.replace(item.href);
-                    }
-                    onTabLinkClick(item.href);
-                  }}
-                  onMouseEnter={() => {
-                    if (tab) prefetchTab(tab);
-                  }}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
-                    active
-                      ? 'border-l-2 border-indigo-600 bg-indigo-50 font-medium text-indigo-600'
-                      : 'border-l-2 border-transparent text-slate-600 hover:bg-slate-200/40 hover:text-slate-900'
-                  }`}
-                >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                    <item.icon
-                      aria-hidden="true"
-                      className={`h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-500'}`}
-                    />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
-                </Link>
-              );
-            })}
+          {/* Navigation with Sections */}
+          <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-6 scrollbar-hide">
+            {navSections.map((section) => (
+              <div key={section.title} className="space-y-1.5">
+                <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-[#737373] font-mono">
+                  {section.title}
+                </p>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const active = isActive(item.href);
+                    const tab = getTabFromHref(item.href);
+                    const isDashboardTab = item.href.startsWith('/admin/dashboard');
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        prefetch={false}
+                        onClick={(e) => {
+                          setSidebarOpen(false);
+                          if (isDashboardTab) {
+                            e.preventDefault();
+                            router.replace(item.href);
+                          }
+                          onTabLinkClick(item.href);
+                        }}
+                        onMouseEnter={() => {
+                          if (tab) prefetchTab(tab);
+                        }}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-all duration-150 border-l-2 ${
+                          active
+                            ? 'border-[#00E676] bg-[#0F3D2E]/25 text-[#00E676] font-medium'
+                            : 'border-transparent text-[#A1A1A1] hover:bg-[#181818] hover:text-[#F5F5F5]'
+                        }`}
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                          <item.icon
+                            aria-hidden="true"
+                            className={`h-4.5 w-4.5 ${active ? 'text-[#00E676]' : 'text-[#737373]'}`}
+                          />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-xs">{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           {/* Profile Section */}
-          <div className="shrink-0 border-t border-slate-200 p-4">
+          <div className="shrink-0 border-t border-border-primary p-4 bg-[#0A0A0A]/40">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/admin/profile"
@@ -230,22 +238,24 @@ function AdminSidebarContent() {
                 className="min-w-0 flex-1 flex items-center gap-3"
                 onClick={() => setSidebarOpen(false)}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
-                  <ProfileIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#181818] border border-border-primary text-text-primary">
+                  <ProfileIcon className="h-4 w-4 text-[#A1A1A1]" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1 flex flex-col">
-                  <span className="truncate text-sm font-medium text-slate-900">
+                  <span className="truncate text-xs font-semibold text-[#F5F5F5]">
                     {userName || 'User'}
                   </span>
-                  <span className="truncate text-xs text-slate-500">{userEmail || ''}</span>
+                  <span className="truncate text-[10px] text-[#737373] font-mono">
+                    {userEmail || ''}
+                  </span>
                 </div>
               </Link>
               <a
                 href="/api/auth/signout"
-                className="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-900"
+                className="shrink-0 rounded-lg p-2 text-red-500 transition-colors hover:bg-[#181818] hover:text-[#FF5C5C]"
                 title="Sign Out"
               >
-                <LogoutIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+                <LogoutIcon className="h-[18px] w-[18px]" aria-hidden="true" />
               </a>
             </div>
           </div>

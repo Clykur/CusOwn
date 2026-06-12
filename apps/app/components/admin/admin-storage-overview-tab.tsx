@@ -46,12 +46,16 @@ export function AdminStorageOverviewTab() {
 
   if (loading && !data) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Storage Overview</h1>
-          <p className="mt-0.5 text-sm text-slate-500">File counts and usage (no private URLs)</p>
+          <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+            Storage Overview
+          </h2>
+          <p className="text-xs text-text-secondary mt-1">
+            File counts and usage (no private URLs)
+          </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50/50 py-12 text-center text-sm text-slate-500">
+        <div className="rounded-xl border border-border-primary bg-background-secondary/20 py-12 text-center text-sm text-text-secondary font-mono">
           Loading…
         </div>
       </div>
@@ -60,12 +64,16 @@ export function AdminStorageOverviewTab() {
 
   if (error && !data) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Storage Overview</h1>
-          <p className="mt-0.5 text-sm text-slate-500">File counts and usage (no private URLs)</p>
+          <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+            Storage Overview
+          </h2>
+          <p className="text-xs text-text-secondary mt-1">
+            File counts and usage (no private URLs)
+          </p>
         </div>
-        <div className="rounded-xl border border-red-200 bg-red-50/50 py-8 text-center text-sm text-red-800">
+        <div className="rounded-xl border border-red-500/20 bg-red-950/10 py-8 text-center text-sm text-state-error font-mono">
           {error}
         </div>
       </div>
@@ -77,10 +85,12 @@ export function AdminStorageOverviewTab() {
   const businessEntries = Object.entries(overview.filesPerBusiness);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Storage Overview</h1>
-        <p className="mt-0.5 text-sm text-slate-500">File counts and usage (no private URLs)</p>
+        <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+          Storage Overview
+        </h2>
+        <p className="text-xs text-text-secondary mt-1">File counts and usage (no private URLs)</p>
       </div>
 
       <AdminSectionWrapper title="Totals" subtitle="Aggregate storage metrics">
@@ -94,61 +104,75 @@ export function AdminStorageOverviewTab() {
 
       {bucketEntries.length > 0 && (
         <AdminSectionWrapper title="Files per bucket" subtitle="Count by bucket">
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">
-                    Bucket
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">
-                    Files
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {bucketEntries.map(([name, count]) => (
-                  <tr key={name} className="hover:bg-slate-50/80">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">{name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{count}</td>
+          <div className="overflow-hidden rounded-xl border border-border-primary bg-background-secondary/20">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border-primary">
+                <thead className="bg-[#0F3D2E]/20">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Bucket
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Files
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border-primary/45 bg-transparent">
+                  {bucketEntries.map(([name, count]) => (
+                    <tr
+                      key={name}
+                      className="hover:bg-[#181818]/60 transition-colors border-b border-border-primary/45 bg-transparent"
+                    >
+                      <td className="px-5 py-4 text-sm font-semibold text-text-primary font-mono">
+                        {name}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary font-mono">{count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </AdminSectionWrapper>
       )}
 
       {overview.uploadTrend.length > 0 && (
         <AdminSectionWrapper title="Upload trend (last 30 days)" subtitle="Files created by date">
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-600">
-                    New files
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {overview.uploadTrend.map(({ date, count }) => (
-                  <tr key={date} className="hover:bg-slate-50/80">
-                    <td className="px-4 py-3 text-sm text-slate-900">{date}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{count}</td>
+          <div className="overflow-hidden rounded-xl border border-border-primary bg-background-secondary/20">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border-primary">
+                <thead className="bg-[#0F3D2E]/20">
+                  <tr>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      Date
+                    </th>
+                    <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-[#00E676] font-mono">
+                      New files
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border-primary/45 bg-transparent">
+                  {overview.uploadTrend.map(({ date, count }) => (
+                    <tr
+                      key={date}
+                      className="hover:bg-[#181818]/60 transition-colors border-b border-border-primary/45 bg-transparent"
+                    >
+                      <td className="px-5 py-4 text-sm font-semibold text-text-primary font-mono">
+                        {date}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-text-secondary font-mono">{count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </AdminSectionWrapper>
       )}
 
       {businessEntries.length === 0 && bucketEntries.length === 0 && overview.totalFiles === 0 && (
         <AdminSectionWrapper title="No storage data" subtitle="">
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-border-primary bg-background-secondary/10 py-12 text-center text-sm text-text-secondary font-mono">
             No files in storage yet, or storage API is unavailable.
           </div>
         </AdminSectionWrapper>

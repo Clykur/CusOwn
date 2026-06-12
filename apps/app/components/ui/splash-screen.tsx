@@ -9,7 +9,6 @@ const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 /** Accent #22c55e — matches landing `text-accent` loader on dark shell. */
 const LOTTIE_STROKE_LANDING = [0.133, 0.773, 0.369, 1] as const;
-const LOTTIE_STROKE_DEFAULT = [0.06, 0.09, 0.16, 1] as const;
 
 function buildLoadingAnimation(strokeRgb: readonly [number, number, number, number]) {
   return {
@@ -92,10 +91,9 @@ function buildLoadingAnimation(strokeRgb: readonly [number, number, number, numb
   };
 }
 
-const loadingAnimationDefault = buildLoadingAnimation(LOTTIE_STROKE_DEFAULT);
 const loadingAnimationLanding = buildLoadingAnimation(LOTTIE_STROKE_LANDING);
 
-const SPLASH_MAIN_MS = 3500;
+const SPLASH_MAIN_MS = 800;
 const SPLASH_FADE_MS = 500;
 
 export function SplashScreen() {
@@ -162,38 +160,32 @@ export function SplashScreen() {
   if (!mounted || !visible || !shouldShow) return null;
 
   const isLanding = pathname === '/';
-  const loadingAnimation = isLanding ? loadingAnimationLanding : loadingAnimationDefault;
+  const loadingAnimation = loadingAnimationLanding;
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden transition-all duration-500 ${
-        isLanding ? 'bg-zinc-950' : 'bg-white'
-      } ${fadeOut ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden transition-all duration-500 bg-zinc-950 ${fadeOut ? 'opacity-0 scale-105' : 'opacity-100 scale-100'}`}
     >
-      {isLanding ? (
-        <>
-          <div
-            className="pointer-events-none fixed inset-0 z-0 grain-overlay mix-blend-overlay"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-950/90 via-zinc-950/45 to-zinc-950"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/35 to-zinc-950/85"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(34,197,94,0.12),transparent_50%)]"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(0,0,0,0.45),transparent_50%)]"
-            aria-hidden
-          />
-        </>
-      ) : null}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 grain-overlay mix-blend-overlay"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-950/90 via-zinc-950/45 to-zinc-950"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/35 to-zinc-950/85"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_100%,rgba(34,197,94,0.12),transparent_50%)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(0,0,0,0.45),transparent_50%)]"
+        aria-hidden
+      />
 
       <div
         className={`relative z-10 flex flex-col items-center transition-all duration-700 ${
@@ -205,7 +197,7 @@ export function SplashScreen() {
           className={`mb-8 text-5xl font-bold tracking-tight sm:text-6xl ${
             isLanding
               ? 'font-display text-white'
-              : 'font-calegar uppercase tracking-[0.15em] text-slate-900'
+              : 'font-calegar uppercase tracking-[0.15em] text-white'
           }`}
         >
           {isLanding ? 'CUSOWN' : 'CusOwn'}
@@ -222,35 +214,25 @@ export function SplashScreen() {
             showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          <span
-            className={`text-sm font-light tracking-wider ${isLanding ? 'text-zinc-500' : 'text-slate-400'}`}
-          >
-            A
-          </span>
+          <span className="text-sm font-light tracking-wider text-zinc-500">A</span>
           <Image
             src="/icons/Clykur Logo.svg"
             alt="Clykur"
             width={140}
             height={140}
-            className={`h-28 w-28 sm:h-32 sm:w-32 ${isLanding ? 'brightness-0 invert opacity-90' : ''}`}
+            className="h-28 w-28 sm:h-32 sm:w-32 brightness-0 invert opacity-90"
             priority
           />
-          <span
-            className={`text-sm font-light tracking-wider ${isLanding ? 'text-zinc-500' : 'text-slate-400'}`}
-          >
-            Product
-          </span>
+          <span className="text-sm font-light tracking-wider text-zinc-500">Product</span>
         </div>
       </div>
 
       <p
-        className={`pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] right-[max(1.25rem,env(safe-area-inset-right,0px))] z-10 font-mono text-xs font-semibold tabular-nums tracking-tight sm:text-sm ${
-          isLanding ? 'text-zinc-500' : 'text-slate-400'
-        }`}
+        className="pointer-events-none absolute bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] right-[max(1.25rem,env(safe-area-inset-right,0px))] z-10 font-mono text-xs font-semibold tabular-nums tracking-tight sm:text-sm text-zinc-500"
         aria-live="polite"
         aria-label={`Loading ${loadPercent} percent`}
       >
-        <span className={isLanding ? 'text-accent' : 'text-slate-700'}>{loadPercent}</span>
+        <span className="text-accent">{loadPercent}</span>
         <span className="text-[0.85em] font-medium opacity-80">%</span>
       </p>
     </div>

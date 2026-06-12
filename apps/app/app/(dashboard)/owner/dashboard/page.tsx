@@ -16,13 +16,19 @@ import {
   UI_CONTEXT,
 } from '@cusown/config';
 import FilterDropdown from '@/components/analytics/FilterDropdown';
+import Dropdown from '@/components/ui/dropdown';
+import OwnerBookingDetailsModal from '@/components/owner/OwnerBookingDetailsModal';
 import Pagination from '@/components/ui/pagination';
 import { Toast } from '@/components/ui/toast';
 import UndoIcon from '@cusown/shared/icons/undo.svg';
 import { useBookingSyncChannel } from '@cusown/shared/client';
 import { dedupFetch, cancelRequests } from '@cusown/shared';
 import { type OwnerDashboardStatusFilter } from '@cusown/shared';
-import { useOwnerDashboardStore, useUIStore } from '@cusown/shared/client';
+import {
+  useOwnerDashboardStore,
+  useUIStore,
+  selectOwnerHasValidCache,
+} from '@cusown/shared/client';
 import StarRating from '@/components/booking/star-rating';
 import { cn } from '@cusown/shared';
 
@@ -140,6 +146,7 @@ export default function OwnerDashboardPage() {
   const searchTerm = useOwnerDashboardStore((state) => state.searchTerm);
   const processingBookingId = useOwnerDashboardStore((state) => state.processingBookingId);
   const setProcessingBookingId = useOwnerDashboardStore((state) => state.setProcessingBookingId);
+  const setLastFetchedAt = useOwnerDashboardStore((state) => state.setLastFetchedAt);
 
   const showToast = useUIStore((state) => state.showToast);
   const toasts = useUIStore((state) => state.toasts);
@@ -148,6 +155,9 @@ export default function OwnerDashboardPage() {
   const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false);
   const [mobileFilterSheetOpen, setMobileFilterSheetOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<BookingWithDetails | null>(
+    null
+  );
 
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -300,64 +310,82 @@ export default function OwnerDashboardPage() {
     return useOwnerDashboardStore.getState().bookings.find((b) => b.id === bookingId);
   }, []);
 
-  const fetchDashboard = useCallback(async () => {
-    if (!initialUser?.id) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      cancelRequests('owner-dashboard');
-
-      const url = '/api/owner/dashboard';
-      const response = await dedupFetch(url, {
-        credentials: 'include',
-        dedupKey: 'owner-dashboard:all',
-        cancelPrevious: true,
-      });
-
-      if (!response.ok) {
+  const fetchDashboard = useCallback(
+    async (force = false) => {
+      if (!initialUser?.id) {
         setIsLoading(false);
         return;
       }
 
-      const json = await response.json();
-      if (json?.data) {
-        const { stats: dashboardStats, recentBookings, bookingsByBusiness } = json.data;
+      const state = useOwnerDashboardStore.getState();
+      const hasValidCache = selectOwnerHasValidCache(state);
 
-        setStats({
-          totalBusinesses: dashboardStats?.totalBusinesses ?? 0,
-          totalBookings: dashboardStats?.totalBookings ?? 0,
-          confirmedBookings: dashboardStats?.confirmedBookings ?? 0,
-          pendingBookings: dashboardStats?.pendingBookings ?? 0,
-          cancelledBookings: dashboardStats?.cancelledBookings ?? 0,
+      if (hasValidCache && !force) {
+        setIsLoading(false);
+        return;
+      }
+
+      const hasExistingData = state.stats !== null && state.bookings.length > 0;
+      if (hasExistingData) {
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+
+      try {
+        cancelRequests('owner-dashboard');
+
+        const url = '/api/owner/dashboard';
+        const response = await dedupFetch(url, {
+          credentials: 'include',
+          dedupKey: 'owner-dashboard:all',
+          cancelPrevious: true,
         });
 
-        const allBookings: BookingWithDetails[] = [];
-        if (bookingsByBusiness) {
-          Object.values(bookingsByBusiness).forEach((businessBookings) => {
-            if (Array.isArray(businessBookings)) {
-              allBookings.push(...(businessBookings as BookingWithDetails[]));
-            }
-          });
-        } else if (Array.isArray(recentBookings)) {
-          allBookings.push(...recentBookings);
+        if (!response.ok) {
+          return;
         }
 
-        allBookings.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-        setBookings(allBookings);
+        const json = await response.json();
+        if (json?.data) {
+          const { stats: dashboardStats, recentBookings, bookingsByBusiness } = json.data;
+
+          setStats({
+            totalBusinesses: dashboardStats?.totalBusinesses ?? 0,
+            totalBookings: dashboardStats?.totalBookings ?? 0,
+            confirmedBookings: dashboardStats?.confirmedBookings ?? 0,
+            pendingBookings: dashboardStats?.pendingBookings ?? 0,
+            cancelledBookings: dashboardStats?.cancelledBookings ?? 0,
+          });
+
+          const allBookings: BookingWithDetails[] = [];
+          if (bookingsByBusiness) {
+            Object.values(bookingsByBusiness).forEach((businessBookings) => {
+              if (Array.isArray(businessBookings)) {
+                allBookings.push(...(businessBookings as BookingWithDetails[]));
+              }
+            });
+          } else if (Array.isArray(recentBookings)) {
+            allBookings.push(...recentBookings);
+          }
+
+          allBookings.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+          setBookings(allBookings);
+          setLastFetchedAt(Date.now());
+        }
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') {
+          console.error('[OwnerDashboard] Failed to fetch dashboard:', err);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      if ((err as Error)?.name !== 'AbortError') {
-        console.error('[OwnerDashboard] Failed to fetch dashboard:', err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [initialUser?.id, setIsLoading, setStats, setBookings]);
+    },
+    [initialUser?.id, setIsLoading, setStats, setBookings, setLastFetchedAt]
+  );
 
   const fetchBookings = useCallback(async () => {
-    await fetchDashboard();
+    await fetchDashboard(true);
   }, [fetchDashboard]);
 
   const { publishBookingUpdated } = useBookingSyncChannel({
@@ -620,7 +648,9 @@ export default function OwnerDashboardPage() {
     return Date.now() - new Date(b.updated_at).getTime() < windowMs;
   }, []);
 
-  if (isLoading) return <OwnerDashboardSkeleton />;
+  const stats = useOwnerDashboardStore((state) => state.stats);
+  const showSkeleton = isLoading && !stats;
+  if (showSkeleton) return <OwnerDashboardSkeleton />;
 
   return (
     <div className="flex w-full flex-col gap-4 pb-24 md:gap-6">
@@ -654,26 +684,30 @@ export default function OwnerDashboardPage() {
                   <span className="text-xs font-medium text-text-secondary">
                     {UI_CONTEXT.OWNER_DASHBOARD_STATUS}
                   </span>
-                  <select
+                  <Dropdown
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as OwnerDashboardStatusFilter)}
-                    className="h-11 w-full min-w-[9.5rem] rounded-xl border border-border-primary bg-surface-input px-3 text-sm text-text-secondary focus:border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/10"
-                    aria-label={UI_CONTEXT.OWNER_DASHBOARD_STATUS}
-                  >
-                    <option value="all">{UI_CONTEXT.OWNER_DASHBOARD_STATUS_ALL}</option>
-                    <option value={BOOKING_STATUS.PENDING}>
-                      {UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_PENDING}
-                    </option>
-                    <option value={BOOKING_STATUS.CONFIRMED}>
-                      {UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_CONFIRMED}
-                    </option>
-                    <option value={BOOKING_STATUS.REJECTED}>
-                      {UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_REJECTED}
-                    </option>
-                    <option value={BOOKING_STATUS.CANCELLED}>
-                      {UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_CANCELLED}
-                    </option>
-                  </select>
+                    onChange={(val) => setStatusFilter(val as OwnerDashboardStatusFilter)}
+                    options={[
+                      { value: 'all', label: UI_CONTEXT.OWNER_DASHBOARD_STATUS_ALL },
+                      {
+                        value: BOOKING_STATUS.PENDING,
+                        label: UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_PENDING,
+                      },
+                      {
+                        value: BOOKING_STATUS.CONFIRMED,
+                        label: UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_CONFIRMED,
+                      },
+                      {
+                        value: BOOKING_STATUS.REJECTED,
+                        label: UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_REJECTED,
+                      },
+                      {
+                        value: BOOKING_STATUS.CANCELLED,
+                        label: UI_CONTEXT.OWNER_DASHBOARD_STATUS_OPTION_CANCELLED,
+                      },
+                    ]}
+                    className="w-full min-w-[9.5rem] md:w-auto"
+                  />
                 </div>
 
                 {businessOptions.length > 1 && (
@@ -681,19 +715,18 @@ export default function OwnerDashboardPage() {
                     <span className="text-xs font-medium text-text-secondary">
                       {UI_CONTEXT.OWNER_DASHBOARD_BUSINESS}
                     </span>
-                    <select
+                    <Dropdown
                       value={businessIdFilter}
-                      onChange={(e) => setBusinessIdFilter(e.target.value)}
-                      className="h-11 w-full min-w-[10rem] rounded-xl border border-border-primary bg-surface-input px-3 text-sm focus:border-border-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/10"
-                      aria-label={UI_CONTEXT.OWNER_DASHBOARD_BUSINESS}
-                    >
-                      <option value="">{UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL}</option>
-                      {businessOptions.map(([id, name]) => (
-                        <option key={id} value={id}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setBusinessIdFilter}
+                      options={[
+                        { value: '', label: UI_CONTEXT.OWNER_DASHBOARD_BUSINESS_ALL },
+                        ...businessOptions.map(([id, name]) => ({
+                          value: id,
+                          label: name,
+                        })),
+                      ]}
+                      className="w-full min-w-[10rem] md:w-auto"
+                    />
                   </div>
                 )}
 
@@ -922,10 +955,10 @@ export default function OwnerDashboardPage() {
                           Business
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
-                          Rating
+                          Status & Actions
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-secondary sm:px-6">
-                          Status & Actions
+                          Rating
                         </th>
                       </tr>
                     </thead>
@@ -941,6 +974,7 @@ export default function OwnerDashboardPage() {
                           onUndoReject={handleUndoReject}
                           onNoShowMarked={handleNoShowMarked}
                           canUndo={canUndo}
+                          onViewDetails={() => setSelectedBookingDetails(booking)}
                         />
                       ))}
                     </tbody>
@@ -961,6 +995,7 @@ export default function OwnerDashboardPage() {
                       onUndoReject={handleUndoReject}
                       onNoShowMarked={handleNoShowMarked}
                       canUndo={canUndo}
+                      onViewDetails={() => setSelectedBookingDetails(booking)}
                     />
                   ))}
                 </div>
@@ -977,6 +1012,10 @@ export default function OwnerDashboardPage() {
           )}
         </div>
       </div>
+      <OwnerBookingDetailsModal
+        booking={selectedBookingDetails}
+        onClose={() => setSelectedBookingDetails(null)}
+      />
     </div>
   );
 }
@@ -990,6 +1029,7 @@ interface BookingTableRowProps {
   onUndoReject: (id: string) => void;
   onNoShowMarked: (id: string) => void;
   canUndo: (b: BookingWithDetails) => boolean;
+  onViewDetails: () => void;
 }
 
 type BookingHandlers = {
@@ -1030,6 +1070,7 @@ function BookingStatusActions({
 
   return (
     <div
+      onClick={(e) => e.stopPropagation()}
       className={cn(
         'flex items-center gap-2',
         variant === 'table' ? 'whitespace-nowrap' : 'mt-2 w-full flex-wrap justify-end gap-1.5'
@@ -1209,6 +1250,7 @@ const BookingMobileCard = memo(function BookingMobileCard({
   onUndoReject,
   onNoShowMarked,
   canUndo,
+  onViewDetails,
 }: BookingTableRowProps) {
   const isSlotExpired = booking.slot
     ? new Date(`${booking.slot.date}T${booking.slot.end_time}`) <= new Date()
@@ -1218,7 +1260,8 @@ const BookingMobileCard = memo(function BookingMobileCard({
 
   return (
     <article
-      className="rounded-xl border border-border-primary bg-surface-card p-3 shadow-sm ring-1 ring-border-focus/[0.03]"
+      onClick={onViewDetails}
+      className="rounded-xl border border-border-primary bg-surface-card p-3 shadow-sm ring-1 ring-border-focus/[0.03] cursor-pointer transition hover:bg-surface-elevated"
       aria-label={booking.booking_id}
     >
       <div className="flex items-start justify-between gap-3 border-b border-border-primary pb-2.5">
@@ -1306,6 +1349,7 @@ const BookingTableRow = memo(function BookingTableRow({
   onUndoReject,
   onNoShowMarked,
   canUndo,
+  onViewDetails,
 }: BookingTableRowProps) {
   const isSlotExpired = booking.slot
     ? new Date(`${booking.slot.date}T${booking.slot.end_time}`) <= new Date()
@@ -1313,7 +1357,10 @@ const BookingTableRow = memo(function BookingTableRow({
   const canUndoBooking = canUndo(booking);
 
   return (
-    <tr className="transition-colors hover:bg-surface-elevated">
+    <tr
+      onClick={onViewDetails}
+      className="transition-colors hover:bg-surface-elevated cursor-pointer"
+    >
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
         <div className="text-sm font-medium text-text-primary">{booking.customer_name}</div>
         <div className="text-sm text-text-secondary">{booking.customer_phone}</div>
@@ -1338,13 +1385,6 @@ const BookingTableRow = memo(function BookingTableRow({
       <td className="whitespace-nowrap px-4 py-4 sm:px-6">
         <div className="text-sm text-text-primary">{booking.salon?.salon_name}</div>
       </td>
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-text-secondary sm:px-6">
-        {booking.review?.rating ? (
-          <StarRating value={booking.review.rating} readonly size="sm" />
-        ) : (
-          '—'
-        )}
-      </td>
       <td className="px-4 py-4 text-sm font-medium sm:px-6">
         <BookingStatusActions
           booking={booking}
@@ -1358,6 +1398,13 @@ const BookingTableRow = memo(function BookingTableRow({
           onUndoReject={onUndoReject}
           onNoShowMarked={onNoShowMarked}
         />
+      </td>
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-text-secondary sm:px-6">
+        {booking.review?.rating ? (
+          <StarRating value={booking.review.rating} readonly size="sm" />
+        ) : (
+          '—'
+        )}
       </td>
     </tr>
   );

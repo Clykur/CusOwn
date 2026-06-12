@@ -196,7 +196,7 @@ export default function CustomerLayoutShell({
   return (
     <CustomerSessionProvider initialUser={user ?? undefined}>
       <RatingPromptProvider />
-      <div className="min-h-screen bg-surface-card flex overflow-x-hidden">
+      <div className="min-h-screen bg-background-primary flex overflow-x-hidden">
         <CustomerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className={`flex-1 lg:ml-60 w-full min-w-0 ${mainSpacing}`} suppressHydrationWarning>
           <MobileBrandHeader />

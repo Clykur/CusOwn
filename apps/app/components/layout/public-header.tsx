@@ -15,7 +15,7 @@ export function PublicHeader() {
       <MobileBrandHeader />
 
       {/* Desktop Header */}
-      <header className="sticky top-0 z-50 hidden border-b border-border-secondary bg-background-primary/95 backdrop-blur-xl md:block">
+      <header className="sticky top-0 z-50 hidden border-b border-border-secondary bg-background-primary/95 backdrop-blur-xl lg:block">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <button onClick={handleLogoClick} className="group flex items-center">

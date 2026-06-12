@@ -10,10 +10,19 @@ import './globals.css';
 
 const isDev = publicEnv.nodeEnv === 'development';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+  preload: true,
+});
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-space-grotesk',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -35,7 +44,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head />
-      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}
+        suppressHydrationWarning
+      >
         <Script
           id="supabase-auth-safe"
           src="/scripts/supabase-auth-safe.js"

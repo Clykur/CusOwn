@@ -380,26 +380,31 @@ export const BusinessProfile = () => {
         <h2 className="text-lg font-semibold text-text-primary mb-4">Services</h2>
 
         {services && services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {services.map((service) => (
               <div
                 key={service.id}
-                className="border border-border-primary rounded-lg p-4 bg-surface-elevated hover:border-brand-primary transition-colors"
+                className="rounded-lg border border-border-primary bg-surface-elevated p-4 transition-colors hover:border-brand-primary"
               >
-                <div className="font-bold text-lg mb-1 text-white">{service.name}</div>
+                {/* Top Row: Service Name + Book Button */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1 truncate font-bold text-lg text-white">
+                    {service.name}
+                  </div>
 
-                <div className="flex items-center justify-between text-text-secondary text-sm">
-                  <span>Duration: {service.duration}</span>
-                  <span className="font-semibold text-text-primary">₹{service.price}</span>
-                </div>
-
-                <div className="flex items-center justify-between mt-3">
                   <button
                     onClick={() => handleBook(service.id)}
-                    className="px-4 py-2 border border-border-primary rounded-md text-sm font-medium text-text-primary bg-surface-elevated hover:bg-brand-primary hover:text-text-inverse hover:border-brand-primary transition-colors duration-200"
+                    className="shrink-0 rounded-md border border-border-primary bg-surface-elevated px-4 py-2 text-sm font-medium text-text-primary transition-colors duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-text-inverse"
                   >
                     Book
                   </button>
+                </div>
+
+                {/* Bottom Row: Duration + Price */}
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-text-secondary">Duration: {service.duration}</span>
+
+                  <span className="font-semibold text-text-primary mr-4">₹{service.price}</span>
                 </div>
               </div>
             ))}

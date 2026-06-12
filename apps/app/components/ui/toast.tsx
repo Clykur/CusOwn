@@ -25,10 +25,10 @@ export function Toast({
 
   const variantStyles =
     variant === 'success'
-      ? 'bg-green-600 text-white border-green-700'
+      ? 'bg-zinc-900/90 backdrop-blur-md text-emerald-400 border-emerald-500/20'
       : variant === 'error'
-        ? 'bg-red-600 text-white border-red-700'
-        : 'bg-slate-800 text-white border-slate-700';
+        ? 'bg-zinc-900/90 backdrop-blur-md text-red-400 border-red-500/20'
+        : 'bg-zinc-900/90 backdrop-blur-md text-text-primary border-border-primary';
 
   return (
     <div

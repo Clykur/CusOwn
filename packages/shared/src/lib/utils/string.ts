@@ -34,12 +34,51 @@ export const formatTime = (time: string): string => {
 
 export const formatDate = (date: string | Date): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-IN', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  if (isNaN(d.getTime())) return '—';
+  const weekdayNames = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return `${weekdayNames[d.getUTCDay()]}, ${d.getUTCDate()} ${monthNames[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+};
+
+export const formatProfileDate = (date: string | Date): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return 'N/A';
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return `${d.getUTCDate()} ${monthNames[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
 
 /**

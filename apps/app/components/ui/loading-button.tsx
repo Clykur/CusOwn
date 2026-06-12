@@ -48,7 +48,7 @@ const LoadingButton = React.forwardRef<HTMLButtonElement, LoadingButtonProps>(
     return (
       <button
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
           {
             'bg-brand-primary text-text-inverse hover:bg-brand-primaryHover': variant === 'default',
             'border border-border-primary bg-surface-card text-text-primary hover:bg-surface-elevated':

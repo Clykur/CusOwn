@@ -30,7 +30,7 @@ export function LoadingOverlay({
           aria-busy="true"
         >
           <div className="flex flex-col items-center gap-2">
-            <Spinner className="h-6 w-6 text-text-secondary" />
+            <Spinner className="h-6 w-6 text-brand-primary" />
             {message && <span className="text-sm text-text-secondary">{message}</span>}
           </div>
         </div>
@@ -57,7 +57,7 @@ export function InlineLoading({ className, size = 'md', text }: InlineLoadingPro
       className={cn('inline-flex items-center gap-2 text-text-secondary', className)}
       aria-busy="true"
     >
-      <Spinner className={sizeClasses[size]} />
+      <Spinner className={cn(sizeClasses[size], 'text-brand-primary')} />
       {text && <span className="text-sm">{text}</span>}
     </span>
   );
@@ -75,7 +75,7 @@ export function PageLoading({ message = 'Loading...' }: PageLoadingProps) {
       aria-label={message}
     >
       <div className="flex flex-col items-center gap-3">
-        <Spinner className="h-8 w-8 text-text-secondary" />
+        <Spinner className="h-8 w-8 text-brand-primary" />
         <p className="text-sm text-text-secondary">{message}</p>
       </div>
     </div>

@@ -150,7 +150,9 @@ export default function OwnerSidebar({
             <div>
               <button onClick={handleLogoClick}>
                 <h2 className="text-xl md:text-2xl font-calegar font-semibold tracking-tight text-text-primary hover:opacity-80 transition-opacity uppercase text-left">
-                  CusOwn
+                  <span className="bg-gradient-to-r from-white via-white to-brand-primary bg-clip-text font-calegar text-xl font-bold uppercase tracking-wide text-transparent sm:text-2xl">
+                    CusOwn
+                  </span>
                 </h2>
               </button>
               <p className="mt-0.5 text-xs text-text-tertiary">{UI_CONTEXT.VIEWING_AS_OWNER}</p>
@@ -218,15 +220,14 @@ export default function OwnerSidebar({
                   <span className="truncate text-xs text-text-tertiary">{userEmail || ''}</span>
                 </div>
               </Link>
-              <button
-                onClick={() => {
-                  window.location.href = '/api/auth/signout?redirect_to=%2F';
-                }}
-                className="shrink-0 rounded-lg p-2 text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary"
-                title="Sign out"
+
+              <a
+                href="/api/auth/signout"
+                className="shrink-0 rounded-lg p-2 text-red-500 transition-colors hover:bg-[#181818] hover:text-[#FF5C5C]"
+                title="Sign Out"
               >
-                <LogoutIcon className="h-5 w-5 text-text-secondary" aria-hidden="true" />
-              </button>
+                <LogoutIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+              </a>
             </div>
           </div>
         </div>

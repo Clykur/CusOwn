@@ -122,7 +122,7 @@ export default function AdminBookingPage() {
         <div className="flex justify-center py-6">
           <button
             onClick={() => router.push(ROUTES.ADMIN_DASHBOARD)}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            className="rounded-lg border border-border-primary bg-background-tertiary px-4 py-2 text-sm font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary transition-all cursor-pointer"
           >
             Back to Dashboard
           </button>
@@ -141,31 +141,35 @@ export default function AdminBookingPage() {
       <div className="mb-6">
         <button
           onClick={() => router.push(bookingsUrl)}
-          className="text-slate-600 hover:text-slate-900 mb-4 text-sm font-medium"
+          className="text-text-secondary hover:text-[#00E676] mb-4 text-xs font-mono font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
         >
-          ← Back to Bookings
+          &larr; Back to Bookings
         </button>
-        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Booking Details</h2>
-        <p className="mt-0.5 text-sm text-slate-500">View and manage this booking</p>
+        <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+          Booking Details
+        </h2>
+        <p className="text-xs text-text-secondary mt-1">View and manage this booking</p>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         <AdminSectionWrapper
           title="Booking"
           subtitle={`ID ${displayId} · Created ${new Date(booking.created_at).toLocaleString()}`}
         >
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <p className="text-sm text-slate-500 mb-1.5">Status</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-1.5">
+                Status
+              </p>
               <span
-                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                className={`inline-flex rounded-md px-2.5 py-0.5 text-[10px] font-bold font-mono tracking-wide border ${
                   status === 'confirmed'
-                    ? 'bg-emerald-100 text-emerald-800'
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400'
                     : status === 'rejected' || status === 'cancelled'
-                      ? 'bg-red-100 text-red-800'
+                      ? 'bg-red-950/20 border-red-500/30 text-red-400'
                       : status === 'pending'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-slate-100 text-slate-800'
+                        ? 'bg-amber-950/20 border-amber-500/30 text-amber-400'
+                        : 'bg-[#1C1C1C] border border-border-primary text-text-secondary'
                 }`}
               >
                 {booking.status}
@@ -173,8 +177,10 @@ export default function AdminBookingPage() {
             </div>
             {booking.slot && (
               <div>
-                <p className="text-sm text-slate-500 mb-1.5">Date & time</p>
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-1.5">
+                  Date & time
+                </p>
+                <p className="text-sm font-medium text-text-primary font-mono">
                   {new Date(booking.slot.date).toLocaleDateString()}
                   {booking.slot.start_time
                     ? ` · ${booking.slot.start_time}${booking.slot.end_time ? ` – ${booking.slot.end_time}` : ''}`
@@ -188,17 +194,27 @@ export default function AdminBookingPage() {
         <AdminSectionWrapper title="Customer" subtitle="Customer information">
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-slate-500 mb-0.5">Name</p>
-              <p className="text-sm font-medium text-slate-900">{booking.customer_name || '—'}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-0.5">
+                Name
+              </p>
+              <p className="text-sm font-semibold text-text-primary">
+                {booking.customer_name || '—'}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-slate-500 mb-0.5">Phone</p>
-              <p className="text-sm font-medium text-slate-900">{booking.customer_phone || '—'}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-0.5">
+                Phone
+              </p>
+              <p className="text-sm font-medium text-text-primary font-mono">
+                {booking.customer_phone || '—'}
+              </p>
             </div>
             {booking.customer_user_id && (
               <div>
-                <p className="text-sm text-slate-500 mb-0.5">User ID</p>
-                <p className="text-sm font-mono text-slate-700">
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-0.5">
+                  User ID
+                </p>
+                <p className="text-sm font-mono text-text-secondary">
                   {booking.customer_user_id.substring(0, 8)}…
                 </p>
               </div>
@@ -209,20 +225,26 @@ export default function AdminBookingPage() {
         <AdminSectionWrapper title="Business" subtitle="Business information">
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-slate-500 mb-0.5">Business</p>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-0.5">
+                Business
+              </p>
+              <p className="text-sm font-semibold text-text-primary">
                 {booking.business?.salon_name || booking.business?.name || 'N/A'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-slate-500 mb-0.5">Location</p>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-0.5">
+                Location
+              </p>
+              <p className="text-sm font-medium text-text-primary">
                 {booking.business?.location || '—'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-slate-500 mb-0.5">Phone</p>
-              <p className="text-sm font-medium text-slate-900">
+              <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-0.5">
+                Phone
+              </p>
+              <p className="text-sm font-medium text-text-primary font-mono">
                 {booking.business?.whatsapp_number || '—'}
               </p>
             </div>
@@ -234,19 +256,21 @@ export default function AdminBookingPage() {
             {booking.status === 'pending' && (
               <>
                 <button
+                  type="button"
                   onClick={() => handleAction('accept')}
                   disabled={actionLoading}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+                  className="rounded-lg border border-border-primary bg-background-tertiary px-4 py-2 text-sm font-bold text-text-primary hover:border-[#00E676]/40 hover:bg-background-secondary disabled:opacity-30 disabled:hover:border-border-primary disabled:hover:bg-background-tertiary transition-all cursor-pointer"
                 >
                   {actionLoading ? 'Processing…' : 'Accept Booking'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     const reason = prompt('Rejection reason (optional):');
                     if (reason !== null) handleAction('reject', reason);
                   }}
                   disabled={actionLoading}
-                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:opacity-50"
+                  className="rounded-lg border border-red-500/30 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 hover:border-red-500/50 hover:bg-red-950/40 disabled:opacity-30 disabled:hover:border-red-500/30 disabled:hover:bg-red-950/20 transition-all cursor-pointer"
                 >
                   {actionLoading ? 'Processing…' : 'Reject Booking'}
                 </button>
@@ -254,28 +278,29 @@ export default function AdminBookingPage() {
             )}
             {booking.status === 'confirmed' && (
               <button
+                type="button"
                 onClick={() => {
                   const reason = prompt('Cancellation reason (optional):');
                   if (reason !== null) handleAction('cancel', reason);
                 }}
                 disabled={actionLoading}
-                className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:opacity-50"
+                className="rounded-lg border border-red-500/30 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 hover:border-red-500/50 hover:bg-red-950/40 disabled:opacity-30 disabled:hover:border-red-500/30 disabled:hover:bg-red-950/20 transition-all cursor-pointer"
               >
                 {actionLoading ? 'Processing…' : 'Cancel Booking'}
               </button>
             )}
             {(booking.status === 'cancelled' || booking.status === 'rejected') && (
-              <p className="text-sm text-slate-500">No actions available</p>
+              <p className="text-xs text-text-tertiary font-mono">No actions available</p>
             )}
           </div>
         </AdminSectionWrapper>
 
         {booking.cancellation_reason && (
           <AdminSectionWrapper title="Cancellation" subtitle="Reason and date">
-            <div className="rounded-xl border border-red-200 bg-red-50/50 py-4 px-4">
-              <p className="text-sm font-medium text-red-800">{booking.cancellation_reason}</p>
+            <div className="rounded-xl border border-red-500/20 bg-red-950/10 py-4 px-4">
+              <p className="text-sm font-semibold text-red-400">{booking.cancellation_reason}</p>
               {booking.cancelled_at && (
-                <p className="mt-1 text-xs text-red-600">
+                <p className="mt-1.5 text-xs text-red-500/70 font-mono">
                   Cancelled on {new Date(booking.cancelled_at).toLocaleString()}
                 </p>
               )}

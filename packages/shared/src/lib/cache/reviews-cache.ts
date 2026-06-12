@@ -7,6 +7,7 @@ interface ReviewData {
   rating_avg: number;
   review_count: number;
   reviews?: Array<{ rating: number; [key: string]: unknown }>;
+  rating_counts?: Record<number, number>;
 }
 
 interface CachedReview {
@@ -59,6 +60,7 @@ async function fetchReviews(businessId: string): Promise<ReviewData | null> {
         rating_avg: result.data.rating_avg || 0,
         review_count: result.data.review_count || 0,
         reviews: result.data.reviews || [],
+        rating_counts: result.data.rating_counts || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       };
 
       reviewsCache.set(businessId, {

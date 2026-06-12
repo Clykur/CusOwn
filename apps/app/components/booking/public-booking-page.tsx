@@ -966,8 +966,7 @@ export default function PublicBookingPage({
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleService(service.id)}
-                          className="h-5 w-5 cursor-pointer rounded border-border-primary text-text-primary accent-brand-primary focus:ring-2 focus:ring-border-focus focus:ring-offset-0"
-                          aria-describedby={`service-meta-${service.id}`}
+                          className="h-5 w-5 cursor-pointer appearance-none rounded border border-border-primary bg-[#181818] checked:border-brand-primary checked:bg-brand-primary focus:ring-2 focus:ring-border-focus focus:ring-offset-0"
                         />
                       </div>
                       <div className="min-w-0 flex-1">

@@ -64,13 +64,13 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
 
   if (deleteMessage) {
     return (
-      <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:rounded-lg sm:p-6">
+      <section className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 sm:rounded-lg sm:p-6">
         <div className="flex items-start gap-3">
-          <CheckIcon className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" aria-hidden="true" />
+          <CheckIcon className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
           <div>
-            <h3 className="text-lg font-semibold text-emerald-800 mb-2">Account Deleted</h3>
-            <p className="text-sm text-emerald-700">{deleteMessage}</p>
-            <p className="text-sm text-emerald-600 mt-3">Redirecting to home page...</p>
+            <h3 className="text-lg font-semibold text-emerald-400 mb-2">Account Deleted</h3>
+            <p className="text-sm text-emerald-300">{deleteMessage}</p>
+            <p className="text-sm text-emerald-400 mt-3">Redirecting to home page...</p>
           </div>
         </div>
       </section>
@@ -79,7 +79,7 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
 
   return (
     <>
-      <section className="rounded-xl border border-state-error/50 bg-state-error/10/50 p-4 shadow-sm sm:rounded-lg sm:p-6">
+      <section className="rounded-xl border border-state-error/50 bg-state-error/10 p-4 shadow-sm sm:rounded-lg sm:p-6">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-state-error">Delete Account</h3>
           <p className="mt-0.5 text-sm text-state-error">
@@ -114,7 +114,7 @@ function DeleteAccountSectionComponent({ profileData, setError }: DeleteAccountS
       </section>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-brand-primary/50 p-4 sm:items-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-surface-card p-5 shadow-xl sm:rounded-lg sm:p-6">
             <h3 className="mb-4 text-xl font-semibold text-text-primary">
               Confirm Account Deletion

@@ -145,25 +145,25 @@ export default function SetupPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 mt-6 text-center">
+      <div className="min-h-screen bg-background-primary py-8 px-4 flex items-center justify-center">
+        <div className="max-w-2xl w-full mx-auto">
+          <div className="bg-zinc-900/40 border border-white/10 rounded-2xl shadow-2xl p-8 md:p-10 text-center">
             <div className="mb-8 flex justify-center">
-              <div className="bg-black rounded-full p-6">
-                <BusinessesIcon className="w-12 h-12 text-white" aria-hidden="true" />
+              <div className="bg-brand-primary/10 rounded-full p-6">
+                <BusinessesIcon className="w-12 h-12 text-brand-primary" aria-hidden="true" />
               </div>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Sign In to Create Your Business
             </h1>
-            <p className="text-gray-600 text-lg mb-8">
+            <p className="text-zinc-400 text-lg mb-8">
               Sign in with Google to create and manage your booking page. Your account will be
               created automatically.
             </p>
             <div className="space-y-4">
               <button
                 onClick={() => router.push(ROUTES.AUTH_LOGIN(ROUTES.SETUP) + '&role=owner')}
-                className="w-full bg-white border-2 border-gray-300 text-gray-700 font-semibold py-4 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
+                className="w-full bg-white text-zinc-950 font-semibold py-4 px-6 rounded-xl hover:bg-zinc-100 transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
@@ -186,31 +186,31 @@ export default function SetupPage() {
                 Continue with Google
               </button>
               <Link href={ROUTES.SELECT_ROLE('owner')}>
-                <button className="w-full text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">
+                <button className="w-full text-zinc-500 hover:text-zinc-300 text-sm font-medium transition-colors">
                   ← Back to Role Selection
                 </button>
               </Link>
             </div>
-            <div className="mt-8 bg-blue-50 border-l-4 border-blue-500 rounded-lg p-5 text-left">
-              <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                <InfoIcon className="w-5 h-5" aria-hidden="true" />
+            <div className="mt-8 bg-blue-500/10 border-l-4 border-blue-500 rounded-lg p-5 text-left">
+              <p className="text-sm font-semibold text-blue-400 mb-3 flex items-center gap-2">
+                <InfoIcon className="w-5 h-5 text-blue-400" aria-hidden="true" />
                 Why sign in?
               </p>
-              <ul className="text-sm text-blue-800 space-y-2">
+              <ul className="text-sm text-zinc-400 space-y-2">
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon className="w-4 h-4 text-blue-400" aria-hidden="true" />
                   Secure access to your dashboard
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon className="w-4 h-4 text-blue-400" aria-hidden="true" />
                   Manage multiple businesses
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon className="w-4 h-4 text-blue-400" aria-hidden="true" />
                   View booking history & analytics
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckIcon className="w-4 h-4 text-blue-600" aria-hidden="true" />
+                  <CheckIcon className="w-4 h-4 text-blue-400" aria-hidden="true" />
                   Switch between owner and customer roles
                 </li>
               </ul>

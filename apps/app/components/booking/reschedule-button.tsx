@@ -180,7 +180,7 @@ export default function RescheduleButton({
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-brand-primary bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-surface-card rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold mb-4">Reschedule Booking</h3>
             <p className="text-sm text-text-secondary mb-4">
@@ -220,7 +220,7 @@ export default function RescheduleButton({
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full border rounded px-3 py-2 text-sm"
+                className="w-full border border-border-primary bg-surface-input text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
                 rows={3}
                 placeholder="Why are you rescheduling?"
               />

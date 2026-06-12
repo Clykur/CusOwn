@@ -71,14 +71,14 @@ export default function BookingStatusPage() {
     return (
       <div className="w-full pb-24 flex flex-col gap-8">
         <div className="w-full">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-center">
-            <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-4')}>
+          <div className="bg-zinc-900/40 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+            <h2 className={cn(CUSTOMER_SCREEN_TITLE_CLASSNAME, 'mb-4 text-white')}>
               {UI_ERROR_CONTEXT.ACCEPT_REJECT_PAGE}
             </h2>
-            <p className="text-slate-600 mb-6">{error || 'Booking not found.'}</p>
+            <p className="text-zinc-400 mb-6">{error || 'Booking not found.'}</p>
             <Link
               href={ROUTES.CUSTOMER_DASHBOARD}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-primary text-black text-sm font-medium rounded-xl hover:bg-brand-primaryHover transition shadow-sm"
             >
               {UI_CUSTOMER.NAV_MY_ACTIVITY}
             </Link>
@@ -102,7 +102,7 @@ export default function BookingStatusPage() {
 
   return (
     <div className="w-full pb-24 flex flex-col gap-8">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+      <div className="bg-surface-card border border-border-primary rounded-2xl p-6 sm:p-8 shadow-2xl">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
@@ -113,15 +113,15 @@ export default function BookingStatusPage() {
               type="button"
               onClick={handleRefreshStatus}
               disabled={refreshingStatus}
-              className="p-1 text-slate-600 hover:text-slate-900 disabled:opacity-50"
+              className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
             >
               <RefreshIcon className={`w-5 h-5 ${refreshingStatus ? 'animate-spin' : ''}`} />
             </button>
           </div>
-          <p className="text-sm text-slate-600 mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
-          <div className="flex flex-wrap items-center gap-2 text-slate-600">
+          <p className="text-sm text-text-secondary mb-3">{UI_CONTEXT.BOOKING_STATUS_SINGLE}</p>
+          <div className="flex flex-wrap items-center gap-2 text-text-secondary">
             <span className="text-sm">{UI_CUSTOMER.LABEL_BOOKING_ID}:</span>
-            <span className="font-mono text-sm bg-slate-100 px-3 py-1 rounded-xl text-slate-900">
+            <span className="font-mono text-sm bg-surface-elevated border border-border-primary px-3 py-1 rounded-xl text-text-primary">
               {booking.booking_id}
             </span>
             {whatsappUrl && (
@@ -129,7 +129,7 @@ export default function BookingStatusPage() {
                 <button
                   type="button"
                   onClick={() => window.open(whatsappUrl, '_blank')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-black rounded-xl font-semibold hover:bg-brand-primaryHover"
                 >
                   Open WhatsApp
                 </button>
@@ -166,9 +166,9 @@ export default function BookingStatusPage() {
 
         {/* Cancellation details */}
         {booking.cancelled_at && (
-          <div className="mb-6 bg-slate-100 p-4 rounded-xl">
-            <p className="font-medium text-slate-900">Cancellation Details</p>
-            <p className="text-sm text-slate-600 mt-1">
+          <div className="mb-6 bg-surface-elevated border border-border-primary p-4 rounded-xl">
+            <p className="font-medium text-text-primary">Cancellation Details</p>
+            <p className="text-sm text-text-secondary mt-1">
               Cancelled{' '}
               {booking.cancelled_by === 'customer'
                 ? 'by you'
@@ -178,7 +178,9 @@ export default function BookingStatusPage() {
               on {new Date(booking.cancelled_at).toLocaleString()}
             </p>
             {booking.cancellation_reason && (
-              <p className="text-sm text-slate-600 mt-1">Reason: {booking.cancellation_reason}</p>
+              <p className="text-sm text-text-secondary mt-1">
+                Reason: {booking.cancellation_reason}
+              </p>
             )}
           </div>
         )}

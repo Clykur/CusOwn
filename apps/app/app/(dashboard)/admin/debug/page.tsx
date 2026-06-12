@@ -63,10 +63,10 @@ export default function DebugAuthPage() {
   if (loading) {
     return (
       <div className="w-full animate-pulse" aria-busy="true">
-        <div className="h-8 bg-gray-200 rounded w-64 mb-6" />
+        <div className="h-8 bg-surface-card rounded-xl w-64 mb-6" />
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded-lg" />
+            <div key={i} className="h-16 bg-surface-card border border-border-primary rounded-xl" />
           ))}
         </div>
       </div>
@@ -76,79 +76,94 @@ export default function DebugAuthPage() {
   if (error) {
     return (
       <div className="w-full">
-        <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
-        <p className="text-gray-600">{error}</p>
+        <h2 className="text-lg font-bold text-state-error tracking-tight font-display mb-4">
+          Error
+        </h2>
+        <p className="text-sm text-text-secondary font-mono bg-red-950/10 border border-red-500/20 p-4 rounded-xl">
+          {error}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl font-bold mb-6">Authentication Debug Information</h1>
+      <h2 className="text-lg font-bold text-text-primary tracking-tight font-display mb-6">
+        Authentication Debug Information
+      </h2>
 
       <div className="space-y-6">
         {/* Client Session Info */}
-        <section className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Client-Side Session</h2>
-          <pre className="bg-white p-4 rounded border overflow-auto text-sm">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
+          <h2 className="text-base font-bold text-text-primary font-display mb-4">
+            Client-Side Session
+          </h2>
+          <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl border border-border-primary bg-[#0B0B0C] p-4 text-xs text-text-primary font-mono max-h-[300px]">
             {JSON.stringify(debugInfo?.clientSession, null, 2)}
           </pre>
         </section>
 
         {/* Server Debug Info */}
-        <section className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Server-Side Debug</h2>
-          <pre className="bg-white p-4 rounded border overflow-auto text-sm">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
+          <h2 className="text-base font-bold text-text-primary font-display mb-4">
+            Server-Side Debug
+          </h2>
+          <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl border border-border-primary bg-[#0B0B0C] p-4 text-xs text-text-primary font-mono max-h-[300px]">
             {JSON.stringify(debugInfo?.serverDebug, null, 2)}
           </pre>
         </section>
 
         {/* Summary */}
         {debugInfo?.serverDebug?.summary && (
-          <section className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200">
-            <h2 className="text-xl font-semibold mb-4">Summary</h2>
-            <ul className="space-y-2">
-              <li>
-                <strong>Authenticated:</strong>{' '}
+          <section className="rounded-xl border border-border-primary bg-surface-card p-6">
+            <h2 className="text-base font-bold text-text-primary font-display mb-4">Summary</h2>
+            <ul className="space-y-3 font-mono text-sm">
+              <li className="flex justify-between border-b border-border-primary/20 pb-2">
+                <span className="text-text-secondary">Authenticated:</span>{' '}
                 <span
-                  className={
-                    debugInfo.serverDebug.summary.authenticated ? 'text-green-600' : 'text-red-600'
-                  }
+                  className={`font-semibold ${
+                    debugInfo.serverDebug.summary.authenticated
+                      ? 'text-emerald-400'
+                      : 'text-rose-400'
+                  }`}
                 >
-                  {debugInfo.serverDebug.summary.authenticated ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.authenticated ? 'YES' : 'NO'}
                 </span>
               </li>
-              <li>
-                <strong>Has Profile:</strong>{' '}
+              <li className="flex justify-between border-b border-border-primary/20 pb-2">
+                <span className="text-text-secondary">Has Profile:</span>{' '}
                 <span
-                  className={
-                    debugInfo.serverDebug.summary.hasProfile ? 'text-green-600' : 'text-red-600'
-                  }
+                  className={`font-semibold ${
+                    debugInfo.serverDebug.summary.hasProfile ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
                 >
-                  {debugInfo.serverDebug.summary.hasProfile ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.hasProfile ? 'YES' : 'NO'}
                 </span>
               </li>
-              <li>
-                <strong>Is Admin:</strong>{' '}
+              <li className="flex justify-between border-b border-border-primary/20 pb-2">
+                <span className="text-text-secondary">Is Admin:</span>{' '}
                 <span
-                  className={
-                    debugInfo.serverDebug.summary.isAdmin ? 'text-green-600' : 'text-red-600'
-                  }
+                  className={`font-semibold ${
+                    debugInfo.serverDebug.summary.isAdmin ? 'text-emerald-400' : 'text-rose-400'
+                  }`}
                 >
-                  {debugInfo.serverDebug.summary.isAdmin ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.isAdmin ? 'YES' : 'NO'}
                 </span>
               </li>
-              <li>
-                <strong>Auth Method Used:</strong> {debugInfo.serverDebug.summary.authMethodUsed}
+              <li className="flex justify-between border-b border-border-primary/20 pb-2">
+                <span className="text-text-secondary">Auth Method Used:</span>{' '}
+                <span className="text-text-primary font-semibold">
+                  {debugInfo.serverDebug.summary.authMethodUsed}
+                </span>
               </li>
-              <li>
-                <strong>Has Errors:</strong>{' '}
+              <li className="flex justify-between pb-1">
+                <span className="text-text-secondary">Has Errors:</span>{' '}
                 <span
-                  className={
-                    debugInfo.serverDebug.summary.hasErrors ? 'text-red-600' : 'text-green-600'
-                  }
+                  className={`font-semibold ${
+                    debugInfo.serverDebug.summary.hasErrors ? 'text-rose-400' : 'text-emerald-400'
+                  }`}
                 >
-                  {debugInfo.serverDebug.summary.hasErrors ? 'Yes' : 'No'}
+                  {debugInfo.serverDebug.summary.hasErrors ? 'YES' : 'NO'}
                 </span>
               </li>
             </ul>
@@ -157,22 +172,20 @@ export default function DebugAuthPage() {
 
         {/* Errors */}
         {debugInfo?.serverDebug?.errors && debugInfo.serverDebug.errors.length > 0 && (
-          <section className="bg-red-50 p-6 rounded-lg border-2 border-red-200">
-            <h2 className="text-xl font-semibold mb-4 text-red-600">Errors</h2>
-            <ul className="list-disc list-inside space-y-1">
+          <section className="rounded-xl border border-red-500/20 bg-red-950/10 p-6">
+            <h2 className="text-base font-bold text-state-error font-display mb-4">Errors</h2>
+            <ul className="list-disc list-inside space-y-1.5 font-mono text-sm text-red-400">
               {debugInfo.serverDebug.errors.map((err: string, idx: number) => (
-                <li key={idx} className="text-red-700">
-                  {err}
-                </li>
+                <li key={idx}>{err}</li>
               ))}
             </ul>
           </section>
         )}
 
         {/* Instructions */}
-        <section className="bg-yellow-50 p-6 rounded-lg border-2 border-yellow-200">
-          <h2 className="text-xl font-semibold mb-4">What to Check</h2>
-          <ol className="list-decimal list-inside space-y-2 text-gray-700">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
+          <h2 className="text-base font-bold text-text-primary font-display mb-4">What to Check</h2>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-text-secondary font-mono">
             <li>Check if client session has a valid token</li>
             <li>Check if server received the Authorization header</li>
             <li>Check if cookies are being set correctly</li>

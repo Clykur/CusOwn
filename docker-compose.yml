@@ -1,0 +1,39 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "3000:3000" # App Booking Platform
+      - "3001:3001" # Marketing Website
+    volumes:
+      # Bind mount the host root directory to /app for live hot-reloading
+      - .:/app
+      # Anonymous volumes to avoid overwriting container node_modules/build files with host versions
+      - /app/node_modules
+      - /app/apps/app/.next
+      - /app/apps/marketing/.next
+      - /app/.turbo
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=development
+      # Tell Next.js / Turbo that we are running inside Docker
+      - WATCHPACK_POLLING=true # Helps Next.js hot-reloading inside Docker on some OS environments
+    depends_on:
+      - redis
+    tty: true
+    stdin_open: true
+    command: npx turbo dev
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:

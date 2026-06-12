@@ -7,6 +7,7 @@ import { ERROR_MESSAGES, OWNER_SCREEN_TITLE_CLASSNAME } from '@cusown/config';
 import { ROUTES } from '@cusown/shared';
 import { getCSRFToken } from '@cusown/shared';
 import { supabaseAuth } from '@cusown/shared';
+import Dropdown from '@/components/ui/dropdown';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -333,17 +334,13 @@ export default function BusinessSetupFlow({ businessId }: { businessId: string }
         </label>
         {includeBreak && (
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <select
+            <Dropdown
               value={breakDay}
-              onChange={(e) => setBreakDay(Number(e.target.value))}
-              className="rounded border border-border-primary px-2 py-1 text-sm"
-            >
-              {DAY_NAMES.map((n, i) => (
-                <option key={n} value={i}>
-                  {n}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setBreakDay(Number(val))}
+              options={DAY_NAMES.map((n, i) => ({ value: i, label: n }))}
+              triggerClassName="h-9 py-1 px-3 border border-border-primary text-sm rounded-lg bg-surface-input"
+              className="w-24 inline-block"
+            />
             <input
               type="time"
               value={breakStart}

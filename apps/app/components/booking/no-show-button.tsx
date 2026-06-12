@@ -60,10 +60,10 @@ export default function NoShowButton({ bookingId, onMarked }: NoShowButtonProps)
 
   if (isMarked && !noShowMutation.isError) {
     return (
-      <div className="w-full min-h-[44px] px-3 py-2.5 sm:px-4 sm:py-2 bg-amber-100 text-amber-800 text-sm sm:text-base font-semibold rounded-lg flex items-center justify-center gap-2">
+      <div className="w-full min-h-[44px] px-3 py-2.5 sm:px-4 sm:py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm sm:text-base font-semibold rounded-lg flex items-center justify-center gap-2">
         {noShowMutation.isPending ? (
           <>
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-800 border-t-transparent" />
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-400 border-t-transparent" />
             <span>Marking as no-show...</span>
           </>
         ) : (

@@ -18,12 +18,12 @@ export function AdminSectionWrapper({
   className = '',
 }: AdminSectionWrapperProps) {
   return (
-    <section
-      className={`rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ${className}`}
-    >
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+    <section className={`rounded-xl border border-border-primary bg-surface-card p-6 ${className}`}>
+      <div className="mb-5">
+        <h3 className="text-lg font-bold text-text-primary font-display">{title}</h3>
+        {subtitle && (
+          <p className="mt-1 text-xs text-[#737373] font-mono tracking-wide">{subtitle}</p>
+        )}
       </div>
       {children}
     </section>

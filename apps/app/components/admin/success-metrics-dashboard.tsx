@@ -47,23 +47,25 @@ function MetricCard({
 }) {
   return (
     <div
-      className={`rounded-xl border p-5 ${
+      className={`rounded-xl border p-5 transition-all duration-200 ease-out hover:-translate-y-0.5 ${
         pass === true
-          ? 'border-emerald-200 bg-emerald-50/60'
+          ? 'border-emerald-500/30 bg-emerald-950/20 hover:border-emerald-500/50 hover:shadow-[0_0_12px_rgba(34,197,94,0.06)]'
           : pass === false
-            ? 'border-red-200 bg-red-50/60'
-            : 'border-slate-200 bg-slate-50/50'
+            ? 'border-red-500/30 bg-red-950/20 hover:border-red-500/50 hover:shadow-[0_0_12px_rgba(239,68,68,0.06)]'
+            : 'border-border-primary bg-surface-card hover:border-[#00E676]/45 hover:shadow-[0_0_12px_rgba(0,230,118,0.06)]'
       }`}
     >
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-text-secondary font-mono">
+        {label}
+      </p>
       <p
-        className={`mt-2 text-2xl font-bold tracking-tight ${
-          pass === true ? 'text-emerald-800' : pass === false ? 'text-red-800' : 'text-slate-900'
+        className={`mt-2 text-2xl font-bold tracking-tight font-display ${
+          pass === true ? 'text-emerald-400' : pass === false ? 'text-red-400' : 'text-text-primary'
         }`}
       >
         {value}
       </p>
-      <p className="mt-1 text-xs text-slate-500">{subtext}</p>
+      <p className="mt-1 text-xs text-text-tertiary font-mono">{subtext}</p>
     </div>
   );
 }
@@ -157,24 +159,26 @@ export default function SuccessMetricsDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Success metrics</h2>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+            Success metrics
+          </h2>
+          <p className="text-xs text-text-secondary mt-1">
             Technical and business KPIs for the selected period
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="w-[180px]">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
               From
             </label>
             <DateFilter value={startDate} onChange={setStartDate} />
           </div>
           <div className="w-[180px]">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">
               To
             </label>
             <DateFilter value={endDate} onChange={setEndDate} />
@@ -182,7 +186,7 @@ export default function SuccessMetricsDashboard() {
           <button
             type="button"
             onClick={() => fetchMetrics(false)}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 transition-colors"
+            className="h-11 rounded-xl bg-brand-primary px-5 text-sm font-bold text-background-primary shadow-sm hover:bg-brand-primaryHover active:bg-brand-primaryPressed transition-all duration-150 cursor-pointer"
           >
             Apply
           </button>
@@ -191,10 +195,12 @@ export default function SuccessMetricsDashboard() {
 
       {/* Technical metrics */}
       {technical && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Technical metrics</h3>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <h3 className="text-base font-bold text-text-primary font-display">
+              Technical metrics
+            </h3>
+            <p className="text-xs text-text-secondary mt-1">
               API, uptime, errors and database performance
             </p>
           </div>
@@ -202,25 +208,25 @@ export default function SuccessMetricsDashboard() {
             <MetricCard
               label="API response (p95)"
               value={`${technical.apiResponseTimeP95}ms`}
-              subtext="Target: &lt;200ms"
+              subtext="Target: <200ms"
               pass={technical.apiResponseTimeP95 <= 200}
             />
             <MetricCard
               label="Uptime"
               value={`${technical.uptime.toFixed(2)}%`}
-              subtext="Target: &gt;99.9%"
+              subtext="Target: >99.9%"
               pass={technical.uptime >= 99.9}
             />
             <MetricCard
               label="Error rate"
               value={`${technical.errorRate.toFixed(3)}%`}
-              subtext="Target: &lt;0.1%"
+              subtext="Target: <0.1%"
               pass={technical.errorRate <= 0.1}
             />
             <MetricCard
               label="DB query (p95)"
               value={`${technical.dbQueryTimeP95}ms`}
-              subtext="Target: &lt;100ms"
+              subtext="Target: <100ms"
               pass={technical.dbQueryTimeP95 <= 100}
             />
           </div>
@@ -229,10 +235,10 @@ export default function SuccessMetricsDashboard() {
 
       {/* Business metrics */}
       {business && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Business metrics</h3>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <h3 className="text-base font-bold text-text-primary font-display">Business metrics</h3>
+            <p className="text-xs text-text-secondary mt-1">
               Support, no-shows, retention and completion
             </p>
           </div>
@@ -245,19 +251,19 @@ export default function SuccessMetricsDashboard() {
             <MetricCard
               label="No-show rate"
               value={`${business.noShowRate.toFixed(2)}%`}
-              subtext="Target: &lt;10%"
+              subtext="Target: <10%"
               pass={business.noShowRate <= 10}
             />
             <MetricCard
               label="Owner retention"
               value={`${business.ownerRetention.toFixed(2)}%`}
-              subtext="Target: &gt;80%"
+              subtext="Target: >80%"
               pass={business.ownerRetention >= 80}
             />
             <MetricCard
               label="Completion rate"
               value={`${business.bookingCompletionRate.toFixed(2)}%`}
-              subtext="Target: &gt;90%"
+              subtext="Target: >90%"
               pass={business.bookingCompletionRate >= 90}
             />
           </div>
@@ -266,40 +272,44 @@ export default function SuccessMetricsDashboard() {
 
       {/* Threshold status */}
       {thresholds.length > 0 && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-xl border border-border-primary bg-surface-card p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Threshold status</h3>
-            <p className="text-sm text-slate-500 mt-0.5">Pass / fail against targets</p>
+            <h3 className="text-base font-bold text-text-primary font-display">Threshold status</h3>
+            <p className="text-xs text-text-secondary mt-1">Pass / fail against targets</p>
           </div>
           <div className="space-y-2">
             {thresholds.map((t) => (
               <div
                 key={t.metric}
-                className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 rounded-xl px-4 py-3 ${
+                className={`flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 rounded-xl px-4 py-3 border ${
                   t.status === 'pass'
-                    ? 'bg-emerald-50 border border-emerald-200'
-                    : 'bg-red-50 border border-red-200'
+                    ? 'bg-emerald-950/20 border-emerald-500/30'
+                    : 'bg-red-950/20 border-red-500/30'
                 }`}
               >
                 <div className="min-w-0">
-                  <span className="font-medium text-slate-900">{t.metric}</span>
+                  <span className="font-semibold text-text-primary font-mono text-sm">
+                    {t.metric}
+                  </span>
                   {t.reason && (
                     <p
-                      className={`mt-0.5 text-sm ${t.status === 'pass' ? 'text-emerald-700' : 'text-red-700'}`}
+                      className={`mt-0.5 text-xs ${t.status === 'pass' ? 'text-emerald-400' : 'text-red-400'}`}
                     >
                       {t.reason}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-4 flex-shrink-0">
-                  <span className={t.status === 'pass' ? 'text-emerald-700' : 'text-red-700'}>
+                  <span
+                    className={`text-sm font-mono ${t.status === 'pass' ? 'text-emerald-400' : 'text-red-400'}`}
+                  >
                     {t.value} / {t.threshold}
                   </span>
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold font-mono tracking-wide border ${
                       t.status === 'pass'
-                        ? 'bg-emerald-200 text-emerald-800'
-                        : 'bg-red-200 text-red-800'
+                        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-400'
+                        : 'bg-red-950/40 border-red-500/40 text-red-400'
                     }`}
                   >
                     {t.status === 'pass' ? 'PASS' : 'FAIL'}
@@ -312,9 +322,9 @@ export default function SuccessMetricsDashboard() {
       )}
 
       {!technical && !business && thresholds.length === 0 && (
-        <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
-          <p className="text-sm font-medium text-slate-500">No metrics available</p>
-          <p className="mt-1 text-xs text-slate-400">Try a different date range</p>
+        <section className="rounded-xl border border-dashed border-border-primary bg-background-secondary/10 p-12 text-center">
+          <p className="text-sm font-semibold text-text-secondary">No metrics available</p>
+          <p className="mt-1 text-xs text-text-tertiary font-mono">Try a different date range</p>
         </section>
       )}
     </div>

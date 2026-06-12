@@ -225,17 +225,21 @@ export default function OwnerBusinessPage() {
           getCachedReviews(salonData.id).then((reviewResult) => {
             if (cancelled || !reviewResult) return;
             const reviews = reviewResult.reviews || [];
-            const rating_counts: Record<number, number> = {
-              1: 0,
-              2: 0,
-              3: 0,
-              4: 0,
-              5: 0,
-            };
-            reviews.forEach((review) => {
-              const rating = Number(review.rating);
-              if (rating_counts[rating] !== undefined) rating_counts[rating]++;
-            });
+            const rating_counts: Record<number, number> = reviewResult.rating_counts
+              ? { ...reviewResult.rating_counts }
+              : {
+                  1: 0,
+                  2: 0,
+                  3: 0,
+                  4: 0,
+                  5: 0,
+                };
+            if (!reviewResult.rating_counts) {
+              reviews.forEach((review) => {
+                const rating = Number(review.rating);
+                if (rating_counts[rating] !== undefined) rating_counts[rating]++;
+              });
+            }
             setReviewData({
               rating_avg: reviewResult.rating_avg || 0,
               review_count: reviewResult.review_count || 0,

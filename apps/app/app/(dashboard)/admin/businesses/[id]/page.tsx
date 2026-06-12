@@ -171,12 +171,13 @@ export default function EditBusinessPage() {
   if (error && !business) {
     return (
       <div className="w-full flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
-          <p className="text-gray-600 mb-8">{error}</p>
+        <div className="max-w-md w-full bg-surface-card rounded-xl border border-border-primary p-8 text-center shadow-lg">
+          <h2 className="text-xl font-bold text-text-primary mb-4 font-display">Error</h2>
+          <p className="text-text-secondary text-sm mb-8 font-mono">{error}</p>
           <button
+            type="button"
             onClick={() => router.push('/admin/dashboard')}
-            className="px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-900 transition-colors"
+            className="px-6 py-3 bg-background-tertiary border border-border-primary hover:border-[#00E676]/40 hover:bg-background-secondary text-text-primary font-bold rounded-xl transition-all cursor-pointer"
           >
             Back to Dashboard
           </button>
@@ -187,26 +188,31 @@ export default function EditBusinessPage() {
 
   return (
     <div className="w-full">
-      <div className="mb-8">
+      <div className="mb-6">
         <button
           onClick={() => router.push(getAdminDashboardUrl('businesses'))}
-          className="text-gray-600 hover:text-gray-900 mb-4"
+          className="text-text-secondary hover:text-[#00E676] mb-4 text-xs font-mono font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
         >
-          ← Back to Dashboard
+          &larr; Back to Dashboard
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Business</h1>
-        <p className="text-gray-600 mt-2">{business?.salon_name}</p>
+        <h2 className="text-lg font-bold text-text-primary tracking-tight font-display">
+          Edit Business
+        </h2>
+        <p className="text-xs text-text-secondary mt-1">{business?.salon_name}</p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+        <div className="bg-red-950/10 border border-red-500/20 text-state-error px-4 py-3 rounded-xl mb-6 font-mono text-sm">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-surface-card rounded-xl border border-border-primary p-6 md:p-8 space-y-6 shadow-sm"
+      >
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
             Business Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -214,12 +220,12 @@ export default function EditBusinessPage() {
             value={formData.salon_name}
             onChange={(e) => setFormData({ ...formData, salon_name: e.target.value })}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
             Owner Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -227,12 +233,12 @@ export default function EditBusinessPage() {
             value={formData.owner_name}
             onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
             WhatsApp Number <span className="text-red-500">*</span>
           </label>
           <input
@@ -240,13 +246,13 @@ export default function EditBusinessPage() {
             value={formData.whatsapp_number}
             onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
               Opening Time <span className="text-red-500">*</span>
             </label>
             <input
@@ -254,12 +260,12 @@ export default function EditBusinessPage() {
               value={formData.opening_time}
               onChange={(e) => setFormData({ ...formData, opening_time: e.target.value })}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
               Closing Time <span className="text-red-500">*</span>
             </label>
             <input
@@ -267,20 +273,20 @@ export default function EditBusinessPage() {
               value={formData.closing_time}
               onChange={(e) => setFormData({ ...formData, closing_time: e.target.value })}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
             Slot Duration (minutes) <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.slot_duration}
             onChange={(e) => setFormData({ ...formData, slot_duration: e.target.value })}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
           >
             <option value="15">15 minutes</option>
             <option value="30">30 minutes</option>
@@ -290,7 +296,7 @@ export default function EditBusinessPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
             Address <span className="text-red-500">*</span>
           </label>
           <input
@@ -298,62 +304,67 @@ export default function EditBusinessPage() {
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
+            Location
+          </label>
           <input
             type="text"
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+            className="w-full h-11 px-4 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
           />
         </div>
 
-        <div className="border-t pt-6">
+        <div className="border-t border-border-primary/45 pt-6">
           <div className="flex items-center mb-4">
             <input
               type="checkbox"
               id="suspended"
               checked={formData.suspended}
               onChange={(e) => setFormData({ ...formData, suspended: e.target.checked })}
-              className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
+              className="h-4 w-4 border-border-primary bg-surface-input text-brand-primary focus:ring-2 focus:ring-brand-primary rounded"
             />
-            <label htmlFor="suspended" className="ml-2 text-sm font-medium text-gray-700">
+            <label
+              htmlFor="suspended"
+              className="ml-2 text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono"
+            >
               Suspend this business
             </label>
           </div>
 
           {formData.suspended && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-text-secondary font-mono mb-2">
                 Suspension Reason
               </label>
               <textarea
                 value={formData.suspended_reason}
                 onChange={(e) => setFormData({ ...formData, suspended_reason: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-4 py-2 border border-border-primary bg-surface-input rounded-xl text-sm text-text-primary placeholder-text-tertiary focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary/50 transition-all duration-150"
                 placeholder="Reason for suspension..."
               />
             </div>
           )}
         </div>
 
-        <div className="flex gap-4 pt-6 border-t">
+        <div className="flex gap-4 pt-6 border-t border-border-primary/45">
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 bg-black text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-grow bg-brand-primary text-background-primary font-bold py-3 px-6 rounded-xl hover:bg-brand-primaryHover active:bg-brand-primaryPressed transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-sm"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+            className="px-6 py-3 bg-red-950/20 border border-red-500/30 hover:border-red-500/50 hover:bg-red-950/40 text-red-400 font-bold rounded-xl transition-colors cursor-pointer text-sm"
           >
             Delete
           </button>

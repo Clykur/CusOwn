@@ -161,7 +161,7 @@ export function OwnerProfileSkeleton() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-red-200 bg-red-50/40 p-4 shadow-sm sm:rounded-lg sm:p-6">
+      <section className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 shadow-sm sm:rounded-lg sm:p-6">
         <div className={`mb-2 h-5 w-36 rounded ${skeletonBase}`} />
         <div className={`mb-4 h-4 w-full max-w-sm rounded ${skeletonBase}`} />
         <div className={`mb-4 h-16 w-full rounded-lg ${skeletonBase}`} />
